@@ -1,0 +1,23 @@
+# Option file for Artistic Style
+# Manual usage:
+#    astyle --options=.astylerc --dry-run <file>
+--attach-namespaces
+--attach-inlines
+--indent=spaces=4
+--indent-switches
+--indent-preproc-block
+--indent-preproc-define
+--indent-col1-comments
+--indent-after-parens
+--indent-continuation=2
+--pad-header
+--align-pointer=type
+--align-reference=type
+--break-closing-braces
+--break-one-line-headers
+--add-braces
+--break-return-type
+--attach-return-type-decl
+--attach-namespaces
+--convert-tabs
+--max-code-length=80

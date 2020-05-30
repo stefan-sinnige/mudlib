@@ -1,0 +1,572 @@
+\documentclass[11pt,a4paper,openany]{mudbook}
+
+% ============================================================================
+% ADDITIONAL PACKAGES
+% ============================================================================
+
+% Use the epigraph package
+\usepackage{epigraph}
+\setlength{\epigraphwidth}{.6\textwidth}
+
+% Use the Graphicx package to include PNG files
+\usepackage{graphicx}
+
+% Start making indices
+\makeindex
+
+% ============================================================================
+% COMMANDS
+% ============================================================================
+
+\begin{document}
+
+% Set the C++ listing style
+\definecolor{darkgreen}{RGB}{0, 95, 0}
+\definecolor{lightgrey}{RGB}{242,242,242}
+\lstset{%
+  language=C++,
+  commentstyle=\color{darkgreen},
+  backgroundcolor=\color{lightgrey},
+  framesep=5pt,
+  framexbottommargin=2pt}
+
+% ============================================================================
+% TITLEPAGE
+% ============================================================================
+
+\author{Stefan Sinnige\\ Kalion}
+\date{April 2020}
+\begin{titlepage}
+  \vspace{20mm}
+  \begin{center}
+    \includegraphics[width=50mm]{mud.png}
+  \end{center}
+  \vspace{10mm}
+  \begin{center}
+    {\LARGE MUDLib Manual}
+    \vskip 3em
+    {\large Stefan Sinnige\\ Kalion}
+  \end{center}
+\end{titlepage}
+
+% ============================================================================
+% COPYRIGHT
+% ============================================================================
+
+\newpage
+\thispagestyle{empty}
+~\vfill
+
+\noindent This book is typeset in \fontfamilyname, which is licensed under the
+\fontfamilylicense.
+\vspace{1em}
+
+\noindent Copyright \copyright\ 2020, Kalion.
+\vspace{1em}
+
+\noindent PLACEHOLDER FOR COPYRIGHT NOTICE.
+\vspace{1em}
+
+\noindent \textit{First release, April 2020}
+
+\noindent \textit{This release, April 2020}
+
+% ============================================================================
+% TABLE OF CONTENTS
+% ============================================================================
+
+\pagestyle{empty}
+\tableofcontents
+\pagestyle{fancy}
+
+% ============================================================================
+% PREFACE
+% ============================================================================
+
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+
+\epigraph{\textit{Omne tulit punctum qui miscuit utile dulci,\\
+lectorem delectando pariterque monendo.}\\
+He who blends usefulness and pleasantness wins every
+vote, at once delighting and instructing the reader.}%
+{Horace - Ars Poetica (343-344)}\index{Horace}
+
+When Horace postulates in his "Ars Poetica" (19 B.C.) that one of the
+qualifications of a poet is to mix the usefulness with sweetness in order to
+both delight and instruct the reader, little would he have known that this
+would not only apply to the written art of poetry, but to the art of
+programming as well. Taken from verse 343 of this poem is the Latin phrase
+\textit{miscere utile dulci} that captures this principle. Abbreviated to MUD,
+is the project name that is being uses as the basis for naming various
+projects. Included in this, is the MUD Library.
+
+MUDLib is a general purpose application framework library that conceptualises
+various aspects of \Cpp application development. A number of such frameworks
+already exists and have been quite successful. So why is there a need for yet
+another one? Well, there probably is not really a need for it, but I will
+refer to the premise in the previous paragraph. It's intention is not only to
+be useful and delightful for anyone who may find it suitable for their own
+purposes, but equally so, it will be useful and delightful for the author
+who created it. This includes the ever evolving \Cpp language constructs as
+well as the need to abstract and combine many principles of application
+development into a consistent single framework.
+
+Let's take, as an example, the technology behind programming a TCP server and
+client application. Back in 1983, the Berkeley Sockets API (application
+programming interface) was introduced to define the functions to support
+creating of sockets, establishing and accepting connections and sending and
+receiving data from one endpoint to another. This API was adopted into the
+POSIX (Portable Operating System Interface) standard and is supported on
+almost any platform. For example, it is incorporated into UNIX systems and
+their derivations, like Oracle Solaris, Linux and Apple Darwin, and also in
+Microsoft Windows. Even to this day, applications written in the 80s would
+still be able to build and run on modern operating systems.
+
+Throughout the decades, advances has been made in all aspects of computer
+science. The adoption of object-oriented programming is one of those advances
+and led to the introduction of \Cpp and other programming languages. This has
+created some a dilemma that the procedural API for handling sockets of POSIX
+has to be mapped within an object-oriented framework. Some library providers
+have adopted these concepts successfully and these have been widely adopted,
+even to the point that they have been incorporated into \Cpp standards (like
+some aspects of the Boost library).
+
+However, with all these different libraries, there is no single abstraction of
+such concepts which is a 'correct' one. An ACE (Adaptive Communication
+Environment) socket differs in a Boost socket by their viewpoint on how a
+socket can be represented. Although there is inevitably a great number of
+overlap of functionality that each has to provide, the differences between them
+and the design concepts they implemented, needs to be assessed to their
+usefulness in the specific problem domain and which can be applied more
+effectively.
+
+Another aspect of application framework libraries is that there are many
+libraries that focus on a certain key feature, but there are only a few that
+cater an entire spectrum. There are a predominantly a few popular libraries
+for handling SSL, XML or SOAP communication, and most of them are integrated
+in a certain way in an application framework. However, that makes a consistent
+implementation of such a framework harder. Of course, one would gain an awful
+lot from the experience of such mature libraries, but they may not be a
+prefect fit for the concept that the application framework would like
+to convey. Such libraries are often integrated with an adapter pattern to make
+them fit within the confinements of the application framework, even though some
+concessions may need to be made in the process.
+
+In this aspect, MUDLib serves the purpose foremost, to present yet another
+view of the current technologies and how they can be applied in application
+development. It is advocating a certain viewpoint on how different
+technologies can operate together, with the same underlying concepts and
+methodologies, while providing a consistent application framework on all
+levels.  Therefore, it is aiming to implement many of the technologies on a
+\textit{per need} basis. It is not trying to be complete in every aspect it
+supports, but only implements those aspects that are vital for a certain
+application. This library is therefore ever evolving!
+
+% ============================================================================
+% GUID FOR READERS
+% ============================================================================
+
+\chapter*{Guide For Readers}
+\addcontentsline{toc}{chapter}{Guide For Readers}
+
+% ============================================================================
+% PART
+% ============================================================================
+
+\part{Introduction}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Tour of MUDLib: Methodologies}
+
+The methodologies that form the basis of this library. Talk about namespaces, streaming, C++11,
+perhaps even formatting?
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Tour of MUDLib: Components}
+
+Talk about the component layering, namespace inclusion. Which components, the functions they
+provide and the support they give to other layer. Be clear that dependency of layers is only one-way!
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Tour of MUDLib: Unit testing}
+
+% ============================================================================
+% PART
+% ============================================================================
+
+\part{Core}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Exceptions}
+\label{chp:exceptions}
+
+Exceptions are used in the MUDLib library for signalling an erroneous condition. Although exceptional behaviour does not necessarily mean conditions
+that rarely occur, they can be a useful tool in situations where certain
+error conditions are excepted. For example, an application may choose to raise
+an exception when a connection cannot be established to a remote machine.
+This in itself is not a rare occasion, but can actually be expected at times.
+It just depends on what the application does when such an exception is caught.
+The most crude way of handling exceptions is to terminate the application,
+but that is a very disastrous method of dealing with such a scenario. Rather,
+by carefully planning and handling exceptions, it may trigger an attempt to
+reconnect instead. 
+
+Apart from the standard exception that are provided with the \Cpp standard,
+additional ones have been defined that are used within the library. 
+
+\section{Exception Classes}
+\label{sct:exception-classes}
+
+\subsection{\texttt{not\_owner}}\index{not\_owner@\texttt{not\_owner}}
+
+The \texttt{not\_owner} exception is used to indicate that an operation is
+attempted on a resource which is currently not the \textit{exclusive} owner
+of that resource. Exclusive ownership is often represented through a
+\texttt{unique\_ptr}, where a \texttt{nullptr} value of the underlying
+pointer indicates that the user is currently not the owner. This exception can
+be thus to be thrown in situations like in listing~\ref{lst:not_owner}.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={The \texttt{not\_owner} exception.},
+  label=lst:not_owner]
+if {ptr == nullptr} {
+    throw mud::core::not_owner();
+}
+\end{lstlisting}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Handles}
+\label{chp:handles}
+
+The core library defines an abstract concept of a handle\index{handle} as a
+unique reference to s single resource of any kind. This can be resources that
+have a direct link with an operating system supported device (also known
+as kernel\index{handle!kernel}) but can also refer to a reference to a
+software construct, like a window\index{handle!window} handle.
+
+In either case, each of these handles are represented as a
+\texttt{basic\_handle}\index{basic\_handle@\texttt{basic\_handle}}. This
+class is templated with the underlying type of the resource. For example,
+POSIX style kernel handles are represented by an integer type, while
+Microsoft Windows window handles are of type \texttt{HWND}. The
+\texttt{basic\_handle} simply defines the constraints that are put on these
+handle types:
+\begin{itemize}
+\item No default constructor
+\item Not copy-constructable
+\item Not copy-assignable
+\end{itemize}
+Furthermore, the handle can return its underlying representation using the
+type-operator.
+
+% ============================================================================
+% PART
+% ============================================================================
+
+\part{I/O}
+
+The concept of I/O is a fundamental one in application programming. The
+majority of applications would have some concept of using I/O for any kind
+of communication. This includes communication with hardware, other software
+applications or services and interaction with humans. Input can come from
+resources like files, keyboard or through an internet socket connection; while
+output can be a display, a printer, a file or perhaps a row in a database.
+
+As can be seen, there is a whole variety of I/O and at various levels. The
+types of I/O that are dealt with in this layer of the MUDLib library is the
+low-level operating system supported I/O. This is typically I/O that is
+supported by, for example, the POSIX standard and would typically require a
+method where multiple kernel events can be examined and processed (e.g.
+\texttt{select}\index{select@\texttt{select}}, 
+\texttt{poll}\index{poll@\texttt{poll}} and
+\texttt{kevent}\index{kevent@\texttt{kevent}}).
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Kernel Handles and Event Loops}
+\label{cpt:kernel-handles-loops}
+
+\section{\texttt{kernel\_handle}\index{kernel\_handle@\texttt{kernel\_handle}}}
+\label{sct:kernel_handle}
+
+Operating system (kernel) supported resources can often uniquely defined by
+a reference of a certain type. For POSIX systems, this is often represented
+by an integer value. Once the resource reference (or handle \index{handle})
+to a particular resource has been acquired, it can then be used to perform
+specific operations on that resource.
+
+These resource handles are represented by using the
+\texttt{basic\_handle}\index{basic\_handle@\texttt{basic\_handle}} and
+templated with the kernel defined type. In most cases, this is just an
+integer value. In principal, this class can be used on its own as in
+listing~\ref{lst:kernel-handle}, but with the MUDLib library, these handles
+are used as data members of device abstractions like pipes\index{pipe} and
+sockets\index{socket}.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Direct use of the \texttt{kernel\_handle}.},
+  label=lst:kernel-handle]
+mud::io::kernel_handle fd(open("/dev/ttyUSB1", O_RDWR));
+if (fd < 0) {
+    throw std::system_error(errno, std::system_category(),
+        "open");
+}
+write(fd, "Hello World", 11);
+close(fd);
+\end{lstlisting}
+
+As the handle references a unique resource, they are often associated with
+a \texttt{unique\_ptr} to ensure unique ownership of the handle.
+
+\section{\texttt{kernel\_event\_loop}
+\index{kernel\_event\_loop@\texttt{kernel\_event\_loop}}}
+\label{sct:kernel_event_loop}
+
+Most operating systems have means available to let the kernel wait for any
+event on a kernel handle and inform an application that was actively waiting
+for that to occur. That concept is the driving factor behind the
+\texttt{kernel\_event\_loop}. Kernel handles can be registered with the
+event loop together with an associated function that is to be invoked when
+an event is triggered on the handle.
+
+When the application is running the event loop, using the \texttt{run} method,
+then the thread that issued this method will not return until the event loop
+is requested to terminate. This request can be issued by any other thread,
+and even by one of its event handlers. It is therefore quite common that the
+event loop would run on its own thread or as an asynchronous operation, as in
+illustrated in listing \ref{lst:event-loop-thread}.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Kernel event loop thread},
+  label=lst:event-loop-thread]
+// Start the event loop
+mud::io::kernel_event_loop loop;
+std::future<void> future = std::async(
+    std::launch::async, [&loop]{} {
+        loop.loop();
+    });
+
+// Register a handle and a handler
+loop.register_handler(some_handle, []() {
+        // Handle the event, e.g. read from a socket.
+    });
+    
+// Do some action. Any event on some_handle would cause
+// the event handler to be called.
+
+// Terminate the event loop.
+loop.terminate();
+\end{lstlisting}
+
+
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Stream Buffers}
+\label{chp:stream-buffers}
+
+The \index{stream\_buffer@\texttt{stream\_buffer}} class is a specialised
+\texttt{std::streambuf}\index{std::streambuf@\texttt{std::streambuf}}
+that is capable of reading from and writing to a
+\texttt{kernel\_handle}\index{kernel\_handle@\texttt{kernel\_handle}}. The
+underlying implementation that performs the direct access to the resource
+is the POSIX \texttt{read}\index{read@\texttt{read}} and
+\texttt{write}\index{write@\texttt{write}} routines. The data when reading
+from the device is buffered in an internal buffer. When the buffer is
+exhausted and more data is required to be read from the device, the
+\texttt{underflow} method is called. If that device is set-up in a
+\textit{blocking} mode and there is not enough data, then the call may
+be blocked until the data is available, or until the device is no longer
+accessible.
+
+The same holds for writing to the device. As the data is buffered, the actual
+writing to the device may be delayed, for example, when the buffer becomes
+full. The writing can be enforced by \textit{flushing} the stream buffer.
+
+The stream buffer is often not used by itself, but through an output
+stream instead.
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Pipes}
+\label{chp:pipes}
+
+A pipe~\index{pipe@\texttt{pipe}} defines the concept of a uni-directional
+data channel. Both ends of the pipe have their own unique 
+\texttt{kernel\_handle}\index{kernel\_handle@\texttt{kernel\_handle}}. One
+end, the source, is the side that is attached to the output stream and is
+used to send data over the pipe to the other side. That side, the sink, is the
+side that is attached to the input stream and is used to receive the data from
+the other side.
+
+\begin{figure}[hbt]
+  \centering
+  \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}
+      \umlclass[x=0,y=11]%
+          {mud::io::pipe}%
+          {}%
+          {+ pipe() \\
+           + {\textit \~{}pipe} \\
+           + istr() \\
+           + ostr() \\
+           + read\_handle() \\
+           + write\_handle() \\
+          };
+      \umlclass[x=-5,y=9.8]%
+          {std::ostream}%
+          {}%
+          {
+          };
+      \umlclass[x=5,y=9.8]%
+          {std::istream}%
+          {}%
+          {
+          };
+      \umlclass[x=-5,y=3,name=ostream-streambuf]%
+          {mud::io::streambuf}%
+          {}%
+          {+ overflow(int): int \\
+          };
+      \umlclass[x=5,y=3,name=istream-streambuf]%
+          {mud::io::streambuf}%
+          {}%
+          {+ underflow() : int \\
+          };
+       \umlclass[x=-2,y=6,name=ostream-handle]%
+          {mud::io::kernel\_handle}%
+          {}%
+          {
+          };
+       \umlclass[x=2,y=6,name=istream-handle]%
+          {mud::io::kernel\_handle}%
+          {}%
+          {
+          };
+       \draw[aggregation] (stdostream.east) -- (mudiopipe.west);
+       \draw[aggregation] (stdistream.west) -- (mudiopipe.east);
+       \draw[aggregation] (ostream-handle.north) -- +(0,1) -|
+                          (mudiopipe.south);
+       \draw[aggregation] (istream-handle.north) -- +(0,1) -|
+                          (mudiopipe.south);
+       \draw[dependency]  (stdostream) -- (ostream-streambuf);
+       \draw[dependency]  (stdistream) -- (istream-streambuf);
+       \draw[dependency]  (ostream-streambuf.east) -| (ostream-handle);
+       \draw[dependency]  (istream-streambuf.west) -| (istream-handle);
+    \end{tikzpicture};
+  }
+  \caption{\texttt{mud::io::pipe} class diagram.}
+  \label{fig:mud-io-pipe-class}
+\end{figure}
+
+Figure~\ref{fig:mud-io-pipe-class} illustrates the relationship of all the
+classes involved in the \texttt{pipe}. The pipe itself keeps an instance of
+the
+\texttt{std::streambuf}\index{std::streambuf@\texttt{std::streambuf}}
+instances that handle the buffered input and output to the source and sink
+end of the pipe. In order to stream data over the pipe, a reference to the
+input and output stream is acquired from the pipe which is automatically
+attached to the appropriate stream buffer.
+
+\section{Writing to the pipe}
+
+Writing to a pipe can use all the standard functionality that is provided
+by the \texttt{std::ostream}\index{std::ostream@\texttt{std::ostream}}. This
+included formatted stream functionality and unformatted (binary) output.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Writing to the pipe},
+  label=lst:writing-pipe]
+// Create a pipe
+mud::io::pipe p;
+
+// Formatted output.
+p.ostr() << "Hello" :: std::flush();
+
+// Unformatted output (binary).
+uint8_t block[] = { 0x01, 0x00, 0x81, 0xF4 };
+p.ostr().write((const char*) block), 4) << std::flush();
+\end{lstlisting}
+
+\section{Reading from the pipe}
+
+Reading from a pipe can use all the standard functionality that is provided
+by the \texttt{std::istream}\index{std::istream@\texttt{std::istream}}. This
+included formatted stream functionality and unformatted (binary) input.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Reading from the pipe},
+  label=lst:reading-pipe]
+// Create a pipe
+mud::io::pipe p;
+
+// Formatted input. This may block until data is available.
+std::string str;
+p.ostr() >> str;
+
+// Unformatted input (binary).
+uint8_t block[4];
+memset(block, 0, 4);
+p.istr().read((char*)block, 4);
+\end{lstlisting}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Sockets}
+\label{chp:sockets}
+
+% ============================================================================
+% PART
+% ============================================================================
+
+\part{Reference}
+
+% ============================================================================
+% Bibliography
+% ============================================================================
+
+\newpage
+\printbibliography
+
+% ============================================================================
+% Index
+% ============================================================================
+
+\newpage
+\printindex
+
+\end{document}
