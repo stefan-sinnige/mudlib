@@ -1,146 +1,112 @@
-#include "pipe_test.h"
 #include "mud/io/pipe.h"
+#include "mud/test.h"
 #include <string>
 #include <type_traits>
 #include <unistd.h>
 
-#include "mud/io/streambuf.h"
+/* *INDENT-OFF* */
 
-CPPUNIT_TEST_SUITE_REGISTRATION(PipeTest);
+namespace /* unnamed */ {
 
-void
-PipeTest::TypeTraits()
+struct context
 {
-    // Given A type 'pipe'
-    // When  I query the tpe information
-    // Then  The type is default constructible
-    //  And  the type is not copy constructible
-    //  And  the type is not assignable
+    /* Constructor initialised for each scenario run */
+    context() {
+    }
 
-    bool trait;
-    trait = std::is_default_constructible<mud::io::pipe>::value;
-    CPPUNIT_ASSERT_EQUAL(true, trait);
-    trait = std::is_copy_constructible<mud::io::pipe>::value;
-    CPPUNIT_ASSERT_EQUAL(false, trait);
-    trait = std::is_assignable<mud::io::pipe, mud::io::pipe>::value;
-    CPPUNIT_ASSERT_EQUAL(false, trait);
+    /* Destructor after each scenario */
+    ~context() {
+    }
+
+    /* A pipe */
+    mud::io::pipe pipe;
+};
+
 }
 
-void
-PipeTest::WriteReadFormattedCharacter()
-{
-    // Given A pipe
-    // When  I write a character to the pipe
-    // Then  I can read the same character
+FEATURE("Uni-directional pipes", context)
 
-    mud::io::pipe testpipe;
-    {
-        char ch = 'C';
-        testpipe.ostr() << ch << std::flush;
-    }
-    {
-        char ch = 0;
-        testpipe.istr() >> ch;
-        CPPUNIT_ASSERT_EQUAL('C', ch);
-    }
-}
+  /*
+   * The predefined Gherkin steps.
+   */
 
-void
-PipeTest::WriteReadFormattedInteger()
-{
-    // Given A pipe
-    // When  I write an integer to the pipe
-    // Then  I can read the same integer
+  DEFINE_GIVEN("A pipe",
+      [](context& ctx) {})
 
-    mud::io::pipe testpipe;
-    {
-        uint16_t i = 28197;
-        testpipe.ostr() << i << std::flush;
-    }
-    {
-        uint16_t i = 0;
-        testpipe.istr() >> i;
-        CPPUNIT_ASSERT_EQUAL((uint16_t)28197, i);
-    }
-}
+  END_DEFINES()
 
-void
-PipeTest::WriteReadFormattedString()
-{
-    // Given A pipe
-    // When  I write a string to the pipe
-    // Then  I can read the same string
+  /*
+   * The scenarios.
+   */
 
-    mud::io::pipe testpipe;
-    {
-        std::string str = "Hello";
-        testpipe.ostr() << str << std::flush;
-    }
-    {
-        std::string str;
-        testpipe.istr() >> str;
-        CPPUNIT_ASSERT_EQUAL(std::string("Hello"), str);
-    }
-}
+  SCENARIO("Type traits")
+    GIVEN("A pipe type", [](context&){})
+    WHEN ("The type traits are examined", [](context&){})
+    THEN ("The type is default constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_default_constructible<
+                  mud::io::pipe>::value);
+        })
+    THEN ("The type is not copy-constructible",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_constructible<
+                  mud::io::pipe>::value);
+        })
+    THEN ("The type is not assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_assignable<
+                  mud::io::pipe,
+                  mud::io::pipe>::value);
+        })
 
-void
-PipeTest::WriteReadFormattedCombination()
-{
-    // Given A pipe
-    // When  I write a combination of a character and integer to the pipe
-    // Then  I can read the same combination
+  SCENARIO("Writing and reading formatted data")
+    GIVEN("A pipe")
+    WHEN ("Formatted data is written to the pipe",
+        [](context& ctx) {
+            char     c = 'F';
+            uint32_t i = 73618;
+            ctx.pipe.ostr() << c << i << std::flush;
+        })
+    THEN ("The same formatted data can be read from the pipe",
+        [](context& ctx) {
+            char        c = 0;
+            uint32_t    i  = 0;
+            ctx.pipe.istr() >> c >> i;
+            ASSERT('F', c);
+            ASSERT((uint32_t)73618, i);
+        })
 
-    mud::io::pipe testpipe;
-    {
-        char ch = 'F';
-        uint32_t  i  = 73618;
-        testpipe.ostr() << ch << i << std::flush;
-    }
-    {
-        char ch = 0;
-        uint32_t  i  = 0;
-        testpipe.istr() >> ch >> i;
-        CPPUNIT_ASSERT_EQUAL('F', ch);
-        CPPUNIT_ASSERT_EQUAL((uint32_t)73618, i);
-    }
-}
+  SCENARIO("Writing and reading binary data")
+    GIVEN("A pipe")
+    WHEN ("Binary data is written to the pipe",
+        [](context& ctx) {
+            uint8_t block[] = {0x01, 0x92, 0x00, 0xF4};
+            ctx.pipe.ostr().write((const char*)block, sizeof(block))
+                << std::flush;
+        })
+    THEN ("The same binary data can be read from the pipe",
+        [](context& ctx) {
+            uint8_t block[4];
+            memset(block, 0, sizeof(block));
+            ctx.pipe.istr().read((char*)block, sizeof(block));
+            ASSERT((uint8_t)0x01, block[0]);
+            ASSERT((uint8_t)0x92, block[1]);
+            ASSERT((uint8_t)0x00, block[2]);
+            ASSERT((uint8_t)0xF4, block[3]);
+        })
 
-void
-PipeTest::WriteReadUnformattedDataBlock()
-{
-    // Given A pipe
-    // When  I write a binary sequence
-    // Then  I can read the same binary sequence
+  SCENARIO("Nothing to read on a non-blocking pipe")
+    GIVEN("A pipe")
+    WHEN ("There is no data available",
+        [](context& ctx) {})
+    THEN ("Reading from the pipe will fail",
+        [](context& ctx) {
+          char c;
+          ctx.pipe.istr().read(&c, 1);
+          ASSERT(true, ctx.pipe.istr().eof());
+        })
+END_FEATURE()
 
-    mud::io::pipe testpipe;
-    {
-        uint8_t block[] = {0x01, 0x92, 0x00, 0xF4};
-        testpipe.ostr().write((const char*)block, sizeof(block)) << std::flush;
-    }
-    {
-        uint8_t block[4];
-        memset(block, 0, sizeof(block));
-        testpipe.istr().read((char*)block, sizeof(block));
-        CPPUNIT_ASSERT_EQUAL((uint8_t)0x01, block[0]);
-        CPPUNIT_ASSERT_EQUAL((uint8_t)0x92, block[1]);
-        CPPUNIT_ASSERT_EQUAL((uint8_t)0x00, block[2]);
-        CPPUNIT_ASSERT_EQUAL((uint8_t)0xF4, block[3]);
-    }
-}
-
-void
-PipeTest::NonBlockingNothingToRead()
-{
-    // Given A non-blocking pipe
-    // When  There is no data available
-    // Then  Reading a character will fail
-
-    mud::io::pipe testpipe;
-    {
-        char ch;
-        testpipe.istr().read(&ch, 1);
-        CPPUNIT_ASSERT_EQUAL(true, testpipe.istr().eof());
-    }
-}
+/* *INDENT-ON* */
 
 /* vi: set ai ts=4 expandtab: */

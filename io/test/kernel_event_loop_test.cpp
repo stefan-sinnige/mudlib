@@ -1,240 +1,181 @@
-#include "kernel_event_loop_test.h"
 #include "mud/io/kernel_event_loop.h"
 #include "mud/io/pipe.h"
+#include "mud/test.h"
 #include <future>
+#include <ostream>
 #include <type_traits>
 
-CPPUNIT_TEST_SUITE_REGISTRATION(KernelEventLoopTest);
+/* *INDENT-OFF* */
 
-const std::chrono::milliseconds timeout = std::chrono::milliseconds(20);
+namespace /* unnamed */ {
 
-void
-KernelEventLoopTest::setUp()
+struct context
 {
-}
+    /* Constructor initialised for each scenario run */
+    context() {
+        calls = 0;
+        other_calls = 0;
+    }
 
-void
-KernelEventLoopTest::tearDown()
-{
-}
+    /* Destructor after each scenario */
+    ~context() {
+        event_loop.terminate();
+        if (future.valid()) {
+          std::future_status status = future.wait_for(timeout);
+        }
+    }
 
-void
-KernelEventLoopTest::TypeTraits()
-{
-    // Given A type 'event_loop'
-    // When  I query the tpe information
-    // Then  The type is default constructible
-    //  And  the type is not copy constructible
-    //  And  the type is not assignable
+    /* The time to give asynchronous operations some time */
+    const std::chrono::milliseconds timeout = std::chrono::milliseconds(20);
 
-    bool trait;
-    trait = std::is_default_constructible<
-            mud::io::kernel_event_loop>::value;
-    CPPUNIT_ASSERT_EQUAL(true, trait);
-    trait = std::is_copy_constructible<
-            mud::io::kernel_event_loop>::value;
-    CPPUNIT_ASSERT_EQUAL(false, trait);
-    trait = std::is_assignable<
-            mud::io::kernel_event_loop,
-            mud::io::kernel_event_loop>::value;
-    CPPUNIT_ASSERT_EQUAL(false, trait);
-}
+    /* The event loop */
+    mud::io::kernel_event_loop event_loop;
 
-void
-KernelEventLoopTest::ThreadTerminate()
-{
-    // Given An event loop
-    // When  Another thread terminates the loop
-    // Then  The event loop is terminated
+    /* The status of the event loop */
+    std::future<void> future;
 
-    // Run the event-loop as an asynchronous operation. We use this, rather
-    // than std::thread, as it allows the test to use timeouts.
-    mud::io::kernel_event_loop loop;
-    std::future<void> future = std::async(std::launch::async, [&loop]() {
-        loop.loop();
-    });
-    std::future_status status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
-
-    // Terminate the event-loop
-    loop.terminate();
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::ready);
-}
-
-void
-KernelEventLoopTest::HandlerTerminate()
-{
-    // Given An event loop
-    // When  An event handler terminates the loop
-    // Then  The event loop is terminated
-
-    // Run the event-loop as an asynchronous operation. We use this, rather
-    // than std::thread, as it allows the test to use timeouts.
-    mud::io::kernel_event_loop loop;
-    std::future<void> future = std::async(std::launch::async, [&loop]() {
-        loop.loop();
-    });
-    std::future_status status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
-
-    // Create a pipe and register an event handler associated to it to
-    // terminate the event-loop when something is available on the pipe.
-    int calls = 0;
+    /* A pipe for inter thread communication. */
     mud::io::pipe pipe;
-    loop.register_handler(pipe.read_handle(),
-    [&loop, &calls, &pipe]() {
-        char ch;
-        pipe.istr() >> ch;
-        ++calls;
-        loop.terminate();
-    });
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
 
-    // Send something to the pipe. The loop should have terminated.
-    pipe.ostr() << 'C' << std::flush;
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::ready);
-    CPPUNIT_ASSERT_EQUAL((int)1, calls);
+    /* A counter for the number of calls executed in a handler. */
+    int calls;
+
+    /* A counter for the number of calls executed in a different handler. */
+    int other_calls;
+};
+
 }
 
-void
-KernelEventLoopTest::HandlerRegistration()
-{
-    // Given An event loop
-    // When  An event handler is registrated
-    //  And  The event is triggered
-    // Then  The event loop trigger the handler once
+FEATURE("Kernel event loop", context)
 
-    // Run the event-loop as an asynchronous operation. We use this, rather
-    // than std::thread, as it allows the test to use timeouts.
-    mud::io::kernel_event_loop loop;
-    std::future<void> future = std::async(std::launch::async, [&loop]() {
-        loop.loop();
-    });
-    std::future_status status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
+  /*
+   * The pre-defined Gherkin steps.
+   */
 
-    // Create a pipe and register an event handler associated to it. Keep
-    // track of the number of calls the handler is executed.
-    int calls = 0;
-    mud::io::pipe pipe;
-    loop.register_handler(pipe.read_handle(),
-    [&calls, &pipe]() {
-        char ch;
-        pipe.istr() >> ch;
-        ++calls;
-    });
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
+  DEFINE_GIVEN("A running event loop",
+      [](context& ctx) {
+          /* Run the event loop in an asynchronous operation. */
+          ctx.future = std::async(std::launch::async, [&ctx]() {
+              ctx.event_loop.loop();
+          });
+          std::future_status status = ctx.future.wait_for(ctx.timeout);
+      })
+  DEFINE_GIVEN("A registered handler that handles an event",
+      [](context& ctx) {
+              ctx.event_loop.register_handler(ctx.pipe.read_handle(), [&ctx]() {
+                  char ch;
+                  ctx.pipe.istr() >> ch;
+                  ++ctx.calls;
+              });
+          })
+  DEFINE_GIVEN("Another registered handler that handles an event",
+      [](context& ctx) {
+              ctx.event_loop.register_handler(ctx.pipe.read_handle(), [&ctx]() {
+                  char ch;
+                  ctx.pipe.istr() >> ch;
+                  ++ctx.other_calls;
+              });
+          })
+  DEFINE_WHEN("The event is triggered",
+      [](context& ctx) {
+              ctx.pipe.ostr() << 'T' << std::flush;
+          })
+  DEFINE_THEN("The event loop is terminated",
+      [](context& ctx) {
+          std::future_status status = ctx.future.wait_for(ctx.timeout);
+          ASSERT(status, std::future_status::ready);
+      })
+  DEFINE_THEN("The event handler is not called",
+      [](context& ctx) {
+          std::future_status status = ctx.future.wait_for(ctx.timeout);
+          ASSERT(0, ctx.calls);
+     })
+  DEFINE_THEN("The event handler is called exactly once",
+      [](context& ctx) {
+          std::future_status status = ctx.future.wait_for(ctx.timeout);
+          ASSERT(1, ctx.calls);
+     })
+  DEFINE_THEN("The other event handler is called exactly once",
+      [](context& ctx) {
+          std::future_status status = ctx.future.wait_for(ctx.timeout);
+          ASSERT(1, ctx.other_calls);
+     })
 
-    // Send something to the pipe. The event handler should be called.
-    pipe.ostr() << 'C' << std::flush;
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL((int)1, calls);
+  END_DEFINES()
 
-    // Terminate
-    loop.terminate();
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::ready);
-}
+  /*
+   * The scenarios 
+   */
 
-void
-KernelEventLoopTest::HandlerDeregistration()
-{
-    // Given An event loop
-    //  And  A registered event handler
-    // When  The event handler is deregistrated
-    //  And  The event is triggered
-    // Then  The event loop does not trigger the handler
+  SCENARIO("Type traits")
+    GIVEN("An event loop type", [](context&){})
+    WHEN ("The type traits are examined", [](context&){})
+    THEN ("The type is default constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_default_constructible<
+                  mud::io::kernel_event_loop>::value);
+        })
+    THEN ("The type is not copy-constructible",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_constructible<
+                  mud::io::kernel_event_loop>::value);
+        })
+    THEN ("The type is not assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_assignable<
+                  mud::io::kernel_event_loop,
+                  mud::io::kernel_event_loop>::value);
+        })
 
-    // Run the event-loop as an asynchronous operation. We use this, rather
-    // than std::thread, as it allows the test to use timeouts.
-    mud::io::kernel_event_loop loop;
-    std::future<void> future = std::async(std::launch::async, [&loop]() {
-        loop.loop();
-    });
-    std::future_status status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
+  SCENARIO("Event loop calls an event handler when an event is triggered")
+    GIVEN("A running event loop")
+      AND("A registered handler that handles an event")
+    WHEN ("The event is triggered")
+    THEN ("The event handler is called exactly once")
 
-    // Create a pipe and register an event handler associated to it. Keep
-    // track of the number of calls the handler is executed.
-    int calls = 0;
-    mud::io::pipe pipe;
-    loop.register_handler( pipe.read_handle(),
-    [&calls, &pipe]() {
-        char ch;
-        pipe.istr() >> ch;
-        ++calls;
-    });
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
+  SCENARIO("Event loop does not call a deregistered event handler")
+    GIVEN("A running event loop")
+     AND ("A registered handler that handles an event")
+    WHEN ("The event handler is deregistered",
+        [](context& ctx) {
+            ctx.event_loop.deregister_handler(ctx.pipe.read_handle());
+        })
+     AND ("The event is triggered")
+    THEN ("The event handler is not called")
 
-    // Deregister the event handler
-    loop.deregister_handler(pipe.read_handle());
+  SCENARIO("Event loop calls only one event handler when two are registered")
+    GIVEN("A running event loop")
+      AND("A registered handler that handles an event")
+      AND("Another registered handler that handles an event")
+    WHEN ("The event is triggered")
+    THEN ("The event handler is not called")
+     AND ("The other event handler is called exactly once")
 
-    // Send something to the pipe. The event handler should not be called.
-    pipe.ostr() << 'C' << std::flush;
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL((int)0, calls);
+  SCENARIO("Event loop terminates by request from another thread")
+    GIVEN("A running event loop")
+    WHEN ("A different thread terminates the event loop",
+        [](context& ctx) {
+            ctx.event_loop.terminate();
+        })
+    THEN ("The event loop is terminated")
 
-    // Terminate
-    loop.terminate();
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::ready);
-}
+  SCENARIO("Event loop terminates by request from a handler routine")
+    GIVEN("A running event loop")
+      AND("A registered handler that terminates the loop",
+          [](context& ctx) {
+            ctx.event_loop.register_handler(ctx.pipe.read_handle(), [&ctx]() {
+                char ch;
+                ctx.pipe.istr() >> ch;
+                ++ctx.calls;
+                ctx.event_loop.terminate();
+            });
+        })
+    WHEN ("The event is triggered")
+    THEN ("The event handler is called exactly once")
+     AND ("The event loop is terminated")
 
-void
-KernelEventLoopTest::HandlerDoubleRegistration()
-{
-    // Given An event loop
-    //  And  A registered event handler
-    // When  Another event handler is registrated
-    //  And  The event is triggered
-    // Then  The event loop will only trigger the last registered handler
+END_FEATURE()
 
-    // Run the event-loop as an asynchronous operation. We use this, rather
-    // than std::thread, as it allows the test to use timeouts.
-    mud::io::kernel_event_loop loop;
-    std::future<void> future = std::async(std::launch::async, [&loop]() {
-        loop.loop();
-    });
-    std::future_status status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
-
-    // Create a pipe and register an event handler associated to it. Keep
-    // track of the number of calls the handler is executed.
-    int calls_1 = 0;
-    mud::io::pipe pipe;
-    loop.register_handler(pipe.read_handle(),
-    [&calls_1, &pipe]() {
-        char ch;
-        pipe.istr() >> ch;
-        ++calls_1;
-    });
-
-    // Register another handler for the same event handle
-    int calls_2 = 0;
-    loop.register_handler(pipe.read_handle(),
-    [&calls_2, &pipe]() {
-        char ch;
-        pipe.istr() >> ch;
-        ++calls_2;
-    });
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::timeout);
-
-    // Send something to the pipe. The second event handler should be called.
-    pipe.ostr() << 'C' << std::flush;
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL((int)0, calls_1);
-    CPPUNIT_ASSERT_EQUAL((int)1, calls_2);
-
-    // Terminate
-    loop.terminate();
-    status = future.wait_for(timeout);
-    CPPUNIT_ASSERT_EQUAL(status, std::future_status::ready);
-}
+/* *INDENT-ON* */
 
 /* vi: set ai ts=4 expandtab: */

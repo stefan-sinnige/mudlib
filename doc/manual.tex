@@ -18,6 +18,7 @@
 % COMMANDS
 % ============================================================================
 
+\newcommand{\indextt}[1]{\index{#1@\texttt{#1}}}
 \begin{document}
 
 % Set the C++ listing style
@@ -211,7 +212,7 @@ provide and the support they give to other layer. Be clear that dependency of la
 % ============================================================================
 
 \chapter{Exceptions}
-\label{chp:exceptions}
+\label{chp:core-exceptions}
 
 Exceptions are used in the MUDLib library for signalling an erroneous condition. Although exceptional behaviour does not necessarily mean conditions
 that rarely occur, they can be a useful tool in situations where certain
@@ -228,9 +229,9 @@ Apart from the standard exception that are provided with the \Cpp standard,
 additional ones have been defined that are used within the library. 
 
 \section{Exception Classes}
-\label{sct:exception-classes}
+\label{sct:core-exception-classes}
 
-\subsection{\texttt{not\_owner}}\index{not\_owner@\texttt{not\_owner}}
+\subsection{\texttt{not\_owner}}\indextt{not\_owner}
 
 The \texttt{not\_owner} exception is used to indicate that an operation is
 attempted on a resource which is currently not the \textit{exclusive} owner
@@ -263,7 +264,7 @@ as kernel\index{handle!kernel}) but can also refer to a reference to a
 software construct, like a window\index{handle!window} handle.
 
 In either case, each of these handles are represented as a
-\texttt{basic\_handle}\index{basic\_handle@\texttt{basic\_handle}}. This
+\texttt{basic\_handle}\indextt{basic\_handle}. This
 class is templated with the underlying type of the resource. For example,
 POSIX style kernel handles are represented by an integer type, while
 Microsoft Windows window handles are of type \texttt{HWND}. The
@@ -295,9 +296,8 @@ types of I/O that are dealt with in this layer of the MUDLib library is the
 low-level operating system supported I/O. This is typically I/O that is
 supported by, for example, the POSIX standard and would typically require a
 method where multiple kernel events can be examined and processed (e.g.
-\texttt{select}\index{select@\texttt{select}}, 
-\texttt{poll}\index{poll@\texttt{poll}} and
-\texttt{kevent}\index{kevent@\texttt{kevent}}).
+\texttt{select}\indextt{select}, \texttt{poll}\indextt{poll} and
+\texttt{kevent}\indextt{kevent}).
 
 % ============================================================================
 % CHAPTER
@@ -306,7 +306,8 @@ method where multiple kernel events can be examined and processed (e.g.
 \chapter{Kernel Handles and Event Loops}
 \label{cpt:kernel-handles-loops}
 
-\section{\texttt{kernel\_handle}\index{kernel\_handle@\texttt{kernel\_handle}}}
+\section{\texttt{kernel\_handle}}
+\indextt{kernel\_handle}
 \label{sct:kernel_handle}
 
 Operating system (kernel) supported resources can often uniquely defined by
@@ -316,12 +317,11 @@ to a particular resource has been acquired, it can then be used to perform
 specific operations on that resource.
 
 These resource handles are represented by using the
-\texttt{basic\_handle}\index{basic\_handle@\texttt{basic\_handle}} and
-templated with the kernel defined type. In most cases, this is just an
-integer value. In principal, this class can be used on its own as in
-listing~\ref{lst:kernel-handle}, but with the MUDLib library, these handles
-are used as data members of device abstractions like pipes\index{pipe} and
-sockets\index{socket}.
+\texttt{basic\_handle}\indextt{basic\_handle} and templated with the kernel
+defined type. In most cases, this is just an integer value. In principal, 
+this class can be used on its own as in listing~\ref{lst:kernel-handle}, but
+with the MUDLib library, these handles are used as data members of device
+abstractions like pipes\index{pipe} and sockets\index{socket}.
 
 \begin{lstlisting}[%
   frame=single,
@@ -340,8 +340,8 @@ close(fd);
 As the handle references a unique resource, they are often associated with
 a \texttt{unique\_ptr} to ensure unique ownership of the handle.
 
-\section{\texttt{kernel\_event\_loop}
-\index{kernel\_event\_loop@\texttt{kernel\_event\_loop}}}
+\section{\texttt{kernel\_event\_loop}}
+\indextt{kernel\_event\_loop}
 \label{sct:kernel_event_loop}
 
 Most operating systems have means available to let the kernel wait for any
@@ -382,8 +382,6 @@ loop.register_handler(some_handle, []() {
 loop.terminate();
 \end{lstlisting}
 
-
-
 % ============================================================================
 % CHAPTER
 % ============================================================================
@@ -391,18 +389,16 @@ loop.terminate();
 \chapter{Stream Buffers}
 \label{chp:stream-buffers}
 
-The \index{stream\_buffer@\texttt{stream\_buffer}} class is a specialised
-\texttt{std::streambuf}\index{std::streambuf@\texttt{std::streambuf}}
-that is capable of reading from and writing to a
-\texttt{kernel\_handle}\index{kernel\_handle@\texttt{kernel\_handle}}. The
+The \indextt{stream\_buffer} class is a specialised
+\texttt{std::streambuf}\indextt{std::streambuf} that is capable of reading
+from and writing to a \texttt{kernel\_handle}\indextt{kernel\_handle}. The
 underlying implementation that performs the direct access to the resource
-is the POSIX \texttt{read}\index{read@\texttt{read}} and
-\texttt{write}\index{write@\texttt{write}} routines. The data when reading
-from the device is buffered in an internal buffer. When the buffer is
-exhausted and more data is required to be read from the device, the
-\texttt{underflow} method is called. If that device is set-up in a
-\textit{blocking} mode and there is not enough data, then the call may
-be blocked until the data is available, or until the device is no longer
+is the POSIX \texttt{read}\indextt{read} and \texttt{write}\indextt{write}
+routines. The data when reading from the device is buffered in an internal
+buffer. When the buffer is exhausted and more data is required to be read
+from the device, the \texttt{underflow} method is called. If that device is
+set-up in a \textit{blocking} mode and there is not enough data, then the call
+may be blocked until the data is available, or until the device is no longer
 accessible.
 
 The same holds for writing to the device. As the data is buffered, the actual
@@ -419,13 +415,12 @@ stream instead.
 \chapter{Pipes}
 \label{chp:pipes}
 
-A pipe~\index{pipe@\texttt{pipe}} defines the concept of a uni-directional
-data channel. Both ends of the pipe have their own unique 
-\texttt{kernel\_handle}\index{kernel\_handle@\texttt{kernel\_handle}}. One
-end, the source, is the side that is attached to the output stream and is
-used to send data over the pipe to the other side. That side, the sink, is the
-side that is attached to the input stream and is used to receive the data from
-the other side.
+A pipe~\indextt{pipe} defines the concept of a uni-directional data channel.
+Both ends of the pipe have their own unique 
+\texttt{kernel\_handle}\indextt{kernel\_handle}. One end, the source, is the
+side that is attached to the output stream and is used to send data over the
+pipe to the other side. That side, the sink, is the side that is attached to
+the input stream and is used to receive the data from the other side.
 
 \begin{figure}[hbt]
   \centering
@@ -489,18 +484,17 @@ the other side.
 
 Figure~\ref{fig:mud-io-pipe-class} illustrates the relationship of all the
 classes involved in the \texttt{pipe}. The pipe itself keeps an instance of
-the
-\texttt{std::streambuf}\index{std::streambuf@\texttt{std::streambuf}}
-instances that handle the buffered input and output to the source and sink
-end of the pipe. In order to stream data over the pipe, a reference to the
-input and output stream is acquired from the pipe which is automatically
-attached to the appropriate stream buffer.
+the \texttt{std::streambuf}\indextt{std::streambuf} instances that handle the
+buffered input and output to the source and sink end of the pipe. In order to
+stream data over the pipe, a reference to the input and output stream is
+acquired from the pipe which is automatically attached to the appropriate
+stream buffer.
 
 \section{Writing to the pipe}
 
 Writing to a pipe can use all the standard functionality that is provided
-by the \texttt{std::ostream}\index{std::ostream@\texttt{std::ostream}}. This
-included formatted stream functionality and unformatted (binary) output.
+by the \texttt{std::ostream}\indextt{std::ostream}. This includes formatted
+stream functionality and unformatted (binary) output.
 
 \begin{lstlisting}[%
   frame=single,
@@ -521,8 +515,8 @@ p.ostr().write((const char*) block), 4) << std::flush();
 \section{Reading from the pipe}
 
 Reading from a pipe can use all the standard functionality that is provided
-by the \texttt{std::istream}\index{std::istream@\texttt{std::istream}}. This
-included formatted stream functionality and unformatted (binary) input.
+by the \texttt{std::istream}\indextt{std::istream}. This includes formatted
+stream functionality and unformatted (binary) input.
 
 \begin{lstlisting}[%
   frame=single,
@@ -548,6 +542,262 @@ p.istr().read((char*)block, 4);
 
 \chapter{Sockets}
 \label{chp:sockets}
+
+% ============================================================================
+% PART
+% ============================================================================
+
+\part{Test}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Gherkin}
+\label{chp:test-gherkin}
+
+Behaviour Driven Development~\index{BDD|see {Behaviour Driven Development}}%
+\index{Behaviour Driven Development} is a process that encourages software
+development to focus on the behaviour of a certain feature. This is
+achieved by providing a clear and structured method of describing a feature,
+its benefit, the stakeholders, actions and expected outcomes in a
+non-technical way:
+
+\begin{itemize}
+  \item[] \textbf{Title}: An explicit title
+  \item[] \textbf{Narrative}: Description of a feature
+  \begin{itemize}
+    \item[] \textbf{As a}: Person or role
+    \item[] \textbf{I want}: A feature
+    \item[] \textbf{So that}: Benefit or value
+  \end{itemize}
+  \item[] \textbf{Acceptance Criteria}
+  \begin{itemize}
+    \item[] \textbf{Given}: An initial context
+    \item[] \textbf{When}: An action is performed
+    \item[] \textbf{Then}: An observable and expected outcome
+  \end{itemize}
+\end{itemize}
+
+Gherkin~\index{Gherkin} is an adopted language by the wider agile community
+which is tightly associated to Behaviour Driven Development. Each feature
+would have a set of scenarios, written roughly in the same narrative as
+presented above, that define the acceptance criteria of that particular
+feature. 
+
+MUDLib has adopted roughly the same language principles in its the testing
+module and has provided the language elements as a set of \Cpp macros. 
+These macros are defined. as follows:
+
+\begin{description}
+  \item[FEATURE(ID,CTX)] \indextt{FEATURE(ID,CTX)} \hfill \\
+        Defines the feature by specifying the ID (as a string) and the
+        context type that is used by all the scenarios and their steps.
+  \item[DEFINE\_GIVEN(ID,FUNC)] \indextt{DEFINE\_GIVEN(ID,FUNC)} \hfill \\
+        Defines a pre-defined \textbf{Given} step with a feature unique ID and
+        associated function that sets up the initial context.
+  \item[DEFINE\_WHEN(ID,FUNC)] \indextt{DEFINE\_WHEN} \hfill \\
+        Defines a pre-defined \textbf{When} step with a feature unique ID and
+        associated function that performs a particular action.
+  \item[DEFINE\_THEN(ID,FUNC)] \indextt{DEFINE\_THEN} \hfill \\
+        Defines a pre-defined \textbf{Then} step with a feature unique ID and
+        associated function that performs a particular assertion on an
+        observable outcome.
+  \item[END\_DEFINES(ID,FUNC)] \indextt{END\_DEFINES} \hfill \\
+        Marks the end of all the predefined steps. This macro should
+        \textit{always} be called between the feature and scenario definitions.
+  \item[SCENARIO(ID)] \indextt{SCENARIO(ID)} \hfill \\
+        Defines a new scenario.
+  \item[GIVEN(...)] \indextt{GIVEN(...)} \hfill \\
+        Defines \textbf{Given} step. If only an ID is specified, then the step
+        refers to a pre-defined step. Otherwise it should be provided with a
+        function definition. It is used to set-up the initial context of the
+        scenario.
+  \item[WHEN(...)] \indextt{WHEN(...)} \hfill \\
+        Defines \textbf{When} step. If only an ID is specified, then the step
+        refers to a pre-defined step. Otherwise it should be provided with a
+        function definition. It is used to specify the action to perform.
+  \item[THEN(...)] \indextt{THEN(...)} \hfill \\
+        Defines \textbf{Then} step. If only an ID is specified, then the step
+        refers to a pre-defined step. Otherwise it should be provided with a
+        function definition. It is used to verify the observable outcome by
+        using \textbf{ASSERT} macros.
+  \item[AND(...)] \indextt{AND(...)} \hfill \\
+        Defines an additional \textbf{GIVEN}, \textbf{WHEN} or \textbf{THEN}
+        specification.
+  \item[FEATURE\_RUN(...)] \indextt{FEATURE\_RUN(...)} \hfill \\
+        Run all the registered features and their scenarios and return the
+        overall result as a pair of \texttt{size\_t} values. The first value
+        indicating the total number of scenarios being run, and the second
+        value the total number of success. The total number of failed ones can
+        be deduced by taking the difference of these two. \hfill \\
+        An optional filter can be supplied to execute only a particular
+        feature and/or scenario. This is of the form of
+        \begin{description}
+          \item \textit{feature} \hfill \\
+                Run all the scenarios of the specified \textit{feature}
+          \item \#\textit{scenario} \hfill \\
+                Run all the specified \textit{scenario} in any feature.
+          \item \textit{feature}\#\textit{scenario} \hfill \\
+                Run a specific \textit{scenario} in a specific \textit{feature}.
+        \end{description}
+\end{description}
+
+\noindent
+The functions that are provided with the steps is often a lambda function with
+the context-type as a reference parameter.
+
+When verifying the expected outcome, a number of assertion macros can be used:
+
+\begin{description}
+  \item[ASSERT(OUTCOME,EXPECTED)] \hfill \\ Verifies if the outcome is equal
+        to the expected and raises an assertion exception if it doesn't.
+  \item[ASSERT\_THROW(EX,STATEMENTS)] \hfill \\ Verifies if the statements
+        throw an exception of a particular type, and raises an assertion
+        exception if it doesn't.
+  \item[ASSERT\_NO\_THROW(STATEMENTS)] \hfill \\ Verifies if the statements
+        do not throw an exception, and raises an assertion exception if it
+        doesn't.
+\end{description}
+
+As an example of the usage of the macros, consider listing~\ref{lst:gherkin}.
+It defines a simple calculator, that has two variable input field and a
+result value. These are defined in the \texttt{context}. This structure is
+used as the context-type of the feature and is used with each scenario. Every
+invocation of a scenario will use a new copy of the context. This ensures
+that there can be no dependency between scenarios, where one scenario is
+depending on the result of a previous scenario. Furthermore, the constructor
+of the context type can be used to initialise any value prior to the run of
+each scenario. And the destructor can be used likewise as the end of each
+scenario run to clean-up afterwards.
+
+It is advised that only one feature is defined within one \Cpp source file.
+This eliminates compilation and linkage issues when more than one feature
+is used. Event though the feature macro will create the same feature class
+name, the macro wraps the feature in an unnamed namespace. This ensure that
+the visibility is restricted to the internal compilation unit. The same
+mechanism can be applied with the context class. If they are wrapped in an
+unnamed namespace, other features in different compilation units can still use
+the same context class name, but they are treated to be different types.
+
+The calculator has a basic calculation feature that is capable of adding and
+multiplying the two input fields. These two actions are separated and
+verified by two acceptance criteria, one for addition and one for
+multiplication. The example uses predefined \textbf{Given} and \textbf{When}
+steps, but they could also be specfied by supplying their details as a
+second parameter to the associated steps in the scenario. The verification
+of the expected outcome is provided inline with the scenario and asserts the
+result field of the context as the observable and testable outcome.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Gherkin test example},
+  label=lst:gherkin]
+// The calculator context
+namespace /* unnnamed */ {
+  struct context {
+    int a, b, result;
+  };
+}
+
+FEATURE("Basic Calculations", context)
+
+  // Pre-defined steps
+  DEFINE_GIVEN("first value of 2", [](context& ctx) {
+        ctx.a = 2; })
+  DEFINE_GIVEN("second value of 3", [](context& ctx) {
+        ctx.b = 3; })
+
+  DEFINE_WHEN("calculating the sum", [](context& ctx) { 
+        ctx.result = ctx.a + ctx.b; })
+  DEFINE_WHEN("calculating the product", [](context& ctx) { 
+        ctx.result = ctx.a * ctx.b; })
+
+  END_DEFINES()
+
+  SCENARIO("Addition")
+    GIVEN ("first value of 2")
+      AND ("second value of 3")
+    WHEN  ("calculating the sum")
+    THEN  ("the sum is 5", [](context& ctx) {
+            ASSERT(ctx.result, 5); })
+
+  SCENARIO("Multiplication")
+    GIVEN ("first value of 2")
+      AND ("second value of 3")
+    WHEN  ("calculating the product")
+    THEN  ("the product is 6", [](context& ctx) {
+            ASSERT(ctx.result, 6); })
+\end{lstlisting}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Implementation}
+\label{chp:test-implementation}
+
+The usage of the macros is enough in most cases, and is also encouraged to
+do so. However, it may be required to extend the implementation
+
+\section{Exception Classes}
+\label{sct:test-exception-classes}
+
+\subsection{\texttt{assertion\_failed}}\indextt{assertion\_failed}
+
+The \texttt{assertion\_failed} exception is used to indicate that an test-case
+has failed a testable condition. These are captured by the feature test
+runner and their details are recorded. These exceptions would therefore not
+fail the total execution of the test run, but are used to record that a particular test scenario has failed.
+
+\subsection{\texttt{not\_specified}}\indextt{not\_specified}
+
+When setting up test scenarios within a feature, it is a common practice to
+define elements that are re-used by multiple scenarios only once and let each
+scenario reference these generically defined elements. However, when a
+reference is not known, it shall raise a \texttt{not\_specified} exception.
+These exceptions are captured by the feature test running and their details
+are recorded. These exceptions would therefore not fail the total execution of
+the test run, but are used to record that a particular test scenario has
+failed.
+
+\section{Gherkin classes}
+
+A number of classes are defined, one for each Gherkin item, and include the
+\texttt{\_given}\indextt{\_given}, \texttt{\_when}\indextt{\_when} and
+\texttt{\_then}\indextt{\_then} classes. Each of them hold a single Gherkin
+step and have the ability to chain other similar items by means of the
+\texttt{And} method (note that \texttt{and} is a keyword in \Cpp, the method
+name differs from the coding standard by having a capital first letter).
+The \texttt{\_scenario}\indextt{\_scenario} and 
+\texttt{\_feature}\indextt{\_feature} types refer to the Gherkin steps and
+predefined Gherkin steps. 
+
+Note that the naming convention for the Gherkin implementation class names is
+to prepend their name with an underscore. This is a signal that the class is
+\textit{hidden}, but it does not stop the user from using them.
+
+When creating a new feature (as accomplished through the \Cpp macros), that
+feature is defined in a new class that is derived from \texttt{\_feature},
+with its constructor populating the predefined Gherkin steps. As the
+\texttt{\_feature} is an abstract class (as the 
+\texttt{\_base\_feature}\indextt{\_base\_feature} has an abstract \texttt{run}
+method), the new feature class will need to implement the \texttt{run}
+method. This method should create all the scenarios and run them, while
+accumulating their results. 
+
+\section{Feature Factory}
+
+All the defined feature classes are auto-registered to the
+\texttt{\_feature\_factory}\indextt{\_feature\_factory}. A convenience
+template wrapper is available  
+\texttt{\_feature\_registrar}\indextt{\_feature\_registrar}
+that can be used as a file-scope global variable, to facilitate in the
+registration.
+
+A macro can be used to execute all registered features, or it can be
+manually executed through its static \texttt{run} method.
 
 % ============================================================================
 % PART
