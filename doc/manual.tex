@@ -26,10 +26,12 @@
 \definecolor{lightgrey}{RGB}{242,242,242}
 \lstset{%
   language=C++,
+  basicstyle=\scriptsize,
   commentstyle=\color{darkgreen},
   backgroundcolor=\color{lightgrey},
   framesep=5pt,
-  framexbottommargin=2pt}
+  framexbottommargin=2pt,
+  showstringspaces=false}
 
 % ============================================================================
 % TITLEPAGE
@@ -590,7 +592,14 @@ module and has provided the language elements as a set of \Cpp macros.
 These macros are defined. as follows:
 
 \begin{description}
-  \item[FEATURE(ID,CTX)] \indextt{FEATURE(ID,CTX)} \hfill \\
+  \item[CONTEXT()] \indextt{CONTEXT()} \hfill \\
+        Defines the context that is used by the \texttt{FEATURE}. A constructor
+        and destructor can be defined for any additional functionality to
+        be executed before and after each \texttt{SCENARIO} test run. The
+        name of the context class is \indextt{context}.
+  \item[END\_CONTEXT()] \indextt{END\_CONTEXT()} \hfill \\
+        Marks the end of a context.
+  \item[FEATURE(ID)] \indextt{FEATURE(ID)} \hfill \\
         Defines the feature by specifying the ID (as a string) and the
         context type that is used by all the scenarios and their steps.
   \item[DEFINE\_GIVEN(ID,FUNC)] \indextt{DEFINE\_GIVEN(ID,FUNC)} \hfill \\
@@ -625,6 +634,31 @@ These macros are defined. as follows:
   \item[AND(...)] \indextt{AND(...)} \hfill \\
         Defines an additional \textbf{GIVEN}, \textbf{WHEN} or \textbf{THEN}
         specification.
+  \item[DATA(...)] \indextt{DATA(...)} \hfill \\
+        Defines a data-table with an (optional) list of column names. If no
+        column names are provided, the number of columns are determined by
+        the \texttt{ROW} specification. \hfill \\
+        The data table can be provided as part of any \texttt{GIVEN},
+        \texttt{WHEN}, \texttt{THEN} and \texttt{AND} and will be only
+        acessible within that particular step. The data is available through
+        the \indextt{base\_context}.
+  \item[DATA\_ROW(...)] \indextt{DATA\_ROW(...)} \hfill \\
+        Define a row in the data-table.
+  \item[END\_DATA()] \indextt{END\_DATA()} \hfill \\
+        Marks the end of a data-table.
+  \item[SAMPLES(...)] \indextt{SAMPLES} \hfill \\
+        Defines a sample-table with an (optional) list of column names. If no
+        column names are provided, the number of columns are determined by
+        the \texttt{ROW} specification. \hfill \\
+        The sample-table can be provided as part of a \texttt{SCENARIO}. The
+        scenario is run for every sample in the table, and only the contents
+        of a particular sample is available though the \indextt{base\_context}.
+  \item[SAMPLE(...)] \indextt{SAMPLE(...)} \hfill \\
+        Define a sample in the sample-table.
+  \item[END\_SAMPLES()] \indextt{END\_SAMPLES()} \hfill \\
+        Marks the end of a sample-table.
+  \item[END\_FEATURE()] \indextt{END\_FEATURE()} \hfill \\
+        Marks the end of a feature.
   \item[FEATURE\_RUN(...)] \indextt{FEATURE\_RUN(...)} \hfill \\
         Run all the registered features and their scenarios and return the
         overall result as a pair of \texttt{size\_t} values. The first value
@@ -695,13 +729,12 @@ result field of the context as the observable and testable outcome.
   caption={Gherkin test example},
   label=lst:gherkin]
 // The calculator context
-namespace /* unnnamed */ {
-  struct context {
+CONTEXT()
     int a, b, result;
-  };
-}
+    std::vector<int> input;
+END_CONTEXT()
 
-FEATURE("Basic Calculations", context)
+FEATURE("Basic Calculations")
 
   // Pre-defined steps
   DEFINE_GIVEN("first value of 2", [](context& ctx) {
@@ -729,6 +762,97 @@ FEATURE("Basic Calculations", context)
     WHEN  ("calculating the product")
     THEN  ("the product is 6", [](context& ctx) {
             ASSERT(ctx.result, 6); })
+\end{lstlisting}
+
+It does become obvious that repeating addition and mulitplication scenarios
+with different values can become quite cumbersome. To allow running a
+particular multiple times, but with a different set of values every time it
+is run, a set of \textit{samples} can be provided. For example, to run
+an addition for a number of time, one can write a table as in
+listing~\ref{lst:gherkin-samples}. The sample information is accessible through
+the \texttt{context::sample} method. This allows the step definitions to access
+the actual data of a \textit{(field)} entry by using the templated
+\indextt{entry} function:
+
+\begin{verbatim}
+template<typename T>
+T entry(const std::string& field);
+
+template<typename T>
+T entry(int field);
+\end{verbatim}
+
+\noindent
+There is a version for both named fields and unnamed fields (the latter
+is accessible using a zero-based index number). The templated function returns
+the field information converted to the desired type \texttt{T}.
+ 
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Gherkin test example},
+  label=lst:gherkin-samples]
+SCENARIO("Addition")
+  GIVEN ("first value of <first>", [](context& ctx) {
+         ctx.a = ctx.sample().entry<int>("first"); })
+    AND ("second value of <second>", [](context& ctx) {
+         ctx.b = ctx.sample().entry<int>("second"); })
+  WHEN  ("calculating the sum")
+  THEN  ("the sum is <result>", [](context& ctx) {
+          ASSERT(ctx.result, ctx.sample().entry<int>("result")); })
+  SAMPLES("first", "second", "result")
+      SAMPLE(0, 0, 0)
+      SAMPLE(4, 0, 4)
+      SAMPLE(0, 4, 4)
+      SAMPLE(5, 4, 9)
+  END_SAMPLES()
+\end{lstlisting}
+
+In a similar fashion, tables of any data can be provided at each \texttt{GIVEN},
+\texttt{WHEN}, \texttt{THEN} and \texttt{AND} step. The data is accessible
+inside these particular steps only. For example, listing~\ref{lst:gherking-data}
+presents an example where a table is used to simulate that a user inputs
+a number of values. The data information is accessible through the
+\indextt{context::data} method. The data information at a \textit{(row, column)}
+can be retrieved through a templated \indextt{entry} function:
+
+\begin{verbatim}
+template<typename T>
+T entry(int row, const std::string& column);
+
+template<typename T>
+T entry(int row, int column);
+\end{verbatim}
+
+\noindent
+There is a version for both named columns and unnamed columns (the latter
+is accessible using a zero-based index number). The templated function returns
+the field information converted to the desired type \texttt{T}.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Gherkin test example},
+  label=lst:gherkin-data]
+SCENARIO("Average")
+  GIVEN ("a list of values", [](context& ctx) {
+         for (int i = 0; i < ctx.data().row_count(); ++i) {
+             ctx.input.push_back(ctx.data().entry<int>(i, "value"));
+         }})
+    DATA("value")
+        DATA_ROW(5)
+        DATA_ROW(6)
+        DATA_ROW(7)
+    END_DATA()
+  WHEN  ("calculating the average", [](context& ctx) {
+             int total = 0;
+             for(auto value : ctx.input) {
+               total += value;
+             }
+             ctx.result = total / ctx.input.size();
+         })
+  THEN  ("the average is 6", [](context& ctx) {
+          ASSERT(ctx.result, 6); })
 \end{lstlisting}
 
 % ============================================================================

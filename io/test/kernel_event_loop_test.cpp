@@ -7,10 +7,7 @@
 
 /* *INDENT-OFF* */
 
-namespace /* unnamed */ {
-
-struct context
-{
+CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
         calls = 0;
@@ -42,11 +39,9 @@ struct context
 
     /* A counter for the number of calls executed in a different handler. */
     int other_calls;
-};
+END_CONTEXT()
 
-}
-
-FEATURE("Kernel event loop", context)
+FEATURE("Kernel event loop")
 
   /*
    * The pre-defined Gherkin steps.

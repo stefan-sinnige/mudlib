@@ -6,10 +6,7 @@
 
 /* *INDENT-OFF* */
 
-namespace /* unnamed */ {
-
-struct context
-{
+CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
     }
@@ -20,11 +17,9 @@ struct context
 
     /* A pipe */
     mud::io::pipe pipe;
-};
+END_CONTEXT()
 
-}
-
-FEATURE("Uni-directional pipes", context)
+FEATURE("Uni-directional pipes")
 
   /*
    * The predefined Gherkin steps.

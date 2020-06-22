@@ -4,6 +4,50 @@
 
 BEGIN_MUDLIB_TEST_NS
 
+mud::test::_table::_table() {
+}
+
+mud::test::_table::~_table() {
+}
+
+void
+mud::test::_table::columns() {
+}
+
+size_t
+mud::test::_table::row_count() const {
+    return _rows.size();
+}
+
+const _table::row_type&
+mud::test::_table::operator[](int idx) const {
+    return _rows[idx];
+}
+
+_table
+mud::test::_table::sample(int idx) const {
+    _table tbl;
+    tbl._columns = _columns;
+    tbl._rows.push_back(_rows[idx]);
+    return tbl;
+}
+
+void
+mud::test::_table::column_elements(size_t idx, const char* element) {
+    _columns[element] = idx;
+}
+
+void
+mud::test::_table::row_elements(const char* element) {
+    _rows.back().push_back(element);
+}
+
+std::string
+mud::test::_table::entry(int row, int column, const std::string& dummy) const {
+    std::string element = _rows[row][column];
+    return element;
+}
+
 mud::test::_base_feature::_base_feature()
 {
 }

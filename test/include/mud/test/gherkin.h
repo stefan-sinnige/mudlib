@@ -5,6 +5,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 #include <utility>
 #include <mud/test/ns.h>
 #include <mud/test/exception.h>
@@ -30,6 +31,278 @@ operator<<(
  */
 template<typename Context> class _scenario;
 template<typename Context> class _feature;
+
+/**
+ * @brief A generic multi-type data table container.
+ *
+ * A multi-type data table container with optional named columns. The data
+ * is stored inetrnally as strings, but can be inserted and retrieved by
+ * any type, provided that there is an @c std::istream and @c std::ostream
+ * streaming operators defined.
+ */
+class _table
+{
+public:
+    typedef std::string                column_type;
+    typedef std::map<column_type, int> columns_type;
+    typedef std::vector<std::string>   row_type;
+    typedef std::vector<row_type>      rows_type;
+
+    /**
+     * @brief Constructor, creating an empty table without any definition.
+     */
+    _table();
+
+    /**
+     * @brief Destructor
+     */
+    ~_table();
+
+    /**
+     * @brief Specify un-named columns. The number of columns is determined
+     * by the inserted rows themselves.
+     */
+    void columns();
+
+    /**
+     * @brief Specify named columns
+     */
+    template<typename... A>
+    void columns(A... args);
+
+    /**
+     * @brief Specify a new row of values
+     * @param args [in] The values to insert.
+     *
+     * All data is converted and stored as a string. When the data is
+     * retrieved, it can be converted back to the original form. It uses
+     * the @c std::istream and @c std::ostream streaming operations to
+     * convert to and from a string.
+     */
+    template<typename... A>
+    void row(A... args);
+
+    /**
+     * @brief Return the entry at (row, column).
+     * @param row [in] The row index, starting at 0 for the first row.
+     * @param column [in] The named column.
+     *
+     * This method is particularly useful for accessing data-table data.
+     */
+    template<typename T>
+    T entry(int row, const std::string& column) const;
+
+    /**
+     * @brief Return the entry at (row, column).
+     * @param row [in] The row index, starting at 0 for the first row.
+     * @param column [in] The column index, starting at 0 for the first row.
+     *
+     * This method is particularly useful for accessing data-table data.
+     */
+    template<typename T>
+    T entry(int row, int column) const;
+
+    /**
+     * @brief Return the entry of a field.
+     * @param field [in] The named field.
+     *
+     * This method is particularly useful for accessing sample data.
+     */
+    template<typename T>
+    T entry(const std::string& field) const;
+
+    /**
+     * @brief Return the entry of a field.
+     * @param field [in] The field index.
+     *
+     * This method is particularly useful for accessing sample data.
+     */
+    template<typename T>
+    T entry(int column) const;
+
+    /**
+     * @brief Return the number of rows.
+     */
+    size_t row_count() const;
+
+    /**
+     * @brief Return a specific row.
+     * @param row [in] The row index, starting at 0 for the first row.
+     */
+    const _table::row_type& operator[](int idx) const;
+
+    /**
+     * @brief Return a sample table that only contains the specified row.
+     * @param row [in] The row index, starting at 0 for the first row.
+     */
+    _table sample(int idx) const;
+
+private:
+    /**
+     * @brief Specify a named column and associatged index.
+     */
+    void column_elements(size_t idx, const char* element);
+
+    template<typename T, typename... A>
+    void column_elements(size_t idx, T element, A... args);
+
+    /**
+     * @brief Specify a row element of type string.
+     */
+    void row_elements(const char* element);
+
+    /**
+     * @brief Specify a row element of any type, other than a string.
+     */
+    template<typename T>
+    void row_elements(T element);
+
+    /**
+     * @brief Specify a new row
+     */
+    template<typename T, typename... A>
+    void row_elements(T element, A... args);
+
+    /**
+     * @brief Return a string entry at (row, column).
+     * @param row [in] The row index, starting at 0 for the first row.
+     * @param column [in] The column index, starting at 0 for the first row.
+     * @param dummy [in] Dummy parameter used in template specialisation.
+     */
+    std::string entry(int row, int column, const std::string& dummy) const;
+
+    /**
+     * @brief Return a types entry at (row, column).
+     * @param row [in] The row index, starting at 0 for the first row.
+     * @param column [in] The column index, starting at 0 for the first row.
+     * @param dummy [in] Dummy parameter used in template specialisation.
+     */
+    template<typename T>
+    T entry(int row, int column, const T& dummy) const;
+
+    /* The map of named columns and their associated column index. */
+    columns_type _columns;
+
+    /* The list of rows. */
+    rows_type _rows;
+};
+
+template<typename... A>
+void
+mud::test::_table::columns(A... args) {
+    column_elements(0, args...);
+}
+
+template<typename... A>
+void
+mud::test::_table::row(A... args) {
+    _rows.push_back(row_type());
+    row_elements(args...);
+}
+
+template<typename T>
+T
+mud::test::_table::entry(int row, const std::string& column) const {
+    T dummy;
+    int column_index = _columns.at(column);
+    return entry(row, column_index, dummy);
+}
+
+template<typename T>
+T
+mud::test::_table::entry(int row, int column) const {
+    T dummy;
+    return entry(row, column, dummy);
+}
+
+template<typename T>
+T
+mud::test::_table::entry(const std::string& field) const {
+    T dummy;
+    int column_index = _columns.at(field);
+    return entry(0, column_index, dummy);
+}
+
+template<typename T>
+T
+mud::test::_table::entry(int field) const {
+    T dummy;
+    return entry(0, field, dummy);
+}
+
+template<typename T, typename... A>
+void
+mud::test::_table::column_elements(size_t idx, T element, A... args) {
+    column_elements(idx, element);
+    column_elements(idx+1, args...);
+};
+
+template<typename T>
+void
+mud::test::_table::row_elements(T element) {
+    std::stringstream sstr;
+    sstr << element;
+    _rows.back().push_back(sstr.str());
+}
+
+template<typename T, typename... A>
+void
+mud::test::_table::row_elements(T element, A... args) {
+    row_elements(element);
+    row_elements(args...);
+};
+
+template<typename T>
+T
+mud::test::_table::entry(int row, int column, const T& dummy) const {
+    T var;
+    std::string element = _rows[row][column];
+    std::stringstream sstr(element);
+    sstr >> var;
+    return var;
+}
+
+/**
+ * @brief Base class for all context types.
+ *
+ * The @c base_context is a base class for all feature context classes. It
+ * provides access to any data-table and sample information, when they are
+ * defined.
+ */
+class _base_context
+{
+public:
+    // Set the data table.
+    void
+    data(const _table& data) {
+        _data = data;
+    }
+
+    // Return the data table.
+    const _table&
+    data() const {
+        return _data;
+    }
+
+    // Set a specific sample for this test-run.
+    void
+    sample(const _table& sample) {
+        _sample = sample;
+    }
+
+    // Return the Sample data.
+    const _table&
+    sample() const {
+        return _sample;
+    }
+
+private:
+    // The data table.
+    _table _data;
+
+    // The sample. This is a table with maximum one row!
+    _table _sample;
+};
 
 /**
  * @brief Define the intial context of the scenario.
@@ -78,6 +351,12 @@ public:
     _given<context_type>& And(const std::string&, function_type func);
 
     /**
+     * @brief Add a data table.
+     * @param table [in] The function that returns the table.
+     */
+    _given<context_type>& Data(std::function<_table()> func);
+
+    /**
      * @brief Execute the 'given' step, and all its chained 'given' steps.
      */
     void operator()(context_type& ctx);
@@ -96,6 +375,7 @@ private:
     _feature<context_type>& _feature;
     std::string _id;
     function_type _func;
+    _table _data;
     mud::test::_given<context_type>* _chain;
 };
 
@@ -137,6 +417,14 @@ mud::test::_given<Context>::And(
 }
 
 template<typename Context>
+mud::test::_given<Context>&
+mud::test::_given<Context>::Data(std::function<_table()> func)
+{
+    _data = func();
+    return *this;
+}
+
+template<typename Context>
 void
 mud::test::_given<Context>::operator()(
         context_type& ctx)
@@ -146,6 +434,7 @@ mud::test::_given<Context>::operator()(
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
+    ctx.data(_data);
     _func(ctx);
     if (_chain != nullptr)
     {
@@ -214,6 +503,12 @@ public:
     _when<context_type>& And(const std::string&, function_type func);
 
     /**
+     * @brief Add a data table.
+     * @param table [in] The function that returns the table.
+     */
+    _when<context_type>& Data(std::function<_table()> func);
+
+    /**
      * @brief Execute the 'given' step, and all its chained 'given' steps.
      */
     void operator()(context_type& ctx);
@@ -231,6 +526,7 @@ private:
     _feature<context_type>& _feature;
     std::string _id;
     function_type _func;
+    _table _data;
     mud::test::_when<context_type>* _chain;
 };
 
@@ -272,6 +568,14 @@ mud::test::_when<Context>::And(
 }
 
 template<typename Context>
+mud::test::_when<Context>&
+mud::test::_when<Context>::Data(std::function<_table()> func)
+{
+    _data = func();
+    return *this;
+}
+
+template<typename Context>
 const std::string&
 mud::test::_when<Context>::id() const
 {
@@ -288,6 +592,7 @@ mud::test::_when<Context>::operator()(
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
+    ctx.data(_data);
     _func(ctx);
     if (_chain != nullptr)
     {
@@ -352,6 +657,12 @@ public:
     _then<context_type>& And(const std::string&, function_type func);
 
     /**
+     * @brief Add a data table.
+     * @param table [in] The function that returns the table.
+     */
+    _then<context_type>& Data(std::function<_table()> func);
+
+    /**
      * @brief Execute the 'then' step, and all its chained 'given' steps.
      */
     bool operator()(context_type& ctx);
@@ -370,6 +681,7 @@ private:
     _feature<context_type>& _feature;
     std::string _id;
     function_type _func;
+    _table _data;
     mud::test::_then<context_type>* _chain;
 };
 
@@ -411,6 +723,14 @@ mud::test::_then<Context>::And(
 }
 
 template<typename Context>
+mud::test::_then<Context>&
+mud::test::_then<Context>::Data(std::function<_table()> func)
+{
+    _data = func();
+    return *this;
+}
+
+template<typename Context>
 bool
 mud::test::_then<Context>::operator()(
         context_type& ctx)
@@ -424,6 +744,7 @@ mud::test::_then<Context>::operator()(
     bool result = true;
     try
     {
+        ctx.data(_data);
         _func(ctx);
     }
     catch (mud::test::assertion_failed& ex)
@@ -537,6 +858,14 @@ public:
     mud::test::_then<context_type>& Then(const std::string&, function_type);
 
     /**
+     * @brief Add a sample table.
+     * @param table [in] The function that returns the table.
+     *
+     * The scenario is run for each row in the sample table.
+     */
+    void Samples(std::function<_table()> func);
+
+    /**
      * @return The ID (description) of the 'scenario'.
      */
     const std::string& id() const;
@@ -552,9 +881,15 @@ public:
      */
     void dump();
 private:
+    /**
+     * @brief Run the scenario with a specific context.
+     * @param ctx [in] The context.
+     */
+    bool run(context_type& ctx);
+
     _feature<context_type>& _feature;
-    context_type _context;
     std::string _id;
+    _table _samples;
     mud::test::_given<context_type>* _given;
     mud::test::_when<context_type>* _when;
     mud::test::_then<context_type>* _then;
@@ -623,6 +958,13 @@ mud::test::_scenario<Context>::Then(
 }
 
 template<typename Context>
+void
+mud::test::_scenario<Context>::Samples(std::function<_table()> func)
+{
+    _samples = func();
+}
+
+template<typename Context>
 const std::string&
 mud::test::_scenario<Context>::id() const
 {
@@ -643,9 +985,28 @@ template<typename Context>
 bool
 mud::test::_scenario<Context>::run()
 {
-    (*_given)(_context);
-    (*_when)(_context);
-    if (!(*_then)(_context)) {
+    if (_samples.row_count() > 0) {
+        bool result = true;
+        for (int i = 0; i < _samples.row_count(); ++i) {
+            context_type ctx;
+            ctx.sample(_samples.sample(i));
+            result &= run(ctx);
+        }
+        return result;
+    }
+    else {
+        context_type ctx;
+        return run(ctx);
+    }
+}
+
+template<typename Context>
+bool
+mud::test::_scenario<Context>::run(context_type& ctx)
+{
+    (*_given)(ctx);
+    (*_when)(ctx);
+    if (!(*_then)(ctx)) {
         std::cout << "[FAIL] " << _id << std::endl;
         return false;
     }
@@ -879,13 +1240,27 @@ public:
     }
 };
 
+/* *INDENT-OFF* */
+
+/**
+ * @brief Macro to define a context.
+ */
+
+#define CONTEXT()                                                            \
+    namespace /* unnamed */ {                                                \
+    class context : public mud::test::_base_context                          \
+    {                                                                        \
+    public:
+
+#define END_CONTEXT()                                                        \
+    };
+
 /**
  * @brief Macro to define a feature
  */
 
-#define FEATURE(ID,CTX)                                                      \
-    namespace /* unnamed */ {                                                \
-    class TestFeature : public mud::test::_feature<CTX>                      \
+#define FEATURE(ID)                                                          \
+    class TestFeature : public mud::test::_feature<context>                  \
     {                                                                        \
     public:                                                                  \
         static bool register_feature() {                                     \
@@ -900,92 +1275,136 @@ public:
  * @brief Macro to define a pre-defined 'given' step.
  */
 #define DEFINE_GIVEN(ID,FUNC)                                                \
-    register_given(ID, FUNC);
+            register_given(ID, FUNC);
 
 /**
  * @brief Macro to define a pre-defined 'when' step.
  */
 #define DEFINE_WHEN(ID,FUNC)                                                 \
-    register_when(ID, FUNC);
+            register_when(ID, FUNC);
 
 /**
  * @brief Macro to define a pre-defined 'then' step.
  */
 #define DEFINE_THEN(ID,FUNC)                                                 \
-    register_then(ID, FUNC);
+            register_then(ID, FUNC);
 
 /**
  * @brief Macro to define the end of all pre-defined steps. This macro must
  *        always be called, even when there are no pre-defined steps.
  */
 #define END_DEFINES()                                                        \
-    }                                                                        \
-    virtual std::pair<size_t, size_t> run(                                   \
-            const std::string& filter) override                              \
-    {                                                                        \
-        std::cout << "FEATURE: " << _id << std::endl;                        \
-        std::pair<size_t, size_t> result = {-1, -1};                         \
+        }                                                                    \
+        virtual std::pair<size_t, size_t> run(                               \
+                const std::string& filter) override                          \
         {                                                                    \
-            class Dummy { public: bool run() { return true; }};              \
-            Dummy scnr;
+            std::cout << "FEATURE: " << _id << std::endl;                    \
+            std::pair<size_t, size_t> result = {-1, -1};                     \
+            {                                                                \
+                class Dummy { public: bool run() { return true; }};          \
+                Dummy scnr;
 
 /**
  * @brief Macro to define a scenario
  */
 #define SCENARIO(ID)                                                         \
-    ;                                                                        \
-    ++result.first;                                                          \
-    if (scnr.run()) {                                                        \
-        ++result.second;                                                     \
-    }                                                                        \
-    }                                                                        \
-    if (filter.empty() || filter == ID)                                      \
-    {                                                                        \
-        mud::test::_scenario<context> scnr(*this, ID);
+                ;                                                            \
+                ++result.first;                                              \
+                if (scnr.run()) {                                            \
+                    ++result.second;                                         \
+                }                                                            \
+            }                                                                \
+            if (filter.empty() || filter == ID)                              \
+            {                                                                \
+                mud::test::_scenario<context> scnr(*this, ID);
 
 /**
  * @brief Macro to define a 'given' step.
  */
 #define GIVEN(...)                                                           \
-    scnr.Given( __VA_ARGS__)
+                scnr.Given( __VA_ARGS__)
 
 /**
  * @brief Macro to define a 'when' step.
  */
 #define WHEN(...)                                                            \
-    ;                                                                        \
-    scnr.When(__VA_ARGS__)
+                ;                                                            \
+                scnr.When(__VA_ARGS__)
 
 /**
  * @brief Macro to define a 'then' step.
  */
 #define THEN(...)                                                            \
-    ;                                                                        \
-    scnr.Then(__VA_ARGS__)
+                ;                                                            \
+                scnr.Then(__VA_ARGS__)
 
 /**
  * @brief Macro to define a 'and' step that can be used after a 'given',
- *        'when' and 'then' step..
+ *        'when' and 'then' step.
  */
 #define AND(...)                                                             \
-    .And(__VA_ARGS__)
+                .And(__VA_ARGS__)
+
+/**
+ * @brief Macro to define a data table that can be used in a 'given',
+ *        'when' and 'then' step.
+ */
+#define DATA(...)                                                            \
+                .Data([]() -> mud::test::_table {                            \
+                    mud::test::_table data;                                  \
+                    data.columns(__VA_ARGS__);
+
+/**
+ * @brief Macro to define a new data table row.
+ */
+#define DATA_ROW(...)                                                        \
+                    data.row(__VA_ARGS__);
+
+/**
+ * @brief Macro to define the end of a data table definition.
+ */
+#define END_DATA()                                                           \
+                    return data;                                             \
+                })
+
+/**
+ * @brief Macro to define a samples table that can be used in a 'scenario.
+ */
+#define SAMPLES(...)                                                         \
+                ;                                                            \
+                scnr.Samples([]() -> mud::test::_table {                     \
+                    mud::test::_table samples;                               \
+                    samples.columns(__VA_ARGS__);
+
+/**
+ * @brief Macro to define a new data table row.
+ */
+#define SAMPLE(...)                                                          \
+                    samples.row(__VA_ARGS__);
+
+/**
+ * @brief Macro to define the end of a data table definition.
+ */
+#define END_SAMPLES()                                                        \
+                    return samples;                                          \
+                })
 
 /**
  * @brief Macro to define the end of the feature definition.
  */
 #define END_FEATURE()                                                        \
-    ;                                                                        \
-    ++result.first;                                                          \
-    if (scnr.run()) {                                                        \
-        ++result.second;                                                     \
-    }                                                                        \
-    }                                                                        \
-    return result;                                                           \
-    }                                                                        \
-    private:                                                                 \
-    std::string _id;                                                         \
-    };                                                                       \
-    bool registered = TestFeature::register_feature();                       \
+                ;                                                            \
+                ++result.first;                                              \
+                if (scnr.run()) {                                            \
+                    ++result.second;                                         \
+                }                                                            \
+            }                                                                \
+            return result;                                                   \
+        }                                                                    \
+        private:                                                             \
+            std::string _id;                                                 \
+        };                                                                   \
+        bool registered = TestFeature::register_feature();                   \
     } /* namespace unnamed */
 
 /**
@@ -1011,22 +1430,22 @@ public:
         catch(const std::exception ex) {                                     \
             std::stringstream sstr;                                          \
             sstr << "  Expected exception: " << typeid(EX).name()            \
-                    << std::endl                                             \
-                    << "  Actual exception  : std::exception - or derived";  \
+                 << std::endl                                                \
+                 << "  Actual exception  : std::exception - or derived";     \
             mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
         }                                                                    \
         catch(...) {                                                         \
             std::stringstream sstr;                                          \
             sstr << "  Expected exception: " << typeid(EX).name()            \
-                    << std::endl                                             \
-                    << "  Actual exception  : <unidentified>";               \
+                 << std::endl                                                \
+                 << "  Actual exception  : <unidentified>";                  \
             mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
         }                                                                    \
         if (!thrown) {                                                       \
             std::stringstream sstr;                                          \
             sstr << "  Expected exception: " << typeid(EX).name()            \
-                    << std::endl                                             \
-                    << "  Actual exception  : not thrown";                   \
+                 << std::endl                                                \
+                 << "  Actual exception  : not thrown";                      \
             mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
         }                                                                    \
     } while(false)
@@ -1059,6 +1478,8 @@ public:
  */
 #define FEATURE_RUN(...)                                                    \
     mud::test::_feature_factory::run(__VA_ARGS__)
+
+/* *INDENT-ON* */
 
 END_MUDLIB_TEST_NS
 

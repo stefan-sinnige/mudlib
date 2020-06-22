@@ -5,10 +5,7 @@
 
 /* *INDENT-OFF* */
 
-namespace /* unnamed */ {
-
-struct context
-{
+CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
         resource = 0;
@@ -23,11 +20,9 @@ struct context
 
     /* A kernel handle */
     std::unique_ptr<mud::io::kernel_handle> handle;
-};
+END_CONTEXT()
 
-}
-
-FEATURE("Kernel handle", context)
+FEATURE("Kernel handle")
 
   END_DEFINES()
 
