@@ -335,8 +335,7 @@ abstractions like pipes\index{pipe} and sockets\index{socket}.
   label=lst:kernel-handle]
 mud::io::kernel_handle fd(open("/dev/ttyUSB1", O_RDWR));
 if (fd < 0) {
-    throw std::system_error(errno, std::system_category(),
-        "open");
+    throw std::system_error(errno, std::system_category(), "open");
 }
 write(fd, "Hello World", 11);
 close(fd);
@@ -621,17 +620,228 @@ In order to transmit packets from one system to another, these systems
 needs to be identified such that the packets can be routed successfully.
 IPv4 uses a 32-bit address space, conveniently divided into four 8-bit
 numbers. This allows for a human representation using \textit{dotted decimals}
-like \texttt{192.168.2.23}, which is represented by a 32-bit number of
-\texttt{0xC0A80217}.
+\index{dotted-decimal notation} like \texttt{192.168.2.23}, which is
+represented by a 32-bit number of \texttt{0xC0A80217}.
 
 The \texttt{ip::address}~\indextt{ip::address} class is an abstraction of the
 IPv4 address representation. Addresses can be specified by using a string
 representing a dotted-decimal, or directly as a 32-bit value (in network byte
-order).
+order), represented by the POSIX \texttt{in\_addr\_t}\indextt{in\_addr\_t}
+structure.
 
-\subsubsection}{Sockets}
+\subsubsection{Sockets}
+
+The Network Layer socket consist of the \texttt{basic\_socket}
+\texttt{basic\_socket} that holds the reference to the socket resource handle
+and the \texttt{ip::socket}\indextt{ip::socket}. These do not provide the
+direct functionality of sending and receiving data, but rather the concepts
+of representing the Network Layer socket model. The \texttt{basic\_socket}
+defines the framework for a socket that can be used on \textit{all} higher
+layered communication protocols. It does provide the definition of the
+socket's communication domain (i.e. IPv4\index{IPv4} and IPv6\index{IPv6}),
+the type of the socket (i.e. stream, datagram or raw) and the communication
+protocol (i.e. TCP\index{TCP}, UDP\index{UDP} and ICMP\index{ICMP}). This
+combination is often constrained by the capabilities provided by the
+underlying platform's operating system.
 
 \section{Transport Layer} 
+
+The Transport Layer (layer 4 in the OSI model) is responsible for providing
+peer-to-peer communications to applications. These communications can be
+connection-oriented like \index{Transmission Control Protocol} (TCP)\index{TCP}
+and connection-less like \index{User Datagram Protocol} (UDP)\index{UDP}. These
+are the two main protocols at this layer and the only ones that are directly
+supported.
+
+\begin{figure}[hbt]
+  \centering
+  \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}
+      \umlclass[x=4,y=6,name=basic]%
+          {mud::io::basic\_socket}%
+          {}%
+          {
+          };
+       \umlclass[x=4,y=3,name=ip]%
+          {mud::io::ip::socket}%
+          {}%
+          {
+          };
+       \umlclass[x=0,y=0,name=tcp]%
+          {mud::io::tcp::socket}%
+          {}%
+          {
+          };
+       \umlclass[x=8,y=0,name=udp]%
+          {mud::io::udp::socket}%
+          {}%
+          {
+          };
+       \draw[inheritance] (tcp.north) -- (ip.south west);
+       \draw[inheritance] (udp.north) -- (ip.south east);
+       \draw[inheritance] (ip.north) -- (basic.south);
+    \end{tikzpicture};
+  }
+  \caption{Network layer socket class diagram.}
+  \label{fig:mud-io-socket-class}
+\end{figure}
+
+Figure~\ref{fig:mud-io-socket-class} illustrates the relationship of all the
+classes involved in the Network and Transport Layer sockets. The Network Layer
+sockets all derive from the \texttt{basic\_socket}\texttt{basic\_socket}
+and \texttt{ip::socket}\indextt{ip::socket} base classes.
+The Transport Layer sockets are defined by the \texttt{tcp::socket}
+\indextt{tcp::socket} and \texttt{udp::socket}\indextt{udp::socket} classes.
+Only the latter ones provide the functionality to actually send and receive
+data.
+
+\subsection{TCP}
+
+The TCP\index{TCP} sockets define the connection-oriented TCP protocol, upon
+which numerous other protocols are derived from. This level of communication
+provides a reliable communication channel between two peers. In order to
+establish a connection, one side must be willing to accepting incoming
+connection requests (often referred to as the server-side) and this side must
+be actively listening for incoming connections before the other side (often
+referred to as the client-side) to establish a connection. Once a connection
+has been established between two peers, all communication between them is
+channeled over a unique connection. The server-side may continue to listen
+to additional incoming requests from other clients, and each successful
+connection establishment will be given its own unique communication channel.
+
+Each side of this communication channel is represented by an instance of the
+\texttt{tcp::socket}\indextt{tcp::socket}. The associated kernel resource
+that unique defines the peer's side of the communication channel is a
+\texttt{kernel\_handle}\indextt{kernel\_handle} that is owned by the
+\texttt{basic\_socket}\indextt{basic\_socket} base class. Only \textit{one}
+instance of a socket owns this resource handle. Therefore, it is not possible
+to copy a socket to another socket (but they can be referenced or they can
+be moved to another socket instance).
+
+The TCP protocol defines a unique connection by the combination of a host
+address and a port number. This combiantion is represented by the
+\texttt{tcp::endpoint}\indextt{tcp::endpoint} class. The endpoint is used
+by both the server-side to define the connection paramters to listen to and
+for a client-side endpoint to connect to. Once a connection has been
+established, a new port is allocated on the server-side to represent the
+communication channel that has been established. As a new port is being used,
+the original port can still be re-used for accepting additional client-side
+connections. 
+
+\begin{figure}[hbt]
+  \centering
+  \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}
+      \umlclass[x=0,y=8]%
+          {mud::io::tcp::socket}%
+          {}%
+          {+ socket() \\
+           + {\textit \~{}socket} \\
+           + istr() \\
+           + ostr() \\
+          };
+      \umlclass[x=-5,y=7.2]%
+          {std::ostream}%
+          {}%
+          {
+          };
+      \umlclass[x=5,y=7.2]%
+          {std::istream}%
+          {}%
+          {
+          };
+      \umlclass[x=-5,y=0,name=ostream-streambuf]%
+          {mud::io::streambuf}%
+          {}%
+          {+ overflow(int): int \\
+          };
+      \umlclass[x=5,y=0,name=istream-streambuf]%
+          {mud::io::streambuf}%
+          {}%
+          {+ underflow() : int \\
+          };
+       \umlclass[x=0,y=3,name=handle]%
+          {mud::io::kernel\_handle}%
+          {}%
+          {
+          };
+
+       \draw[aggregation] (stdostream.east) -- (mudiotcpsocket.west);
+       \draw[aggregation] (stdistream.west) -- (mudiotcpsocket.east);
+       \draw[aggregation] (handle.north) -- (mudiotcpsocket.south);
+       \draw[dependency]  (stdostream) -- (ostream-streambuf);
+       \draw[dependency]  (stdistream) -- (istream-streambuf);
+       \draw[dependency]  (ostream-streambuf.east) -| +(2,2.5) (handle);
+       \draw[dependency]  (istream-streambuf.west) -| +(-2,2.5) (handle);
+    \end{tikzpicture};
+  }
+  \caption{\texttt{mud::io::tcp} class diagram.}
+  \label{fig:mud-io-tcp-class}
+\end{figure}
+
+In order to provide sending and receiving capabilities of communication data,
+the \indextt{tcp::socket} contains their own input and output streams as
+defined in figure~\ref{fig:mud-io-tcp-class}. Both stream buffers have access
+to the socket handle resource in order to perform the sending and receiving
+of the data. How the communication protocol is defined, in terms of the
+format of the messages, whether or not a peer is expected to send or recieve
+data, is out of the scope of this manual and is very much protocol specific.
+The classes provided by MUDLib are just the foundation stones on which the
+protocol specific definitions can be implemented.
+
+As alluded before, the TCP protocol defines one side to be actively listening
+while the other side is trying to establish a connection. Both actions are
+very specific to either side and are supported by two different helper classes.
+
+\subsubsection{Server-Side}
+
+On the server-side, an endpoint is to be allocated to start listening for, and
+accepting incoming connection requests. This is handled by the
+\indextt{tcp::acceptor}\indextt{tcp::acceptor} class. This controller class
+requires a listening socket resource and an endpoint. Once a connection has
+been established, a new socket denoting this new connection is returned from
+the \indextt{tcp::acceptor}.
+
+There are, in broad terms, two ways to wait for an incoming connection. Either
+the accepting class is blocking\index{blocking I/O} the thread until such a
+connection has been established, or it can wait for a signal until the
+listening socket has detected an incoming connection request. The latter
+approach (also referred to non-blocking\index{non-blocking I/O} I/O, is using
+the \texttt{kernel\_event\_loop}\indextt{kernel\_event\_loop} to set-up the
+mechanism for waiting for a connection.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Blocking \texttt{tcp::acceptor}.},
+  label=lst:blocking-tcp-acceptor]
+// Create the listening socket and the acceptor to listen to 127.0.0.1:12345
+mud::io::tcp::socket listen_socket;
+mud::io::tcp::acceptor acceptor(listen_socket);
+acceptor.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
+
+// Block until a client has connected
+tcp::socket client_connected = acceptor.accept();
+\end{lstlisting}
+
+The non-blocking connection requires more overhead in setting-up the event-loop
+on a separate thread, but has the advantage that the wait for a connecting
+client can be sagely and easily aborted at any time.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Non-blocking \texttt{tcp::acceptor}.},
+  label=lst:non-blocking-tcp-acceptor]
+// Create the listening socket and register it in the event-loop
+
+// Register the listening socket and invoke the acceptor when ready
+
+\end{lstlisting}
+
+\subsubsection{Client-Side}
+
+\subsection{UDP}
 
 % ============================================================================
 % PART

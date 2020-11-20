@@ -37,18 +37,23 @@ typedef mud::io::basic_streambuf<pipe_read, pipe_write> pipe_streambuf;
  * @brief Implementation class for a POSIX compliant @c pipe.
  */
 
-class posix_pipe
+class pipe::impl
 {
 public:
     /**
      * Constructor.
      */
-    posix_pipe();
+    impl();
+
+    /**
+     * Move constructor.
+     */
+    impl(impl&&);
 
     /**
      * Destructor.
      */
-    ~posix_pipe();
+    ~impl();
 
     /**
      * The stream for reading.
@@ -95,7 +100,7 @@ private:
     std::unique_ptr<mud::io::kernel_handle> _write_handle;
 };
 
-posix_pipe::posix_pipe()
+pipe::impl::impl()
     : _istr(nullptr), _ostr(nullptr)
 {
     /* Create the pipe */
@@ -125,7 +130,7 @@ posix_pipe::posix_pipe()
     _ostr.rdbuf(_write_buffer.get());
 }
 
-posix_pipe::~posix_pipe()
+pipe::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(*_read_handle);
@@ -136,62 +141,62 @@ posix_pipe::~posix_pipe()
 }
 
 std::istream&
-posix_pipe::istr()
+pipe::impl::istr()
 {
     return _istr;
 }
 
 std::ostream&
-posix_pipe::ostr()
+pipe::impl::ostr()
 {
     return _ostr;
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
-posix_pipe::read_handle()  const
+pipe::impl::read_handle()  const
 {
     return _read_handle;
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
-posix_pipe::write_handle()  const
+pipe::impl::write_handle()  const
 {
     return _write_handle;
 }
 
 /** The explicit specialisation for POSIX pipes. */
+
 pipe::pipe()
 {
-    _impl = new posix_pipe();
+    _impl = std::unique_ptr<impl>(new impl());
 }
 
 pipe::~pipe()
 {
-    delete static_cast<posix_pipe*>(_impl);
 }
 
 std::istream&
 pipe::istr()
 {
-    return static_cast<posix_pipe*>(_impl)->istr();
+    return _impl->istr();
 }
 
 std::ostream&
 pipe::ostr()
 {
-    return static_cast<posix_pipe*>(_impl)->ostr();
+    return _impl->ostr();
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
 pipe::read_handle() const
 {
-    return static_cast<posix_pipe*>(_impl)->read_handle();
+    return _impl->read_handle();
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
 pipe::write_handle() const
 {
-    return static_cast<posix_pipe*>(_impl)->write_handle();
+    return _impl->write_handle();
 }
 
 END_MUDLIB_IO_NS

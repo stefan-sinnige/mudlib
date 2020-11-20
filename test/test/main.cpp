@@ -7,7 +7,7 @@ help(int retval)
     std::cout <<
             "Command line options:\n"
             "  --test <spec>   Specify the test(s) to run:\n"
-            "                      feature[:<scenario>]\n"
+            "                      feature[#<scenario>]\n"
             "  --help          Show this help\n";
     exit(retval);
 }

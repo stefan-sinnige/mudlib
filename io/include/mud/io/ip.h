@@ -1,9 +1,10 @@
-#ifndef _MUDCOMMS_IP_H_
-#define _MUDCOMMS_IP_H_
+#ifndef _MUDLIB_IO_IP_H_
+#define _MUDLIB_IO_IP_H_
 
 #include <string>
 #include <netinet/in.h>
 #include <mud/io/ns.h>
+#include <mud/io/socket.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -70,11 +71,107 @@ private:
     in_addr_t m_address;
 };
 
+/**
+ * @brief The IP socket.
+ */
+class socket : public mud::io::basic_socket
+{
+protected:
+    /**
+     * @brief Construct an socket.
+     * @param domain [in] The communication domain.
+     * @param type [in] The socket type.
+     * @param protocol [in] The protocol type.
+     */
+    socket(mud::io::basic_socket::domain_t domain,
+            mud::io::basic_socket::type_t type,
+            mud::io::basic_socket::protocol_t protocol);
+
+    /**
+     * @brief Construct an socket.
+     * @param domain [in] The communication domain.
+     * @param type [in] The socket type.
+     * @param protocol [in] The protocol type.
+     * @param handle [in] The handle of an existing socket.
+     */
+    socket(mud::io::basic_socket::domain_t domain,
+            mud::io::basic_socket::type_t type,
+            mud::io::basic_socket::protocol_t protocol,
+            std::unique_ptr<kernel_handle> handle);
+
+    /**
+     * @brief Move constructor, passing ownership of the socket.
+     */
+    socket(socket&& rhs);
+
+    /**
+     * @brief Destructor.
+     */
+    virtual ~socket();
+
+    /**
+     * Non-copyable.
+     */
+    socket(const socket&) = delete;
+    socket& operator=(const socket&) = delete;
+
+    /**
+     * @brief Set a socket option.
+     * @tparam Type The type of the option value.
+     * @tparam Option The class defining the option to set.
+     * @param value The value to set.
+     * @return The reference to this object
+     * @throw std::system_error
+     */
+    template <typename Type, typename Option>
+    socket&
+    option(Type value) {
+        Option option;
+        option(*this, value);
+        return *this;
+    }
+
+    /**
+     * @brief Get a socket option.
+     * @tparam Type The type of the option value.
+     * @tparam Option The class defining the option to get.
+     * @return The value retrieved.
+     * @throw std::system_error
+     */
+    template <typename Type, typename Option>
+    Type
+    option() {
+        Option option;
+        return option(*this);
+    }
+
+
+};
+
+/**
+ * @brief Socket option to allow the reuse of local addresses when binding a
+ * socket to a valid address.
+ */
+class reuse_address
+{
+public:
+    /** @brief Set the option to reuse socket addresses.
+     *  @param value Flag to indicate to reuse socket addresses.
+     */
+    void operator()(socket&, bool value);
+
+    /**
+     * @brief Retrieve the setting of reusing socket addresses.
+     * @return true if addressed can be reused.
+     */
+    bool operator()(socket&);
+};
+
 } // namespace ip
 
 END_MUDLIB_IO_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDCOMMS_IP_H_ */
+#endif /* _MUDLIB_IO_IP_H_ */
 

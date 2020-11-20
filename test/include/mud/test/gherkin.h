@@ -359,7 +359,7 @@ public:
     /**
      * @brief Execute the 'given' step, and all its chained 'given' steps.
      */
-    void operator()(context_type& ctx);
+    bool operator()(context_type& ctx);
 
     /**
      * @return The ID (description) of the 'given' step.
@@ -425,7 +425,7 @@ mud::test::_given<Context>::Data(std::function<_table()> func)
 }
 
 template<typename Context>
-void
+bool
 mud::test::_given<Context>::operator()(
         context_type& ctx)
 {
@@ -434,12 +434,40 @@ mud::test::_given<Context>::operator()(
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
-    ctx.data(_data);
-    _func(ctx);
+    bool result = true;
+    try
+    {
+        ctx.data(_data);
+        _func(ctx);
+    }
+    catch (const mud::test::assertion_failed& ex)
+    {
+        // An assertion failed
+        std::cerr << "'" << id() << "' threw an assertion:"
+                << std::endl << ex.what() << std::endl;
+        result = false;
+    }
+    catch (const std::exception& ex)
+    {
+        // Any standard exception
+        std::cerr << "'" << id() << "' threw an unexpected exception:"
+                << std::endl << ex.what() << std::endl;
+        result = false;
+
+    }
+    catch (...)
+    {
+        // Any unknown exception
+        std::cerr << "'" << id() << "' threw an unknown exception."
+                << std::endl;
+        result = false;
+
+    }
     if (_chain != nullptr)
     {
-        (*_chain)(ctx);
+        result &= (*_chain)(ctx);
     }
+    return result;
 }
 
 template<typename Context>
@@ -511,7 +539,7 @@ public:
     /**
      * @brief Execute the 'given' step, and all its chained 'given' steps.
      */
-    void operator()(context_type& ctx);
+    bool operator()(context_type& ctx);
 
     /**
      * @return The ID (description) of the 'when' step.
@@ -583,7 +611,7 @@ mud::test::_when<Context>::id() const
 }
 
 template<typename Context>
-void
+bool
 mud::test::_when<Context>::operator()(
         context_type& ctx)
 {
@@ -592,12 +620,40 @@ mud::test::_when<Context>::operator()(
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
-    ctx.data(_data);
-    _func(ctx);
+    bool result = true;
+    try
+    {
+        ctx.data(_data);
+        _func(ctx);
+    }
+    catch (const mud::test::assertion_failed& ex)
+    {
+        // An assertion failed
+        std::cerr << "'" << id() << "' threw an assertion:"
+                << std::endl << ex.what() << std::endl;
+        result = false;
+    }
+    catch (const std::exception& ex)
+    {
+        // Any standard exception
+        std::cerr << "'" << id() << "' threw an unexpected exception:"
+                << std::endl << ex.what() << std::endl;
+        result = false;
+
+    }
+    catch (...)
+    {
+        // Any unknown exception
+        std::cerr << "'" << id() << "' threw an unknown exception."
+                << std::endl;
+        result = false;
+
+    }
     if (_chain != nullptr)
     {
-        (*_chain)(ctx);
+        result &= (*_chain)(ctx);
     }
+    return result;
 }
 
 template<typename Context>
@@ -747,14 +803,14 @@ mud::test::_then<Context>::operator()(
         ctx.data(_data);
         _func(ctx);
     }
-    catch (mud::test::assertion_failed& ex)
+    catch (const mud::test::assertion_failed& ex)
     {
         // An assertion failed
         std::cerr << "'" << id() << "' threw an assertion:"
                 << std::endl << ex.what() << std::endl;
         result = false;
     }
-    catch (std::exception& ex)
+    catch (const std::exception& ex)
     {
         // Any standard exception
         std::cerr << "'" << id() << "' threw an unexpected exception:"
@@ -1004,16 +1060,20 @@ template<typename Context>
 bool
 mud::test::_scenario<Context>::run(context_type& ctx)
 {
-    (*_given)(ctx);
-    (*_when)(ctx);
+    if (!(*_given)(ctx)) {
+        std::cout << "[FAIL] " << _id << std::endl;
+        return false;
+    }
+    if (!(*_when)(ctx)) {
+        std::cout << "[FAIL] " << _id << std::endl;
+        return false;
+    }
     if (!(*_then)(ctx)) {
         std::cout << "[FAIL] " << _id << std::endl;
         return false;
     }
-    else {
-        std::cout << "[PASS] " << _id << std::endl;
-        return true;
-    }
+    std::cout << "[PASS] " << _id << std::endl;
+    return true;
 }
 
 /**
@@ -1313,7 +1373,7 @@ public:
                 if (scnr.run()) {                                            \
                     ++result.second;                                         \
                 }                                                            \
-            }                                                                \
+            } ;                                                              \
             if (filter.empty() || filter == ID)                              \
             {                                                                \
                 mud::test::_scenario<context> scnr(*this, ID);
@@ -1427,7 +1487,7 @@ public:
             /* Expected */                                                   \
             thrown = true;                                                   \
         }                                                                    \
-        catch(const std::exception ex) {                                     \
+        catch(const std::exception& ex) {                                     \
             std::stringstream sstr;                                          \
             sstr << "  Expected exception: " << typeid(EX).name()            \
                  << std::endl                                                \
@@ -1459,7 +1519,7 @@ public:
         try {                                                                \
             __VA_ARGS__;                                                     \
         }                                                                    \
-        catch(const std::exception ex) {                                     \
+        catch(const std::exception& ex) {                                     \
             std::stringstream sstr;                                          \
             sstr << "  Unexpected exception: std::exception - or derived";   \
             mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \

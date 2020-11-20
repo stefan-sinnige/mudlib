@@ -37,6 +37,11 @@ public:
     kernel_event_loop();
 
     /**
+     * @brief Move constructor.
+     */
+    kernel_event_loop(kernel_event_loop&&) = default;
+
+    /**
      * Destructor.
      */
     virtual ~kernel_event_loop();
@@ -97,7 +102,8 @@ private:
     /**
      * Platform specific implementation.
      */
-    void* _impl;
+    class impl;
+    std::unique_ptr<impl> _impl;
 };
 
 END_MUDLIB_IO_NS
