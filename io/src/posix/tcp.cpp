@@ -58,20 +58,20 @@ public:
     std::ostream& ostr();
 
 private:
-/** Reference to the socket handle. */
-const std::unique_ptr<mud::io::kernel_handle>& _handle;
+    /** Reference to the socket handle. */
+    const std::unique_ptr<mud::io::kernel_handle>& _handle;
 
-/** The stream for reading. */
-std::istream _istr;
+    /** The stream for reading. */
+    std::istream _istr;
 
-/** The stream for writing. */
-std::ostream _ostr;
+    /** The stream for writing. */
+    std::ostream _ostr;
 
-/** The stream buffer for reading */
-std::unique_ptr<socket_streambuf> _read_buffer;
+    /** The stream buffer for reading */
+    std::unique_ptr<socket_streambuf> _read_buffer;
 
-/** The stream buffer for writing */
-std::unique_ptr<socket_streambuf> _write_buffer;
+    /** The stream buffer for writing */
+    std::unique_ptr<socket_streambuf> _write_buffer;
 };
 
 tcp::socket::impl::impl(const std::unique_ptr<mud::io::kernel_handle>& handle)
