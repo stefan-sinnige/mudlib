@@ -833,15 +833,107 @@ client can be sagely and easily aborted at any time.
   captionpos=b,
   caption={Non-blocking \texttt{tcp::acceptor}.},
   label=lst:non-blocking-tcp-acceptor]
-// Create the listening socket and register it in the event-loop
+// Create an event-loop in a separate thread
+mud::io::kernel_event_loop event_loop;
+std::future<void> future = std::async(std::launc::async, [&event_loop]() {
+    event_loop.loop();
+}
 
-// Register the listening socket and invoke the acceptor when ready
-
+// Create the acceptor and register it in the event-loop. When the event
+// is triggered, accept the incoming connection request.
+mud::io::tcp::socket listen_socket;
+mud::io::tcp::acceptor acceptor(listen_socket);
+acceptor.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
+event_loop.register_handler(listen_socket.handle(), [&acceptor]() {
+    tcp::socket client_connected = acceptor.accept();
+}
 \end{lstlisting}
 
 \subsubsection{Client-Side}
 
+Similar to the server-side, the client-side has a controller class that is
+responsible for perfoming the connection request. The \indextt{tcp::connector}
+\indextt{tcp::connector}. A default socket is used as a palceholder for when
+the connection has been established. The \indextt{tcp::connector} will
+attempt to connect to a specified endpoint\indextt{tcp::endpoint}.
+
+Just like the server-side, a blocking and non-blocking approach can be used
+for attempting to connect to a peer. Either the connector class is used
+as in listing~\ref{blocking-tcp-connector}. This will essentially block the
+thread until a connection could be established, or until an error condition
+occurred.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Blocking \texttt{tcp::connector}.},
+  label=lst:blocking-tcp-connector]
+// Create the socket placeholder and the connecvor to connect to 127.0.0.1:12345
+mud::io::tcp::socket client;
+mud::io::tcp::connector connector(client);
+connector.connect(mud::io::tcp::endpoint("127.0.0.1", 12345);
+\end{lstlisting}
+
+A non-blocking connection attempt requires more overhead, but allows more
+control on the connection process. For example, it can be used to wait for a
+connection on a different thread, or it timeout the connection attempt. An
+example is provided in listing~\ref{lst:non-blocking-tcp-connector}.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Non-blocking \texttt{tcp::connector}.},
+  label=lst:non-blocking-tcp-connector]
+// THIS HAS NOT BEEN IMPLEMENTED YET.
+\end{lstlisting}
+
 \subsection{UDP}
+
+\subsection{Socket Options}
+\index{socket options}
+
+A plethora of options can be provided to socket to fine-tune its behaviour
+in certain scenarios. For example, when accepting an incoming TCP connection
+request, the listening socket is not always immediately available to accept
+another incoming request. This can lead to a socket in a \texttt{TIME]\_WAIT}
+state and a connection attempt will subsequently not be possible. A socket
+option to re-use the endpoint address is available to eliminate this
+scenario. Another option is to allow a \texttt{tcp::connector}
+\indextt{tcp::connector} to perform a non-blocking connection attempt such
+that it can be passively monitored by another thread until the connection has
+been made, or until a particular connection timeout has expired.
+
+These options can all be provided though the \texttt{option} template that is
+available on the Network and Transport Layer socket definitions. Only those
+options that are applicable to a certain type of socket can be applied
+successfully to the \texttt{option} function. An incompatible option will
+result in a compilation error.
+
+For example, the \texttt{tcp::acceptor}\indextt{tcp::acceptor} will always
+set the \texttt{ip::reuse\_address}\indextt{ip::reuse\_address} socket
+option as specified in listing~\ref{lst:reuse-address}.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Setting the reuse-address socket option.},
+  label=lst:reuse-address]
+// Set the reuse-address option
+mud::io::tcp::socket listen_socket;
+listen_socket.option<bool, mud::io::ip::reuse_address>(true);
+
+// Retrieve hte value of the reuse-address option
+bool value = listen.option<bool, mud::io::ip::reuse_address>();
+\end{lstlisting}
+
+The \texttt{option} method defines the option associated value type and the
+option functor class. The argument to the \texttt{option} method it the value
+to set for that option. In the example listing, the \indextt{ip::reuse\_address}
+option expects a boolean value. Specifying the value \texttt{true} indicates
+to enable the reuse of address endppints.
+
+Similarly, there is also an \texttt{option} method to retrieve the value of
+a particular option. An example is provided in listing~\ref{lst:reuse-address}.
 
 % ============================================================================
 % PART

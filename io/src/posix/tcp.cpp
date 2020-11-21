@@ -56,7 +56,6 @@ public:
      * The stream for writing.
      */
     std::ostream& ostr();
-}
 
 private:
 /** Reference to the socket handle. */
