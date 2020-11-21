@@ -17,18 +17,18 @@ BEGIN_MUDLIB_IO_NS
  * requests and re-registration of event handlers, is accomplished through
  * a self-pipe.
  */
-class posix_event_loop
+class kernel_event_loop::impl
 {
 public:
     /**
      * Default constructor.
      */
-    posix_event_loop();
+    impl();
 
     /**
      * Destructor.
      */
-    virtual ~posix_event_loop();
+    virtual ~impl();
 
     /**
      * Register an event handler with the loop.
@@ -57,8 +57,8 @@ public:
     /**
      * Non-copyable
      */
-    posix_event_loop(const posix_event_loop&) = delete;
-    posix_event_loop& operator=(const posix_event_loop&) = delete;
+    impl(const impl&) = delete;
+    impl& operator=(const impl&) = delete;
 
 private:
     /*
@@ -108,7 +108,7 @@ private:
      * and the event-loop is the owner of the handle. When an event is raised,
      * the @c mud::io::event_handler will temporarily be handed the ownership
      * of the handle until the event callback is finisghed. During the time
-     * the callback is invoked, the @c mud::io::posix_event_loop will not
+     * the callback is invoked, the @c mud::io::kernel_event_loop::impl will not
      * make the handle part of the mulitplexed @c ::select.
      */
     class handler_object
@@ -173,16 +173,16 @@ private:
     std::atomic<bool> _running;
 };
 
-posix_event_loop::posix_event_loop()
+kernel_event_loop::impl::impl()
     : _cmd(NOP), _running(false)
 {
     /* Always register the self-pipe */
     _handlers.push_back(handler_object(
                     _self.read_handle(),
-                    std::bind(&posix_event_loop::command_handler, this)));
+                    std::bind(&kernel_event_loop::impl::command_handler, this)));
 }
 
-posix_event_loop::~posix_event_loop()
+kernel_event_loop::impl::~impl()
 {
     /* Make sure the loop is terminated */
     terminate();
@@ -192,7 +192,7 @@ posix_event_loop::~posix_event_loop()
 }
 
 void
-posix_event_loop::register_handler(
+kernel_event_loop::impl::register_handler(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
         mud::io::kernel_event_loop::event_handler handler)
 {
@@ -206,7 +206,7 @@ posix_event_loop::register_handler(
 }
 
 void
-posix_event_loop::deregister_handler(
+kernel_event_loop::impl::deregister_handler(
         const std::unique_ptr<mud::io::kernel_handle>& handle)
 {
     std::list<handler_object>::iterator found = find(handle);
@@ -218,7 +218,7 @@ posix_event_loop::deregister_handler(
 }
 
 void
-posix_event_loop::loop()
+kernel_event_loop::impl::loop()
 {
     /* If we're already running, bail out. */
     if (_running.exchange(true) == true)
@@ -246,19 +246,19 @@ posix_event_loop::loop()
 }
 
 void
-posix_event_loop::terminate()
+kernel_event_loop::impl::terminate()
 {
     _self.ostr() << TERMINATION << std::flush;
 }
 
 void
-posix_event_loop::nop()
+kernel_event_loop::impl::nop()
 {
     _self.ostr() << NOP << std::flush;
 }
 
 void
-posix_event_loop::multiplex(
+kernel_event_loop::impl::multiplex(
         fd_set& readfds,
         fd_set& writefds,
         fd_set& exceptfds,
@@ -285,7 +285,7 @@ posix_event_loop::multiplex(
 }
 
 void
-posix_event_loop::demultiplex(
+kernel_event_loop::impl::demultiplex(
         const fd_set& readfds,
         const fd_set& writefds,
         const fd_set& exceptfds)
@@ -308,15 +308,16 @@ posix_event_loop::demultiplex(
 }
 
 void
-posix_event_loop::command_handler()
+kernel_event_loop::impl::command_handler()
 {
     command_type cmd;
     _self.istr() >> cmd;
     _cmd = cmd;
 }
 
-std::list<posix_event_loop::handler_object>::iterator
-posix_event_loop::find(const std::unique_ptr<mud::io::kernel_handle>& handle)
+std::list<kernel_event_loop::impl::handler_object>::iterator
+kernel_event_loop::impl::find(const std::unique_ptr<mud::io::kernel_handle>&
+        handle)
 {
     return std::find_if(
                     _handlers.begin(), _handlers.end(),
@@ -327,25 +328,25 @@ posix_event_loop::find(const std::unique_ptr<mud::io::kernel_handle>& handle)
 
 /** The implementation of the handler-object. */
 
-posix_event_loop::handler_object::handler_object(
+kernel_event_loop::impl::handler_object::handler_object(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
         mud::io::kernel_event_loop::event_handler handler)
     : _handle(handle), _handler(handler)
 {
 }
 
-posix_event_loop::handler_object::~handler_object()
+kernel_event_loop::impl::handler_object::~handler_object()
 {
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
-posix_event_loop::handler_object::handle() const
+kernel_event_loop::impl::handler_object::handle() const
 {
     return _handle;
 }
 
 void
-posix_event_loop::handler_object::call()
+kernel_event_loop::impl::handler_object::call()
 {
     _handler();
 }
@@ -354,12 +355,11 @@ posix_event_loop::handler_object::call()
 
 kernel_event_loop::kernel_event_loop()
 {
-    _impl = new posix_event_loop();
+    _impl = std::unique_ptr<impl>(new impl());
 }
 
 kernel_event_loop::~kernel_event_loop()
 {
-    delete static_cast<posix_event_loop*>(_impl);
 }
 
 void
@@ -367,26 +367,26 @@ kernel_event_loop::register_handler(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
         mud::io::kernel_event_loop::event_handler handler)
 {
-    static_cast<posix_event_loop*>(_impl)->register_handler(handle, handler);
+    _impl->register_handler(handle, handler);
 }
 
 void
 kernel_event_loop::deregister_handler(
         const std::unique_ptr<mud::io::kernel_handle>& handle)
 {
-    static_cast<posix_event_loop*>(_impl)->deregister_handler(handle);
+    _impl->deregister_handler(handle);
 }
 
 void
 kernel_event_loop::loop()
 {
-    static_cast<posix_event_loop*>(_impl)->loop();
+    _impl->loop();
 }
 
 void
 kernel_event_loop::terminate()
 {
-    static_cast<posix_event_loop*>(_impl)->terminate();
+    _impl->terminate();
 }
 
 END_MUDLIB_IO_NS

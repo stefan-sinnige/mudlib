@@ -35,7 +35,7 @@
 % Use biblatex and biber for bibliography references. Use the main TeX file
 % (as provided in \jobname) appended with .bib as the bibliography file.
 \def\bibfile{bibliography.bib}
-\usepackage[backend=biber,style=alphabetic]{biblatex}
+\usepackage[backend=biber,style=numeric]{biblatex}
 \addbibresource{\bibfile}
 
 % Index package

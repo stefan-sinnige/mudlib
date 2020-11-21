@@ -9,21 +9,51 @@
 BEGIN_MUDLIB_IO_NS
 
 /**
+ * Define the stream buffer to use with pipes. The read and write operations
+ * to be used are the POSIX 'read' and 'write'.
+ */
+
+class pipe_read
+{
+public:
+    ssize_t
+    operator()(int fd, void* buf, size_t count) {
+        return ::read(fd, buf, count);
+    }
+};
+
+class pipe_write
+{
+public:
+    ssize_t
+    operator()(int fd, const void* buf, size_t count) {
+        return ::write(fd, buf, count);
+    }
+};
+
+typedef mud::io::basic_streambuf<pipe_read, pipe_write> pipe_streambuf;
+
+/**
  * @brief Implementation class for a POSIX compliant @c pipe.
  */
 
-class posix_pipe
+class pipe::impl
 {
 public:
     /**
      * Constructor.
      */
-    posix_pipe();
+    impl();
+
+    /**
+     * Move constructor.
+     */
+    impl(impl&&);
 
     /**
      * Destructor.
      */
-    ~posix_pipe();
+    ~impl();
 
     /**
      * The stream for reading.
@@ -58,10 +88,10 @@ private:
     std::ostream _ostr;
 
     /** The stream buffer for reading */
-    std::unique_ptr<mud::io::streambuf> _read_buffer;
+    std::unique_ptr<pipe_streambuf> _read_buffer;
 
     /** The stream buffer for writing */
-    std::unique_ptr<mud::io::streambuf> _write_buffer;
+    std::unique_ptr<pipe_streambuf> _write_buffer;
 
     /** The read handle */
     std::unique_ptr<mud::io::kernel_handle> _read_handle;
@@ -70,7 +100,7 @@ private:
     std::unique_ptr<mud::io::kernel_handle> _write_handle;
 };
 
-posix_pipe::posix_pipe()
+pipe::impl::impl()
     : _istr(nullptr), _ostr(nullptr)
 {
     /* Create the pipe */
@@ -92,15 +122,15 @@ posix_pipe::posix_pipe()
 
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */
-    _read_buffer  = std::unique_ptr<mud::io::streambuf>(
-                    new mud::io::streambuf(_read_handle));
-    _write_buffer = std::unique_ptr<mud::io::streambuf>(
-                    new mud::io::streambuf(_write_handle));
+    _read_buffer  = std::unique_ptr<pipe_streambuf>(
+                    new pipe_streambuf(_read_handle));
+    _write_buffer = std::unique_ptr<pipe_streambuf>(
+                    new pipe_streambuf(_write_handle));
     _istr.rdbuf(_read_buffer.get());
     _ostr.rdbuf(_write_buffer.get());
 }
 
-posix_pipe::~posix_pipe()
+pipe::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(*_read_handle);
@@ -111,62 +141,62 @@ posix_pipe::~posix_pipe()
 }
 
 std::istream&
-posix_pipe::istr()
+pipe::impl::istr()
 {
     return _istr;
 }
 
 std::ostream&
-posix_pipe::ostr()
+pipe::impl::ostr()
 {
     return _ostr;
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
-posix_pipe::read_handle()  const
+pipe::impl::read_handle()  const
 {
     return _read_handle;
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
-posix_pipe::write_handle()  const
+pipe::impl::write_handle()  const
 {
     return _write_handle;
 }
 
 /** The explicit specialisation for POSIX pipes. */
+
 pipe::pipe()
 {
-    _impl = new posix_pipe();
+    _impl = std::unique_ptr<impl>(new impl());
 }
 
 pipe::~pipe()
 {
-    delete static_cast<posix_pipe*>(_impl);
 }
 
 std::istream&
 pipe::istr()
 {
-    return static_cast<posix_pipe*>(_impl)->istr();
+    return _impl->istr();
 }
 
 std::ostream&
 pipe::ostr()
 {
-    return static_cast<posix_pipe*>(_impl)->ostr();
+    return _impl->ostr();
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
 pipe::read_handle() const
 {
-    return static_cast<posix_pipe*>(_impl)->read_handle();
+    return _impl->read_handle();
 }
 
 const std::unique_ptr<mud::io::kernel_handle>&
 pipe::write_handle() const
 {
-    return static_cast<posix_pipe*>(_impl)->write_handle();
+    return _impl->write_handle();
 }
 
 END_MUDLIB_IO_NS

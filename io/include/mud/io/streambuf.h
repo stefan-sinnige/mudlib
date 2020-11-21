@@ -13,8 +13,12 @@ BEGIN_MUDLIB_IO_NS
  *
  * This class defines the stream buffer for generic (but system implementation
  * dependent) I/O operations.
+ *
+ * @tparam Read System implementation dependent read function object.
+ * @tparam Write System implementation dependent write function object.
  */
-class streambuf : public std::streambuf
+template<typename Read, typename Write>
+class basic_streambuf : public std::streambuf
 {
 public:
     /**
@@ -23,7 +27,7 @@ public:
      * @param [in] bufsize The initial buffer size.
      * @param [in] putbacksize The size of the putback buffer.
      */
-    streambuf(
+    basic_streambuf(
             const std::unique_ptr<mud::io::kernel_handle>& handle,
             size_t bufsize = 10,
             size_t putbacksize = 4);
@@ -31,7 +35,7 @@ public:
     /**
      * Destructor.
      */
-    ~streambuf();
+    virtual ~basic_streambuf();
 
     /**
      * Read new characters into the buffer.
@@ -51,17 +55,21 @@ public:
     /**
      * Non-copyable.
      */
-    streambuf(const streambuf&) = delete;
-    streambuf& operator=(const streambuf&) = delete;
+    basic_streambuf(const basic_streambuf&) = delete;
+    basic_streambuf& operator=(const basic_streambuf&) = delete;
 
 private:
-    /**
-     * Platform specific implementation.
-     */
-    void* _impl;
+    const std::unique_ptr<mud::io::kernel_handle>& _handle; /**< Handle */
+    const size_t _bufsize;     /**< Size of the buffer */
+    const size_t _putbacksize; /**< Size of the putback buffer */
+    char* _buffer;             /**< The buffer. */
+    Read _readfn;              /**< Read function object. */
+    Write _writefn;            /**< Write function object. */
 };
 
 END_MUDLIB_IO_NS
+
+#include <mud/io/bits/streambuf.tcc>
 
 /* vi: set ai ts=4 expandtab: */
 

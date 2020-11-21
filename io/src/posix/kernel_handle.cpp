@@ -14,6 +14,12 @@ mud::core::basic_handle<int>::basic_handle(int h)
 }
 
 template<>
+mud::core::basic_handle<int>::basic_handle(basic_handle&& h)
+{
+    _handle = h._handle;
+}
+
+template<>
 mud::core::basic_handle<int>::~basic_handle()
 {
 }

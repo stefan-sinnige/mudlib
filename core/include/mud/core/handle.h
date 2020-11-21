@@ -31,6 +31,11 @@ public:
     basic_handle(handle_type h);
 
     /**
+     * @brief Move constructor.
+     */
+    basic_handle(basic_handle&& h);
+
+    /**
      * @brief Destructor.
      */
     virtual ~basic_handle();

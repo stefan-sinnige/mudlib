@@ -3,6 +3,7 @@
 
 #include <mud/io/ns.h>
 #include <mud/io/kernel_handle.h>
+#include <memory>
 #include <istream>
 #include <ostream>
 
@@ -24,6 +25,13 @@ public:
      * Creating a pipe with a read and a write handle
      */
     pipe();
+
+    /**
+     * @brief Move constructor.
+     *
+     * Move the implementation of the pipe to this object.
+     */
+    pipe(pipe&&) = default;
 
     /**
      * @brief Destructor.
@@ -64,7 +72,8 @@ private:
     /**
      * Platform specific implementation.
      */
-    void* _impl;
+    class impl;
+    std::unique_ptr<impl> _impl;
 };
 
 END_MUDLIB_IO_NS
