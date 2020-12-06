@@ -167,6 +167,26 @@ public:
     bool operator()(socket&);
 };
 
+/**
+ * @brief Socket option to allow the socket not to block on a socket method.
+ * Particularly useful when used in combination with @c kernel_event_loop
+ * non-blocking I/O.
+ */
+class nonblocking
+{
+public:
+    /** @brief Set the option to reuse socket addresses.
+     *  @param value Flag to indicate to reuse socket addresses.
+     */
+    void operator()(socket&, bool value);
+
+    /**
+     * @brief Retrieve the setting of reusing socket addresses.
+     * @return true if addressed can be reused.
+     */
+    bool operator()(socket&);
+};
+
 } // namespace ip
 
 END_MUDLIB_IO_NS
