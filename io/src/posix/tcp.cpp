@@ -218,7 +218,7 @@ tcp::acceptor::open(const endpoint& endpoint)
     struct sockaddr_in addr;
     ::memset(&addr, 0, sizeof(sockaddr_in));
     addr.sin_family = static_cast<sa_family_t>(_socket.domain());
-    addr.sin_port = endpoint.port();
+    addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
     if (::bind(*(_socket.handle()), (struct sockaddr*)&addr, sizeof(addr)) != 0)
     {
@@ -272,7 +272,7 @@ tcp::connector::connect(const endpoint& endpoint)
     struct sockaddr_in addr;
     ::memset(&addr, 0, sizeof(sockaddr_in));
     addr.sin_family = static_cast<sa_family_t>(_socket.domain());
-    addr.sin_port = endpoint.port();
+    addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
     if (::connect(*(_socket.handle()), (struct sockaddr*)&addr,
                     sizeof(addr)) != 0)

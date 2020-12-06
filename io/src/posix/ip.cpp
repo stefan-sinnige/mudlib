@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -30,7 +31,7 @@ ip::address::address(const std::string& str)
 {
     m_address = ::inet_addr(str.c_str());
     if (m_address == INADDR_NONE) {
-        throw new exception("converting IP address to IPv4");
+        throw exception("converting IP address to IPv4");
     }
 }
 
@@ -125,6 +126,46 @@ ip::reuse_address::operator()(ip::socket& socket)
                 "retrieving socket option");
     }
     return (enable != 0);
+}
+
+/* ==========================================================================
+ * mud::ip::nonblocking
+ * ========================================================================== */
+
+void
+ip::nonblocking::operator()(ip::socket& socket, bool value)
+{
+    int flags;
+    if ((flags = ::fcntl(*(socket.handle()), F_GETFL, 0)) < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "setting socket option");
+    }
+    if (value)
+    {
+        flags |= O_NONBLOCK;
+    }
+    else
+    {
+        flags &= ~O_NONBLOCK;
+    }
+    if (::fcntl(*(socket.handle()), flags) < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "setting socket option");
+    }
+}
+
+bool
+ip::nonblocking::operator()(ip::socket& socket)
+{
+    int flags;
+    if ((flags = ::fcntl(*(socket.handle()), F_GETFL, 0)) < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "retrieving socket option");
+    }
+    return (flags & O_NONBLOCK) == O_NONBLOCK;
 }
 
 END_MUDLIB_IO_NS
