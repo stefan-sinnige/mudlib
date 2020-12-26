@@ -1,12 +1,12 @@
-#include <mud/core/exception.h>
+#include "mud/core/exception.h"
+#include "mud/io/streambuf.h"
 #include <exception>
 #include <streambuf>
 #include <unistd.h>
 
 BEGIN_MUDLIB_IO_NS
 
-template<typename Read, typename Write>
-basic_streambuf<Read, Write>::basic_streambuf(
+basic_streambuf::basic_streambuf(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
         size_t bufsize /* = 10 */,
         size_t putbacksize /* = 4 */)
@@ -25,15 +25,13 @@ basic_streambuf<Read, Write>::basic_streambuf(
             _buffer + (_bufsize - 1));
 }
 
-template<typename Read, typename Write>
-basic_streambuf<Read, Write>::~basic_streambuf()
+basic_streambuf::~basic_streambuf()
 {
     delete[] _buffer;
 }
 
-template<typename Read, typename Write>
 int
-basic_streambuf<Read, Write>::underflow()
+basic_streambuf::underflow()
 {
     /* Is there still data ready in the buffer. */
     if (gptr() < egptr()) {
@@ -46,10 +44,7 @@ basic_streambuf<Read, Write>::underflow()
     }
 
     /* Read new characters */
-    int nread = _readfn(
-                    *_handle,
-                    _buffer + _putbacksize,
-                    _bufsize - _putbacksize);
+    int nread = read(_buffer + _putbacksize, _bufsize - _putbacksize);
     if (nread <= 0) {
         if (nread != 0 && errno != EAGAIN) {
             throw std::system_error(errno, std::system_category(), "read");
@@ -66,9 +61,8 @@ basic_streambuf<Read, Write>::underflow()
     return traits_type::to_int_type(*gptr());
 }
 
-template<typename Read, typename Write>
 int
-basic_streambuf<Read, Write>::overflow(int c)
+basic_streambuf::overflow(int c)
 {
     /* Bail out of handle is not available */
     if (_handle == nullptr) {
@@ -88,17 +82,22 @@ basic_streambuf<Read, Write>::overflow(int c)
     return c;
 }
 
-template<typename Read, typename Write>
 int
-basic_streambuf<Read, Write>::sync()
+basic_streambuf::sync()
 {
     int num = pptr() - pbase();
-    int nwrite = _writefn(*_handle, _buffer, num);
+    int nwrite = write(_buffer, num);
     if (nwrite != num) {
         return 1;
     }
     pbump(-nwrite);
     return 0;
+}
+
+const std::unique_ptr<mud::io::kernel_handle>&
+basic_streambuf::handle() const
+{
+    return _handle;
 }
 
 END_MUDLIB_IO_NS

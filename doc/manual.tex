@@ -386,6 +386,11 @@ loop.register_handler(some_handle, []() {
 loop.terminate();
 \end{lstlisting}
 
+A singleton global event-loop is readily available and can be used as the
+main event-loop of any application (\texttt{kernel\_event\_loop::global()}).
+If needed, other event-loops can be used simultaneously, each handling their
+own specific set of events.
+
 % ============================================================================
 % CHAPTER
 % ============================================================================
@@ -629,6 +634,13 @@ representing a dotted-decimal, or directly as a 32-bit value (in network byte
 order), represented by the POSIX \texttt{in\_addr\_t}\indextt{in\_addr\_t}
 structure.
 
+Once the socket has been bound to a local address or when a connection to a
+remote peer~\index{peer}\index{socket!peer} has been established, the address
+of the local and remote peer is available through the
+\texttt{source\_address}\indextt{source\_address}\index{socket!source address}
+and the \texttt{destination\_address}\indextt{destination\_address}%
+\index{socket!destination address} methods.
+
 \subsubsection{Sockets}
 
 The Network Layer socket consist of the \texttt{basic\_socket}
@@ -808,71 +820,29 @@ connection has been established, or it can wait for a signal until the
 listening socket has detected an incoming connection request. The latter
 approach (also referred to non-blocking\index{non-blocking I/O} I/O, is using
 the \texttt{kernel\_event\_loop}\indextt{kernel\_event\_loop} to set-up the
-mechanism for waiting for a connection.
-
-\begin{lstlisting}[%
-  frame=single,
-  captionpos=b,
-  caption={Blocking \texttt{tcp::acceptor}.},
-  label=lst:blocking-tcp-acceptor]
-// Create the listening socket and the acceptor to listen to 127.0.0.1:12345
-mud::io::tcp::socket listen_socket;
-mud::io::tcp::acceptor acceptor(listen_socket);
-acceptor.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
-
-// Block until a client has connected
-tcp::socket client_connected = acceptor.accept();
-\end{lstlisting}
-
-The non-blocking connection requires more overhead in setting-up the event-loop
-on a separate thread, but has the advantage that the wait for a connecting
-client can be sagely and easily aborted at any time.
+mechanism for waiting for a connection, and is the default mechanism.
 
 \begin{lstlisting}[%
   frame=single,
   captionpos=b,
   caption={Non-blocking \texttt{tcp::acceptor}.},
   label=lst:non-blocking-tcp-acceptor]
-// Create an event-loop in a separate thread
-mud::io::kernel_event_loop event_loop;
-std::future<void> future = std::async(std::launc::async, [&event_loop]() {
-    event_loop.loop();
+// Create the acceptor
+mud::io::tcp::acceptor acceptor();
+acceptor.on_accept([](mud::io::tcp::socket&& client) {
+    // Connection has been accepted and client socket
+    // is available.
 }
-
-// Create the acceptor and register it in the event-loop. When the event
-// is triggered, accept the incoming connection request.
-mud::io::tcp::socket listen_socket;
-mud::io::tcp::acceptor acceptor(listen_socket);
 acceptor.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
-event_loop.register_handler(listen_socket.handle(), [&acceptor]() {
-    tcp::socket client_connected = acceptor.accept();
-}
 \end{lstlisting}
 
 \subsubsection{Client-Side}
 
 Similar to the server-side, the client-side has a controller class that is
 responsible for perfoming the connection request. The \indextt{tcp::connector}
-\indextt{tcp::connector}. A default socket is used as a palceholder for when
+\indextt{tcp::connector}. A default socket is used as a placeholder for when
 the connection has been established. The \indextt{tcp::connector} will
 attempt to connect to a specified endpoint\indextt{tcp::endpoint}.
-
-Just like the server-side, a blocking and non-blocking approach can be used
-for attempting to connect to a peer. Either the connector class is used
-as in listing~\ref{blocking-tcp-connector}. This will essentially block the
-thread until a connection could be established, or until an error condition
-occurred.
-
-\begin{lstlisting}[%
-  frame=single,
-  captionpos=b,
-  caption={Blocking \texttt{tcp::connector}.},
-  label=lst:blocking-tcp-connector]
-// Create the socket placeholder and the connecvor to connect to 127.0.0.1:12345
-mud::io::tcp::socket client;
-mud::io::tcp::connector connector(client);
-connector.connect(mud::io::tcp::endpoint("127.0.0.1", 12345);
-\end{lstlisting}
 
 A non-blocking connection attempt requires more overhead, but allows more
 control on the connection process. For example, it can be used to wait for a
@@ -884,11 +854,152 @@ example is provided in listing~\ref{lst:non-blocking-tcp-connector}.
   captionpos=b,
   caption={Non-blocking \texttt{tcp::connector}.},
   label=lst:non-blocking-tcp-connector]
-// THIS HAS NOT BEEN IMPLEMENTED YET.
+// Create the acceptor
+mud::io::tcp::connector connector();
+connector.on_connect([](mud::io::tcp::socket&& server) {
+    // Connection has been accepted and server socket
+    // is available.
+}
+connector.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
 \end{lstlisting}
 
 \subsection{UDP}
 
+The UDP\index{UDP} socket uses a connection-less protocol to communicate
+between two peers. There is no concept of actively accepting and connecting
+peers, but messages are just plainly sent and received. As it is a
+connection-less protocol, it cannot be directly verified if a message has
+actually been received by a peer. Once a message has been received, it is
+generally be replied to by using the source address in the UDP packet as
+the destination address of the reply.
+
+Each side of this communication channel is represented by an instance of the
+\texttt{udp::socket}\indextt{udp::socket}. The associated kernel resource
+that unique defines the peer's side of the communication channel is a
+\texttt{kernel\_handle}\indextt{kernel\_handle} that is owned by the
+\texttt{basic\_socket}\indextt{basic\_socket} base class. Only \textit{one}
+instance of a socket owns this resource handle. Therefore, it is not possible
+to copy a socket to another socket (but they can be referenced or they can
+be moved to another socket instance).
+
+The UDP protocol defines a unique connection by the combination of a host
+address and a port number. This combination is represented by the
+\texttt{udp::endpoint}\indextt{udp::endpoint} class. Thech packet contains
+a source and destination endpoint and can be used to send messages and
+respond with replies. An initial receiving side requires to bind to a
+specified address and port such that the operating system knows to what
+application to route the UDP packets to. A sending application can also
+bind to a address (but is not a requirement) in order to define the address
+and port to bind to (i.e. to define a particular network interface for
+communications).
+
+\begin{figure}[hbt]
+  \centering
+  \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}
+      \umlclass[x=0,y=8]%
+          {mud::io::udp::socket}%
+          {}%
+          {+ socket() \\
+           + {\textit \~{}socket} \\
+           + istr() \\
+           + ostr() \\
+          };
+      \umlclass[x=-5,y=7.2]%
+          {std::ostream}%
+          {}%
+          {
+          };
+      \umlclass[x=5,y=7.2]%
+          {std::istream}%
+          {}%
+          {
+          };
+      \umlclass[x=-5,y=0,name=ostream-streambuf]%
+          {mud::io::streambuf}%
+          {}%
+          {+ overflow(int): int \\
+          };
+      \umlclass[x=5,y=0,name=istream-streambuf]%
+          {mud::io::streambuf}%
+          {}%
+          {+ underflow() : int \\
+          };
+       \umlclass[x=0,y=3,name=handle]%
+          {mud::io::kernel\_handle}%
+          {}%
+          {
+          };
+
+       \draw[aggregation] (stdostream.east) -- (mudioudpsocket.west);
+       \draw[aggregation] (stdistream.west) -- (mudioudpsocket.east);
+       \draw[aggregation] (handle.north) -- (mudioudpsocket.south);
+       \draw[dependency]  (stdostream) -- (ostream-streambuf);
+       \draw[dependency]  (stdistream) -- (istream-streambuf);
+       \draw[dependency]  (ostream-streambuf.east) -| +(2,2.5) (handle);
+       \draw[dependency]  (istream-streambuf.west) -| +(-2,2.5) (handle);
+    \end{tikzpicture};
+  }
+  \caption{\texttt{mud::io::udp} class diagram.}
+  \label{fig:mud-io-udp-class}
+\end{figure}
+
+In order to provide sending and receiving capabilities of communication data,
+the \indextt{udp::socket} contains their own input and output streams as
+defined in figure~\ref{fig:mud-io-udp-class}. Both stream buffers have access
+to the socket handle resource in order to perform the sending and receiving
+of the data. How the communication protocol is defined, in terms of the
+format of the messages, whether or not a peer is expected to send or recieve
+data, is out of the scope of this manual and is very much protocol specific.
+The classes provided by MUDLib are just the foundation stones on which the
+protocol specific definitions can be implemented.
+
+There are, in broad terms, two ways to  for socket communication. Either
+the socket class is blocking\index{blocking I/O} the thread until a message
+has been received, or it can wait for a signal until the socket has detected
+an incoming message. The latter approach (also referred to
+non-blocking\index{non-blocking I/O} I/O, is using the
+\texttt{kernel\_event\_loop}\indextt{kernel\_event\_loop} to set-up the
+mechanism for waiting for a connection, and is the default mechanism.
+
+\subsubsection{Server-Side}
+
+On the server-side, an endpoint is to be allocated to start receiving
+UDP messages. In contrast to a TCP connection there is no real distinction
+or controller class to define the server or client side. This manual refers
+to the server-side to the endpoint that sets up the initially receiving
+part of the message.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Non-blocking \texttt{tcp::acceptor}.},
+  label=lst:non-blocking-tcp-acceptor]
+mud::io::udp::acceptor server();
+server.bind(mud::io::tcp::endpoint("127.0.0.1", 12345));
+acceptor.on_receive([](mud::io::tcp::socket&& client) {
+    // Message is ready to be received from the client.
+}
+\end{lstlisting}
+
+\subsubsection{Client-Side}
+
+On the client-side, the side the initially sends the message, all that is
+required is the endpoint that should receive the message. All that is
+required is to send the message and have a response handler defined on any
+reply message.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Non-blocking \texttt{tcp::connector}.},
+  label=lst:non-blocking-tcp-connector]
+mud::io::udp::acceptor client();
+client.ostr(mud::io::tcp::endpoint("127.0.0.1", 12345)) 
+acceptor.on_receive([](mud::io::tcp::socket&& server) {
+    // Reply message is ready to be received from the server.
+}
+\end{lstlisting}
 \subsection{Socket Options}
 \index{socket options}
 

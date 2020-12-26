@@ -9,6 +9,8 @@
 #include <mud/io/pipe.h>
 #include <mud/io/socket.h>
 #include <mud/io/streambuf.h>
+#include <mud/io/tcp.h>
+#include <mud/io/udp.h>
 
 /* vi: set ai ts=4 expandtab: */
 

@@ -42,6 +42,19 @@ basic_socket::basic_socket(basic_socket&& rhs)
     _protocol = rhs._protocol;
 }
 
+basic_socket&
+basic_socket::operator=(basic_socket&& rhs)
+{
+    if (this != &rhs)
+    {
+        _handle = std::move(rhs._handle);
+        _domain = rhs._domain;
+        _type = rhs._type;
+        _protocol = rhs._protocol;
+    }
+    return *this;
+}
+
 const std::unique_ptr<kernel_handle>&
 basic_socket::handle() const
 {

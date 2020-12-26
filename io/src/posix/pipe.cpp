@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+using namespace std::placeholders;
+
 BEGIN_MUDLIB_IO_NS
 
 /**
@@ -13,25 +15,50 @@ BEGIN_MUDLIB_IO_NS
  * to be used are the POSIX 'read' and 'write'.
  */
 
-class pipe_read
+namespace _pipe {
+
+class streambuf: public mud::io::basic_streambuf
 {
 public:
-    ssize_t
-    operator()(int fd, void* buf, size_t count) {
-        return ::read(fd, buf, count);
-    }
+    /* Constructor for UDP specific stream-buffer.
+     * @param [in] handle  The kernel handle to use.
+     * @param [in] bufsize The initial buffer size.
+     * @param [in] putbacksize The size of the putback buffer.
+     */
+    streambuf(
+            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            size_t bufsize = 10,
+            size_t putbacksize = 4);
+
+    /* Pipe specific read and write functions. */
+    ssize_t read(void* buffer, size_t count) override;
+    ssize_t write( const void* buffer, size_t count) override;
 };
 
-class pipe_write
+streambuf::streambuf(
+        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        size_t bufsize,
+        size_t putbacksize)
+    : mud::io::basic_streambuf(
+              handle,
+              bufsize,
+              putbacksize)
 {
-public:
-    ssize_t
-    operator()(int fd, const void* buf, size_t count) {
-        return ::write(fd, buf, count);
-    }
-};
+}
 
-typedef mud::io::basic_streambuf<pipe_read, pipe_write> pipe_streambuf;
+ssize_t
+streambuf::read(void* buf, size_t count)
+{
+    return ::read(*handle(), buf, count);
+}
+
+ssize_t
+streambuf::write(const void* buf, size_t count)
+{
+    return ::write(*handle(), buf, count);
+}
+
+} // namespace _pipe
 
 /**
  * @brief Implementation class for a POSIX compliant @c pipe.
@@ -88,10 +115,10 @@ private:
     std::ostream _ostr;
 
     /** The stream buffer for reading */
-    std::unique_ptr<pipe_streambuf> _read_buffer;
+    std::unique_ptr<_pipe::streambuf> _read_buffer;
 
     /** The stream buffer for writing */
-    std::unique_ptr<pipe_streambuf> _write_buffer;
+    std::unique_ptr<_pipe::streambuf> _write_buffer;
 
     /** The read handle */
     std::unique_ptr<mud::io::kernel_handle> _read_handle;
@@ -122,10 +149,10 @@ pipe::impl::impl()
 
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */
-    _read_buffer  = std::unique_ptr<pipe_streambuf>(
-                    new pipe_streambuf(_read_handle));
-    _write_buffer = std::unique_ptr<pipe_streambuf>(
-                    new pipe_streambuf(_write_handle));
+    _read_buffer  = std::unique_ptr<_pipe::streambuf>(
+                    new _pipe::streambuf(_read_handle));
+    _write_buffer = std::unique_ptr<_pipe::streambuf>(
+                    new _pipe::streambuf(_write_handle));
     _istr.rdbuf(_read_buffer.get());
     _ostr.rdbuf(_write_buffer.get());
 }

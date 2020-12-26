@@ -9,7 +9,6 @@ class server;
 class client;
 
 // Global event-handler and list of clients.
-mud::io::kernel_event_loop event_loop;
 std::list<client*> clients;
 
 // ===========================================================================
@@ -45,14 +44,18 @@ client::client(mud::io::tcp::socket&& socket)
     : _socket(std::move(socket)), _connected(true)
 {
     // Register the client in the event handler.
-    event_loop.register_handler(_socket.handle(),
+    mud::io::kernel_event_loop::global().register_handler(
+            _socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING,
             std::bind(&client::on_receive, this) );
 }
 
 client::~client()
 {
     // Deregister the client from the event handler.
-    event_loop.deregister_handler(_socket.handle());
+    mud::io::kernel_event_loop::global().deregister_handler(
+            _socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING);
 }
 
 void
@@ -64,16 +67,17 @@ client::on_receive()
     if (_socket.istr().fail()) {
         std::cout << "Connection closed" <<std::endl;
         _connected = false;
-        event_loop.deregister_handler(_socket.handle());
+        mud::io::kernel_event_loop::global().deregister_handler(
+                _socket.handle(),
+                mud::io::kernel_event_loop::readiness_t::READING);
         return;
     }
-    std::cout << "Read message ... " << std::flush;
-    std::cout << msg << std::endl;
+    std::cout << "Receiving: " << msg << std::endl;
 
     // Response
-    std::cout << "Sending response ... " << std::flush;
-    _socket.ostr() << "Goodbye" << std::endl;
-    std::cout << "done" << std::endl;
+    msg = "Goodbye";
+    std::cout << "Sending  : " << msg <<  std::endl;
+    _socket.ostr() << msg << std::endl;
 }
 
 // ===========================================================================
@@ -92,45 +96,41 @@ public:
 
 private:
     // The handler when accepting a new connection.
-    void on_accept();
+    void on_accept(mud::io::tcp::socket&&);
 
-    // The listening socket.
-    mud::io::tcp::socket _listen;
+    // The acceptor.
     mud::io::tcp::acceptor _acceptor;
 };
 
 server::server()
-    : _acceptor(_listen)
 {
-    _listen.option<bool, mud::io::ip::nonblocking>(true);
 }
 
 server::~server()
 {
-    // Deregister the listening socket from the event loop.
-    event_loop.deregister_handler(_listen.handle());
 }
 
 void
 server::run(const std::string& host, uint16_t port)
 {
     // Setup the acceptor.
+    _acceptor.on_accept(std::bind(&server::on_accept, this,
+                    std::placeholders::_1));
     _acceptor.open(mud::io::tcp::endpoint(host, port));
-    std::cout << "Waiting for connections on " << host << ":" << port
-            << std::endl;
-
-    // Register the handler in the event loop.
-    event_loop.register_handler(_listen.handle(),
-            std::bind(&server::on_accept, this) );
+    std::cout << "Waiting for clients to connect to "
+            << host << ":" << port << std::endl;
 }
 
 void
-server::on_accept()
+server::on_accept(mud::io::tcp::socket&& socket)
 {
     // Accepting the client that is currently waiting.
-    std::cout << "Accepting a waiting client .. " << std::flush;
-    mud::io::tcp::socket socket = _acceptor.accept();
-    std::cout << "done" << std::endl;
+    std::cout << "Connected ["
+            << "local: "  << socket.source_endpoint().address().str()
+            << ":"        << socket.source_endpoint().port() << " <-> "
+            << "remote: " << socket.destination_endpoint().address().str()
+            << ":"        << socket.destination_endpoint().port() << "]"
+            << std::endl;
 
     // Add the client to the list.
     clients.push_back(new client(std::move(socket)));
@@ -195,8 +195,9 @@ main(int argc, char** argv)
         return 1;
     }
 
-    // Run the event loop.
-    event_loop.loop();
+    // Run the global event loop.
+    mud::io::kernel_event_loop::global().loop();
+
     return 0;
 }
 

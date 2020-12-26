@@ -1,11 +1,14 @@
 #ifndef _MUDLIB_IO_TCP_H_
 #define _MUDLIB_IO_TCP_H_
 
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <netinet/in.h>
 #include <mud/io/ns.h>
 #include <mud/io/ip.h>
+#include <mud/io/kernel_event_loop.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -17,6 +20,7 @@ namespace tcp {
 
 /* Forward declarations. */
 class acceptor;
+class connector;
 
 /**
  * @brief The definition of a TCP endpoint.
@@ -96,6 +100,11 @@ public:
     socket(socket&&);
 
     /**
+     * @brief Move assignment.
+     */
+    socket& operator=(socket&&);
+
+    /**
      * Destructor.
      */
     virtual ~socket();
@@ -111,6 +120,19 @@ public:
      * @return The stream object.
      */
     std::ostream& ostr();
+
+    /**
+     * @brief Get the source endpoint of the socket connection.
+     * @return The source endpoint bound to the socket.
+     */
+    const endpoint& source_endpoint() const;
+
+    /**
+     * @brief Get the destination endpoint of the socket connection.
+     * @return The destination endpoint (remote peer) of an established
+     * connection.
+     */
+    const endpoint& destination_endpoint() const;
 
     /**
      * @brief Set a socket option.
@@ -158,9 +180,17 @@ private:
             std::unique_ptr<mud::io::kernel_handle> handle);
 
     /**
-     * Friend class to @c acceptor in order to access private constructor.
+     * Set the source and destination end points.
+     */
+    void source_endpoint(const endpoint&);
+    void destination_endpoint(const endpoint&);
+
+    /**
+     * Friend class to @c acceptor and @connector in order to access private
+     * functionality.
      */
     friend class mud::io::tcp::acceptor;
+    friend class mud::io::tcp::connector;
 
     /** Platform specific implementation.  */
     class impl;
@@ -174,11 +204,15 @@ private:
 class acceptor
 {
 public:
+    /** Function definition for the @c on_accept handler. */
+    typedef std::function<void(socket&&)> on_accept_func;
+
     /**
      * Constructor.
-     * @param socket [in] the socket to be used for accepting connections.
+     * @param event_loop [in] the event-loop to register the socket to.
      */
-    acceptor(mud::io::tcp::socket& socket);
+    acceptor(mud::io::kernel_event_loop& event_loop
+            = mud::io::kernel_event_loop::global());
 
     /**
      * Destructor.
@@ -187,22 +221,29 @@ public:
 
     /**
      * @brief Open the socket connection to start listening.
+     * @param endpoint [in] The end-point to listen on.
      * @throw std::system_error
      */
     void open(const endpoint& endpoint);
 
     /**
-     * @brief Accept a connection.
-     * @return The connected client.
-     * @throw std::system_error
-     *
-     * The method may block if a connection is not ready to be accepted.
+     * @brief Register a handler when a connection has been accepted.
+     * @param func [in] The handler function.
      */
-    socket accept();
+    void on_accept(on_accept_func func);
 
 private:
-    /** The socket to use for accepting connections. */
-    tcp::socket& _socket;
+    /** Event handler when a peer is connected. */
+    void on_ready_accept();
+
+    /** The socket used for listening for incoming connections. */
+    tcp::socket _listen;
+
+    /** The event-loop. */
+    mud::io::kernel_event_loop& _event_loop;
+
+    /** The on_accept handler. */
+    on_accept_func _on_accept_func;
 };
 
 /**
@@ -212,11 +253,15 @@ private:
 class connector
 {
 public:
+    /** Function definition for the @c on_connect handler. */
+    typedef std::function<void(socket&&)> on_connect_func;
+
     /**
      * Constructor.
-     * @param socket [in] the socket to be used for establishing a connection.
+     * @param event_loop [in] the event-loop to register the socket to.
      */
-    connector(mud::io::tcp::socket& socket);
+    connector(mud::io::kernel_event_loop& event_loop
+            = mud::io::kernel_event_loop::global());
 
     /**
      * Destructor.
@@ -224,14 +269,30 @@ public:
     virtual ~connector();
 
     /**
-     * @brief Connect to an endpoint.
+     * @brief Open he socket connection to initiate a connection request.
+     * @param endpoint [in] The end-point to connect to.
      * @throw std::system_error
      */
-    void connect(const endpoint& endpoint);
+    void open(const endpoint& endpoint);
+
+    /**
+     * @brief Register a handler when a connection has been made.
+     * @param func [in] The handler function.
+     */
+    void on_connect(on_connect_func func);
 
 private:
+    /** Event handler when a peer has accepted the connection. */
+    void on_ready_connect();
+
     /** The socket to use for accepting connections. */
-    tcp::socket& _socket;
+    tcp::socket _socket;
+
+    /** The event-loop. */
+    mud::io::kernel_event_loop& _event_loop;
+
+    /** The on_connect handler. */
+    on_connect_func _on_connect_func;
 };
 
 } // namespace tcp

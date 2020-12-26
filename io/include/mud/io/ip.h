@@ -105,6 +105,11 @@ protected:
     socket(socket&& rhs);
 
     /**
+     * @brief Move assignment, passing ownership of the socket.
+     */
+    socket& operator=(socket&& rhs);
+
+    /**
      * @brief Destructor.
      */
     virtual ~socket();
@@ -114,6 +119,19 @@ protected:
      */
     socket(const socket&) = delete;
     socket& operator=(const socket&) = delete;
+
+    /**
+     * @brief Get the source address of the socket connection.
+     * @return The source address (local peer) bound to the socket.
+     */
+    const address& source_address() const;
+
+    /**
+     * @brief Get the destination address of the socket connection.
+     * @return The destination address (remote peer) of an established
+     * connection.
+     */
+    const address& destination_address() const;
 
     /**
      * @brief Set a socket option.
@@ -145,7 +163,25 @@ protected:
         return option(*this);
     }
 
+protected:
+    /**
+     * Set the source address of the socket connection.
+     * @param peer [in] The source address (local peer).
+     */
+    virtual void source_address(const address& peer);
 
+    /**
+     * Set the destination address of the socket connection.
+     * @param peer [in] The source address (remote peer).
+     */
+    virtual void destination_address(const address& peer);
+
+private:
+    /** The source address (local peer). */
+    address _source_address;
+
+    /** The destination address (remote peer). */
+    address _destination_address;
 };
 
 /**

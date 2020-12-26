@@ -2,9 +2,10 @@
 #include "mud/io/pipe.h"
 #include <errno.h>
 #include <sys/select.h>
-#include <mutex>
+#include <algorithm>
 #include <system_error>
 #include <list>
+#include <vector>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -35,13 +36,15 @@ public:
      */
     void register_handler(
             const std::unique_ptr<mud::io::kernel_handle>& handle,
+            readiness_t type,
             mud::io::kernel_event_loop::event_handler handler);
 
     /**
      * Deregister an event handler associated to a handle from the loop.
      */
     void deregister_handler(
-            const std::unique_ptr<mud::io::kernel_handle>& handle);
+            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            readiness_t type);
 
     /**
      * Run the loop, waiting for all registered @c handle and invoke the
@@ -102,25 +105,24 @@ private:
     /**
      * @brief The event-handler object.
      *
-     * This class maintains the ownership of the @c mud::io::event_handler
-     * handle when it is used with the event-loop. When there is no event
-     * raised, the handle would form part of the multiplexed @c ::select
-     * and the event-loop is the owner of the handle. When an event is raised,
-     * the @c mud::io::event_handler will temporarily be handed the ownership
-     * of the handle until the event callback is finisghed. During the time
-     * the callback is invoked, the @c mud::io::kernel_event_loop::impl will not
-     * make the handle part of the mulitplexed @c ::select.
+     * This class maintains the reference of the handle and the associated
+     * @c mud::io::event_handler when it is used with the event-loop.
      */
     class handler_object
     {
     public:
         /**
-         * Constructor, registering the event-handler and getting ownership
-         * of the handle.
+         * Constructor, registering the event-handler for a given handle.
          */
         handler_object(
                 const std::unique_ptr<mud::io::kernel_handle>& handle,
+                readiness_t type,
                 kernel_event_loop::event_handler handler);
+
+        /**
+         * Copy constructor.
+         */
+        handler_object(const handler_object& rhs);
 
         /**
          * Destructor
@@ -133,6 +135,11 @@ private:
         const std::unique_ptr<mud::io::kernel_handle>& handle() const;
 
         /**
+         * Return the readiness type to examine.
+         */
+        readiness_t readiness() const;
+
+        /**
          * Invoke the registered event-handler. While the event-handler is
          * run, it will have the ownership of the handle.
          */
@@ -141,6 +148,9 @@ private:
     private:
         /** The handle */
         const std::unique_ptr<mud::io::kernel_handle>& _handle;
+
+        /** The readiness type to examine. */
+        readiness_t _readiness;
 
         /** The registered handler */
         kernel_event_loop::event_handler _handler;
@@ -179,6 +189,7 @@ kernel_event_loop::impl::impl()
     /* Always register the self-pipe */
     _handlers.push_back(handler_object(
                     _self.read_handle(),
+                    readiness_t::READING,
                     std::bind(&kernel_event_loop::impl::command_handler, this)));
 }
 
@@ -194,6 +205,7 @@ kernel_event_loop::impl::~impl()
 void
 kernel_event_loop::impl::register_handler(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
+        readiness_t readiness,
         mud::io::kernel_event_loop::event_handler handler)
 {
     std::list<handler_object>::iterator found = find(handle);
@@ -201,13 +213,14 @@ kernel_event_loop::impl::register_handler(
     {
         _handlers.erase(found);
     }
-    _handlers.push_back(handler_object(handle, handler));
+    _handlers.push_back(handler_object(handle, readiness, handler));
     nop();
 }
 
 void
 kernel_event_loop::impl::deregister_handler(
-        const std::unique_ptr<mud::io::kernel_handle>& handle)
+        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        readiness_t readiness)
 {
     std::list<handler_object>::iterator found = find(handle);
     if (found != _handlers.end())
@@ -269,14 +282,19 @@ kernel_event_loop::impl::multiplex(
     FD_ZERO(&exceptfds);
     maxfd = -1;
 
-    /* @TODO determine if Read/Write/Except is needed */
-
     /* Add all registered event handlers */
     for (auto& obj: _handlers)
     {
-        if (obj.handle() != nullptr)
+        if (obj.handle() != nullptr && obj.readiness() == readiness_t::READING)
         {
             FD_SET(*(obj.handle()), &readfds);
+            if (*(obj.handle()) > maxfd) {
+                maxfd = *(obj.handle());
+            }
+        }
+        if (obj.handle() != nullptr && obj.readiness() == readiness_t::WRITING)
+        {
+            FD_SET(*(obj.handle()), &writefds);
             if (*(obj.handle()) > maxfd) {
                 maxfd = *(obj.handle());
             }
@@ -290,12 +308,19 @@ kernel_event_loop::impl::demultiplex(
         const fd_set& writefds,
         const fd_set& exceptfds)
 {
+    // While calling the object handlers, it may potentially alter the list of
+    // handlers through @c register_handler and @c deregister_handler. To avoid
+    // invalidating any iterators in the range-for loops, use a copy of the
+    // handlers to be called.
+    std::vector<handler_object> handlers;
+    std::copy(_handlers.begin(), _handlers.end(), std::back_inserter(handlers));
+
     /* Check all excepts */
 
     /* Check all reads */
-    for (auto& obj: _handlers)
+    for (auto& obj: handlers)
     {
-        if (obj.handle() != nullptr)
+        if (obj.handle() != nullptr && obj.readiness() == readiness_t::READING)
         {
             if (FD_ISSET(*(obj.handle()), &readfds))
             {
@@ -305,6 +330,16 @@ kernel_event_loop::impl::demultiplex(
     }
 
     /* Check all writes */
+    for (auto& obj: handlers)
+    {
+        if (obj.handle() != nullptr && obj.readiness() == readiness_t::WRITING)
+        {
+            if (FD_ISSET(*(obj.handle()), &writefds))
+            {
+                obj.call();
+            }
+        }
+    }
 }
 
 void
@@ -330,8 +365,15 @@ kernel_event_loop::impl::find(const std::unique_ptr<mud::io::kernel_handle>&
 
 kernel_event_loop::impl::handler_object::handler_object(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
+        readiness_t readiness,
         mud::io::kernel_event_loop::event_handler handler)
-    : _handle(handle), _handler(handler)
+    : _handle(handle), _readiness(readiness), _handler(handler)
+{
+}
+
+kernel_event_loop::impl::handler_object::handler_object(
+        const handler_object& rhs)
+    : _handle(rhs._handle), _readiness(rhs._readiness), _handler(rhs._handler)
 {
 }
 
@@ -343,6 +385,12 @@ const std::unique_ptr<mud::io::kernel_handle>&
 kernel_event_loop::impl::handler_object::handle() const
 {
     return _handle;
+}
+
+kernel_event_loop::readiness_t
+kernel_event_loop::impl::handler_object::readiness() const
+{
+    return _readiness;
 }
 
 void
@@ -365,16 +413,18 @@ kernel_event_loop::~kernel_event_loop()
 void
 kernel_event_loop::register_handler(
         const std::unique_ptr<mud::io::kernel_handle>& handle,
+        readiness_t readiness,
         mud::io::kernel_event_loop::event_handler handler)
 {
-    _impl->register_handler(handle, handler);
+    _impl->register_handler(handle, readiness, handler);
 }
 
 void
 kernel_event_loop::deregister_handler(
-        const std::unique_ptr<mud::io::kernel_handle>& handle)
+        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        readiness_t readiness)
 {
-    _impl->deregister_handler(handle);
+    _impl->deregister_handler(handle, readiness);
 }
 
 void
@@ -387,6 +437,13 @@ void
 kernel_event_loop::terminate()
 {
     _impl->terminate();
+}
+
+/* static */ kernel_event_loop&
+kernel_event_loop::global()
+{
+    static kernel_event_loop _global;
+    return _global;
 }
 
 END_MUDLIB_IO_NS

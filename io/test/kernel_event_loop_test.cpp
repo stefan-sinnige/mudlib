@@ -57,7 +57,9 @@ FEATURE("Kernel event loop")
       })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(ctx.pipe.read_handle(), [&ctx]() {
+              ctx.event_loop.register_handler(ctx.pipe.read_handle(),
+                mud::io::kernel_event_loop::readiness_t::READING,
+                [&ctx]() {
                   char ch;
                   ctx.pipe.istr() >> ch;
                   ++ctx.calls;
@@ -65,7 +67,9 @@ FEATURE("Kernel event loop")
           })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(ctx.pipe.read_handle(), [&ctx]() {
+              ctx.event_loop.register_handler(ctx.pipe.read_handle(),
+                mud::io::kernel_event_loop::readiness_t::READING,
+                [&ctx]() {
                   char ch;
                   ctx.pipe.istr() >> ch;
                   ++ctx.other_calls;
@@ -133,7 +137,8 @@ FEATURE("Kernel event loop")
      AND ("A registered handler that handles an event")
     WHEN ("The event handler is deregistered",
         [](context& ctx) {
-            ctx.event_loop.deregister_handler(ctx.pipe.read_handle());
+            ctx.event_loop.deregister_handler(ctx.pipe.read_handle(),
+                mud::io::kernel_event_loop::readiness_t::READING);
         })
      AND ("The event is triggered")
     THEN ("The event handler is not called")
@@ -158,7 +163,9 @@ FEATURE("Kernel event loop")
     GIVEN("A running event loop")
       AND("A registered handler that terminates the loop",
           [](context& ctx) {
-            ctx.event_loop.register_handler(ctx.pipe.read_handle(), [&ctx]() {
+            ctx.event_loop.register_handler(ctx.pipe.read_handle(),
+              mud::io::kernel_event_loop::readiness_t::READING,
+              [&ctx]() {
                 char ch;
                 ctx.pipe.istr() >> ch;
                 ++ctx.calls;

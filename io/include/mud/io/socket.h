@@ -198,6 +198,11 @@ public:
     basic_socket(basic_socket&& rhs);
 
     /**
+     * @brief Move assignment, moving socket ownership.
+     */
+    basic_socket& operator=(basic_socket&& rhs);
+
+    /**
      * @brief Destructor
      */
     virtual ~basic_socket();
