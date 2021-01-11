@@ -198,6 +198,11 @@ public:
     basic_socket(basic_socket&& rhs);
 
     /**
+     * @brief Move assignment, moving socket ownership.
+     */
+    basic_socket& operator=(basic_socket&& rhs);
+
+    /**
      * @brief Destructor
      */
     virtual ~basic_socket();
@@ -221,6 +226,11 @@ public:
      * @brief The protocol when the socket was created.
      */
     protocol_t protocol() const;
+
+    /**
+     * @brief Close the socket connection.
+     */
+    void close();
 
     /**
      * Non-copyable.

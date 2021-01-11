@@ -14,9 +14,10 @@ mud::core::basic_handle<int>::basic_handle(int h)
 }
 
 template<>
-mud::core::basic_handle<int>::basic_handle(basic_handle&& h)
+mud::core::basic_handle<int>::basic_handle(basic_handle&& rhs)
 {
-    _handle = h._handle;
+    _handle = rhs._handle;
+    rhs._handle = -1;
 }
 
 template<>
@@ -28,6 +29,13 @@ template<>
 mud::core::basic_handle<int>::operator int()
 {
     return _handle;
+}
+
+template<>
+bool
+mud::core::basic_handle<int>::valid()
+{
+    return (_handle >= 0);
 }
 
 /* vi: set ai ts=4 expandtab: */

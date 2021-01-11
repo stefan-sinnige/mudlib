@@ -92,10 +92,48 @@ ip::socket::socket(
 ip::socket::socket(socket&& rhs)
     : basic_socket(std::move(rhs))
 {
+    std::swap(_source_address, rhs._source_address);
+    std::swap(_destination_address, rhs._destination_address);
+}
+
+ip::socket&
+ip::socket::operator=(socket&& rhs)
+{
+    if (this != &rhs)
+    {
+        basic_socket::operator=(std::move(rhs));
+        std::swap(_source_address, rhs._source_address);
+        std::swap(_destination_address, rhs._destination_address);
+    }
+    return *this;
 }
 
 ip::socket::~socket()
 {
+}
+
+const ip::address&
+ip::socket::source_address() const
+{
+    return _source_address;
+}
+
+const ip::address&
+ip::socket::destination_address() const
+{
+    return _destination_address;
+}
+
+void
+ip::socket::source_address(const address& peer)
+{
+    _source_address = peer;
+}
+
+void
+ip::socket::destination_address(const address& peer)
+{
+    _destination_address = peer;
 }
 
 /* ==========================================================================
@@ -149,7 +187,7 @@ ip::nonblocking::operator()(ip::socket& socket, bool value)
     {
         flags &= ~O_NONBLOCK;
     }
-    if (::fcntl(*(socket.handle()), flags) < 0)
+    if (::fcntl(*(socket.handle()), F_SETFL, flags) < 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "setting socket option");

@@ -33,7 +33,7 @@ public:
     /**
      * @brief Move constructor.
      */
-    basic_handle(basic_handle&& h);
+    basic_handle(basic_handle&& rhs);
 
     /**
      * @brief Destructor.
@@ -44,6 +44,11 @@ public:
      * @brief Return the externally defined resource.
      */
     operator handle_type();
+
+    /**
+     * @brief Return if the handle is valid.
+     */
+    bool valid();
 
     /**
      * Non default constructable.

@@ -22,6 +22,8 @@ BEGIN_MUDLIB_IO_NS
  * register and deregister event handlers. As soon as a change in registered
  * event handlers is detected, the event-loop will be enforced to take into
  * account the updated set of event handles to listen to.
+ *
+ * There is a single global event loop readily available.
  */
 class kernel_event_loop
 {
@@ -30,6 +32,15 @@ public:
      * Definition for an event-handling routine.
      */
     typedef std::function<void(void)> event_handler;
+
+    /**
+     * The types of readiness to examine.
+     */
+    enum class readiness_t
+    {
+        READING,
+        WRITING
+    };
 
     /**
      * @brief Default constructor.
@@ -56,11 +67,13 @@ public:
      *
      * This is a thread-safe operation.
      *
-     * @param[in] handle   The handle to wait for events.
-     * @param[in] handler  The event handler to register.
+     * @param[in] handle     The handle to wait for events.
+     * @param[in] readiness  The @c readiness type of examine.
+     * @param[in] handler    The event handler to register.
      */
     virtual void register_handler(
             const std::unique_ptr<mud::io::kernel_handle>& handle,
+            readiness_t readiness,
             event_handler handler);
 
     /**
@@ -70,10 +83,12 @@ public:
      *
      * This is a thread-safe operation.
      *
-     * @param[in] handle   The handle and its associated handler to remove.
+     * @param[in] handle     The handle and its associated handler to remove.
+     * @param[in] readiness  The @c readiness type of examine.
      */
     virtual void deregister_handler(
-            const std::unique_ptr<mud::io::kernel_handle>& handle);
+            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            readiness_t readiness);
 
     /**
      * Run the loop, waiting for all registered @c handle and invoke the
@@ -97,6 +112,11 @@ public:
      */
     kernel_event_loop(const kernel_event_loop&) = delete;
     kernel_event_loop& operator=(const kernel_event_loop&) = delete;
+
+    /**
+     * Return the global event-loop.
+     */
+    static kernel_event_loop& global();
 
 private:
     /**

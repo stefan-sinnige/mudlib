@@ -1,5 +1,5 @@
-#ifndef _MUDLIB_IO_TCP_H_
-#define _MUDLIB_IO_TCP_H_
+#ifndef _MUDLIB_IO_UDP_H_
+#define _MUDLIB_IO_UDP_H_
 
 #include <istream>
 #include <memory>
@@ -13,18 +13,13 @@
 BEGIN_MUDLIB_IO_NS
 
 /**
- * The Transmission Control Protocol (TCP).
+ * The User Datagram  Protocol (UDP).
  */
 
-namespace tcp {
-
-/* Forward declarations. */
-class acceptor;
-class connector;
-class communicator;
+namespace udp {
 
 /**
- * @brief The definition of a TCP endpoint.
+ * @brief The definition of a UDP endpoint.
  */
 class endpoint
 {
@@ -37,7 +32,7 @@ public:
     /**
      * @brief Constructor.
      * @param address [in] The address of the endpoint.
-     * @param port [in] The TCP port.
+     * @param port [in] The UDP port.
      */
     endpoint(const mud::io::ip::address& address, uint16_t port);
 
@@ -62,7 +57,7 @@ public:
     const mud::io::ip::address& address() const;
 
     /**
-     * @brief The TCP port of the endpoint.
+     * @brief The UDP port of the endpoint.
      */
     uint16_t port() const;
 
@@ -75,13 +70,13 @@ private:
 };
 
 /**
- * @brief The TCP socket.
+ * @brief The UDP socket.
  */
 class socket : public mud::io::ip::socket
 {
 public:
     /**
-     * @brief Constructor to create a standard TCP protocol.
+     * @brief Constructor to create a standard UDP protocol.
      */
     socket();
 
@@ -111,16 +106,32 @@ public:
     virtual ~socket();
 
     /**
+     * @brief Bind the socket connection to a source (local) endpoint.
+     * @param endpoint [in] The source endpoint.
+     * @throw std::system_error
+     */
+    void bind(const endpoint& endpoint);
+
+    /**
      * @brief Get the stream object to read from the socket.
      * @return The stream object.
      */
     std::istream& istr();
 
     /**
-     * @brief Get the stream object to write to the socket.
+     * @brief Get the stream object to write to the socket. The socket has
+     * been previously been used to receive data from a peer, such that the
+     * destination address matches that peer.
      * @return The stream object.
      */
     std::ostream& ostr();
+
+    /**
+     * @brief Get the stream object to write to the socket.
+     * @param endpont [in] The endpoint to write to.
+     * @return The stream object.
+     */
+    std::ostream& ostr(const endpoint& endpoint);
 
     /**
      * @brief Get the source endpoint of the socket connection.
@@ -172,176 +183,13 @@ public:
     socket& operator=(const socket&) = delete;
 
 private:
-    /**
-     * Constructor to be used by the @c acceptor when creating a client socket.
-     */
-    socket(mud::io::basic_socket::domain_t domain,
-            mud::io::basic_socket::type_t type,
-            mud::io::basic_socket::protocol_t protocol,
-            std::unique_ptr<mud::io::kernel_handle> handle);
-
-    /**
-     * Set the source and destination end points.
-     */
-    void source_endpoint(const endpoint&);
-    void destination_endpoint(const endpoint&);
-
-    /**
-     * Friend class to @c acceptor, @c connector and @c communicator in order
-     * to access private functionality.
-     */
-    friend class mud::io::tcp::acceptor;
-    friend class mud::io::tcp::connector;
-    friend class mud::io::tcp::communicator;
-
     /** Platform specific implementation.  */
     class impl;
     std::unique_ptr<impl> _impl;
 };
 
 /**
- * @brief Controller for accepting inbound TCP connections.
- *
- * The event controller class for opening a listening socket on a local
- * endpoint. When the listening socket registers an incoming connection
- * from a peer, the kernel event-loop invokes the @c on_accept handler,
- * while passing the client socket ownership. Continues listening to
- * other incoming connection requests until destructed.
- */
-
-class acceptor
-{
-public:
-    /** Function definition for the @c on_accept handler. */
-    typedef std::function<void(socket&&)> on_accept_func;
-
-    /**
-     * Constructor.
-     * @param event_loop [in] the event-loop to register the socket to.
-     */
-    acceptor(mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
-
-    /**
-     * @brief Move constructor.
-     */
-    acceptor(acceptor&& rhs) = default;
-
-    /**
-     * @brief Move assignment.
-     */
-    acceptor& operator=(acceptor&&);
-
-    /**
-     * Destructor.
-     */
-    virtual ~acceptor();
-
-    /**
-     * @brief Open the socket connection to start listening.
-     * @param endpoint [in] The end-point to listen on.
-     * @throw std::system_error
-     */
-    void open(const endpoint& endpoint);
-
-    /**
-     * @brief Register a handler when a connection has been accepted.
-     * @param func [in] The handler function.
-     */
-    void on_accept(on_accept_func func);
-
-    /**
-     * Non-copyable.
-     */
-    acceptor(const acceptor&) = delete;
-    acceptor& operator=(const acceptor&) = delete;
-
-private:
-    /** Event handler when a peer is connected. */
-    void on_ready_accept();
-
-    /** The socket used for listening for incoming connections. */
-    tcp::socket _listen;
-
-    /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
-
-    /** The on_accept handler. */
-    on_accept_func _on_accept_func;
-};
-
-/**
- * @brief Controller for creating outbound TCP connections.
- *
- * The event controller class for connecting to a peer a socket to a remote
- * endpoint. When the connection has been establisged to a peer, the
- * kernel eventloop invokes the @c on_connect handler, while passing the
- * ownership.
- */
-
-class connector
-{
-public:
-    /** Function definition for the @c on_connect handler. */
-    typedef std::function<void(socket&&)> on_connect_func;
-
-    /**
-     * Constructor.
-     * @param event_loop [in] the event-loop to register the socket to.
-     */
-    connector(mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
-
-    /**
-     * @brief Move constructor.
-     */
-    connector(connector&& rhs) = default;
-
-    /**
-     * @brief Move assignment.
-     */
-    connector& operator=(connector&&);
-
-    /**
-     * Destructor.
-     */
-    virtual ~connector();
-
-    /**
-     * @brief Open he socket connection to initiate a connection request.
-     * @param endpoint [in] The end-point to connect to.
-     * @throw std::system_error
-     */
-    void open(const endpoint& endpoint);
-
-    /**
-     * @brief Register a handler when a connection has been made.
-     * @param func [in] The handler function.
-     */
-    void on_connect(on_connect_func func);
-
-    /**
-     * Non-copyable.
-     */
-    connector(const connector&) = delete;
-    connector& operator=(const connector&) = delete;
-
-private:
-    /** Event handler when a peer has accepted the connection. */
-    void on_ready_connect();
-
-    /** The socket to use for accepting connections. */
-    tcp::socket _socket;
-
-    /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
-
-    /** The on_connect handler. */
-    on_connect_func _on_connect_func;
-};
-
-/**
- * @brief Controller for communicating TCP connections.
+ * @brief Controller for communicating UDP connections.
  *
  * The event controller class for communicating with a connected socket. It
  * used the kernel event-loop to be notified of any incoming messages.
@@ -395,10 +243,32 @@ public:
     std::istream& istr();
 
     /**
-     * @brief Get the stream object to write to the socket.
+     * @brief Get the stream object to write to the socket. The socket has
+     * been previously been used to receive data from a peer, such that the
+     * destination address matches that peer.
      * @return The stream object.
      */
     std::ostream& ostr();
+
+    /**
+     * @brief Get the stream object to write to the socket.
+     * @param endpont [in] The endpoint to write to.
+     * @return The stream object.
+     */
+    std::ostream& ostr(const endpoint& endpoint);
+
+    /**
+     * @brief Get the source endpoint of the socket connection.
+     * @return The source endpoint bound to the socket.
+     */
+    const endpoint& source_endpoint() const;
+
+    /**
+     * @brief Get the destination endpoint of the socket connection.
+     * @return The destination endpoint (remote peer) of an established
+     * connection.
+     */
+    const endpoint& destination_endpoint() const;
 
     /**
      * @brief Register a handler when a message has been receiveed.
@@ -417,7 +287,7 @@ private:
     void on_ready_receive();
 
     /** The socket used for communications. */
-    tcp::socket _socket;
+    udp::socket _socket;
 
     /** The event-loop. */
     mud::io::kernel_event_loop& _event_loop;
@@ -426,11 +296,11 @@ private:
     on_receive_func _on_receive_func;
 };
 
-} // namespace tcp
+} // namespace udp
 
 END_MUDLIB_IO_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_IO_TCP_H_ */
+#endif /* _MUDLIB_IO_UDP_H_ */
 

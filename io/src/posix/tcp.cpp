@@ -3,6 +3,8 @@
 #include "mud/io/exception.h"
 #include "mud/io/streambuf.h"
 
+using namespace std::placeholders;
+
 BEGIN_MUDLIB_IO_NS
 
 /**
@@ -10,25 +12,58 @@ BEGIN_MUDLIB_IO_NS
  * to be used are the POSIX 'recv' and 'recv'.
  */
 
-class socket_read
+namespace _tcp {
+
+class streambuf: public mud::io::basic_streambuf
 {
 public:
-    ssize_t
-    operator()(int fd, void* buf, size_t count) {
-        return ::recv(fd, buf, count, 0);
-    }
+    /* Constructor for UDP specific stream-buffer.
+     * @param [in] socket  The reference to the socket.
+     * @param [in] handle  The kernel handle to use.
+     * @param [in] bufsize The initial buffer size.
+     * @param [in] putbacksize The size of the putback buffer.
+     */
+    streambuf(
+            tcp::socket& socket,
+            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            size_t bufsize = 10,
+            size_t putbacksize = 4);
+
+    /* UDP specific read and write functions. */
+    ssize_t read(void* buffer, size_t count) override;
+    ssize_t write(const void* buffer, size_t count) override;
+
+private:
+    /* The reference to the socket. */
+    tcp::socket& _socket;
 };
 
-class socket_write
+streambuf::streambuf(
+        tcp::socket& socket,
+        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        size_t bufsize,
+        size_t putbacksize)
+    : mud::io::basic_streambuf(
+              handle,
+              bufsize,
+              putbacksize),
+      _socket(socket)
 {
-public:
-    ssize_t
-    operator()(int fd, const void* buf, size_t count) {
-        return ::send(fd, buf, count, 0);
-    }
-};
+}
 
-typedef mud::io::basic_streambuf<socket_read, socket_write> socket_streambuf;
+ssize_t
+streambuf::read(void* buf, size_t count)
+{
+    return ::recv(*handle(), buf, count, 0);
+}
+
+ssize_t
+streambuf::write(const void* buf, size_t count)
+{
+    return ::send(*handle(), buf, count, 0);
+}
+
+} // namespace _tcp
 
 /**
  * @brief Implementation class for POSIX compliant @c TCP socket.
@@ -40,7 +75,7 @@ public:
     /**
      * Constructor.
      */
-    impl(const std::unique_ptr<mud::io::kernel_handle>&);
+    impl(tcp::socket& socket, const std::unique_ptr<mud::io::kernel_handle>&);
 
     /**
      * Destructor.
@@ -57,7 +92,20 @@ public:
      */
     std::ostream& ostr();
 
+    /**
+     *  Get the endpoints of the socket connection.
+     */
+    endpoint& source_endpoint();
+
+    /**
+     * Get the destination endpoint of the socket connection.
+     */
+    endpoint& destination_endpoint();
+
 private:
+    /** Reference to the socket. */
+    tcp::socket& _socket;
+
     /** Reference to the socket handle. */
     const std::unique_ptr<mud::io::kernel_handle>& _handle;
 
@@ -68,24 +116,31 @@ private:
     std::ostream _ostr;
 
     /** The stream buffer for reading */
-    std::unique_ptr<socket_streambuf> _read_buffer;
+    std::unique_ptr<_tcp::streambuf> _read_buffer;
 
     /** The stream buffer for writing */
-    std::unique_ptr<socket_streambuf> _write_buffer;
+    std::unique_ptr<_tcp::streambuf> _write_buffer;
+
+    /** The source (local peer) endpoint details. */
+    endpoint _source_endpoint;
+
+    /** The destination (remote peer) endpoint details. */
+    endpoint _destination_endpoint;
 };
 
-tcp::socket::impl::impl(const std::unique_ptr<mud::io::kernel_handle>& handle)
-    : _handle(handle), _istr(nullptr), _ostr(nullptr)
+tcp::socket::impl::impl(
+        tcp::socket& socket,
+        const std::unique_ptr<mud::io::kernel_handle>& handle)
+    : _socket(socket), _handle(handle), _istr(nullptr), _ostr(nullptr)
 {
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */
-    _read_buffer  = std::unique_ptr<socket_streambuf>(
-                    new socket_streambuf(_handle, 4096, 16));
-    _write_buffer = std::unique_ptr<socket_streambuf>(
-                    new socket_streambuf(_handle, 4096, 16));
+    _read_buffer  = std::unique_ptr<_tcp::streambuf>(
+                    new _tcp::streambuf(_socket, _handle, 4096, 16));
+    _write_buffer = std::unique_ptr<_tcp::streambuf>(
+                    new _tcp::streambuf(_socket, _handle, 4096, 16));
     _istr.rdbuf(_read_buffer.get());
     _ostr.rdbuf(_write_buffer.get());
-
 }
 
 tcp::socket::impl::~impl()
@@ -102,6 +157,18 @@ std::ostream&
 tcp::socket::impl::ostr()
 {
     return _ostr;
+}
+
+tcp::endpoint&
+tcp::socket::impl::source_endpoint()
+{
+    return _source_endpoint;
+}
+
+tcp::endpoint&
+tcp::socket::impl::destination_endpoint()
+{
+    return _destination_endpoint;
 }
 
 /** The endpoint */
@@ -154,7 +221,7 @@ tcp::socket::socket()
               basic_socket::type_t::STREAM,
               basic_socket::protocol_t::INTRINSIC)
 {
-    _impl = std::unique_ptr<impl>(new impl(handle()));
+    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
 }
 
 tcp::socket::socket(
@@ -163,7 +230,7 @@ tcp::socket::socket(
         basic_socket::protocol_t protocol)
     : ip::socket(domain, type, protocol)
 {
-    _impl = std::unique_ptr<impl>(new impl(handle()));
+    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
 }
 
 tcp::socket::socket(
@@ -173,13 +240,24 @@ tcp::socket::socket(
         std::unique_ptr<mud::io::kernel_handle> hndl)
     : ip::socket(domain, type, protocol, std::move(hndl))
 {
-    _impl = std::unique_ptr<impl>(new impl(handle()));
+    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
 }
 
 tcp::socket::socket(socket&& rhs)
-    : ip::socket(std::move(rhs))
+    : ip::socket(std::move(rhs)), _impl(nullptr)
 {
-    _impl = std::unique_ptr<impl>(new impl(handle()));
+    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+}
+
+tcp::socket&
+tcp::socket::operator=(tcp::socket&& rhs)
+{
+    if (this != &rhs)
+    {
+        ip::socket::operator=(std::move(rhs));
+        _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    }
+    return *this;
 }
 
 tcp::socket::~socket()
@@ -198,17 +276,59 @@ tcp::socket::ostr()
     return _impl->ostr();
 }
 
+const tcp::endpoint&
+tcp::socket::source_endpoint() const
+{
+    return _impl->source_endpoint();
+}
+
+const tcp::endpoint&
+tcp::socket::destination_endpoint() const
+{
+    return _impl->destination_endpoint();
+}
+
+void
+tcp::socket::source_endpoint(const tcp::endpoint& endpoint)
+{
+    _impl->source_endpoint() = endpoint;
+}
+
+void
+tcp::socket::destination_endpoint(const tcp::endpoint& endpoint)
+{
+    _impl->destination_endpoint() = endpoint;
+}
+
 /** The acceptor */
 
-tcp::acceptor::acceptor(tcp::socket& socket)
-    : _socket(socket)
+tcp::acceptor::acceptor(kernel_event_loop& event_loop)
+    : _event_loop(event_loop), _on_accept_func(nullptr)
 {
-    /* Set-up to reuse address to eliminate TIME_WAIT conditions. */
-    _socket.option<bool, mud::io::ip::reuse_address>(true);
+    /* Set-up socket options to
+     *   - reuse address to eliminate TIME_WAIT conditions.
+     *   - enable non-blocking socket I/O */
+    _listen.option<bool, mud::io::ip::reuse_address>(true);
+    _listen.option<bool, mud::io::ip::nonblocking>(true);
+}
+
+tcp::acceptor&
+tcp::acceptor::operator=(acceptor&& rhs)
+{
+    if (&rhs != this)
+    {
+        _listen = std::move(rhs._listen);
+        _on_accept_func = rhs._on_accept_func;
+    }
+    return *this;
 }
 
 tcp::acceptor::~acceptor()
 {
+    /* Deregister the listening socket from the event-loop */
+    _event_loop.deregister_handler(
+            _listen.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING);
 }
 
 void
@@ -216,49 +336,106 @@ tcp::acceptor::open(const endpoint& endpoint)
 {
     /* Bind the socket to the endpoint. */
     struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
-    addr.sin_family = static_cast<sa_family_t>(_socket.domain());
+    addr.sin_family = static_cast<sa_family_t>(_listen.domain());
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
-    if (::bind(*(_socket.handle()), (struct sockaddr*)&addr, sizeof(addr)) != 0)
+    if (::bind(*(_listen.handle()), (struct sockaddr*)&addr, len) != 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "binding TCP endpoint");
     }
 
+    /* Establish the source endpoint details */
+    if (::getsockname(*(_listen.handle()), (struct sockaddr*)&addr, &len) != 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "retrieving TCP local endpoint details");
+    }
+    tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
+    _listen.source_endpoint(local_endpoint);
+
     /* Prepare to listen. */
-    if (::listen(*(_socket.handle()), 8) != 0) {
+    if (::listen(*(_listen.handle()), 8) != 0) {
         throw std::system_error(errno, std::system_category(),
                 "listening for TCP connections");
     }
+
+    /* Register the event handler to be invoked when a client connects */
+    _event_loop.register_handler(_listen.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING,
+            std::bind(&acceptor::on_ready_accept, this));
 }
 
-tcp::socket
-tcp::acceptor::accept()
+void
+tcp::acceptor::on_accept(on_accept_func func)
+{
+    _on_accept_func = func;
+}
+
+void
+tcp::acceptor::on_ready_accept()
 {
     // Accept the connection. This may block if there is no client ready.
     struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
-    socklen_t addr_sz = sizeof(addr);
-    int fd = ::accept(*(_socket.handle()), (struct sockaddr*)&addr, &addr_sz);
+    int fd = ::accept(*(_listen.handle()), (struct sockaddr*)&addr, &len);
     if (fd < 0) {
         throw std::system_error(errno, std::system_category(),
                 "accepting TCP connection");
     }
 
-    // Return the client socket connection.
+    // Create the client socket connection.
     std::unique_ptr<mud::io::kernel_handle> handle;
     handle = std::unique_ptr<mud::io::kernel_handle>(
                     new mud::io::kernel_handle(fd));
-    return tcp::socket(_socket.domain(), _socket.type(), _socket.protocol(),
-                    std::move(handle));
+    tcp::socket client(_listen.domain(), _listen.type(), _listen.protocol(),
+            std::move(handle));
+
+    // Establish the source and destination endpoint details
+    if (::getsockname(*(client.handle()), (struct sockaddr*)&addr, &len) != 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "retrieving TCP local endpoint details");
+    }
+    tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
+    client.source_endpoint(local_endpoint);
+
+    if (::getpeername(*(client.handle()), (struct sockaddr*)&addr, &len) != 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "retrieving TCP remote endpoint details");
+    }
+    tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
+    client.destination_endpoint(remote_endpoint);
+
+    // Call the registered function handler.
+    if (_on_accept_func != nullptr)
+    {
+        _on_accept_func(std::move(client));
+    }
 }
 
 /** The connector */
 
-tcp::connector::connector(tcp::socket& socket)
-    : _socket(socket)
+tcp::connector::connector(kernel_event_loop& event_loop)
+    : _event_loop(event_loop), _on_connect_func(nullptr)
 {
+    /* Set-up socket option to enable non-blocking I/O */
+    _socket.option<bool, mud::io::ip::nonblocking>(true);
+}
+
+tcp::connector&
+tcp::connector::operator=(connector&& rhs)
+{
+    if (&rhs != this)
+    {
+        _socket = std::move(rhs._socket);
+        _on_connect_func = rhs._on_connect_func;
+    }
+    return *this;
 }
 
 tcp::connector::~connector()
@@ -266,19 +443,139 @@ tcp::connector::~connector()
 }
 
 void
-tcp::connector::connect(const endpoint& endpoint)
+tcp::connector::open(const endpoint& endpoint)
 {
     /* Connect to the endpoint. */
     struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
     addr.sin_family = static_cast<sa_family_t>(_socket.domain());
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
-    if (::connect(*(_socket.handle()), (struct sockaddr*)&addr,
-                    sizeof(addr)) != 0)
+    if (::connect(*(_socket.handle()), (struct sockaddr*)&addr, len) != 0)
+    {
+        if (errno != EINPROGRESS)
+        {
+            throw std::system_error(errno, std::system_category(),
+                    "connecting TCP endpoint");
+        }
+    }
+
+    /* Register the event handler to be invoked when a connection has been
+     * established. */
+    _event_loop.register_handler(_socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::WRITING,
+            std::bind(&connector::on_ready_connect, this));
+}
+
+void
+tcp::connector::on_connect(on_connect_func func)
+{
+    _on_connect_func = func;
+}
+
+void
+tcp::connector::on_ready_connect()
+{
+    /* Deregister the connecting socket from the event-loop */
+    _event_loop.deregister_handler(
+            _socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::WRITING);
+
+    // Establish the source and destination endpoint details
+    struct sockaddr_in addr;
+    socklen_t len = sizeof(addr);
+    if (::getsockname(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(errno, std::system_category(),
-                "connecting TCP endpoint");
+                "retrieving TCP local endpoint details");
+    }
+    tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
+    _socket.source_endpoint(local_endpoint);
+
+    if (::getpeername(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "retrieving TCP remote endpoint details");
+    }
+    tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
+    _socket.destination_endpoint(remote_endpoint);
+
+    // Call the registered function handler.
+    if (_on_connect_func != nullptr)
+    {
+        _on_connect_func(std::move(_socket));
+    }
+}
+
+/** The communicator */
+
+tcp::communicator::communicator(
+        kernel_event_loop& event_loop)
+    : _event_loop(event_loop), _on_receive_func(nullptr)
+{
+}
+
+tcp::communicator&
+tcp::communicator::operator=(communicator&& rhs)
+{
+    if (&rhs != this)
+    {
+        _socket = std::move(rhs._socket);
+        _on_receive_func = rhs._on_receive_func;
+    }
+    return *this;
+}
+
+tcp::communicator::~communicator()
+{
+    close();
+}
+
+void
+tcp::communicator::open(tcp::socket&& socket)
+{
+    _event_loop.register_handler(_socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING,
+            std::bind(&communicator::on_ready_receive, this));
+    _socket = std::move(socket);
+}
+
+void
+tcp::communicator::close()
+{
+    _event_loop.deregister_handler(
+            _socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING);
+    _socket.close();
+}
+
+std::ostream&
+tcp::communicator::ostr()
+{
+    return _socket.ostr();
+}
+
+std::istream&
+tcp::communicator::istr()
+{
+    return _socket.istr();
+}
+
+void
+tcp::communicator::on_receive(
+        on_receive_func func)
+{
+    _on_receive_func = func;
+}
+
+void
+tcp::communicator::on_ready_receive()
+{
+    // Call the registered function handler.
+    if (_on_receive_func != nullptr)
+    {
+        _on_receive_func();
     }
 }
 

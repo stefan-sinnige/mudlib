@@ -29,9 +29,7 @@ basic_socket::basic_socket(
 
 basic_socket::~basic_socket()
 {
-    if (_handle != nullptr) {
-        ::close(*_handle);
-    }
+    close();
 }
 
 basic_socket::basic_socket(basic_socket&& rhs)
@@ -40,6 +38,28 @@ basic_socket::basic_socket(basic_socket&& rhs)
     _domain = rhs._domain;
     _type = rhs._type;
     _protocol = rhs._protocol;
+}
+
+basic_socket&
+basic_socket::operator=(basic_socket&& rhs)
+{
+    if (this != &rhs)
+    {
+        _handle = std::move(rhs._handle);
+        _domain = rhs._domain;
+        _type = rhs._type;
+        _protocol = rhs._protocol;
+    }
+    return *this;
+}
+
+void
+basic_socket::close()
+{
+    if (_handle != nullptr) {
+        ::close(*_handle);
+        _handle.reset(nullptr);
+    }
 }
 
 const std::unique_ptr<kernel_handle>&

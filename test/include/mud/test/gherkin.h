@@ -1060,19 +1060,30 @@ template<typename Context>
 bool
 mud::test::_scenario<Context>::run(context_type& ctx)
 {
+    static const char* color_default = "\x1b[0m";
+    static const char* color_red     = "\x1b[31m";
+    static const char* color_green   = "\x1b[32m";
     if (!(*_given)(ctx)) {
-        std::cout << "[FAIL] " << _id << std::endl;
+        std::cout << "["
+                << color_red << "FAIL" << color_default
+                << "] " << _id << std::endl;
         return false;
     }
     if (!(*_when)(ctx)) {
-        std::cout << "[FAIL] " << _id << std::endl;
+        std::cout << "["
+                << color_red << "FAIL" << color_default
+                << "] " << _id << std::endl;
         return false;
     }
     if (!(*_then)(ctx)) {
-        std::cout << "[FAIL] " << _id << std::endl;
+        std::cout << "["
+                << color_red << "FAIL" << color_default
+                << "] " << _id << std::endl;
         return false;
     }
-    std::cout << "[PASS] " << _id << std::endl;
+    std::cout << "["
+            << color_green << "PASS" << color_default
+            << "] " << _id << std::endl;
     return true;
 }
 
@@ -1358,7 +1369,11 @@ public:
         virtual std::pair<size_t, size_t> run(                               \
                 const std::string& filter) override                          \
         {                                                                    \
-            std::cout << "FEATURE: " << _id << std::endl;                    \
+            static const char* color_default = "\x1b[0m";                    \
+            static const char* color_bold    = "\x1b[1m";                    \
+            std::cout << color_bold                                          \
+                      << "FEATURE: " << _id                                  \
+                      << color_default << std::endl;                         \
             std::pair<size_t, size_t> result = {-1, -1};                     \
             {                                                                \
                 class Dummy { public: bool run() { return true; }};          \
