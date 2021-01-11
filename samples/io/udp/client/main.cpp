@@ -24,12 +24,14 @@ private:
     // The handler when receiving
     void on_receive();
 
-    // The client socket
-    mud::io::udp::socket _socket;
+    // The communication channel
+    mud::io::udp::communicator _communicator;
 };
 
 client::client()
 {
+    // Open the communication channel
+    _communicator.on_receive(std::bind(&client::on_receive, this));
 }
 
 client::~client()
@@ -39,17 +41,15 @@ client::~client()
 void
 client::run(const std::string& host, uint16_t port)
 {
-    // Register a handler and register a handler for receiving
-    mud::io::kernel_event_loop::global().register_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING,
-            std::bind(&client::on_receive, this) );
+    // Setup the communicator
+    mud::io::udp::socket socket;
+    _communicator.open(std::move(socket));
 
     // Send a message
     std::string msg = "Hello";
     std::cout << "Sending  to " << host << ":" << port << ": "
             << msg <<  std::endl;
-    _socket.ostr(mud::io::udp::endpoint(host, port)) << msg << std::endl;
+    _communicator.ostr(mud::io::udp::endpoint(host, port)) << msg << std::endl;
 }
 
 void
@@ -57,21 +57,20 @@ client::on_receive()
 {
     // Receive
     std::string msg;
-    _socket.istr() >> msg;
-    if (_socket.istr().fail()) {
+    _communicator.istr() >> msg;
+    if (_communicator.istr().fail()) {
         std::cout << "Connection closed" <<std::endl;
-        mud::io::kernel_event_loop::global().deregister_handler(
-                _socket.handle(),
-                mud::io::kernel_event_loop::readiness_t::READING);
+        _communicator.close();
     }
     else
     {
-        std::cout << "Connected ["
-                << "local: "  << _socket.source_endpoint().address().str()
-                << ":"        << _socket.source_endpoint().port() << " <-> "
-                << "remote: " << _socket.destination_endpoint().address().str()
-                << ":"        << _socket.destination_endpoint().port() << "]"
-                << std::endl;
+        std::cout
+                << "Connected ["
+                        << "local: "  << _communicator.source_endpoint().address().str()
+                        << ":"        << _communicator.source_endpoint().port() << " <-> "
+                        << "remote: " << _communicator.destination_endpoint().address().str()
+                        << ":"        << _communicator.destination_endpoint().port() << "]"
+                        << std::endl;
         std::cout << "Receiving: "<<  msg << std::endl;
     }
 

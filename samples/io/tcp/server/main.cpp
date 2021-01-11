@@ -33,29 +33,23 @@ private:
     // The handler when receiving data
     void on_receive();
 
-    // The client socket
-    mud::io::tcp::socket _socket;
+    // The client communication channel
+    mud::io::tcp::communicator _communicator;
 
     // Flag to indicate if client is still connected
     bool _connected;
 };
 
 client::client(mud::io::tcp::socket&& socket)
-    : _socket(std::move(socket)), _connected(true)
+    : _connected(true)
 {
-    // Register the client in the event handler.
-    mud::io::kernel_event_loop::global().register_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING,
-            std::bind(&client::on_receive, this) );
+    // Open the communication channel
+    _communicator.on_receive(std::bind(&client::on_receive, this));
+    _communicator.open(std::move(socket));
 }
 
 client::~client()
 {
-    // Deregister the client from the event handler.
-    mud::io::kernel_event_loop::global().deregister_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING);
 }
 
 void
@@ -63,13 +57,11 @@ client::on_receive()
 {
     // Receive
     std::string msg;
-    _socket.istr() >> msg;
-    if (_socket.istr().fail()) {
+    _communicator.istr() >> msg;
+    if (_communicator.istr().fail()) {
         std::cout << "Connection closed" <<std::endl;
         _connected = false;
-        mud::io::kernel_event_loop::global().deregister_handler(
-                _socket.handle(),
-                mud::io::kernel_event_loop::readiness_t::READING);
+        _communicator.close();
         return;
     }
     std::cout << "Receiving: " << msg << std::endl;
@@ -77,7 +69,8 @@ client::on_receive()
     // Response
     msg = "Goodbye";
     std::cout << "Sending  : " << msg <<  std::endl;
-    _socket.ostr() << msg << std::endl;
+    _communicator.ostr() << msg << std::endl;
+    _communicator.close();
 }
 
 // ===========================================================================
@@ -104,6 +97,8 @@ private:
 
 server::server()
 {
+    _acceptor.on_accept(std::bind(&server::on_accept, this,
+                    std::placeholders::_1));
 }
 
 server::~server()
@@ -114,8 +109,6 @@ void
 server::run(const std::string& host, uint16_t port)
 {
     // Setup the acceptor.
-    _acceptor.on_accept(std::bind(&server::on_accept, this,
-                    std::placeholders::_1));
     _acceptor.open(mud::io::tcp::endpoint(host, port));
     std::cout << "Waiting for clients to connect to "
             << host << ":" << port << std::endl;

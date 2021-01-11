@@ -10,21 +10,18 @@
 CONTEXT()
     // Constructor, executed before each scenario run
     context()
-        : acceptor(nullptr), connector(nullptr),
-          accepted(false), connected(false)
+        : accepted(false), connected(false)
     {
     }
 
     // Destructor, executed after each scenario run
     ~context() {
-        delete acceptor;
-        delete connector;
     }
 
     mud::io::tcp::socket server;
     mud::io::tcp::socket client;
-    mud::io::tcp::acceptor *acceptor;
-    mud::io::tcp::connector *connector;
+    mud::io::tcp::acceptor acceptor;
+    mud::io::tcp::connector connector;
     bool accepted;
     bool connected;
 END_CONTEXT()
@@ -35,23 +32,21 @@ FEATURE("TCP sockets")
   DEFINE_GIVEN("A TCP server is listening for inbound connection",
     [](context& ctx){
         std::string localhost("127.0.0.1");
-        ctx.acceptor = new mud::io::tcp::acceptor();
-        ctx.acceptor->on_accept([&ctx](mud::io::tcp::socket&& socket) {
+        ctx.acceptor.on_accept([&ctx](mud::io::tcp::socket&& socket) {
             ctx.server = std::move(socket);
             ctx.accepted = true;
         });
-        ctx.acceptor->open(mud::io::tcp::endpoint(localhost, 52618));
+        ctx.acceptor.open(mud::io::tcp::endpoint(localhost, 52618));
     })
   DEFINE_WHEN("The TCP client connects",
     [](context& ctx){
         std::string localhost("127.0.0.1");
-        ctx.connector = new mud::io::tcp::connector();
-        ctx.connector->on_connect([&ctx](mud::io::tcp::socket&& socket) {
+        ctx.connector.on_connect([&ctx](mud::io::tcp::socket&& socket) {
             ctx.client = std::move(socket);
             ctx.client.option<bool, mud::io::ip::nonblocking>(false);
             ctx.connected = true;
         });
-        ctx.connector->open(mud::io::tcp::endpoint(localhost, 52618));
+        ctx.connector.open(mud::io::tcp::endpoint(localhost, 52618));
     })
   DEFINE_WHEN("And the TCP server accepts the connection",
     [](context& ctx){
@@ -73,7 +68,7 @@ FEATURE("TCP sockets")
    * The scenarios 
    */
 
-  SCENARIO("Type traits")
+  SCENARIO("Type traits (socket)")
     GIVEN("A TCP socket type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
     THEN ("The type is default constructible",
@@ -100,6 +95,93 @@ FEATURE("TCP sockets")
         [](context& ctx) {
             ASSERT(false, std::is_copy_assignable<
                   mud::io::tcp::socket>::value);
+        })
+
+  SCENARIO("Type traits (acceptor)")
+    GIVEN("A socket acceptor type", [](context&){})
+    WHEN ("The type traits are examined", [](context&){})
+    THEN ("The type is default constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_default_constructible<
+                  mud::io::tcp::acceptor>::value);
+        })
+     AND ("The type is move-constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_constructible<
+                  mud::io::tcp::acceptor>::value);
+        })
+     AND ("The type is move-assignable",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_assignable<
+                  mud::io::tcp::acceptor>::value);
+        })
+     AND ("The type is not copy-constructible",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_constructible<
+                  mud::io::tcp::acceptor>::value);
+        })
+     AND ("The type is not copy-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_assignable<
+                  mud::io::tcp::acceptor>::value);
+        })
+
+  SCENARIO("Type traits (connector)")
+    GIVEN("A socket connector type", [](context&){})
+    WHEN ("The type traits are examined", [](context&){})
+    THEN ("The type is default constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_default_constructible<
+                  mud::io::tcp::connector>::value);
+        })
+     AND ("The type is move-constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_constructible<
+                  mud::io::tcp::connector>::value);
+        })
+     AND ("The type is move-assignable",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_assignable<
+                  mud::io::tcp::connector>::value);
+        })
+     AND ("The type is not copy-constructible",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_constructible<
+                  mud::io::tcp::connector>::value);
+        })
+     AND ("The type is not copy-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_assignable<
+                  mud::io::tcp::connector>::value);
+        })
+
+  SCENARIO("Type traits (communicator)")
+    GIVEN("A socket communicator type", [](context&){})
+    WHEN ("The type traits are examined", [](context&){})
+    THEN ("The type is default constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_default_constructible<
+                  mud::io::tcp::communicator>::value);
+        })
+     AND ("The type is move-constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_constructible<
+                  mud::io::tcp::communicator>::value);
+        })
+     AND ("The type is move-assignable",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_assignable<
+                  mud::io::tcp::communicator>::value);
+        })
+     AND ("The type is not copy-constructible",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_constructible<
+                  mud::io::tcp::communicator>::value);
+        })
+     AND ("The type is not copy-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_assignable<
+                  mud::io::tcp::communicator>::value);
         })
 
     SCENARIO("Accepting connection")

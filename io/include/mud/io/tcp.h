@@ -21,6 +21,7 @@ namespace tcp {
 /* Forward declarations. */
 class acceptor;
 class connector;
+class communicator;
 
 /**
  * @brief The definition of a TCP endpoint.
@@ -186,11 +187,12 @@ private:
     void destination_endpoint(const endpoint&);
 
     /**
-     * Friend class to @c acceptor and @connector in order to access private
-     * functionality.
+     * Friend class to @c acceptor, @c connector and @c communicator in order
+     * to access private functionality.
      */
     friend class mud::io::tcp::acceptor;
     friend class mud::io::tcp::connector;
+    friend class mud::io::tcp::communicator;
 
     /** Platform specific implementation.  */
     class impl;
@@ -199,6 +201,12 @@ private:
 
 /**
  * @brief Controller for accepting inbound TCP connections.
+ *
+ * The event controller class for opening a listening socket on a local
+ * endpoint. When the listening socket registers an incoming connection
+ * from a peer, the kernel event-loop invokes the @c on_accept handler,
+ * while passing the client socket ownership. Continues listening to
+ * other incoming connection requests until destructed.
  */
 
 class acceptor
@@ -213,6 +221,16 @@ public:
      */
     acceptor(mud::io::kernel_event_loop& event_loop
             = mud::io::kernel_event_loop::global());
+
+    /**
+     * @brief Move constructor.
+     */
+    acceptor(acceptor&& rhs) = default;
+
+    /**
+     * @brief Move assignment.
+     */
+    acceptor& operator=(acceptor&&);
 
     /**
      * Destructor.
@@ -232,6 +250,12 @@ public:
      */
     void on_accept(on_accept_func func);
 
+    /**
+     * Non-copyable.
+     */
+    acceptor(const acceptor&) = delete;
+    acceptor& operator=(const acceptor&) = delete;
+
 private:
     /** Event handler when a peer is connected. */
     void on_ready_accept();
@@ -248,6 +272,11 @@ private:
 
 /**
  * @brief Controller for creating outbound TCP connections.
+ *
+ * The event controller class for connecting to a peer a socket to a remote
+ * endpoint. When the connection has been establisged to a peer, the
+ * kernel eventloop invokes the @c on_connect handler, while passing the
+ * ownership.
  */
 
 class connector
@@ -262,6 +291,16 @@ public:
      */
     connector(mud::io::kernel_event_loop& event_loop
             = mud::io::kernel_event_loop::global());
+
+    /**
+     * @brief Move constructor.
+     */
+    connector(connector&& rhs) = default;
+
+    /**
+     * @brief Move assignment.
+     */
+    connector& operator=(connector&&);
 
     /**
      * Destructor.
@@ -281,6 +320,12 @@ public:
      */
     void on_connect(on_connect_func func);
 
+    /**
+     * Non-copyable.
+     */
+    connector(const connector&) = delete;
+    connector& operator=(const connector&) = delete;
+
 private:
     /** Event handler when a peer has accepted the connection. */
     void on_ready_connect();
@@ -293,6 +338,92 @@ private:
 
     /** The on_connect handler. */
     on_connect_func _on_connect_func;
+};
+
+/**
+ * @brief Controller for communicating TCP connections.
+ *
+ * The event controller class for communicating with a connected socket. It
+ * used the kernel event-loop to be notified of any incoming messages.
+ */
+
+class communicator
+{
+public:
+    /** Function definition for the @c on_receive handler. */
+    typedef std::function<void()> on_receive_func;
+
+    /**
+     * Constructor.
+     * @param event_loop [in] The event-loop to register the socket to.
+     */
+    communicator(
+            mud::io::kernel_event_loop& event_loop
+            = mud::io::kernel_event_loop::global());
+
+    /**
+     * @brief Move constructor.
+     */
+    communicator(communicator&& rhs) = default;
+
+    /**
+     * @brief Move assignment.
+     */
+    communicator& operator=(communicator&&);
+
+    /**
+     * Destructor. Closes the communication.
+     */
+    virtual ~communicator();
+
+    /**
+     * @brief Open the socket connection to start communication..
+     * @param socket [in] The socket to use in communications.
+     * @throw std::system_error
+     */
+    void open(socket&& socket);
+
+    /**
+     * @brief Close the communication channel.
+     */
+    void close();
+
+    /**
+     * @brief Get the stream object to read from the socket.
+     * @return The stream object.
+     */
+    std::istream& istr();
+
+    /**
+     * @brief Get the stream object to write to the socket.
+     * @return The stream object.
+     */
+    std::ostream& ostr();
+
+    /**
+     * @brief Register a handler when a message has been receiveed.
+     * @param func [in] The handler function.
+     */
+    void on_receive(on_receive_func func);
+
+    /**
+     * Non-copyable.
+     */
+    communicator(const communicator&) = delete;
+    communicator& operator=(const communicator&) = delete;
+
+private:
+    /** Event handler when a peer is connected. */
+    void on_ready_receive();
+
+    /** The socket used for communications. */
+    tcp::socket _socket;
+
+    /** The event-loop. */
+    mud::io::kernel_event_loop& _event_loop;
+
+    /** The on_receive handler. */
+    on_receive_func _on_receive_func;
 };
 
 } // namespace tcp

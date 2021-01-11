@@ -37,7 +37,7 @@ FEATURE("UDP sockets")
    * The scenarios 
    */
 
-  SCENARIO("Type traits")
+  SCENARIO("Type traits (socket)")
     GIVEN("A UDP socket type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
     THEN ("The type is default constructible",
@@ -64,6 +64,35 @@ FEATURE("UDP sockets")
         [](context& ctx) {
             ASSERT(true, std::is_move_assignable<
                   mud::io::udp::socket>::value);
+        })
+
+  SCENARIO("Type traits (communicator)")
+    GIVEN("A socket communicator type", [](context&){})
+    WHEN ("The type traits are examined", [](context&){})
+    THEN ("The type is default constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_default_constructible<
+                  mud::io::udp::communicator>::value);
+        })
+     AND ("The type is move-constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_constructible<
+                  mud::io::udp::communicator>::value);
+        })
+     AND ("The type is move-assignable",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_assignable<
+                  mud::io::udp::communicator>::value);
+        })
+     AND ("The type is not copy-constructible",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_constructible<
+                  mud::io::udp::communicator>::value);
+        })
+     AND ("The type is not copy-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_assignable<
+                  mud::io::udp::communicator>::value);
         })
 
     SCENARIO("Writing and reading binary data")

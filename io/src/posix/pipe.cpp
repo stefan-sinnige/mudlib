@@ -161,9 +161,11 @@ pipe::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(*_read_handle);
+        _read_handle.reset(nullptr);
     }
     if (_write_handle != nullptr) {
         ::close(*_write_handle);
+        _write_handle.reset(nullptr);
     }
 }
 

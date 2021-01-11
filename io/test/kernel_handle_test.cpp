@@ -18,12 +18,28 @@ CONTEXT()
     /* Operating system resource */
     int resource;
 
-    /* A kernel handle */
+    /* Kernel handles */
     std::unique_ptr<mud::io::kernel_handle> handle;
 END_CONTEXT()
 
 FEATURE("Kernel handle")
-
+      DEFINE_GIVEN("An initialised operating system resource type",
+        [](context& ctx) {
+            ctx.resource = 10;
+        })
+      DEFINE_WHEN ("A kernel handle is assigned",
+        [](context& ctx) {
+            ctx.handle = std::unique_ptr<mud::io::kernel_handle>(
+                new mud::io::kernel_handle(ctx.resource));
+        })
+     DEFINE_THEN ("The kernel handle is valid",
+        [](context& ctx) {
+            ASSERT(true, ctx.handle->valid());
+        })
+     DEFINE_THEN ("The kernel handle is invalid",
+        [](context& ctx) {
+            ASSERT(false, ctx.handle->valid());
+        })
   END_DEFINES()
 
   /*
@@ -49,21 +65,25 @@ FEATURE("Kernel handle")
                   mud::io::kernel_handle,
                   mud::io::kernel_handle>::value);
         })
+    THEN ("The type is move-constructible",
+        [](context& ctx) {
+            ASSERT(true, std::is_move_constructible<
+                  mud::io::kernel_handle>::value);
+        })
+    THEN ("The type is not move-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_move_assignable<
+                  mud::io::kernel_handle>::value);
+        })
 
   SCENARIO("Assignment to an operating system resource")
-    GIVEN("An initialised operating system resource type",
-        [](context& ctx) {
-            ctx.resource = 10;
-        })
-    WHEN ("A kernel handle is assigned",
-        [](context& ctx) {
-            ctx.handle = std::unique_ptr<mud::io::kernel_handle>(
-                new mud::io::kernel_handle(ctx.resource));
-        })
+    GIVEN("An initialised operating system resource type")
+    WHEN ("A kernel handle is assigned")
     THEN ("A kernel handle becomes the owner of the resource",
         [](context& ctx) {
             ASSERT(ctx.resource, (int)*ctx.handle);
         })
+    AND ("The kernel handle is valid")
 
 END_FEATURE()
 

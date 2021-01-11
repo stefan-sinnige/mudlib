@@ -389,6 +389,95 @@ udp::socket::ostr(const endpoint& endpoint)
     return _impl->ostr(endpoint);
 }
 
+/** The communicator */
+
+udp::communicator::communicator(
+        kernel_event_loop& event_loop)
+    : _event_loop(event_loop), _on_receive_func(nullptr)
+{
+}
+
+udp::communicator&
+udp::communicator::operator=(communicator&& rhs)
+{
+    if (&rhs != this)
+    {
+        _socket = std::move(rhs._socket);
+        _on_receive_func = rhs._on_receive_func;
+    }
+    return *this;
+}
+
+udp::communicator::~communicator()
+{
+    close();
+}
+
+void
+udp::communicator::open(udp::socket&& socket)
+{
+    _event_loop.register_handler(_socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING,
+            std::bind(&communicator::on_ready_receive, this));
+    _socket = std::move(socket);
+}
+
+void
+udp::communicator::close()
+{
+    _event_loop.deregister_handler(
+            _socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING);
+    _socket.close();
+}
+
+std::ostream&
+udp::communicator::ostr()
+{
+    return _socket.ostr();
+}
+
+std::ostream&
+udp::communicator::ostr(const endpoint& endpoint)
+{
+    return _socket.ostr(endpoint);
+}
+
+std::istream&
+udp::communicator::istr()
+{
+    return _socket.istr();
+}
+
+const udp::endpoint&
+udp::communicator::source_endpoint() const
+{
+    return _socket.source_endpoint();
+}
+
+const udp::endpoint&
+udp::communicator::destination_endpoint() const
+{
+    return _socket.destination_endpoint();
+}
+
+void
+udp::communicator::on_receive(
+        on_receive_func func)
+{
+    _on_receive_func = func;
+}
+
+void
+udp::communicator::on_ready_receive()
+{
+    // Call the registered function handler.
+    if (_on_receive_func != nullptr)
+    {
+        _on_receive_func();
+    }
+}
+
 END_MUDLIB_IO_NS
 
 /* vi: set ai ts=4 expandtab: */

@@ -312,6 +312,17 @@ tcp::acceptor::acceptor(kernel_event_loop& event_loop)
     _listen.option<bool, mud::io::ip::nonblocking>(true);
 }
 
+tcp::acceptor&
+tcp::acceptor::operator=(acceptor&& rhs)
+{
+    if (&rhs != this)
+    {
+        _listen = std::move(rhs._listen);
+        _on_accept_func = rhs._on_accept_func;
+    }
+    return *this;
+}
+
 tcp::acceptor::~acceptor()
 {
     /* Deregister the listening socket from the event-loop */
@@ -416,6 +427,17 @@ tcp::connector::connector(kernel_event_loop& event_loop)
     _socket.option<bool, mud::io::ip::nonblocking>(true);
 }
 
+tcp::connector&
+tcp::connector::operator=(connector&& rhs)
+{
+    if (&rhs != this)
+    {
+        _socket = std::move(rhs._socket);
+        _on_connect_func = rhs._on_connect_func;
+    }
+    return *this;
+}
+
 tcp::connector::~connector()
 {
 }
@@ -483,6 +505,77 @@ tcp::connector::on_ready_connect()
     if (_on_connect_func != nullptr)
     {
         _on_connect_func(std::move(_socket));
+    }
+}
+
+/** The communicator */
+
+tcp::communicator::communicator(
+        kernel_event_loop& event_loop)
+    : _event_loop(event_loop), _on_receive_func(nullptr)
+{
+}
+
+tcp::communicator&
+tcp::communicator::operator=(communicator&& rhs)
+{
+    if (&rhs != this)
+    {
+        _socket = std::move(rhs._socket);
+        _on_receive_func = rhs._on_receive_func;
+    }
+    return *this;
+}
+
+tcp::communicator::~communicator()
+{
+    close();
+}
+
+void
+tcp::communicator::open(tcp::socket&& socket)
+{
+    _event_loop.register_handler(_socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING,
+            std::bind(&communicator::on_ready_receive, this));
+    _socket = std::move(socket);
+}
+
+void
+tcp::communicator::close()
+{
+    _event_loop.deregister_handler(
+            _socket.handle(),
+            mud::io::kernel_event_loop::readiness_t::READING);
+    _socket.close();
+}
+
+std::ostream&
+tcp::communicator::ostr()
+{
+    return _socket.ostr();
+}
+
+std::istream&
+tcp::communicator::istr()
+{
+    return _socket.istr();
+}
+
+void
+tcp::communicator::on_receive(
+        on_receive_func func)
+{
+    _on_receive_func = func;
+}
+
+void
+tcp::communicator::on_ready_receive()
+{
+    // Call the registered function handler.
+    if (_on_receive_func != nullptr)
+    {
+        _on_receive_func();
     }
 }
 

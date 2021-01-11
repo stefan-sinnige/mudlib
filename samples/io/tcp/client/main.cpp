@@ -28,12 +28,15 @@ private:
     void on_receive();
 
     // The client socket
-    mud::io::tcp::socket _socket;
     mud::io::tcp::connector _connector;
+    mud::io::tcp::communicator _communicator;
 };
 
 client::client()
 {
+    _connector.on_connect(std::bind(&client::on_connect, this,
+                    std::placeholders::_1));
+    _communicator.on_receive(std::bind(&client::on_receive, this));
 }
 
 client::~client()
@@ -44,8 +47,6 @@ void
 client::run(const std::string& host, uint16_t port)
 {
     // Setup the connector.
-    _connector.on_connect(std::bind(&client::on_connect, this,
-                    std::placeholders::_1));
     _connector.open(mud::io::tcp::endpoint(host, port));
     std::cout << "Waiting to connect to server at " << host << ":" << port
             << std::endl;
@@ -54,24 +55,20 @@ client::run(const std::string& host, uint16_t port)
 void
 client::on_connect(mud::io::tcp::socket&& socket)
 {
-    _socket = std::move(socket);
     std::cout << "Connected ["
-            << "local: "  << _socket.source_endpoint().address().str()
-            << ":"        << _socket.source_endpoint().port() << " <-> "
-            << "remote: " << _socket.destination_endpoint().address().str()
-            << ":"        << _socket.destination_endpoint().port() << "]"
+            << "local: "  << socket.source_endpoint().address().str()
+            << ":"        << socket.source_endpoint().port() << " <-> "
+            << "remote: " << socket.destination_endpoint().address().str()
+            << ":"        << socket.destination_endpoint().port() << "]"
             << std::endl;
 
-    // Register a handler and register a handler for receiving
-    mud::io::kernel_event_loop::global().register_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING,
-            std::bind(&client::on_receive, this) );
+    // Open the communication channel (passing over the socket)
+    _communicator.open(std::move(socket));
 
     // Send a message
     std::string msg = "Hello";
     std::cout << "Sending  : " << msg <<  std::endl;
-    _socket.ostr() << msg << std::endl;
+    _communicator.ostr() << msg << std::endl;
 }
 
 void
@@ -79,19 +76,15 @@ client::on_receive()
 {
     // Receive
     std::string msg;
-    _socket.istr() >> msg;
-    if (_socket.istr().fail()) {
+    _communicator.istr() >> msg;
+    if (_communicator.istr().fail()) {
         std::cout << "Connection closed" <<std::endl;
-        mud::io::kernel_event_loop::global().deregister_handler(
-                _socket.handle(),
-                mud::io::kernel_event_loop::readiness_t::READING);
+        mud::io::kernel_event_loop::global().terminate();
     }
     else {
         std::cout << "Receiving: " << msg << std::endl;
     }
 
-    // Stop the event-loop, that will exit the application.
-    mud::io::kernel_event_loop::global().terminate();
 }
 
 // ===========================================================================

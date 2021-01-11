@@ -731,7 +731,7 @@ to copy a socket to another socket (but they can be referenced or they can
 be moved to another socket instance).
 
 The TCP protocol defines a unique connection by the combination of a host
-address and a port number. This combiantion is represented by the
+address and a port number. This combination is represented by the
 \texttt{tcp::endpoint}\indextt{tcp::endpoint} class. The endpoint is used
 by both the server-side to define the connection paramters to listen to and
 for a client-side endpoint to connect to. Once a connection has been
@@ -839,9 +839,9 @@ acceptor.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
 \subsubsection{Client-Side}
 
 Similar to the server-side, the client-side has a controller class that is
-responsible for perfoming the connection request. The \indextt{tcp::connector}
+responsible for perfoming the connection request. The \texttt{tcp::connector}
 \indextt{tcp::connector}. A default socket is used as a placeholder for when
-the connection has been established. The \indextt{tcp::connector} will
+the connection has been established. The \texttt{tcp::connector} will
 attempt to connect to a specified endpoint\indextt{tcp::endpoint}.
 
 A non-blocking connection attempt requires more overhead, but allows more
@@ -862,6 +862,15 @@ connector.on_connect([](mud::io::tcp::socket&& server) {
 }
 connector.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
 \end{lstlisting}
+
+\subsubsection{Communications}
+
+Once a connection has been established, the communication over the socket
+connection can be maintained by the \texttt{tcp::communicator}%
+\indextt{tcp::communicator} class. It takes over the ownership of the
+socket and provides access to the socket's input and output streams.
+It also registers itself as a handler for any received message at the
+\texttt{kernel\_event\_loop}. 
 
 \subsection{UDP}
 
@@ -975,7 +984,7 @@ part of the message.
   captionpos=b,
   caption={Non-blocking \texttt{tcp::acceptor}.},
   label=lst:non-blocking-tcp-acceptor]
-mud::io::udp::acceptor server();
+mud::io::udp::socket server();
 server.bind(mud::io::tcp::endpoint("127.0.0.1", 12345));
 acceptor.on_receive([](mud::io::tcp::socket&& client) {
     // Message is ready to be received from the client.
@@ -994,12 +1003,22 @@ reply message.
   captionpos=b,
   caption={Non-blocking \texttt{tcp::connector}.},
   label=lst:non-blocking-tcp-connector]
-mud::io::udp::acceptor client();
+mud::io::udp::socket client();
 client.ostr(mud::io::tcp::endpoint("127.0.0.1", 12345)) 
 acceptor.on_receive([](mud::io::tcp::socket&& server) {
     // Reply message is ready to be received from the server.
 }
 \end{lstlisting}
+
+\subsubsection{Communications}
+
+Once a socket has been created, the communication over the socket
+connection can be maintained by the \texttt{udp::communicator}%
+\indextt{udp::communicator} class. It takes over the ownership of the
+socket and provides access to the socket's input and output streams.
+It also registers itself as a handler for any received message at the
+\texttt{kernel\_event\_loop}. 
+
 \subsection{Socket Options}
 \index{socket options}
 

@@ -228,6 +228,11 @@ public:
     protocol_t protocol() const;
 
     /**
+     * @brief Close the socket connection.
+     */
+    void close();
+
+    /**
      * Non-copyable.
      */
     basic_socket(const basic_socket&) = delete;
