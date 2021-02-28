@@ -2,6 +2,7 @@
 #define _MUDLIB_CORE_H_
 
 #include <mud/core/ns.h>
+#include <mud/core/endian.h>
 #include <mud/core/exception.h>
 #include <mud/core/handle.h>
 

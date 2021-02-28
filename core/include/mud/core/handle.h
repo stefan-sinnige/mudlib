@@ -18,7 +18,7 @@ BEGIN_MUDLIB_CORE_NS
  * As a resource is associated to a single handle, the handle object is often
  * used in combination with a @c std::unique_ptr to ensure unique access.
  */
-template<typename Type>
+template<typename Type, Type Invalid>
 class basic_handle
 {
 public:
@@ -67,6 +67,38 @@ private:
      */
     handle_type _handle;
 };
+
+template<typename Type, Type Invalid>
+basic_handle<Type, Invalid>::basic_handle(Type h)
+    : _handle(h)
+{
+}
+
+template<typename Type, Type Invalid>
+basic_handle<Type, Invalid>::basic_handle(basic_handle&& rhs)
+{
+    _handle = rhs._handle;
+    rhs._handle = Invalid;
+}
+
+template<typename Type, Type Invalid>
+basic_handle<Type, Invalid>::~basic_handle()
+{
+    _handle = Invalid;
+}
+
+template<typename Type, Type Invalid>
+basic_handle<Type, Invalid>::basic_handle::operator Type()
+{
+    return _handle;
+}
+
+template<typename Type, Type Invalid>
+bool
+basic_handle<Type, Invalid>::valid()
+{
+    return (_handle != Invalid);
+}
 
 END_MUDLIB_CORE_NS
 

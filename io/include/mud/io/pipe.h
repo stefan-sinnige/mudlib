@@ -16,7 +16,7 @@ BEGIN_MUDLIB_IO_NS
  * known as the source) and the other end that reads the data (also known as
  * the sink).
  */
-class pipe
+class MUDLIB_IO_API pipe
 {
 public:
     /**
@@ -73,7 +73,10 @@ private:
      * Platform specific implementation.
      */
     class impl;
-    std::unique_ptr<impl> _impl;
+    struct impl_deleter {
+        void operator()(impl*) const;
+    };
+    std::unique_ptr<impl, impl_deleter> _impl;
 };
 
 END_MUDLIB_IO_NS

@@ -25,7 +25,7 @@ BEGIN_MUDLIB_IO_NS
  *
  * There is a single global event loop readily available.
  */
-class kernel_event_loop
+class MUDLIB_IO_API kernel_event_loop
 {
 public:
     /**
@@ -123,7 +123,10 @@ private:
      * Platform specific implementation.
      */
     class impl;
-    std::unique_ptr<impl> _impl;
+    struct impl_deleter {
+        void operator()(impl*) const;
+    };
+    std::unique_ptr<impl, impl_deleter> _impl;
 };
 
 END_MUDLIB_IO_NS

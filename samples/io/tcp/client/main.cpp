@@ -78,6 +78,7 @@ client::on_receive()
     std::string msg;
     _communicator.istr() >> msg;
     if (_communicator.istr().fail()) {
+        _communicator.close();
         std::cout << "Connection closed" <<std::endl;
         mud::io::kernel_event_loop::global().terminate();
     }
@@ -130,6 +131,7 @@ main(int argc, char** argv)
 
     // Run the event loop.
     mud::io::kernel_event_loop::global().loop();
+
     return 0;
 }
 

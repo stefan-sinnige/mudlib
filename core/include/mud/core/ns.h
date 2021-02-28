@@ -2,13 +2,13 @@
 #define _MUDLIB_CORE_NS_H_
 
 #if defined(WINDOWS) && defined(NATIVE)
-    #if defined(EXPORTS)
+    #if defined(MUDLIB_CORE_EXPORTS)
         #define MUDLIB_CORE_API __declspec(dllexport)
     #else
         #define MUDLIB_CORE_API __declspec(dllimport)
     #endif
 #else
-    #define MUDCORE_API
+    #define MUDLIB_CORE_API
 #endif
 
 #define BEGIN_MUDLIB_CORE_NS namespace mud { namespace core {

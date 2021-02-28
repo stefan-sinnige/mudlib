@@ -2,7 +2,6 @@
 #include "mud/test.h"
 #include <string>
 #include <type_traits>
-#include <unistd.h>
 
 /* *INDENT-OFF* */
 

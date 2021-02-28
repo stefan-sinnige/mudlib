@@ -1,6 +1,7 @@
 #ifndef _MUDLIB_TEST_GHERKIN_H_
 #define _MUDLIB_TEST_GHERKIN_H_
 
+#include <functional>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -40,7 +41,7 @@ template<typename Context> class _feature;
  * any type, provided that there is an @c std::istream and @c std::ostream
  * streaming operators defined.
  */
-class _table
+class MUDLIB_TEST_API _table
 {
 public:
     typedef std::string                column_type;
@@ -1093,7 +1094,7 @@ mud::test::_scenario<Context>::run(context_type& ctx)
  * This class defines the required method for any feature and provides a means
  * to have all features to be registered within a feature factory.
  */
-class _base_feature
+class MUDLIB_TEST_API _base_feature
 {
 public:
     _base_feature();
@@ -1242,7 +1243,8 @@ mud::test::_feature<Context>::construct_then(const std::string& id)
  * @param line [in] The line number.
  * @param details [in] Additinal context details about the assertion.
  */
-bool AssertFailed(const char* file, int line, const std::string& details);
+MUDLIB_TEST_API bool AssertFailed(const char* file, int line,
+        const std::string& details);
 
 /**
  * @brief Template class that verifies if two values (result and expected) are
@@ -1269,7 +1271,7 @@ Assert(const char* file, int line, T result, T expected)
 /**
  * @brief A factory to hold all the features.
  */
-class _feature_factory
+class MUDLIB_TEST_API _feature_factory
 {
 public:
     typedef std::function<mud::test::_base_feature*()> creator_func;

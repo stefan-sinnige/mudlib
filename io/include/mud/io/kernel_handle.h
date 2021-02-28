@@ -26,7 +26,7 @@ BEGIN_MUDLIB_IO_NS
  * cannot be copied. For this purpose, the @c kernel_handle class (and all its
  * inherited classes) are not copyable.
  */
-typedef mud::core::basic_handle<int> kernel_handle;
+typedef mud::core::basic_handle<int, 0> kernel_handle;
 
 END_MUDLIB_IO_NS
 
