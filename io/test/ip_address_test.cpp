@@ -46,8 +46,8 @@ FEATURE("IP Address")
             ctx.addr = mud::io::ip::address(str); })
      WHEN ("Converted to an IP address", [](context&){})
      THEN ("The value is converted to an <address>", [](context& ctx) {
-            in_addr_t expected = htonl(ctx.sample().entry<uint32_t>("address"));
-            ASSERT((in_addr_t)ctx.addr , expected); })
+            uint32_t expected = mud::io::ip::to_network_order(ctx.sample().entry<uint32_t>("address"));
+            ASSERT((uint32_t)ctx.addr , expected); })
      SAMPLES("dotted-decimal", "address")
          SAMPLE("0.0.0.0", 0x00000000)
          SAMPLE("1.2.3.4", 0x01020304)
@@ -56,7 +56,7 @@ FEATURE("IP Address")
 
   SCENARIO("Conversion from network-order address to dotted-decimal")
     GIVEN ("An <address>", [](context& ctx) {
-            in_addr_t addr = htonl(ctx.sample().entry<uint32_t>("address"));
+            uint32_t addr = mud::io::ip::to_network_order(ctx.sample().entry<uint32_t>("address"));
             ctx.addr = mud::io::ip::address(addr); })
      WHEN ("Converted to an IP address", [](context&){})
      THEN ("The value is converted to a <dotted-decimal>", [](context& ctx) {

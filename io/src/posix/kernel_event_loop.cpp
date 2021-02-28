@@ -1,11 +1,17 @@
 #include "mud/io/kernel_event_loop.h"
-#include "mud/io/pipe.h"
 #include <errno.h>
-#include <sys/select.h>
 #include <algorithm>
 #include <system_error>
 #include <list>
 #include <vector>
+#if defined(WINDOWS) && defined(NATIVE)
+    #include <winsock2.h>
+    #include <windows.h>
+    #include "mud/io/udp.h"
+#else
+    #include <sys/select.h>
+    #include "mud/io/pipe.h"
+#endif
 
 BEGIN_MUDLIB_IO_NS
 
@@ -16,7 +22,7 @@ BEGIN_MUDLIB_IO_NS
  * The I/O event-loop for POSIX systems uses the @c select to perform the
  * multiplexing of I/O @c handle's. Intra-pipe activity, like termination
  * requests and re-registration of event handlers, is accomplished through
- * a self-pipe.
+ * a self-pipe/self-socket.
  */
 class kernel_event_loop::impl
 {
@@ -174,7 +180,11 @@ private:
     command_type _cmd;
 
     /** Self-pipe for internal communications. */
+#if defined(WINDOWS) && defined(NATIVE)
+    mud::io::udp::socket _self;
+#else
     mud::io::pipe _self;
+#endif
 
     /** Registered event handlers. */
     std::list<handler_object> _handlers;
@@ -187,10 +197,18 @@ kernel_event_loop::impl::impl()
     : _cmd(NOP), _running(false)
 {
     /* Always register the self-pipe */
+#if defined(WINDOWS) && defined(NATIVE)
+    _self.bind(mud::io::udp::endpoint(mud::io::ip::address("127.0.0.1"), 0));
+    _handlers.push_back(handler_object(
+                    _self.handle(),
+                    readiness_t::READING,
+                    std::bind(&kernel_event_loop::impl::command_handler, this)));
+#else
     _handlers.push_back(handler_object(
                     _self.read_handle(),
                     readiness_t::READING,
                     std::bind(&kernel_event_loop::impl::command_handler, this)));
+#endif
 }
 
 kernel_event_loop::impl::~impl()
@@ -261,13 +279,21 @@ kernel_event_loop::impl::loop()
 void
 kernel_event_loop::impl::terminate()
 {
+#if defined (WINDOWS) && defined(NATIVE)
+    _self.ostr(_self.source_endpoint()) << TERMINATION << std::flush;
+#else
     _self.ostr() << TERMINATION << std::flush;
+#endif
 }
 
 void
 kernel_event_loop::impl::nop()
 {
+#if defined (WINDOWS) && defined(NATIVE)
+    _self.ostr(_self.source_endpoint()) << NOP << std::flush;
+#else
     _self.ostr() << NOP << std::flush;
+#endif
 }
 
 void
@@ -361,6 +387,12 @@ kernel_event_loop::impl::find(const std::unique_ptr<mud::io::kernel_handle>&
     });
 }
 
+void
+kernel_event_loop::impl_deleter::operator()(kernel_event_loop::impl* ptr) const
+{
+    delete ptr;
+}
+
 /** The implementation of the handler-object. */
 
 kernel_event_loop::impl::handler_object::handler_object(
@@ -403,7 +435,7 @@ kernel_event_loop::impl::handler_object::call()
 
 kernel_event_loop::kernel_event_loop()
 {
-    _impl = std::unique_ptr<impl>(new impl());
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
 kernel_event_loop::~kernel_event_loop()

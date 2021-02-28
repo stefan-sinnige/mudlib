@@ -1,14 +1,22 @@
-#include "mud/io/ip.h"
-#include "mud/io/exception.h"
-
-#include <arpa/inet.h>
+#if defined(WINDOWS) && defined(NATIVE)
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #define SETSOCKOPT_CAST (const char*)
+    #define GETSOCKOPT_CAST (char*)
+#else
+    #include <arpa/inet.h>
+    #include <sys/ioctl.h>
+    #include <sys/socket.h>
+    #include <unistd.h>
+    #define SETSOCKOPT_CAST (const void*)
+    #define GETSOCKOPT_CAST (void*)
+#endif
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <system_error>
+#include "mud/io/ip.h"
+#include "mud/io/exception.h"
 
 BEGIN_MUDLIB_IO_NS
 
@@ -21,7 +29,7 @@ ip::address::address()
 {
 }
 
-ip::address::address(in_addr_t nr)
+ip::address::address(uint32_t nr)
     : m_address(nr)
 {
 }
@@ -54,7 +62,7 @@ ip::address::~address()
 {
 }
 
-ip::address::operator in_addr_t() const
+ip::address::operator uint32_t() const
 {
     return m_address;
 }
@@ -144,8 +152,8 @@ void
 ip::reuse_address::operator()(ip::socket& socket, bool value)
 {
     int enable = value;
-    if (::setsockopt(*(socket.handle()), SOL_SOCKET, SO_REUSEADDR, &enable,
-                    sizeof(int)) < 0)
+    if (::setsockopt(*(socket.handle()), SOL_SOCKET, SO_REUSEADDR,
+                    SETSOCKOPT_CAST &enable, sizeof(int)) < 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "setting socket option");
@@ -157,8 +165,8 @@ ip::reuse_address::operator()(ip::socket& socket)
 {
     int enable = false;
     socklen_t len = sizeof(int);
-    if (::getsockopt(*(socket.handle()), SOL_SOCKET, SO_REUSEADDR, &enable,
-                    &len) < 0)
+    if (::getsockopt(*(socket.handle()), SOL_SOCKET, SO_REUSEADDR,
+                    GETSOCKOPT_CAST &enable, &len) < 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "retrieving socket option");
@@ -173,11 +181,19 @@ ip::reuse_address::operator()(ip::socket& socket)
 void
 ip::nonblocking::operator()(ip::socket& socket, bool value)
 {
+#if defined(WINDOWS) && defined(NATIVE)
+    u_long mode = value;
+    if (::ioctlsocket(*(socket.handle()), FIONBIO, &mode) != 0)
+    {
+        throw std::system_error(::WSAGetLastError(), std::system_category(),
+                "setting socket option (non-blocking)");
+    }
+#else
     int flags;
     if ((flags = ::fcntl(*(socket.handle()), F_GETFL, 0)) < 0)
     {
         throw std::system_error(errno, std::system_category(),
-                "setting socket option");
+                "setting socket option (non-blocking)");
     }
     if (value)
     {
@@ -190,20 +206,26 @@ ip::nonblocking::operator()(ip::socket& socket, bool value)
     if (::fcntl(*(socket.handle()), F_SETFL, flags) < 0)
     {
         throw std::system_error(errno, std::system_category(),
-                "setting socket option");
+                "setting socket option (non-blocking)");
     }
+#endif
 }
 
 bool
 ip::nonblocking::operator()(ip::socket& socket)
 {
+#if defined(WINDOWS) && defined(NATIVE)
+    throw std::system_error(-1, std::system_category(),
+            "retrieving socket option (noon-blocking) not supported");
+#else
     int flags;
     if ((flags = ::fcntl(*(socket.handle()), F_GETFL, 0)) < 0)
     {
         throw std::system_error(errno, std::system_category(),
-                "retrieving socket option");
+                "retrieving socket option (non-blocking)");
     }
     return (flags & O_NONBLOCK) == O_NONBLOCK;
+#endif
 }
 
 END_MUDLIB_IO_NS

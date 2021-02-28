@@ -1,4 +1,17 @@
-#include <sys/socket.h>
+#if defined(WINDOWS) && defined(NATIVE)
+    typedef short sa_family_t;
+    #define RECV_CAST (char*)
+    #define SEND_CAST (const char*)
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #include <io.h>
+#else
+    #define RECV_CAST (void*)
+    #define SEND_CAST (const void*)
+    #include <netinet/in.h>
+    #include <sys/socket.h>
+#endif
+#include "mud/io/ip.h"
 #include "mud/io/tcp.h"
 #include "mud/io/exception.h"
 #include "mud/io/streambuf.h"
@@ -54,13 +67,13 @@ streambuf::streambuf(
 ssize_t
 streambuf::read(void* buf, size_t count)
 {
-    return ::recv(*handle(), buf, count, 0);
+    return ::recv(*handle(), RECV_CAST buf, count, 0);
 }
 
 ssize_t
 streambuf::write(const void* buf, size_t count)
 {
-    return ::send(*handle(), buf, count, 0);
+    return ::send(*handle(), SEND_CAST buf, count, 0);
 }
 
 } // namespace _tcp
@@ -171,6 +184,12 @@ tcp::socket::impl::destination_endpoint()
     return _destination_endpoint;
 }
 
+void
+tcp::socket::impl_deleter::operator()(tcp::socket::impl* ptr) const
+{
+    delete ptr;
+}
+
 /** The endpoint */
 
 tcp::endpoint::endpoint()
@@ -221,7 +240,7 @@ tcp::socket::socket()
               basic_socket::type_t::STREAM,
               basic_socket::protocol_t::INTRINSIC)
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 tcp::socket::socket(
@@ -230,7 +249,7 @@ tcp::socket::socket(
         basic_socket::protocol_t protocol)
     : ip::socket(domain, type, protocol)
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 tcp::socket::socket(
@@ -240,13 +259,13 @@ tcp::socket::socket(
         std::unique_ptr<mud::io::kernel_handle> hndl)
     : ip::socket(domain, type, protocol, std::move(hndl))
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 tcp::socket::socket(socket&& rhs)
     : ip::socket(std::move(rhs)), _impl(nullptr)
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 tcp::socket&
@@ -255,7 +274,7 @@ tcp::socket::operator=(tcp::socket&& rhs)
     if (this != &rhs)
     {
         ip::socket::operator=(std::move(rhs));
-        _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+        _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
     }
     return *this;
 }
@@ -343,14 +362,14 @@ tcp::acceptor::open(const endpoint& endpoint)
     addr.sin_addr.s_addr = endpoint.address();
     if (::bind(*(_listen.handle()), (struct sockaddr*)&addr, len) != 0)
     {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(_listen.error(), std::system_category(),
                 "binding TCP endpoint");
     }
 
     /* Establish the source endpoint details */
     if (::getsockname(*(_listen.handle()), (struct sockaddr*)&addr, &len) != 0)
     {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(_listen.error(), std::system_category(),
                 "retrieving TCP local endpoint details");
     }
     tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
@@ -358,7 +377,7 @@ tcp::acceptor::open(const endpoint& endpoint)
 
     /* Prepare to listen. */
     if (::listen(*(_listen.handle()), 8) != 0) {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(_listen.error(), std::system_category(),
                 "listening for TCP connections");
     }
 
@@ -383,7 +402,7 @@ tcp::acceptor::on_ready_accept()
     ::memset(&addr, 0, sizeof(sockaddr_in));
     int fd = ::accept(*(_listen.handle()), (struct sockaddr*)&addr, &len);
     if (fd < 0) {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(_listen.error(), std::system_category(),
                 "accepting TCP connection");
     }
 
@@ -397,7 +416,7 @@ tcp::acceptor::on_ready_accept()
     // Establish the source and destination endpoint details
     if (::getsockname(*(client.handle()), (struct sockaddr*)&addr, &len) != 0)
     {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(client.error(), std::system_category(),
                 "retrieving TCP local endpoint details");
     }
     tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
@@ -405,7 +424,7 @@ tcp::acceptor::on_ready_accept()
 
     if (::getpeername(*(client.handle()), (struct sockaddr*)&addr, &len) != 0)
     {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(client.error(), std::system_category(),
                 "retrieving TCP remote endpoint details");
     }
     tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
@@ -454,11 +473,19 @@ tcp::connector::open(const endpoint& endpoint)
     addr.sin_addr.s_addr = endpoint.address();
     if (::connect(*(_socket.handle()), (struct sockaddr*)&addr, len) != 0)
     {
-        if (errno != EINPROGRESS)
+#if defined(WINDOWS) && defined(NATIVE)
+        if (_socket.error() != WSAEWOULDBLOCK)
         {
-            throw std::system_error(errno, std::system_category(),
+            throw std::system_error(_socket.error(), std::system_category(),
                     "connecting TCP endpoint");
         }
+#else
+        if (_socket.error() != EINPROGRESS)
+        {
+            throw std::system_error(_socket.error(), std::system_category(),
+                    "connecting TCP endpoint");
+        }
+#endif
     }
 
     /* Register the event handler to be invoked when a connection has been
@@ -487,7 +514,7 @@ tcp::connector::on_ready_connect()
     socklen_t len = sizeof(addr);
     if (::getsockname(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
     {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(_socket.error(), std::system_category(),
                 "retrieving TCP local endpoint details");
     }
     tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
@@ -495,7 +522,7 @@ tcp::connector::on_ready_connect()
 
     if (::getpeername(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
     {
-        throw std::system_error(errno, std::system_category(),
+        throw std::system_error(_socket.error(), std::system_category(),
                 "retrieving TCP remote endpoint details");
     }
     tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
