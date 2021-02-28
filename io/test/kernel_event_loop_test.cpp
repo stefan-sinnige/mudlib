@@ -1,5 +1,5 @@
 #include "mud/io/kernel_event_loop.h"
-#include "mud/io/pipe.h"
+#include "mud/io/udp.h"
 #include "mud/test.h"
 #include <future>
 #include <ostream>
@@ -12,6 +12,7 @@ CONTEXT()
     context() {
         calls = 0;
         other_calls = 0;
+        itc.bind(mud::io::udp::endpoint(mud::io::ip::address("127.0.0.1"), 0));
     }
 
     /* Destructor after each scenario */
@@ -31,8 +32,8 @@ CONTEXT()
     /* The status of the event loop */
     std::future<void> future;
 
-    /* A pipe for inter thread communication. */
-    mud::io::pipe pipe;
+    /* A UDP socket for inter thread communication. */
+    mud::io::udp::socket itc;
 
     /* A counter for the number of calls executed in a handler. */
     int calls;
@@ -57,27 +58,27 @@ FEATURE("Kernel event loop")
       })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(ctx.pipe.read_handle(),
+              ctx.event_loop.register_handler(ctx.itc.handle(),
                 mud::io::kernel_event_loop::readiness_t::READING,
                 [&ctx]() {
                   char ch;
-                  ctx.pipe.istr() >> ch;
+                  ctx.itc.istr() >> ch;
                   ++ctx.calls;
               });
           })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(ctx.pipe.read_handle(),
+              ctx.event_loop.register_handler(ctx.itc.handle(),
                 mud::io::kernel_event_loop::readiness_t::READING,
                 [&ctx]() {
                   char ch;
-                  ctx.pipe.istr() >> ch;
+                  ctx.itc.istr() >> ch;
                   ++ctx.other_calls;
               });
           })
   DEFINE_WHEN("The event is triggered",
       [](context& ctx) {
-              ctx.pipe.ostr() << 'T' << std::flush;
+              ctx.itc.ostr(ctx.itc.source_endpoint()) << 'T' << std::flush;
           })
   DEFINE_THEN("The event loop is terminated",
       [](context& ctx) {
@@ -137,7 +138,7 @@ FEATURE("Kernel event loop")
      AND ("A registered handler that handles an event")
     WHEN ("The event handler is deregistered",
         [](context& ctx) {
-            ctx.event_loop.deregister_handler(ctx.pipe.read_handle(),
+            ctx.event_loop.deregister_handler(ctx.itc.handle(),
                 mud::io::kernel_event_loop::readiness_t::READING);
         })
      AND ("The event is triggered")
@@ -163,11 +164,11 @@ FEATURE("Kernel event loop")
     GIVEN("A running event loop")
       AND("A registered handler that terminates the loop",
           [](context& ctx) {
-            ctx.event_loop.register_handler(ctx.pipe.read_handle(),
+            ctx.event_loop.register_handler(ctx.itc.handle(),
               mud::io::kernel_event_loop::readiness_t::READING,
               [&ctx]() {
                 char ch;
-                ctx.pipe.istr() >> ch;
+                ctx.itc.istr() >> ch;
                 ++ctx.calls;
                 ctx.event_loop.terminate();
             });

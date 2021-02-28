@@ -1,70 +1,59 @@
 #include "mud/io/socket.h"
 #include "mud/io/exception.h"
+#include <iostream>
 #include <system_error>
-#include <errno.h>
-#include <netinet.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include <winsock2.h>
 
 BEGIN_MUDLIB_IO_NS
+
+/* Winsock initialiser. */
+struct WSAInitialiser
+{
+    WSAInitialiser() {
+        WORD version = MAKEWORD(2, 2);
+        WSADATA wsa;
+        if (WSAStartup(version, &wsa) != 0) {
+            std::cerr << "Error initialising WSA ["
+                    << WSAGetLastError() << "]" << std::endl;
+            exit(1);
+        }
+    }
+    ~WSAInitialiser() {
+        WSACleanup();
+    }
+} g_wsa_initialiser;
 
 /* Lookup tables for socket enumerations. The order matches the socket.h
  * enumeration. A value of -1 means 'not supported'. */
 
 int g_domains[] = {
     AF_UNIX,
-    AF_LOCAL,
+    AF_UNIX,  /** LOCAL */
     AF_INET,
     AF_INET6,
-#ifdef LINUX
-    AF_AX25,
-#else
-    -1,  /**< AX25 */
-#endif
+    -1,  /** AX25 */
     AF_IPX,
     AF_APPLETALK,
-#ifdef LINUX
-    AF_X25,
-#else
-    -1,  /**< X25 */
-#endif
+    -1,  /** X25 */
     AF_DECnet,
-#ifdef LINUX
-    AF_KEY,
-    AF_NETLINK,
-    AF_PACKET,
-    AF_RDS,
-    AF_PPPOX,
-    AF_LLC,
-    AF_IB,
-    AF_MPLS,
-    AF_CAN,
-    AF_TIPC,
-    AF_BLUETOOTH,
-    AF_ALG,
-    AF_VSOCK,
-    AF_KCM,
-    AF_XDP
-#else
-    -1,  /** KEY */
-    -1,  /** NETLINK */
-    -1,  /** PACKET */
-    -1,  /** RDS */
-    -1,  /** PPPOX */
-    -1,  /** LLC */
-    -1,  /** IB */
-    -1,  /** MPLS */
-    -1,  /** CAN */
-    -1,  /** TIPC */
-    -1,  /** BLUETOOTH */
-    -1,  /** ALG */
-    -1,  /** VSOCK */
-    -1,  /** KCM */
-    -1   /** XDP*/
-#endif
+    -1, /** KEY */
+    -1, /** NETLINK */
+    -1, /** PACKET */
+    -1, /** RDS */
+    -1, /** PPPOX */
+    -1, /** LLC */
+    -1, /** IB */
+    -1, /** MPLS */
+    -1, /** CAN */
+    -1, /** TIPC */
+    -1, /** BLUETOOTH */
+    -1, /** ALG */
+    -1, /** VSOCK */
+    -1, /** KCM */
+    -1  /** _XDP */
 };
 
-int _types[] = {
+int g_types[] = {
     SOCK_STREAM,
     SOCK_DGRAM,
     SOCK_SEQPACKET,
@@ -72,7 +61,7 @@ int _types[] = {
     SOCK_RDM
 };
 
-int protocols[] {
+int g_protocols[] = {
     IPPROTO_IP,  /** INTRINSIC */
     IPPROTO_IP,
     IPPROTO_HOPOPTS,
@@ -80,104 +69,104 @@ int protocols[] {
     IPPROTO_IGMP,
     IPPROTO_GGP,
     IPPROTO_IPV4,
-    IPPROTO_IPIP,
+    -1, /** IPIP */
     IPPROTO_TCP,
     IPPROTO_ST,
     IPPROTO_EGP,
-    IPPROTO_PIGP,
-    IPPROTO_RCCMON,
-    IPPROTO_NVPII,
+    -1, /** PIGP */
+    -1, /** RCCMON */
+    -1, /** NVPII */
     IPPROTO_PUP,
-    IPPROTO_ARGUS,
-    IPPROTO_EMCON,
-    IPPROTO_XNET,
-    IPPROTO_CHAOS,
+    -1, /** ARGUS */
+    -1, /** EMCON */
+    -1, /** XNET */
+    -1, /** CHAOS */
     IPPROTO_UDP,
-    IPPROTO_MUX,
-    IPPROTO_MEAS,
-    IPPROTO_HMP,
-    IPPROTO_PRM,
+    -1, /** MUX */
+    -1, /** MEAS */
+    -1, /** HMP */
+    -1, /** PRM */
     IPPROTO_IDP,
-    IPPROTO_TRUNK1,
-    IPPROTO_TRUNK2,
-    IPPROTO_LEAF1,
-    IPPROTO_LEAF2,
+    -1, /** TRUNK1 */
+    -1, /** TRUNK2 */
+    -1, /** LEAF1 */
+    -1, /** LEAF2 */
     IPPROTO_RDP,
-    IPPROTO_IRTP,
-    IPPROTO_TP,
-    IPPROTO_BLT,
-    IPPROTO_NSP,
-    IPPROTO_INP,
-    IPPROTO_SEP,
-    IPPROTO_3PC,
-    IPPROTO_IDPR,
-    IPPROTO_XTP,
-    IPPROTO_DDP,
-    IPPROTO_CMTP,
-    IPPROTO_TPXX,
-    IPPROTO_IL,
+    -1, /** IRTP */
+    -1, /** TP */
+    -1, /** BLT */
+    -1, /** NSP */
+    -1, /** INP */
+    -1, /** SEP */
+    -1, /** 3PC */
+    -1, /** IDPR */
+    -1, /** XTP */
+    -1, /** DDP */
+    -1, /** CMTP */
+    -1, /** TPXX */
+    -1, /** IL */
     IPPROTO_IPV6,
     IPPROTO_ROUTING,
     IPPROTO_FRAGMENT,
-    IPPROTO_SDRP,
-    IPPROTO_IDRP,
-    IPPROTO_RSVP,
-    IPPROTO_GRE,
-    IPPROTO_MHRP,
-    IPPROTO_BHA,
+    -1, /** SDRP */
+    -1, /** IDRP */
+    -1, /** RSVP */
+    -1, /** GRE */
+    -1, /** MHRP */
+    -1, /** BHA */
     IPPROTO_ESP,
     IPPROTO_AH,
-    IPPROTO_INLSP,
-    IPPROTO_SWIPE,
-    IPPROTO_NHRP,
+    -1, /** INLSP */
+    -1, /** SWIPE */
+    -1, /** NHRP */
     IPPROTO_ICMPV6,
     IPPROTO_NONE,
     IPPROTO_DSTOPTS,
-    IPPROTO_AHIP,
-    IPPROTO_CFTP,
-    IPPROTO_HELLO,
-    IPPROTO_SATEXPAK,
-    IPPROTO_KRYPTOLAN,
-    IPPROTO_RVD,
-    IPPROTO_IPPC,
-    IPPROTO_ADFS,
-    IPPROTO_SATMON,
-    IPPROTO_VISA,
-    IPPROTO_IPCV,
-    IPPROTO_CPNX,
-    IPPROTO_CPHB,
-    IPPROTO_WSN,
-    IPPROTO_PVP,
-    IPPROTO_BRSATMON,
+    -1, /** AHIP */
+    -1, /** CFTP */
+    -1, /** HELLO */
+    -1, /** SATEXPAK */
+    -1, /** KRYPTOLAN */
+    -1, /** RVD */
+    -1, /** IPPC */
+    -1, /** ADFS */
+    -1, /** SATMON */
+    -1, /** VISA */
+    -1, /** IPCV */
+    -1, /** CPNX */
+    -1, /** CPHB */
+    -1, /** WSN */
+    -1, /** PVP */
+    -1, /** BRSATMON */
     IPPROTO_ND,
-    IPPROTO_WBMON,
-    IPPROTO_WBEXPAK,
-    IPPROTO_EON,
-    IPPROTO_VMTP,
-    IPPROTO_SVMTP,
-    IPPROTO_VINES,
-    IPPROTO_TTP,
+    -1, /** WBMON */
+    -1, /** WBEXPAK */
+    -1, /** EON */
+    -1, /** VMTP */
+    -1, /** SVMTP */
+    -1, /** VINES */
+    -1, /** TTP */
     IPPROTO_IGP,
-    IPPROTO_DGP,
-    IPPROTO_TCF,
-    IPPROTO_IGRP,
-    IPPROTO_OSPFIGP,
-    IPPROTO_SRPC,
-    IPPROTO_LARP,
-    IPPROTO_MTP,
-    IPPROTO_AX25,
-    IPPROTO_IPEIP,
-    IPPROTO_MICP,
-    IPPROTO_SCCSP,
-    IPPROTO_ETHERIP,
-    IPPROTO_ENCAP,
-    IPPROTO_APES,
-    IPPROTO_GMTP,
+    -1, /** DGP */
+    -1, /** TCF */
+    -1, /** IGRP */
+    -1, /** OSPFIGP */
+    -1, /** SRPC */
+    -1, /** LARP */
+    -1, /** MTP */
+    -1, /** AX25 */
+    -1, /** IPEIP */
+    -1, /** MICP */
+    -1, /** SCCSP */
+    -1, /** ETHERIP */
+    -1, /** ENCAP */
+    -1, /** APES */
+    -1, /** GMTP */
     IPPROTO_PIM,
-    IPPROTO_IPCOMP,
+    -1, /** IPCOMP */
     IPPROTO_PGM,
     IPPROTO_SCTP,
-    IPPROTO_DIVERT,
+    -1, /** DIVERT */
     IPPROTO_RAW
 };
 
@@ -195,9 +184,7 @@ basic_socket::basic_socket(
     }
     int fd = ::socket(sock_domain, sock_type, sock_protocol);
     if (fd == -1) {
-        int errorno = errno;
-        int error = WSAGetLastError();
-        throw std::system_error(error, std::system_category(),
+        throw std::system_error(error(), std::system_category(),
                 "creating socket");
     }
     _handle  = std::unique_ptr<mud::io::kernel_handle>(
@@ -244,7 +231,7 @@ void
 basic_socket::close()
 {
     if (_handle != nullptr) {
-        ::close(*_handle);
+        ::closesocket(*_handle);
         _handle.reset(nullptr);
     }
 }
@@ -276,7 +263,7 @@ basic_socket::protocol() const
 int
 basic_socket::error() const
 {
-    return errno;
+    return ::GetLastError();
 }
 
 END_MUDLIB_IO_NS

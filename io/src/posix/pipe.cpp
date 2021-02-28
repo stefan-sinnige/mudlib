@@ -1,6 +1,7 @@
 #include "mud/core/exception.h"
 #include "mud/io/pipe.h"
 #include "mud/io/streambuf.h"
+#include <functional>
 #include <system_error>
 #include <errno.h>
 #include <fcntl.h>
@@ -135,11 +136,12 @@ pipe::impl::impl()
     if (::pipe(pfd) == -1) {
         throw std::system_error(errno, std::system_category(), "creating pipe");
     }
+
+    /* Ensure non-blocking I/O */
     if (::fcntl(pfd[0], F_SETFL, O_NONBLOCK) == -1) {
         throw std::system_error(errno, std::system_category(),
                 "set pipe non-blocking");
     }
-    /* Ensure non-blocking I/O */
 
     /* Set the ownership of the pipe handles */
     _read_handle  = std::unique_ptr<mud::io::kernel_handle>(
@@ -193,11 +195,17 @@ pipe::impl::write_handle()  const
     return _write_handle;
 }
 
+void
+pipe::impl_deleter::operator()(pipe::impl* ptr) const
+{
+    delete ptr;
+}
+
 /** The explicit specialisation for POSIX pipes. */
 
 pipe::pipe()
 {
-    _impl = std::unique_ptr<impl>(new impl());
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
 pipe::~pipe()

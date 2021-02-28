@@ -1,6 +1,5 @@
 #include "mud/io/kernel_handle.h"
 #include <errno.h>
-#include <sys/select.h>
 #include <mutex>
 #include <system_error>
 

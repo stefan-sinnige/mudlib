@@ -1,4 +1,16 @@
-#include <sys/socket.h>
+#if defined(WINDOWS) && defined(NATIVE)
+    typedef short sa_family_t;
+    #define RECVFROM_CAST (char*)
+    #define SENDTO_CAST   (const char*)
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #include <io.h>
+#else
+    #define RECVFROM_CAST (void*)
+    #define SENDTO_CAST   (const void*)
+    #include <sys/socket.h>
+#endif
+#include "mud/io/ip.h"
 #include "mud/io/udp.h"
 #include "mud/io/exception.h"
 #include "mud/io/streambuf.h"
@@ -72,7 +84,7 @@ streambuf::read(void* buf, size_t count)
     socklen_t addr_sz = sizeof(addr);
 
     // Receive.
-    ssize_t nread = ::recvfrom(*handle(), buf, count, 0,
+    ssize_t nread = ::recvfrom(*handle(), RECVFROM_CAST buf, count, 0,
                     (struct sockaddr*)&addr, &addr_sz);
     if (nread >= 0)
     {
@@ -94,7 +106,7 @@ streambuf::write(const void* buf, size_t count)
     addr.sin_addr.s_addr = _destination_endpoint.address();
 
     // Send.
-    ssize_t nwrite = ::sendto(*handle(), buf, count, 0,
+    ssize_t nwrite = ::sendto(*handle(), SENDTO_CAST buf, count, 0,
                     (struct sockaddr*)&addr, sizeof(addr));
     if (nwrite >= 0)
     {
@@ -270,6 +282,12 @@ udp::socket::impl::ostr(const endpoint& endpoint)
     return _ostr;
 }
 
+void
+udp::socket::impl_deleter::operator()(udp::socket::impl* ptr) const
+{
+    delete ptr;
+}
+
 /** The endpoint */
 
 udp::endpoint::endpoint()
@@ -320,7 +338,7 @@ udp::socket::socket()
               basic_socket::type_t::DGRAM,
               basic_socket::protocol_t::INTRINSIC)
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 udp::socket::socket(
@@ -329,13 +347,13 @@ udp::socket::socket(
         basic_socket::protocol_t protocol)
     : ip::socket(domain, type, protocol)
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 udp::socket::socket(socket&& rhs)
     : ip::socket(std::move(rhs))
 {
-    _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
 udp::socket&
@@ -344,7 +362,7 @@ udp::socket::operator=(udp::socket&& rhs)
     if (this != &rhs)
     {
         ip::socket::operator=(std::move(rhs));
-        _impl = std::unique_ptr<impl>(new impl(*this, handle()));
+        _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
     }
     return *this;
 }

@@ -5,7 +5,6 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <netinet/in.h>
 #include <mud/io/ns.h>
 #include <mud/io/ip.h>
 #include <mud/io/kernel_event_loop.h>
@@ -26,7 +25,7 @@ class communicator;
 /**
  * @brief The definition of a TCP endpoint.
  */
-class endpoint
+class MUDLIB_IO_API endpoint
 {
 public:
     /**
@@ -77,7 +76,7 @@ private:
 /**
  * @brief The TCP socket.
  */
-class socket : public mud::io::ip::socket
+class MUDLIB_IO_API socket : public mud::io::ip::socket
 {
 public:
     /**
@@ -196,7 +195,10 @@ private:
 
     /** Platform specific implementation.  */
     class impl;
-    std::unique_ptr<impl> _impl;
+    struct impl_deleter {
+        void operator()(impl*) const;
+    };
+    std::unique_ptr<impl, impl_deleter> _impl;
 };
 
 /**
@@ -209,7 +211,7 @@ private:
  * other incoming connection requests until destructed.
  */
 
-class acceptor
+class MUDLIB_IO_API acceptor
 {
 public:
     /** Function definition for the @c on_accept handler. */
@@ -279,7 +281,7 @@ private:
  * ownership.
  */
 
-class connector
+class MUDLIB_IO_API connector
 {
 public:
     /** Function definition for the @c on_connect handler. */
@@ -347,7 +349,7 @@ private:
  * used the kernel event-loop to be notified of any incoming messages.
  */
 
-class communicator
+class MUDLIB_IO_API communicator
 {
 public:
     /** Function definition for the @c on_receive handler. */

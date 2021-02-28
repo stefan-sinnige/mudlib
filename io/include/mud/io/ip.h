@@ -2,9 +2,10 @@
 #define _MUDLIB_IO_IP_H_
 
 #include <string>
-#include <netinet/in.h>
+#include <inttypes.h>
 #include <mud/io/ns.h>
 #include <mud/io/socket.h>
+#include <mud/core/endian.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -15,12 +16,45 @@ BEGIN_MUDLIB_IO_NS
 namespace ip {
 
 /**
+ * @brief The endianness of the Internet Protocol Suite, generally known as
+ * the network order.
+ */
+const mud::core::endian::endian_t network_order =
+        mud::core::endian::endian_t::big;
+
+/**
+ * @brief Convert from host (native) order to network order.
+ */
+template<typename Integer>
+Integer
+to_network_order(Integer value)
+{
+    return mud::core::endian::convert(
+                    mud::core::endian::native(),
+                    mud::io::ip::network_order,
+                    value);
+}
+
+/**
+ * @brief Convert from network order to host (native) order.
+ */
+template<typename Integer>
+Integer
+to_host_order(Integer value)
+{
+    return mud::core::endian::convert(
+                    mud::io::ip::network_order,
+                    mud::core::endian::native(),
+                    value);
+}
+
+/**
  * @brief The IPv4 address representation.
  *
  * The IPv4 address is a 32-bit structure to represent a network class or a
  * host identifier.
  */
-class address
+class MUDLIB_IO_API address
 {
 public:
     /**
@@ -32,7 +66,7 @@ public:
      * @brief Address specified by 32-bits address.
      * @param addr [in] The 32-bit address (network order).
      */
-    address(in_addr_t addr);
+    address(uint32_t addr);
 
     /**
      * @brief Address specified by the dotted-decimal notation.
@@ -58,7 +92,7 @@ public:
     /**
      * @brief Type conversion to a network-order address.
      */
-    operator in_addr_t() const;
+    operator uint32_t() const;
 
     /**
      * @brief Return as a dotted-decimal notation.
@@ -68,13 +102,13 @@ public:
 
 private:
     /* The IP address (network-order) */
-    in_addr_t m_address;
+    uint32_t m_address;
 };
 
 /**
  * @brief The IP socket.
  */
-class socket : public mud::io::basic_socket
+class MUDLIB_IO_API socket : public mud::io::basic_socket
 {
 protected:
     /**
@@ -188,7 +222,7 @@ private:
  * @brief Socket option to allow the reuse of local addresses when binding a
  * socket to a valid address.
  */
-class reuse_address
+class MUDLIB_IO_API reuse_address
 {
 public:
     /** @brief Set the option to reuse socket addresses.
@@ -208,7 +242,7 @@ public:
  * Particularly useful when used in combination with @c kernel_event_loop
  * non-blocking I/O.
  */
-class nonblocking
+class MUDLIB_IO_API nonblocking
 {
 public:
     /** @brief Set the option to reuse socket addresses.

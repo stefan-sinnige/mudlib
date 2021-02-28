@@ -1,6 +1,12 @@
 #ifndef _MUDLIB_IO_STREAMBUF_H_
 #define _MUDLIB_IO_STREAMBUF_H_
 
+#if defined(WINDOWS) && defined(NATIVE)
+    #ifndef MUDLIB_SSIZE_T
+        #define MUDLIB_SSIZE_T
+        typedef unsigned long ssize_t;
+    #endif
+#endif
 #include <mud/io/ns.h>
 #include <mud/io/kernel_handle.h>
 #include <memory>
@@ -14,7 +20,7 @@ BEGIN_MUDLIB_IO_NS
  * This class defines the stream buffer for generic (but system implementation
  * dependent) I/O operations.
  */
-class basic_streambuf : public std::streambuf
+class MUDLIB_IO_API basic_streambuf : public std::streambuf
 {
 public:
     /**
