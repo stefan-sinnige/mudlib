@@ -4,7 +4,7 @@
 #if defined(WINDOWS) && defined(NATIVE)
     #ifndef MUDLIB_SSIZE_T
         #define MUDLIB_SSIZE_T
-        typedef unsigned long ssize_t;
+        typedef long ssize_t;
     #endif
 #endif
 #include <mud/io/ns.h>
