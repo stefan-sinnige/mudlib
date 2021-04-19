@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <list>
-#include "mud/io/kernel_event_loop.h"
+#include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
 
 // Forward declarations
@@ -189,7 +189,7 @@ main(int argc, char** argv)
     }
 
     // Run the global event loop.
-    mud::io::kernel_event_loop::global().loop();
+    mud::event::event_loop::global().loop();
 
     return 0;
 }

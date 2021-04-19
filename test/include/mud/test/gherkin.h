@@ -1249,14 +1249,15 @@ MUDLIB_TEST_API bool AssertFailed(const char* file, int line,
 /**
  * @brief Template class that verifies if two values (result and expected) are
  *        the same. If they are not the same, and assertion is thrown.
+ *        The check is based on the @c result inequality operation.
  * @param file [in] The file name.
  * @param line [in] The line number.
- * @param result [in] The resulting value to verify.
  * @param expected [in] The expected outcome.
+ * @param result [in] The resulting value to verify.
  */
-template<typename T>
+template<typename T, typename Y>
 bool
-Assert(const char* file, int line, T result, T expected)
+Assert(const char* file, int line, T expected, Y result)
 {
     if (result != expected)
     {

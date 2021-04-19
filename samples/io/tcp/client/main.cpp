@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "mud/io/kernel_event_loop.h"
+#include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
 
 std::string host = "127.0.0.1";
@@ -80,12 +80,13 @@ client::on_receive()
     if (_communicator.istr().fail()) {
         _communicator.close();
         std::cout << "Connection closed" <<std::endl;
-        mud::io::kernel_event_loop::global().terminate();
+        mud::event::event_loop::global().terminate();
     }
     else {
         std::cout << "Receiving: " << msg << std::endl;
     }
 
+    mud::event::event_loop::global().terminate();
 }
 
 // ===========================================================================
@@ -130,7 +131,7 @@ main(int argc, char** argv)
     }
 
     // Run the event loop.
-    mud::io::kernel_event_loop::global().loop();
+    mud::event::event_loop::global().loop();
 
     return 0;
 }

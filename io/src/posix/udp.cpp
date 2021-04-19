@@ -32,14 +32,14 @@ class streambuf: public mud::io::basic_streambuf
 public:
     /* Constructor for UDP specific stream-buffer.
      * @param [in] socket  The associated socket.
-     * @param [in] handle  The kernel handle to use.
-     * @param [in] source_endpoint  The kernel handle to use.
+     * @param [in] handle  The handle to use.
+     * @param [in] source_endpoint  The handle to use.
      * @param [in] bufsize The initial buffer size.
      * @param [in] putbacksize The size of the putback buffer.
      */
     streambuf(
             udp::socket& socket,
-            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            const std::unique_ptr<mud::core::handle>& handle,
             udp::endpoint& source_endpoint,
             udp::endpoint& destination_endpoint,
             size_t bufsize = 10,
@@ -62,7 +62,7 @@ private:
 
 streambuf::streambuf(
         udp::socket& socket,
-        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        const std::unique_ptr<mud::core::handle>& handle,
         udp::endpoint& source_endpoint,
         udp::endpoint& destination_endpoint,
         size_t bufsize,
@@ -85,7 +85,8 @@ streambuf::read(void* buf, size_t count)
     socklen_t addr_sz = sizeof(addr);
 
     // Receive.
-    ssize_t nread = ::recvfrom(*handle(), RECVFROM_CAST buf, count, 0,
+    int hndl = mud::core::internal_handle<int>(handle());
+    ssize_t nread = ::recvfrom(hndl, RECVFROM_CAST buf, count, 0,
                     (struct sockaddr*)&addr, &addr_sz);
     if (nread >= 0)
     {
@@ -107,7 +108,8 @@ streambuf::write(const void* buf, size_t count)
     addr.sin_addr.s_addr = _destination_endpoint.address();
 
     // Send.
-    ssize_t nwrite = ::sendto(*handle(), SENDTO_CAST buf, count, 0,
+    int hndl = mud::core::internal_handle<int>(handle());
+    ssize_t nwrite = ::sendto(hndl, SENDTO_CAST buf, count, 0,
                     (struct sockaddr*)&addr, sizeof(addr));
     if (nwrite >= 0)
     {
@@ -115,7 +117,7 @@ streambuf::write(const void* buf, size_t count)
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         ::memset(&addr, 0, sizeof(sockaddr_in));
-        if (::getsockname(*handle(), (struct sockaddr*)&addr, &len) != 0)
+        if (::getsockname(hndl, (struct sockaddr*)&addr, &len) != 0)
         {
             throw std::system_error(errno, std::system_category(),
                     "retrieving UDP local endpoint details");
@@ -138,7 +140,7 @@ public:
     /**
      * Constructor.
      */
-    impl(udp::socket& socket, const std::unique_ptr<mud::io::kernel_handle>&);
+    impl(udp::socket& socket, const std::unique_ptr<mud::core::handle>&);
 
     /**
      * Destructor.
@@ -181,7 +183,7 @@ private:
     udp::socket& _socket;
 
     /** Reference to the socket handle. */
-    const std::unique_ptr<mud::io::kernel_handle>& _handle;
+    const std::unique_ptr<mud::core::handle>& _handle;
 
     /** The stream for reading. */
     std::istream _istr;
@@ -204,7 +206,7 @@ private:
 
 udp::socket::impl::impl(
         udp::socket& socket,
-        const std::unique_ptr<mud::io::kernel_handle>& handle)
+        const std::unique_ptr<mud::core::handle>& handle)
     : _socket(socket), _handle(handle), _istr(nullptr), _ostr(nullptr)
 {
     /* Create the stream buffers and assign them to the input and output
@@ -236,14 +238,15 @@ udp::socket::impl::bind(const endpoint& endpoint)
     addr.sin_family = static_cast<sa_family_t>(_socket.domain());
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
-    if (::bind(*(_socket.handle()), (struct sockaddr*)&addr, len) != 0)
+    int sckt = mud::core::internal_handle<int>(_socket.handle());
+    if (::bind(sckt, (struct sockaddr*)&addr, len) != 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "binding UDP endpoint");
     }
 
     /* Establish the source endpoint details */
-    if (::getsockname(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
+    if (::getsockname(sckt, (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "retrieving TCP local endpoint details");
@@ -411,7 +414,7 @@ udp::socket::ostr(const endpoint& endpoint)
 /** The communicator */
 
 udp::communicator::communicator(
-        kernel_event_loop& event_loop)
+        mud::event::event_loop& event_loop)
     : _event_loop(event_loop), _on_receive_func(nullptr)
 {
 }
@@ -435,18 +438,16 @@ udp::communicator::~communicator()
 void
 udp::communicator::open(udp::socket&& socket)
 {
-    _event_loop.register_handler(_socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING,
-            std::bind(&communicator::on_ready_receive, this));
+    _event_loop.register_handler(mud::event::event(_socket.handle(),
+                    std::bind(&communicator::on_ready_receive, this),
+                    mud::event::event::signal_t::READING));
     _socket = std::move(socket);
 }
 
 void
 udp::communicator::close()
 {
-    _event_loop.deregister_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING);
+    _event_loop.deregister_handler(mud::event::event(_socket.handle()));
     _socket.close();
 }
 

@@ -1,19 +1,19 @@
+#if defined(WINDOWS) && defined(NATIVE)
+// This should not be here - it is socket specific!
+#include <winSock2.h>
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 #include "mud/core/exception.h"
 #include "mud/io/streambuf.h"
 #include <exception>
 #include <streambuf>
-#if defined(WINDOWS) && defined(NATIVE)
-    // This should not be here - it is socket specific!
-    #include <winSock2.h>
-    #include <windows.h>
-#else
-    #include <unistd.h>
-#endif
 
 BEGIN_MUDLIB_IO_NS
 
 basic_streambuf::basic_streambuf(
-        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        const std::unique_ptr<mud::core::handle>& handle,
         size_t bufsize /* = 10 */,
         size_t putbacksize /* = 4 */)
     : _handle(handle), _bufsize(bufsize), _putbacksize(putbacksize)
@@ -108,7 +108,7 @@ basic_streambuf::sync()
     return 0;
 }
 
-const std::unique_ptr<mud::io::kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 basic_streambuf::handle() const
 {
     return _handle;

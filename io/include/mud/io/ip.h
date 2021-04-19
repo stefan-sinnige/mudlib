@@ -131,7 +131,7 @@ protected:
     socket(mud::io::basic_socket::domain_t domain,
             mud::io::basic_socket::type_t type,
             mud::io::basic_socket::protocol_t protocol,
-            std::unique_ptr<kernel_handle> handle);
+            std::unique_ptr<mud::core::handle> handle);
 
     /**
      * @brief Move constructor, passing ownership of the socket.
@@ -239,7 +239,7 @@ public:
 
 /**
  * @brief Socket option to allow the socket not to block on a socket method.
- * Particularly useful when used in combination with @c kernel_event_loop
+ * Particularly useful when used in combination with @c event_loop
  * non-blocking I/O.
  */
 class MUDLIB_IO_API nonblocking

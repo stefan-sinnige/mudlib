@@ -2,8 +2,8 @@
 #define _MUDLIB_IO_SOCKET_H_
 
 #include <string>
+#include <mud/core/handle.h>
 #include <mud/io/ns.h>
-#include <mud/io/kernel_handle.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -200,7 +200,7 @@ public:
     /**
      * The socket file-descriptor handle.
      */
-    const std::unique_ptr<kernel_handle>& handle() const;
+    const std::unique_ptr<mud::core::handle>& handle() const;
 
     /**
      * The domain when the socket was created.
@@ -237,7 +237,7 @@ protected:
      * @param handle [in] The existing socket handle.
      */
     basic_socket(domain_t domain, type_t type, protocol_t protocol,
-            std::unique_ptr<kernel_handle> handle);
+            std::unique_ptr<mud::core::handle> handle);
 
     /**
      * @brief The error code of a socket operation. This has to be
@@ -247,7 +247,7 @@ protected:
 
 private:
     /* The socket descriptor. */
-    std::unique_ptr<mud::io::kernel_handle> _handle;
+    std::unique_ptr<mud::core::handle> _handle;
 
     /* The domain */
     domain_t _domain;

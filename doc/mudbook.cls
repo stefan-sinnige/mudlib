@@ -39,7 +39,7 @@
 \addbibresource{\bibfile}
 
 % Index package
-\usepackage{makeidx}
+\usepackage{imakeidx}
 
 % Use the hyperref package to create PDF hyperlinks, but do not show them
 % as links.

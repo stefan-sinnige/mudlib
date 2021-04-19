@@ -7,7 +7,7 @@
 #include <string>
 #include <mud/io/ns.h>
 #include <mud/io/ip.h>
-#include <mud/io/kernel_event_loop.h>
+#include <mud/event/event_loop.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -194,7 +194,7 @@ private:
  * @brief Controller for communicating UDP connections.
  *
  * The event controller class for communicating with a connected socket. It
- * used the kernel event-loop to be notified of any incoming messages.
+ * used the event-loop to be notified of any incoming messages.
  */
 
 class MUDLIB_IO_API communicator
@@ -208,8 +208,8 @@ public:
      * @param event_loop [in] The event-loop to register the socket to.
      */
     communicator(
-            mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
+            mud::event::event_loop& event_loop
+            = mud::event::event_loop::global());
 
     /**
      * @brief Move constructor.
@@ -292,7 +292,7 @@ private:
     udp::socket _socket;
 
     /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
+    mud::event::event_loop& _event_loop;
 
     /** The on_receive handler. */
     on_receive_func _on_receive_func;

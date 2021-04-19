@@ -92,7 +92,7 @@ ip::socket::socket(
         basic_socket::domain_t domain,
         basic_socket::type_t type,
         basic_socket::protocol_t protocol,
-        std::unique_ptr<kernel_handle> handle)
+        std::unique_ptr<mud::core::handle> handle)
     : basic_socket(domain, type, protocol, std::move(handle))
 {
 }
@@ -152,7 +152,8 @@ void
 ip::reuse_address::operator()(ip::socket& socket, bool value)
 {
     int enable = value;
-    if (::setsockopt(*(socket.handle()), SOL_SOCKET, SO_REUSEADDR,
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::setsockopt(handle, SOL_SOCKET, SO_REUSEADDR,
                     SETSOCKOPT_CAST &enable, sizeof(int)) < 0)
     {
         throw std::system_error(errno, std::system_category(),
@@ -165,7 +166,8 @@ ip::reuse_address::operator()(ip::socket& socket)
 {
     int enable = false;
     socklen_t len = sizeof(int);
-    if (::getsockopt(*(socket.handle()), SOL_SOCKET, SO_REUSEADDR,
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::getsockopt(handle, SOL_SOCKET, SO_REUSEADDR,
                     GETSOCKOPT_CAST &enable, &len) < 0)
     {
         throw std::system_error(errno, std::system_category(),
@@ -181,16 +183,17 @@ ip::reuse_address::operator()(ip::socket& socket)
 void
 ip::nonblocking::operator()(ip::socket& socket, bool value)
 {
+    int handle = mud::core::internal_handle<int>(socket.handle());
 #if defined(WINDOWS) && defined(NATIVE)
     u_long mode = value;
-    if (::ioctlsocket(*(socket.handle()), FIONBIO, &mode) != 0)
+    if (::ioctlsocket(handle, FIONBIO, &mode) != 0)
     {
         throw std::system_error(::WSAGetLastError(), std::system_category(),
                 "setting socket option (non-blocking)");
     }
 #else
     int flags;
-    if ((flags = ::fcntl(*(socket.handle()), F_GETFL, 0)) < 0)
+    if ((flags = ::fcntl(handle, F_GETFL, 0)) < 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "setting socket option (non-blocking)");
@@ -203,7 +206,7 @@ ip::nonblocking::operator()(ip::socket& socket, bool value)
     {
         flags &= ~O_NONBLOCK;
     }
-    if (::fcntl(*(socket.handle()), F_SETFL, flags) < 0)
+    if (::fcntl(handle, F_SETFL, flags) < 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "setting socket option (non-blocking)");
@@ -219,7 +222,8 @@ ip::nonblocking::operator()(ip::socket& socket)
             "retrieving socket option (noon-blocking) not supported");
 #else
     int flags;
-    if ((flags = ::fcntl(*(socket.handle()), F_GETFL, 0)) < 0)
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if ((flags = ::fcntl(handle, F_GETFL, 0)) < 0)
     {
         throw std::system_error(errno, std::system_category(),
                 "retrieving socket option (non-blocking)");

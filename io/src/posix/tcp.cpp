@@ -32,13 +32,13 @@ class streambuf: public mud::io::basic_streambuf
 public:
     /* Constructor for UDP specific stream-buffer.
      * @param [in] socket  The reference to the socket.
-     * @param [in] handle  The kernel handle to use.
+     * @param [in] handle  The handle to use.
      * @param [in] bufsize The initial buffer size.
      * @param [in] putbacksize The size of the putback buffer.
      */
     streambuf(
             tcp::socket& socket,
-            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            const std::unique_ptr<mud::core::handle>& handle,
             size_t bufsize = 10,
             size_t putbacksize = 4);
 
@@ -53,7 +53,7 @@ private:
 
 streambuf::streambuf(
         tcp::socket& socket,
-        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        const std::unique_ptr<mud::core::handle>& handle,
         size_t bufsize,
         size_t putbacksize)
     : mud::io::basic_streambuf(
@@ -67,13 +67,15 @@ streambuf::streambuf(
 ssize_t
 streambuf::read(void* buf, size_t count)
 {
-    return ::recv(*handle(), RECV_CAST buf, count, 0);
+    int hndl = mud::core::internal_handle<int>(handle());
+    return ::recv(hndl, RECV_CAST buf, count, 0);
 }
 
 ssize_t
 streambuf::write(const void* buf, size_t count)
 {
-    return ::send(*handle(), SEND_CAST buf, count, 0);
+    int hndl = mud::core::internal_handle<int>(handle());
+    return ::send(hndl, SEND_CAST buf, count, 0);
 }
 
 } // namespace _tcp
@@ -88,7 +90,7 @@ public:
     /**
      * Constructor.
      */
-    impl(tcp::socket& socket, const std::unique_ptr<mud::io::kernel_handle>&);
+    impl(tcp::socket& socket, const std::unique_ptr<mud::core::handle>&);
 
     /**
      * Destructor.
@@ -120,7 +122,7 @@ private:
     tcp::socket& _socket;
 
     /** Reference to the socket handle. */
-    const std::unique_ptr<mud::io::kernel_handle>& _handle;
+    const std::unique_ptr<mud::core::handle>& _handle;
 
     /** The stream for reading. */
     std::istream _istr;
@@ -143,7 +145,7 @@ private:
 
 tcp::socket::impl::impl(
         tcp::socket& socket,
-        const std::unique_ptr<mud::io::kernel_handle>& handle)
+        const std::unique_ptr<mud::core::handle>& handle)
     : _socket(socket), _handle(handle), _istr(nullptr), _ostr(nullptr)
 {
     /* Create the stream buffers and assign them to the input and output
@@ -256,7 +258,7 @@ tcp::socket::socket(
         basic_socket::domain_t domain,
         basic_socket::type_t type,
         basic_socket::protocol_t protocol,
-        std::unique_ptr<mud::io::kernel_handle> hndl)
+        std::unique_ptr<mud::core::handle> hndl)
     : ip::socket(domain, type, protocol, std::move(hndl))
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
@@ -321,7 +323,7 @@ tcp::socket::destination_endpoint(const tcp::endpoint& endpoint)
 
 /** The acceptor */
 
-tcp::acceptor::acceptor(kernel_event_loop& event_loop)
+tcp::acceptor::acceptor(mud::event::event_loop& event_loop)
     : _event_loop(event_loop), _on_accept_func(nullptr)
 {
     /* Set-up socket options to
@@ -345,9 +347,7 @@ tcp::acceptor::operator=(acceptor&& rhs)
 tcp::acceptor::~acceptor()
 {
     /* Deregister the listening socket from the event-loop */
-    _event_loop.deregister_handler(
-            _listen.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING);
+    _event_loop.deregister_handler(mud::event::event(_listen.handle()));
 }
 
 void
@@ -360,14 +360,15 @@ tcp::acceptor::open(const endpoint& endpoint)
     addr.sin_family = static_cast<sa_family_t>(_listen.domain());
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
-    if (::bind(*(_listen.handle()), (struct sockaddr*)&addr, len) != 0)
+    int lstn = mud::core::internal_handle<int>(_listen.handle());
+    if (::bind(lstn, (struct sockaddr*)&addr, len) != 0)
     {
         throw std::system_error(_listen.error(), std::system_category(),
                 "binding TCP endpoint");
     }
 
     /* Establish the source endpoint details */
-    if (::getsockname(*(_listen.handle()), (struct sockaddr*)&addr, &len) != 0)
+    if (::getsockname(lstn, (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(_listen.error(), std::system_category(),
                 "retrieving TCP local endpoint details");
@@ -376,15 +377,15 @@ tcp::acceptor::open(const endpoint& endpoint)
     _listen.source_endpoint(local_endpoint);
 
     /* Prepare to listen. */
-    if (::listen(*(_listen.handle()), 8) != 0) {
+    if (::listen(lstn, 8) != 0) {
         throw std::system_error(_listen.error(), std::system_category(),
                 "listening for TCP connections");
     }
 
     /* Register the event handler to be invoked when a client connects */
-    _event_loop.register_handler(_listen.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING,
-            std::bind(&acceptor::on_ready_accept, this));
+    _event_loop.register_handler(mud::event::event(_listen.handle(),
+                    std::bind(&acceptor::on_ready_accept, this),
+                    mud::event::event::signal_t::READING));
 }
 
 void
@@ -400,21 +401,23 @@ tcp::acceptor::on_ready_accept()
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
-    int fd = ::accept(*(_listen.handle()), (struct sockaddr*)&addr, &len);
+    int lstn = mud::core::internal_handle<int>(_listen.handle());
+    int fd = ::accept(lstn, (struct sockaddr*)&addr, &len);
     if (fd < 0) {
         throw std::system_error(_listen.error(), std::system_category(),
                 "accepting TCP connection");
     }
 
     // Create the client socket connection.
-    std::unique_ptr<mud::io::kernel_handle> handle;
-    handle = std::unique_ptr<mud::io::kernel_handle>(
-                    new mud::io::kernel_handle(fd));
+    std::unique_ptr<mud::core::handle> handle;
+    handle = std::unique_ptr<mud::core::handle>(
+                    new mud::core::int_handle(fd));
     tcp::socket client(_listen.domain(), _listen.type(), _listen.protocol(),
             std::move(handle));
 
     // Establish the source and destination endpoint details
-    if (::getsockname(*(client.handle()), (struct sockaddr*)&addr, &len) != 0)
+    int clnt = mud::core::internal_handle<int>(client.handle());
+    if (::getsockname(clnt, (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(client.error(), std::system_category(),
                 "retrieving TCP local endpoint details");
@@ -422,7 +425,7 @@ tcp::acceptor::on_ready_accept()
     tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
     client.source_endpoint(local_endpoint);
 
-    if (::getpeername(*(client.handle()), (struct sockaddr*)&addr, &len) != 0)
+    if (::getpeername(clnt, (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(client.error(), std::system_category(),
                 "retrieving TCP remote endpoint details");
@@ -439,7 +442,7 @@ tcp::acceptor::on_ready_accept()
 
 /** The connector */
 
-tcp::connector::connector(kernel_event_loop& event_loop)
+tcp::connector::connector(mud::event::event_loop& event_loop)
     : _event_loop(event_loop), _on_connect_func(nullptr)
 {
     /* Set-up socket option to enable non-blocking I/O */
@@ -471,7 +474,8 @@ tcp::connector::open(const endpoint& endpoint)
     addr.sin_family = static_cast<sa_family_t>(_socket.domain());
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
-    if (::connect(*(_socket.handle()), (struct sockaddr*)&addr, len) != 0)
+    int sckt = mud::core::internal_handle<int>(_socket.handle());
+    if (::connect(sckt, (struct sockaddr*)&addr, len) != 0)
     {
 #if defined(WINDOWS) && defined(NATIVE)
         if (_socket.error() != WSAEWOULDBLOCK)
@@ -490,9 +494,9 @@ tcp::connector::open(const endpoint& endpoint)
 
     /* Register the event handler to be invoked when a connection has been
      * established. */
-    _event_loop.register_handler(_socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::WRITING,
-            std::bind(&connector::on_ready_connect, this));
+    _event_loop.register_handler(mud::event::event(_socket.handle(),
+                    std::bind(&connector::on_ready_connect, this),
+                    mud::event::event::signal_t::WRITING));
 }
 
 void
@@ -505,14 +509,13 @@ void
 tcp::connector::on_ready_connect()
 {
     /* Deregister the connecting socket from the event-loop */
-    _event_loop.deregister_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::WRITING);
+    _event_loop.deregister_handler(mud::event::event(_socket.handle()));
 
     // Establish the source and destination endpoint details
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
-    if (::getsockname(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
+    int sckt = mud::core::internal_handle<int>(_socket.handle());
+    if (::getsockname(sckt, (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(_socket.error(), std::system_category(),
                 "retrieving TCP local endpoint details");
@@ -520,7 +523,7 @@ tcp::connector::on_ready_connect()
     tcp::endpoint local_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
     _socket.source_endpoint(local_endpoint);
 
-    if (::getpeername(*(_socket.handle()), (struct sockaddr*)&addr, &len) != 0)
+    if (::getpeername(sckt, (struct sockaddr*)&addr, &len) != 0)
     {
         throw std::system_error(_socket.error(), std::system_category(),
                 "retrieving TCP remote endpoint details");
@@ -538,7 +541,7 @@ tcp::connector::on_ready_connect()
 /** The communicator */
 
 tcp::communicator::communicator(
-        kernel_event_loop& event_loop)
+        mud::event::event_loop& event_loop)
     : _event_loop(event_loop), _on_receive_func(nullptr)
 {
 }
@@ -562,18 +565,16 @@ tcp::communicator::~communicator()
 void
 tcp::communicator::open(tcp::socket&& socket)
 {
-    _event_loop.register_handler(_socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING,
-            std::bind(&communicator::on_ready_receive, this));
+    _event_loop.register_handler(mud::event::event(_socket.handle(),
+                    std::bind(&communicator::on_ready_receive, this),
+                    mud::event::event::signal_t::READING));
     _socket = std::move(socket);
 }
 
 void
 tcp::communicator::close()
 {
-    _event_loop.deregister_handler(
-            _socket.handle(),
-            mud::io::kernel_event_loop::readiness_t::READING);
+    _event_loop.deregister_handler(mud::event::event(_socket.handle()));
     _socket.close();
 }
 

@@ -198,15 +198,15 @@ basic_socket::basic_socket(
         throw std::system_error(errno, std::system_category(),
                 "creating socket");
     }
-    _handle  = std::unique_ptr<mud::io::kernel_handle>(
-                    new mud::io::kernel_handle(fd));
+    _handle  = std::unique_ptr<mud::core::handle>(
+                    new mud::core::int_handle(fd));
 }
 
 basic_socket::basic_socket(
         basic_socket::domain_t domain,
         basic_socket::type_t type,
         basic_socket::protocol_t protocol,
-        std::unique_ptr<kernel_handle> handle)
+        std::unique_ptr<mud::core::handle> handle)
     : _domain(domain), _type(type), _protocol(protocol),
       _handle(std::move(handle))
 {
@@ -242,12 +242,12 @@ void
 basic_socket::close()
 {
     if (_handle != nullptr) {
-        ::close(*_handle);
+        ::close(mud::core::internal_handle<int>(_handle));
         _handle.reset(nullptr);
     }
 }
 
-const std::unique_ptr<kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 basic_socket::handle() const
 {
     return _handle;

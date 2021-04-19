@@ -2,7 +2,7 @@
 #define _MUDLIB_IO_PIPE_H_
 
 #include <mud/io/ns.h>
-#include <mud/io/kernel_handle.h>
+#include <mud/core/handle.h>
 #include <memory>
 #include <istream>
 #include <ostream>
@@ -52,15 +52,15 @@ public:
 
     /**
      * The handle associated to the read end (sink) of the pipe.
-     * @return The handle to the kernel resource.
+     * @return The handle to the resource.
      */
-    const std::unique_ptr<kernel_handle>& read_handle() const;
+    const std::unique_ptr<mud::core::handle>& read_handle() const;
 
     /**
      * The handle associated to the write end (source) of the pipe.
-     * @return The handle to the kernel resource.
+     * @return The handle to the resource.
      */
-    const std::unique_ptr<kernel_handle>& write_handle() const;
+    const std::unique_ptr<mud::core::handle>& write_handle() const;
 
     /**
      * Non-copyable

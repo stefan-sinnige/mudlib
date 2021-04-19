@@ -7,7 +7,7 @@
 #include <string>
 #include <mud/io/ns.h>
 #include <mud/io/ip.h>
-#include <mud/io/kernel_event_loop.h>
+#include <mud/event/event_loop.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -177,7 +177,7 @@ private:
     socket(mud::io::basic_socket::domain_t domain,
             mud::io::basic_socket::type_t type,
             mud::io::basic_socket::protocol_t protocol,
-            std::unique_ptr<mud::io::kernel_handle> handle);
+            std::unique_ptr<mud::core::handle> handle);
 
     /**
      * Set the source and destination end points.
@@ -206,7 +206,7 @@ private:
  *
  * The event controller class for opening a listening socket on a local
  * endpoint. When the listening socket registers an incoming connection
- * from a peer, the kernel event-loop invokes the @c on_accept handler,
+ * from a peer, the event-loop invokes the @c on_accept handler,
  * while passing the client socket ownership. Continues listening to
  * other incoming connection requests until destructed.
  */
@@ -221,8 +221,8 @@ public:
      * Constructor.
      * @param event_loop [in] the event-loop to register the socket to.
      */
-    acceptor(mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
+    acceptor(mud::event::event_loop& event_loop
+            = mud::event::event_loop::global());
 
     /**
      * @brief Move constructor.
@@ -266,7 +266,7 @@ private:
     tcp::socket _listen;
 
     /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
+    mud::event::event_loop& _event_loop;
 
     /** The on_accept handler. */
     on_accept_func _on_accept_func;
@@ -277,7 +277,7 @@ private:
  *
  * The event controller class for connecting to a peer a socket to a remote
  * endpoint. When the connection has been establisged to a peer, the
- * kernel eventloop invokes the @c on_connect handler, while passing the
+ * event-loop invokes the @c on_connect handler, while passing the
  * ownership.
  */
 
@@ -291,8 +291,8 @@ public:
      * Constructor.
      * @param event_loop [in] the event-loop to register the socket to.
      */
-    connector(mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
+    connector(mud::event::event_loop& event_loop
+            = mud::event::event_loop::global());
 
     /**
      * @brief Move constructor.
@@ -336,7 +336,7 @@ private:
     tcp::socket _socket;
 
     /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
+    mud::event::event_loop& _event_loop;
 
     /** The on_connect handler. */
     on_connect_func _on_connect_func;
@@ -346,7 +346,7 @@ private:
  * @brief Controller for communicating TCP connections.
  *
  * The event controller class for communicating with a connected socket. It
- * used the kernel event-loop to be notified of any incoming messages.
+ * used the event-loop to be notified of any incoming messages.
  */
 
 class MUDLIB_IO_API communicator
@@ -360,8 +360,8 @@ public:
      * @param event_loop [in] The event-loop to register the socket to.
      */
     communicator(
-            mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
+            mud::event::event_loop& event_loop
+            = mud::event::event_loop::global());
 
     /**
      * @brief Move constructor.
@@ -422,7 +422,7 @@ private:
     tcp::socket _socket;
 
     /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
+    mud::event::event_loop& _event_loop;
 
     /** The on_receive handler. */
     on_receive_func _on_receive_func;

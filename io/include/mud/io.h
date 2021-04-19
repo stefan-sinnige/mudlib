@@ -4,8 +4,6 @@
 #include <mud/io/ns.h>
 #include <mud/io/exception.h>
 #include <mud/io/io.h>
-#include <mud/io/kernel_event_loop.h>
-#include <mud/io/kernel_handle.h>
 #include <mud/io/pipe.h>
 #include <mud/io/socket.h>
 #include <mud/io/streambuf.h>
