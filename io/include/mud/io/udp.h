@@ -5,10 +5,9 @@
 #include <memory>
 #include <ostream>
 #include <string>
-#include <netinet/in.h>
 #include <mud/io/ns.h>
 #include <mud/io/ip.h>
-#include <mud/io/kernel_event_loop.h>
+#include <mud/event/event_loop.h>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -21,7 +20,7 @@ namespace udp {
 /**
  * @brief The definition of a UDP endpoint.
  */
-class endpoint
+class MUDLIB_IO_API endpoint
 {
 public:
     /**
@@ -72,7 +71,7 @@ private:
 /**
  * @brief The UDP socket.
  */
-class socket : public mud::io::ip::socket
+class MUDLIB_IO_API socket : public mud::io::ip::socket
 {
 public:
     /**
@@ -185,17 +184,20 @@ public:
 private:
     /** Platform specific implementation.  */
     class impl;
-    std::unique_ptr<impl> _impl;
+    struct impl_deleter {
+        void operator()(impl*) const;
+    };
+    std::unique_ptr<impl, impl_deleter> _impl;
 };
 
 /**
  * @brief Controller for communicating UDP connections.
  *
  * The event controller class for communicating with a connected socket. It
- * used the kernel event-loop to be notified of any incoming messages.
+ * used the event-loop to be notified of any incoming messages.
  */
 
-class communicator
+class MUDLIB_IO_API communicator
 {
 public:
     /** Function definition for the @c on_receive handler. */
@@ -206,8 +208,8 @@ public:
      * @param event_loop [in] The event-loop to register the socket to.
      */
     communicator(
-            mud::io::kernel_event_loop& event_loop
-            = mud::io::kernel_event_loop::global());
+            mud::event::event_loop& event_loop
+            = mud::event::event_loop::global());
 
     /**
      * @brief Move constructor.
@@ -290,7 +292,7 @@ private:
     udp::socket _socket;
 
     /** The event-loop. */
-    mud::io::kernel_event_loop& _event_loop;
+    mud::event::event_loop& _event_loop;
 
     /** The on_receive handler. */
     on_receive_func _on_receive_func;

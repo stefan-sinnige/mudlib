@@ -1,4 +1,4 @@
-#include "mud/io/kernel_event_loop.h"
+#include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
 #include <future>
@@ -53,9 +53,9 @@ FEATURE("TCP sockets")
         // Run the global event loop for 50ms to establish a connection.
         std::future<void> future = std::async(std::launch::async, []() {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            mud::io::kernel_event_loop::global().terminate();
+            mud::event::event_loop::global().terminate();
         });
-        mud::io::kernel_event_loop::global().loop();
+        mud::event::event_loop::global().loop();
     })
   DEFINE_THEN("A connection is established",
     [](context& ctx){

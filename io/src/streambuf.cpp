@@ -1,13 +1,19 @@
+#if defined(WINDOWS) && defined(NATIVE)
+// This should not be here - it is socket specific!
+#include <winSock2.h>
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 #include "mud/core/exception.h"
 #include "mud/io/streambuf.h"
 #include <exception>
 #include <streambuf>
-#include <unistd.h>
 
 BEGIN_MUDLIB_IO_NS
 
 basic_streambuf::basic_streambuf(
-        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        const std::unique_ptr<mud::core::handle>& handle,
         size_t bufsize /* = 10 */,
         size_t putbacksize /* = 4 */)
     : _handle(handle), _bufsize(bufsize), _putbacksize(putbacksize)
@@ -46,9 +52,17 @@ basic_streambuf::underflow()
     /* Read new characters */
     int nread = read(_buffer + _putbacksize, _bufsize - _putbacksize);
     if (nread <= 0) {
+#if defined(WINDOWS) && defined(NATIVE)
+        // This should not be here, it is socket specific
+        int error = GetLastError();
+        if (nread != 0 /* && error != WSAEAGAIN ? */) {
+            throw std::system_error(error, std::system_category(), "read");
+        }
+#else
         if (nread != 0 && errno != EAGAIN) {
             throw std::system_error(errno, std::system_category(), "read");
         }
+#endif
         return traits_type::eof();
     }
 
@@ -94,7 +108,7 @@ basic_streambuf::sync()
     return 0;
 }
 
-const std::unique_ptr<mud::io::kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 basic_streambuf::handle() const
 {
     return _handle;

@@ -1,6 +1,7 @@
 #include "mud/core/exception.h"
 #include "mud/io/pipe.h"
 #include "mud/io/streambuf.h"
+#include <functional>
 #include <system_error>
 #include <errno.h>
 #include <fcntl.h>
@@ -21,12 +22,12 @@ class streambuf: public mud::io::basic_streambuf
 {
 public:
     /* Constructor for UDP specific stream-buffer.
-     * @param [in] handle  The kernel handle to use.
+     * @param [in] handle  The handle to use.
      * @param [in] bufsize The initial buffer size.
      * @param [in] putbacksize The size of the putback buffer.
      */
     streambuf(
-            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            const std::unique_ptr<mud::core::handle>& handle,
             size_t bufsize = 10,
             size_t putbacksize = 4);
 
@@ -36,7 +37,7 @@ public:
 };
 
 streambuf::streambuf(
-        const std::unique_ptr<mud::io::kernel_handle>& handle,
+        const std::unique_ptr<mud::core::handle>& handle,
         size_t bufsize,
         size_t putbacksize)
     : mud::io::basic_streambuf(
@@ -49,13 +50,15 @@ streambuf::streambuf(
 ssize_t
 streambuf::read(void* buf, size_t count)
 {
-    return ::read(*handle(), buf, count);
+    int hndl = mud::core::internal_handle<int>(handle());
+    return ::read(hndl, buf, count);
 }
 
 ssize_t
 streambuf::write(const void* buf, size_t count)
 {
-    return ::write(*handle(), buf, count);
+    int hndl = mud::core::internal_handle<int>(handle());
+    return ::write(hndl, buf, count);
 }
 
 } // namespace _pipe
@@ -100,12 +103,12 @@ public:
     /**
      * The read handle.
      */
-    const std::unique_ptr<mud::io::kernel_handle>& read_handle() const;
+    const std::unique_ptr<mud::core::handle>& read_handle() const;
 
     /**
      * The write handle.
      */
-    const std::unique_ptr<mud::io::kernel_handle>& write_handle() const;
+    const std::unique_ptr<mud::core::handle>& write_handle() const;
 
 private:
     /** The stream for reading. */
@@ -121,10 +124,10 @@ private:
     std::unique_ptr<_pipe::streambuf> _write_buffer;
 
     /** The read handle */
-    std::unique_ptr<mud::io::kernel_handle> _read_handle;
+    std::unique_ptr<mud::core::handle> _read_handle;
 
     /** The write handle */
-    std::unique_ptr<mud::io::kernel_handle> _write_handle;
+    std::unique_ptr<mud::core::handle> _write_handle;
 };
 
 pipe::impl::impl()
@@ -135,17 +138,18 @@ pipe::impl::impl()
     if (::pipe(pfd) == -1) {
         throw std::system_error(errno, std::system_category(), "creating pipe");
     }
+
+    /* Ensure non-blocking I/O */
     if (::fcntl(pfd[0], F_SETFL, O_NONBLOCK) == -1) {
         throw std::system_error(errno, std::system_category(),
                 "set pipe non-blocking");
     }
-    /* Ensure non-blocking I/O */
 
     /* Set the ownership of the pipe handles */
-    _read_handle  = std::unique_ptr<mud::io::kernel_handle>(
-                    new mud::io::kernel_handle(int(pfd[0])));
-    _write_handle = std::unique_ptr<mud::io::kernel_handle>(
-                    new mud::io::kernel_handle(int(pfd[1])));
+    _read_handle  = std::unique_ptr<mud::core::handle>(
+                    new mud::core::int_handle(int(pfd[0])));
+    _write_handle = std::unique_ptr<mud::core::handle>(
+                    new mud::core::int_handle(int(pfd[1])));
 
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */
@@ -160,11 +164,11 @@ pipe::impl::impl()
 pipe::impl::~impl()
 {
     if (_read_handle != nullptr) {
-        ::close(*_read_handle);
+        ::close(mud::core::internal_handle<int>(_read_handle));
         _read_handle.reset(nullptr);
     }
     if (_write_handle != nullptr) {
-        ::close(*_write_handle);
+        ::close(mud::core::internal_handle<int>(_write_handle));
         _write_handle.reset(nullptr);
     }
 }
@@ -181,23 +185,29 @@ pipe::impl::ostr()
     return _ostr;
 }
 
-const std::unique_ptr<mud::io::kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 pipe::impl::read_handle()  const
 {
     return _read_handle;
 }
 
-const std::unique_ptr<mud::io::kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 pipe::impl::write_handle()  const
 {
     return _write_handle;
+}
+
+void
+pipe::impl_deleter::operator()(pipe::impl* ptr) const
+{
+    delete ptr;
 }
 
 /** The explicit specialisation for POSIX pipes. */
 
 pipe::pipe()
 {
-    _impl = std::unique_ptr<impl>(new impl());
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
 pipe::~pipe()
@@ -216,13 +226,13 @@ pipe::ostr()
     return _impl->ostr();
 }
 
-const std::unique_ptr<mud::io::kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 pipe::read_handle() const
 {
     return _impl->read_handle();
 }
 
-const std::unique_ptr<mud::io::kernel_handle>&
+const std::unique_ptr<mud::core::handle>&
 pipe::write_handle() const
 {
     return _impl->write_handle();

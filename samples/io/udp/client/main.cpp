@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
+#include "mud/event/event_loop.h"
 #include "mud/io/udp.h"
-#include "mud/io/kernel_event_loop.h"
 
 std::string host = "127.0.0.1";
 uint16_t port = 12345;
@@ -75,7 +75,7 @@ client::on_receive()
     }
 
     // Stop the event-loop, that will exit the application.
-    mud::io::kernel_event_loop::global().terminate();
+    mud::event::event_loop::global().terminate();
 }
 
 int
@@ -115,7 +115,7 @@ main(int argc, char** argv)
     }
 
     // Run the global event loop.
-    mud::io::kernel_event_loop::global().loop();
+    mud::event::event_loop::global().loop();
 
     return 0;
 }

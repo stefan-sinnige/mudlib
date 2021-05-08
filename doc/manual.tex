@@ -264,89 +264,181 @@ if {ptr == nullptr} {
 
 The core library defines an abstract concept of a handle\index{handle} as a
 unique reference to s single resource of any kind. This can be resources that
-have a direct link with an operating system supported device (also known
-as kernel\index{handle!kernel}) but can also refer to a reference to a
-software construct, like a window\index{handle!window} handle.
+have a direct link with an operating system supported device but can also refer
+to a reference to a software construct, like a window\index{handle!window}
+handle.
 
-In either case, each of these handles are represented as a
+In either case, each of these handles are represented as an instantiation of a
 \texttt{basic\_handle}\indextt{basic\_handle}. This
 class is templated with the underlying type of the resource. For example,
 POSIX style kernel handles are represented by an integer type, while
-Microsoft Windows window handles are of type \texttt{HWND}. The
+Microsoft Windows window handles are of type \texttt{HANDLE}. The
 \texttt{basic\_handle} simply defines the constraints that are put on these
-handle types:
+handle types, and are:
 \begin{itemize}
 \item No default constructor
 \item Not copy-constructable
 \item Not copy-assignable
+\item Only move-constructible
 \end{itemize}
 Furthermore, the handle can return its underlying representation using the
 type-operator.
 
-% ============================================================================
-% PART
-% ============================================================================
+When a handle is not valid (i.e. not referring to any resource), it shall be
+deemed as being invalid. The underlying resource will then refer to an
+invalid representation, for exmaple, to a \texttt{nullptr} for pointer typed
+resources.
 
-\part{I/O}
+In general, the underlying resource is abstracted away behind the 
+\texttt{handle} class and in most cases does not need to be accessed. However,
+in cases where it is required to access the underlying resource value, it
+should then be known what that underlying type should be and can then be
+accessed using the \texttt{internel\_handle}\indextt{internal\_handle} template
+as presented in listing~\ref{lst:internal_handle}.
 
-The concept of I/O is a fundamental one in application programming. The
-majority of applications would have some concept of using I/O for any kind
-of communication. This includes communication with hardware, other software
-applications or services and interaction with humans. Input can come from
-resources like files, keyboard or through an internet socket connection; while
-output can be a display, a printer, a file or perhaps a row in a database.
-
-As can be seen, there is a whole variety of I/O and at various levels. The
-types of I/O that are dealt with in this layer of the MUDLib library is the
-low-level operating system supported I/O. This is typically I/O that is
-supported by, for example, the POSIX standard and would typically require a
-method where multiple kernel events can be examined and processed (e.g.
-\texttt{select}\indextt{select}, \texttt{poll}\indextt{poll} and
-\texttt{kevent}\indextt{kevent}).
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Accessing underlying resource handle values.},
+  label=lst:internal_handle]
+std::unique_ptr<mud::code::handle> handle_ref = ...;
+int h = internal_handle<int>(handle_ref);
+\end{lstlisting}
 
 % ============================================================================
 % CHAPTER
 % ============================================================================
 
-\chapter{Kernel Handles and Event Loops}
-\label{cpt:kernel-handles-loops}
+\chapter{Endian}
+\label{chp:endian}\index{endian}
 
-\section{\texttt{kernel\_handle}}
-\indextt{kernel\_handle}
-\label{sct:kernel_handle}
+A concept that often raises its head when dealing with platform independent
+structures and tecnologies is the notion of endianness. It defines a system's
+representation of multi-byte integral values in memory. In \textit{big-endian}
+\index{big endian} systems, the most significate byte is stored at the
+smallest memory address, while in \textit{little-endian}\index{little endian}
+systems, the most sugnification byte is stored at the largest memory address.
 
-Operating system (kernel) supported resources can often uniquely defined by
-a reference of a certain type. For POSIX systems, this is often represented
-by an integer value. Once the resource reference (or handle \index{handle})
-to a particular resource has been acquired, it can then be used to perform
-specific operations on that resource.
+Platform independent networking techologies often opt for a big endian value
+representation (also known as \textit{network order}\index{network order}). In
+systems whose architecture is based on little-endian, every representation of
+a mutli-byte integral value needs to convert its value when reading from
+a network protocol or writing to a network protocol. The \texttt{endian}%
+\indextt{endian} class can assist in that conversion.
 
-These resource handles are represented by using the
-\texttt{basic\_handle}\indextt{basic\_handle} and templated with the kernel
-defined type. In most cases, this is just an integer value. In principal, 
-this class can be used on its own as in listing~\ref{lst:kernel-handle}, but
-with the MUDLib library, these handles are used as data members of device
-abstractions like pipes\index{pipe} and sockets\index{socket}.
+The \texttt{endian} class can assess the current architecture to determine
+its native endian system. It can also convert any native integral to any
+endian system, and vice versa. The example in listing~\ref{lst:endian}, show
+how to represent a native 32-bit integer to a big-endian system.
 
 \begin{lstlisting}[%
   frame=single,
   captionpos=b,
-  caption={Direct use of the \texttt{kernel\_handle}.},
-  label=lst:kernel-handle]
-mud::io::kernel_handle fd(open("/dev/ttyUSB1", O_RDWR));
-if (fd < 0) {
-    throw std::system_error(errno, std::system_category(), "open");
-}
-write(fd, "Hello World", 11);
-close(fd);
+  caption={Converting between endian systems.},
+  label=lst:endian]
+uint32_t value = 0x12345678;
+uint32_t big = mud::core::endian::convert(
+        mud::core::endian::native(),
+        mud::core::endian::endian_t::big,
+        value);
 \end{lstlisting}
 
-As the handle references a unique resource, they are often associated with
-a \texttt{unique\_ptr} to ensure unique ownership of the handle.
+% ============================================================================
+% PART
+% ============================================================================
 
-\section{\texttt{kernel\_event\_loop}}
-\indextt{kernel\_event\_loop}
-\label{sct:kernel_event_loop}
+\part{Events}
+
+Building interactive applications, or applications that react on various
+input stimuli, are often designed around an event framework. This allows the
+applciation to define event types and what to do when a certain event
+eventuates. This can include events like pressing a button on a keybaord,
+dragging the mouse cursor, an entry is added to a database or an HTTP request
+has been received. Many of these event frameworks are pre-existing and already
+provided by the operating system or some other software development kit.
+
+These pre-existing frameworks, however, cater for only a very specific subset
+of events. An event framework that listens to UI input uses a different kind
+of event technology than listing for an incoming TCP packet. This makes
+applications that integrate with multiple event frameworks at once, quite
+an 'eventful' exercise.
+
+The event framework provided by the MUDLib library aims to overcome this by
+creating a single event frameowkr interface that creates a facade to the
+underlying pre-existing technologies.
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Event abstraction}
+
+At the heart of the event framework is the concept of an \texttt{event}%
+\indextt{event} and an event-loop that runs forever, listening for any kind
+of event and invoking a user-defined handler when such an event occurs.
+
+The event itself is a container that holds three key properties:
+
+\begin{itemize}
+  \item The \texttt{handle}\indextt{handle} to the resource that is associated
+        to that event. This can be a file descriptor\index{file descriptor},
+        a window handle\index{window handle}, etc.
+  \item A signal mask to define what to listen for on that resource
+  \item A handler to call when an event occurs
+\end{itemize}
+
+\noindent All these properties are maintained within the \texttt{handle} base
+class.
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Event Loops}
+\label{cpt:event-loops}
+
+In modern software architecture, event-loops play a significant role. It allows
+the application to be reactive on eny event while in the mean-time continue
+with other tasks. It also brings a level of abstraction to the application
+as a single event-loop can be used for a variety of events. For example, the
+POSIX \texttt{select}\indextt{select} mechanism allows an application to wait
+for multiple file-descriptors with one call. When any of these file-descriptors
+detect an event, the application can examine the \texttt{select} structure to
+determine which file descriptor has been triggered.
+
+Over time, a number of event-loops have been developed and are widely in use,
+each to serve their own purpose or software architecture, and to extend the
+same principles in other realms. As \texttt{select} has been widely used to
+handle file-descriptors, it is not designed to be used to handle graphical
+user interface events (like moving a window or selecting a check-box).
+
+This leads to applications having to implement multiple event-loops, each
+with their own architecture and design criteria, at the same time where each
+event-loop handles their own specific event.
+
+Taking a holistic approach, an event-loop is nothing more than a mechanism to
+register the interest of an event and be signalled when such an event occurs.
+It does not matter if that event is a network socket that receives a new
+message, or a check-box that has been selected. By hiding the implementation
+of these architecture dependent event-loops, it is possible to create a
+platform independent event-loop. It also allows abstraction of different
+implementation of common technologies. For example, a \textit{pipe}\index{pipe}
+can be used for inter- and intra-process communication, but they are defined
+differently on UNIX based systems where the pipe is a file-descriptor that uses
+the \texttt{select} mechanism, and on Microsoft Windows system that uses a
+\texttt{HANDLE}\indextt{HANDLE} and a \texttt{WaitForMultipleObjects}~%
+\indextt{WaitForMultipleObjects} mechanism to wait for any data arriving on
+the pipe. Since the concept of a pipe is already abstracted behind a
+\texttt{handle}\indextt{handle} abstraction, the event-loop can register that
+handle using the appropriate mechanism as well. On UNIX system, the pipe handle
+is an integer file-descriptor that registers the pipe with  the
+\texttt{select} mechanism, while on Microsoft Windows systems, the pipe handle
+is a Windows \texttt{HANDLE} and regsiters the pipe with the
+\texttt{WaitForMultipleObjects} mechanism.
+
+\section{\texttt{event\_loop}}
+\indextt{event\_loop}
+\label{sct:event_loop}
 
 Most operating systems have means available to let the kernel wait for any
 event on a kernel handle and inform an application that was actively waiting
@@ -368,19 +460,19 @@ illustrated in listing \ref{lst:event-loop-thread}.
   caption={Kernel event loop thread},
   label=lst:event-loop-thread]
 // Start the event loop
-mud::io::kernel_event_loop loop;
+mud::event::event_loop loop;
 std::future<void> future = std::async(
     std::launch::async, [&loop]{} {
         loop.loop();
     });
 
-// Register a handle and a handler
-loop.register_handler(some_handle, []() {
+// Register a handler and a 'read' handler
+loop.register_handler(mud::event::event(a_handle, []() {
         // Handle the event, e.g. read from a socket.
-    });
+    }), mud::event::event::signal_t::READING);
     
-// Do some action. Any event on some_handle would cause
-// the event handler to be called.
+// Do some action. Any write to a_handle would cause the
+// event handler to be called, indicating to read.
 
 // Terminate the event loop.
 loop.terminate();
@@ -390,6 +482,27 @@ A singleton global event-loop is readily available and can be used as the
 main event-loop of any application (\texttt{kernel\_event\_loop::global()}).
 If needed, other event-loops can be used simultaneously, each handling their
 own specific set of events.
+
+% ============================================================================
+% PART
+% ============================================================================
+
+\part{I/O}
+
+The concept of I/O is a fundamental one in application programming. The
+majority of applications would have some concept of using I/O for any kind
+of communication. This includes communication with hardware, other software
+applications or services and interaction with humans. Input can come from
+resources like files, keyboard or through an internet socket connection; while
+output can be a display, a printer, a file or perhaps a row in a database.
+
+As can be seen, there is a whole variety of I/O and at various levels. The
+types of I/O that are dealt with in this layer of the MUDLib library is the
+low-level operating system supported I/O. This is typically I/O that is
+supported by, for example, the POSIX standard and would typically require a
+method where multiple kernel events can be examined and processed (e.g.
+\texttt{select}\indextt{select}, \texttt{poll}\indextt{poll} and
+\texttt{kevent}\indextt{kevent}).
 
 % ============================================================================
 % CHAPTER
@@ -1461,6 +1574,10 @@ manually executed through its static \texttt{run} method.
 % ============================================================================
 
 \newpage
+
+\indexprologue{An index entry that is type-set in \texttt{tele-type} represents
+a name of a \Cpp class or function.}
+
 \printindex
 
 \end{document}

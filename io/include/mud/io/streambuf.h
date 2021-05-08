@@ -1,8 +1,14 @@
 #ifndef _MUDLIB_IO_STREAMBUF_H_
 #define _MUDLIB_IO_STREAMBUF_H_
 
+#if defined(WINDOWS) && defined(NATIVE)
+    #ifndef MUDLIB_SSIZE_T
+        #define MUDLIB_SSIZE_T
+        typedef long ssize_t;
+    #endif
+#endif
+#include <mud/core/handle.h>
 #include <mud/io/ns.h>
-#include <mud/io/kernel_handle.h>
 #include <memory>
 #include <streambuf>
 
@@ -14,17 +20,17 @@ BEGIN_MUDLIB_IO_NS
  * This class defines the stream buffer for generic (but system implementation
  * dependent) I/O operations.
  */
-class basic_streambuf : public std::streambuf
+class MUDLIB_IO_API basic_streambuf : public std::streambuf
 {
 public:
     /**
      * Constructor, passing a handle to use.
-     * @param [in] handle  The kernel handle to use.
+     * @param [in] handle  The handle to use.
      * @param [in] bufsize The initial buffer size.
      * @param [in] putbacksize The size of the putback buffer.
      */
     basic_streambuf(
-            const std::unique_ptr<mud::io::kernel_handle>& handle,
+            const std::unique_ptr<mud::core::handle>& handle,
             size_t bufsize = 10,
             size_t putbacksize = 4);
 
@@ -64,10 +70,10 @@ protected:
     /**
      * Return to the resource handle.
      */
-    const std::unique_ptr<mud::io::kernel_handle>& handle() const;
+    const std::unique_ptr<mud::core::handle>& handle() const;
 
 private:
-    const std::unique_ptr<mud::io::kernel_handle>& _handle; /**< Handle */
+    const std::unique_ptr<mud::core::handle>& _handle; /**< Handle */
     const size_t _bufsize;     /**< Size of the buffer */
     const size_t _putbacksize; /**< Size of the putback buffer */
     char* _buffer;             /**< The buffer. */
