@@ -285,8 +285,8 @@ public:
     communicator& operator=(const communicator&) = delete;
 
 private:
-    /** Event handler when a peer is connected. */
-    void on_ready_receive();
+    /** Event handler when there is data available. */
+    mud::event::event::return_type on_ready_receive();
 
     /** The socket used for communications. */
     udp::socket _socket;

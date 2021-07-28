@@ -57,7 +57,7 @@ public:
 
         /* Save the handle */
         _handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::int_handle(sd));
+                new mud::core::select_handle(sd));
     }
 
     /* Destructor */
@@ -168,23 +168,25 @@ FEATURE("Event loop")
       })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(mud::event::event(
+              ctx.event_loop.register_handler(std::move(mud::event::event(
                 ctx.itc.handle(),
-                [&ctx](const mud::event::event& ev) {
-                  ctx.itc.read();
-                  ++ctx.calls;
-                },
-                mud::event::event::signal_t::READING));
+                mud::event::event::signal_type::READING,
+                [&ctx]() {
+                    ctx.itc.read();
+                    ++ctx.calls;
+                    return mud::event::event::return_type::CONTINUE;
+                })));
           })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(mud::event::event(
+              ctx.event_loop.register_handler(std::move(mud::event::event(
                 ctx.itc.handle(),
-                [&ctx](const mud::event::event& ev) {
-                  ctx.itc.read();
-                  ++ctx.other_calls;
-                },
-                mud::event::event::signal_t::READING));
+                mud::event::event::signal_type::READING,
+                [&ctx]() {
+                    ctx.itc.read();
+                    ++ctx.other_calls;
+                    return mud::event::event::return_type::CONTINUE;
+                })));
           })
   DEFINE_WHEN("The event is triggered",
       [](context& ctx) {
@@ -257,10 +259,8 @@ FEATURE("Event loop")
      AND ("A registered handler that handles an event")
     WHEN ("The event handler is deregistered",
         [](context& ctx) {
-            ctx.event_loop.deregister_handler(mud::event::event(
-                ctx.itc.handle(),
-                [](mud::event::event&) {},
-                mud::event::event::signal_t::READING));
+            mud::event::event event(ctx.itc.handle());
+            ctx.event_loop.deregister_handler(std::move(event));
         })
      AND ("The event is triggered")
     THEN ("The event handler is not called")
@@ -277,14 +277,15 @@ FEATURE("Event loop")
     GIVEN("A running event loop")
       AND("A registered handler that terminates the loop",
           [](context& ctx) {
-            ctx.event_loop.register_handler(mud::event::event(
+            ctx.event_loop.register_handler(std::move(mud::event::event(
               ctx.itc.handle(),
-              [&ctx](mud::event::event&) {
+              mud::event::event::signal_type::READING,
+              [&ctx]() {
                 ctx.itc.read();
                 ++ctx.calls;
                 ctx.event_loop.terminate();
-              },
-              mud::event::event::signal_t::READING));
+                return mud::event::event::return_type::REMOVE;
+              })));
         })
     WHEN ("The event is triggered")
     THEN ("The event handler is called exactly once")

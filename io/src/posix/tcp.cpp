@@ -384,8 +384,8 @@ tcp::acceptor::open(const endpoint& endpoint)
 
     /* Register the event handler to be invoked when a client connects */
     _event_loop.register_handler(mud::event::event(_listen.handle(),
-                    std::bind(&acceptor::on_ready_accept, this),
-                    mud::event::event::signal_t::READING));
+                    mud::event::event::signal_type::READING,
+                    std::bind(&acceptor::on_ready_accept, this)));
 }
 
 void
@@ -394,7 +394,7 @@ tcp::acceptor::on_accept(on_accept_func func)
     _on_accept_func = func;
 }
 
-void
+mud::event::event::return_type
 tcp::acceptor::on_ready_accept()
 {
     // Accept the connection. This may block if there is no client ready.
@@ -411,7 +411,7 @@ tcp::acceptor::on_ready_accept()
     // Create the client socket connection.
     std::unique_ptr<mud::core::handle> handle;
     handle = std::unique_ptr<mud::core::handle>(
-                    new mud::core::int_handle(fd));
+                    new mud::core::select_handle(fd));
     tcp::socket client(_listen.domain(), _listen.type(), _listen.protocol(),
             std::move(handle));
 
@@ -438,6 +438,9 @@ tcp::acceptor::on_ready_accept()
     {
         _on_accept_func(std::move(client));
     }
+
+    // Keep on accepting new connections.
+    return mud::event::event::return_type::CONTINUE;
 }
 
 /** The connector */
@@ -495,8 +498,8 @@ tcp::connector::open(const endpoint& endpoint)
     /* Register the event handler to be invoked when a connection has been
      * established. */
     _event_loop.register_handler(mud::event::event(_socket.handle(),
-                    std::bind(&connector::on_ready_connect, this),
-                    mud::event::event::signal_t::WRITING));
+                    mud::event::event::signal_type::WRITING,
+                    std::bind(&connector::on_ready_connect, this)));
 }
 
 void
@@ -505,7 +508,7 @@ tcp::connector::on_connect(on_connect_func func)
     _on_connect_func = func;
 }
 
-void
+mud::event::event::return_type
 tcp::connector::on_ready_connect()
 {
     /* Deregister the connecting socket from the event-loop */
@@ -536,6 +539,9 @@ tcp::connector::on_ready_connect()
     {
         _on_connect_func(std::move(_socket));
     }
+
+    // Done
+    return mud::event::event::return_type::REMOVE;
 }
 
 /** The communicator */
@@ -566,8 +572,8 @@ void
 tcp::communicator::open(tcp::socket&& socket)
 {
     _event_loop.register_handler(mud::event::event(_socket.handle(),
-                    std::bind(&communicator::on_ready_receive, this),
-                    mud::event::event::signal_t::READING));
+                    mud::event::event::signal_type::READING,
+                    std::bind(&communicator::on_ready_receive, this)));
     _socket = std::move(socket);
 }
 
@@ -597,7 +603,7 @@ tcp::communicator::on_receive(
     _on_receive_func = func;
 }
 
-void
+mud::event::event::return_type
 tcp::communicator::on_ready_receive()
 {
     // Call the registered function handler.
@@ -605,6 +611,9 @@ tcp::communicator::on_ready_receive()
     {
         _on_receive_func();
     }
+
+    // Continue receiving
+    return mud::event::event::return_type::CONTINUE;
 }
 
 END_MUDLIB_IO_NS

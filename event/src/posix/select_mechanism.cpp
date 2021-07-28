@@ -27,7 +27,7 @@ public:
     /**
      * Default constructor.
      */
-    impl();
+    impl(const std::shared_ptr<mud::core::simple_task_queue>& queue);
 
     /**
      * Destructor.
@@ -37,12 +37,12 @@ public:
     /**
      * Register an event handler with the loop.
      */
-    void register_handler(const event& event);
+    void register_handler(event&& event);
 
     /**
      * Deregister an event handler associated to a handle from the loop.
      */
-    void deregister_handler(const event& event);
+    void deregister_handler(event&& event);
 
     /**
      * Initiate the mechanism.
@@ -105,6 +105,9 @@ private:
      */
     void command_handler();
 
+    /** The queue for signaled events */
+    std::shared_ptr<mud::core::simple_task_queue> _queue;
+
     /** Self-signalling resource */
     select_self* _self;
 
@@ -124,17 +127,18 @@ private:
     std::shared_future<void> _future;
 };
 
-select_mechanism::impl::impl()
-    : _running(false)
+select_mechanism::impl::impl(
+        const std::shared_ptr<mud::core::simple_task_queue>& queue)
+    : _queue(queue), _running(false)
 {
-    /* Always register the self-event */
+    /* Always register the self-event to receive the command */
     _self = new select_self();
-    _events.push_back(event(
-                    _self->handle(),
-    [this](event&) {
-        this->_self->receive();
-    },
-    event::signal_t::READING));
+    int handle = mud::core::internal_handle<int>(_self->handle());
+    event ev(_self->handle(), event::signal_type::READING, [&]() {
+        _self->receive();
+        return mud::event::event::return_type::CONTINUE;
+    });
+    _events.push_back(ev);
 }
 
 select_mechanism::impl::~impl()
@@ -155,7 +159,7 @@ select_mechanism::impl::~impl()
 }
 
 void
-select_mechanism::impl::register_handler(const event& event)
+select_mechanism::impl::register_handler(event&& event)
 {
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end())
@@ -167,7 +171,7 @@ select_mechanism::impl::register_handler(const event& event)
 }
 
 void
-select_mechanism::impl::deregister_handler(const event& event)
+select_mechanism::impl::deregister_handler(event&& event)
 {
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end())
@@ -214,6 +218,7 @@ select_mechanism::impl::loop()
      * again. */
     nop();
 
+
     /* Signal the end of the thread. */
     _promise.set_value();
 }
@@ -225,9 +230,6 @@ select_mechanism::impl::terminate()
     {
         _running.store(false);
         _self->send();
-    }
-    else
-    {
     }
 }
 
@@ -253,7 +255,8 @@ select_mechanism::impl::multiplex(
     for (auto& event: _events)
     {
         if (event.handle() != nullptr &&
-                (event.mask() & event::signal_t::READING) == event::signal_t::READING)
+                (event.mask() & event::signal_type::READING)
+                == event::signal_type::READING)
         {
             int handle = mud::core::internal_handle<int>(event.handle());
             FD_SET(handle, &readfds);
@@ -262,7 +265,8 @@ select_mechanism::impl::multiplex(
             }
         }
         if (event.handle() != nullptr &&
-                (event.mask() & event::signal_t::WRITING) == event::signal_t::WRITING)
+                (event.mask() & event::signal_type::WRITING)
+                == event::signal_type::WRITING)
         {
             int handle = mud::core::internal_handle<int>(event.handle());
             FD_SET(handle, &writefds);
@@ -279,40 +283,99 @@ select_mechanism::impl::demultiplex(
         const fd_set& writefds,
         const fd_set& exceptfds)
 {
-    // While calling the object handlers, it may potentially alter the list of
-    // handlers through @c register_handler and @c deregister_handler. To avoid
-    // invalidating any iterators in the range-for loops, use a copy of the
-    // handlers to be called.
-    std::list<event> events;
-    std::copy(_events.begin(), _events.end(), std::back_inserter(events));
-
     /* Check all excepts */
 
     /* Check all reads */
-    for (auto& event: events)
+    auto event_it = _events.begin();
+    while (event_it != _events.end())
     {
-        if (event.handle() != nullptr &&
-                (event.mask() & event::signal_t::READING) == event::signal_t::READING)
+        if (event_it->handle() != nullptr &&
+                (event_it->mask() & event::signal_type::READING)
+                == event::signal_type::READING)
         {
-            int handle = mud::core::internal_handle<int>(event.handle());
+            int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &readfds))
             {
-                event.call();
+                if (event_it->handle() == _self->handle())
+                {
+                    /* The handle is the 'self' object. Execute it straight
+                     * away as it is used only to re-multiplex. */
+                    (void) (event_it->handler())();
+                    ++event_it;
+                }
+                else
+                {
+                    /* Any other event is taken off the list and processed as
+                     * a task by a task worker. If the handler instructs to
+                     * register the same event again, do so. */
+                    auto handler = event_it->handler();
+                    event copy = *event_it;
+                    mud::core::simple_task task([handler, copy, this]() {
+                        if (handler() == event::return_type::CONTINUE)
+                        {
+                            event ev = copy;
+                            this->register_handler(std::move(ev));
+                        }
+                    });
+                    _queue->push(std::move(task));
+                    event_it = _events.erase(event_it);
+                }
             }
+            else
+            {
+                ++event_it;
+            }
+        }
+        else
+        {
+            ++event_it;
         }
     }
 
     /* Check all writes */
-    for (auto& event: events)
+    event_it = _events.begin();
+    while (event_it != _events.end())
     {
-        if (event.handle() != nullptr &&
-                (event.mask() & event::signal_t::WRITING) == event::signal_t::WRITING)
+        if (event_it->handle() != nullptr &&
+                (event_it->mask() & event::signal_type::WRITING)
+                == event::signal_type::WRITING)
         {
-            int handle = mud::core::internal_handle<int>(event.handle());
+            int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &writefds))
             {
-                event.call();
+                if (event_it->handle() == _self->handle())
+                {
+                    /* The handle is the 'self' object. Execute it straight
+                     * away as it is used only to re-multiplex. */
+                    (void) (event_it->handler())();
+                    ++event_it;
+                }
+                else
+                {
+                    /* Any other event is taken off the list and processed as
+                     * a task by a task worker. If the handler instructs to
+                     * register the same event again, do so. */
+                    auto handler = event_it->handler();
+                    event copy = *event_it;
+                    mud::core::simple_task task([handler, copy, this]() {
+                        if (handler() == event::return_type::CONTINUE)
+                        {
+                            event ev = copy;
+                            this->register_handler(std::move(ev));
+                        }
+                    });
+                    _queue->push(std::move(task));
+                    event_it = _events.erase(event_it);
+                }
             }
+            else
+            {
+                ++event_it;
+            }
+        }
+        else
+        {
+            ++event_it;
         }
     }
 }
@@ -325,9 +388,10 @@ select_mechanism::impl_deleter::operator()(select_mechanism::impl* ptr) const
 
 /** The explicit implementation for POSIX event loops. */
 
-select_mechanism::select_mechanism()
+select_mechanism::select_mechanism(
+        const std::shared_ptr<mud::core::simple_task_queue>& queue)
 {
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(queue));
 }
 
 select_mechanism::~select_mechanism()
@@ -335,15 +399,15 @@ select_mechanism::~select_mechanism()
 }
 
 void
-select_mechanism::register_handler(const event& event)
+select_mechanism::register_handler(event&& event)
 {
-    _impl->register_handler(event);
+    _impl->register_handler(std::move(event));
 }
 
 void
-select_mechanism::deregister_handler(const event& event)
+select_mechanism::deregister_handler(event&& event)
 {
-    _impl->deregister_handler(event);
+    _impl->deregister_handler(std::move(event));
 }
 
 std::shared_future<void>
@@ -356,13 +420,6 @@ void
 select_mechanism::terminate()
 {
     _impl->terminate();
-}
-
-/* static */ select_mechanism&
-select_mechanism::global()
-{
-    static select_mechanism _global;
-    return _global;
 }
 
 END_MUDLIB_EVENT_NS

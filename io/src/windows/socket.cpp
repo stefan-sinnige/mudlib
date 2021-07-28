@@ -188,7 +188,7 @@ basic_socket::basic_socket(
                 "creating socket");
     }
     _handle  = std::unique_ptr<mud::core::handle>(
-                    new mud::core::int_handle(fd));
+                    new mud::core::select_handle(fd));
 }
 
 basic_socket::basic_socket(

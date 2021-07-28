@@ -19,12 +19,11 @@ class MUDLIB_CORE_API handle
 {
 public:
     /**
-     * @brief The underlying representation of the resource handle that is also
-     * associated to the event-loop mechanism to be used to wait for events
-     * on them.
+     * @brief The underlying representation of the resource handle that is
+     * associated to the event-loop mechanism.
      */
     enum class type_t {
-        INTEGER,    /*!< @c int handle */
+        SELECT,     /*!< Handle used with @c select mechanisms */
         W32HANDLE   /*!< Windows @c HANDLE */
     };
 
@@ -200,9 +199,9 @@ internal_handle(const std::unique_ptr<handle>& handle)
  */
 
 /**
- * @brief: A handle to an @c int resource type.
+ * @brief: A handle to an @c select resource type.
  */
-typedef basic_handle<handle::type_t::INTEGER, int, 0> int_handle;
+typedef basic_handle<handle::type_t::SELECT, int, 0> select_handle;
 template<> MUDLIB_CORE_API int internal_handle<int>(const
         std::unique_ptr<handle>&);
 

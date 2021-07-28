@@ -147,9 +147,9 @@ pipe::impl::impl()
 
     /* Set the ownership of the pipe handles */
     _read_handle  = std::unique_ptr<mud::core::handle>(
-                    new mud::core::int_handle(int(pfd[0])));
+                    new mud::core::select_handle(int(pfd[0])));
     _write_handle = std::unique_ptr<mud::core::handle>(
-                    new mud::core::int_handle(int(pfd[1])));
+                    new mud::core::select_handle(int(pfd[1])));
 
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */

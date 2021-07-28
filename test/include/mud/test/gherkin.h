@@ -1505,7 +1505,7 @@ public:
             /* Expected */                                                   \
             thrown = true;                                                   \
         }                                                                    \
-        catch(const std::exception& ex) {                                     \
+        catch(const std::exception& ex) {                                    \
             std::stringstream sstr;                                          \
             sstr << "  Expected exception: " << typeid(EX).name()            \
                  << std::endl                                                \
@@ -1537,7 +1537,7 @@ public:
         try {                                                                \
             __VA_ARGS__;                                                     \
         }                                                                    \
-        catch(const std::exception& ex) {                                     \
+        catch(const std::exception& ex) {                                    \
             std::stringstream sstr;                                          \
             sstr << "  Unexpected exception: std::exception - or derived";   \
             mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \

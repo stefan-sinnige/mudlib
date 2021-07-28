@@ -260,7 +260,7 @@ public:
 
 private:
     /** Event handler when a peer is connected. */
-    void on_ready_accept();
+    mud::event::event::return_type on_ready_accept();
 
     /** The socket used for listening for incoming connections. */
     tcp::socket _listen;
@@ -330,7 +330,7 @@ public:
 
 private:
     /** Event handler when a peer has accepted the connection. */
-    void on_ready_connect();
+    mud::event::event::return_type on_ready_connect();
 
     /** The socket to use for accepting connections. */
     tcp::socket _socket;
@@ -346,7 +346,7 @@ private:
  * @brief Controller for communicating TCP connections.
  *
  * The event controller class for communicating with a connected socket. It
- * used the event-loop to be notified of any incoming messages.
+ * uses the event-loop to be notified of any incoming messages.
  */
 
 class MUDLIB_IO_API communicator
@@ -415,8 +415,8 @@ public:
     communicator& operator=(const communicator&) = delete;
 
 private:
-    /** Event handler when a peer is connected. */
-    void on_ready_receive();
+    /** Event handler when there is data available. */
+    mud::event::event::return_type on_ready_receive();
 
     /** The socket used for communications. */
     tcp::socket _socket;

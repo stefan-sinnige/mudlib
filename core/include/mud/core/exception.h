@@ -2,7 +2,6 @@
 #define _MUDLIB_CORE_EXCEPTION_H_
 
 #include <exception>
-#include <iostream>
 #include <mud/core/ns.h>
 
 BEGIN_MUDLIB_CORE_NS
