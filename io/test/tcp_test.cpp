@@ -14,19 +14,23 @@ CONTEXT()
     context()
         : accepted(false), connected(false)
     {
-        future = std::async(std::launch::async, []() {
+        thr = std::thread([]() {
             mud::event::event_loop::global().loop();
         });
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     // Destructor, executed after each scenario run
     ~context() {
         mud::event::event_loop::global().terminate();
-        future.wait();
+        if (thr.joinable())
+        {
+            thr.join();
+        }
+
     }
 
-    std::future<void> future;
+    std::thread thr;
     mud::io::tcp::socket server;
     mud::io::tcp::socket client;
     mud::io::tcp::acceptor acceptor;
