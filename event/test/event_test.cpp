@@ -13,9 +13,9 @@ CONTEXT()
         copy = nullptr;
         lookup = nullptr;
         handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::int_handle(10));
+                new mud::core::select_handle(10));
         different_handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::int_handle(20));
+                new mud::core::select_handle(20));
     }
 
     /* Destructor after each scenario */
@@ -49,8 +49,8 @@ FEATURE("Event")
   DEFINE_GIVEN("An event object", 
       [](context& ctx) {
         ctx.event = new mud::event::event(ctx.handle,
-                [](mud::event::event&){},
-                mud::event::event::signal_t::READY);
+                mud::event::event::signal_type::READY,
+                [](){ return mud::event::event::return_type::REMOVE; });
       })
   DEFINE_GIVEN("A lookup event object", 
       [](context& ctx) {
@@ -81,20 +81,29 @@ FEATURE("Event")
   SCENARIO("Type traits")
     GIVEN("An event type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
-    THEN ("The type is default constructible",
+    THEN ("The type is not default-constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_default_constructible<
+            ASSERT(false, std::is_default_constructible<
                   mud::event::event>::value);
         })
-    THEN ("The type is copy-constructible",
+    THEN ("The type is not copy-constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_copy_constructible<
+            ASSERT(false, std::is_copy_constructible<
                   mud::event::event>::value);
         })
-    THEN ("The type is not assignable",
+    THEN ("The type is move-constructible",
         [](context& ctx) {
-            ASSERT(false, std::is_assignable<
-                  mud::event::event,
+            ASSERT(true, std::is_move_constructible<
+                  mud::event::event>::value);
+        })
+    THEN ("The type is not copy-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_copy_assignable<
+                  mud::event::event>::value);
+        })
+    THEN ("The type is not move-assignable",
+        [](context& ctx) {
+            ASSERT(false, std::is_move_assignable<
                   mud::event::event>::value);
         })
 
@@ -102,15 +111,6 @@ FEATURE("Event")
       GIVEN("An event object")
       WHEN ("The event object is examined", [](context&){})
       THEN ("The handle is valid")
-
-    SCENARIO("Copying an event object")
-      GIVEN("An event object")
-      WHEN ("The event is copied",
-          [](context& ctx){
-              ctx.copy = new mud::event::event(*ctx.event);
-          })
-      THEN ("The handle is valid")
-      AND  ("The handle of the copy is valid")
 
     SCENARIO("Lookup event object creation")
       GIVEN("A lookup event object")

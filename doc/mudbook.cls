@@ -67,6 +67,7 @@
 % The MUD and C++ typeset. These are used to consistently format the language
 % names correctly. The mbox is used to keep the names together.
 \newcommand{\MUD}{MUD\xspace}
+\newcommand{\MUDLib}{MUDLib\xspace}
 \newcommand{\RaisedPlus}{\protect\hspace{-.1em}\protect\raisebox{.35ex}{\smaller{\smaller\textbf{+}}}}
 \newcommand{\Cpp}{\mbox{C\RaisedPlus\RaisedPlus}\xspace}
 

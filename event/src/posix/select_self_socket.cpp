@@ -108,7 +108,7 @@ select_self::impl::impl()
     }
 
     // Save the handle
-    _handle = std::unique_ptr<mud::core::handle>(new mud::core::int_handle(fd));
+    _handle = std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
 }
 
 select_self::impl::~impl()

@@ -54,7 +54,7 @@ public:
      *
      * @param[in] event  The event o regsietr.
      */
-    virtual void register_handler(const event& event);
+    virtual void register_handler(event&& event);
 
     /**
      * @brief Deregister an event from the loop.
@@ -63,7 +63,7 @@ public:
      *
      * @param[in] event  The event to deregsietr.
      */
-    virtual void deregister_handler(const event& event);
+    virtual void deregister_handler(event&& event);
 
     /**
      * @brief Run the loop, waiting for all registered @c handle and invoke the

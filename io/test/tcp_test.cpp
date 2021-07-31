@@ -5,6 +5,8 @@
 #include <memory>
 #include <type_traits>
 
+#include <iostream>
+
 /* *INDENT-OFF* */
 
 CONTEXT()
@@ -12,12 +14,23 @@ CONTEXT()
     context()
         : accepted(false), connected(false)
     {
+        thr = std::thread([]() {
+            mud::event::event_loop::global().loop();
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     // Destructor, executed after each scenario run
     ~context() {
+        mud::event::event_loop::global().terminate();
+        if (thr.joinable())
+        {
+            thr.join();
+        }
+
     }
 
+    std::thread thr;
     mud::io::tcp::socket server;
     mud::io::tcp::socket client;
     mud::io::tcp::acceptor acceptor;
@@ -50,12 +63,7 @@ FEATURE("TCP sockets")
     })
   DEFINE_WHEN("And the TCP server accepts the connection",
     [](context& ctx){
-        // Run the global event loop for 50ms to establish a connection.
-        std::future<void> future = std::async(std::launch::async, []() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            mud::event::event_loop::global().terminate();
-        });
-        mud::event::event_loop::global().loop();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     })
   DEFINE_THEN("A connection is established",
     [](context& ctx){

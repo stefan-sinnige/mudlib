@@ -439,8 +439,8 @@ void
 udp::communicator::open(udp::socket&& socket)
 {
     _event_loop.register_handler(mud::event::event(_socket.handle(),
-                    std::bind(&communicator::on_ready_receive, this),
-                    mud::event::event::signal_t::READING));
+                    mud::event::event::signal_type::READING,
+                    std::bind(&communicator::on_ready_receive, this)));
     _socket = std::move(socket);
 }
 
@@ -488,7 +488,7 @@ udp::communicator::on_receive(
     _on_receive_func = func;
 }
 
-void
+mud::event::event::return_type
 udp::communicator::on_ready_receive()
 {
     // Call the registered function handler.
@@ -496,6 +496,9 @@ udp::communicator::on_ready_receive()
     {
         _on_receive_func();
     }
+
+    // Continue receiving
+    return mud::event::event::return_type::CONTINUE;
 }
 
 END_MUDLIB_IO_NS

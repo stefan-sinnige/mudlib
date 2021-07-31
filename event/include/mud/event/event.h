@@ -23,15 +23,10 @@ class MUDLIB_EVENT_API event
 {
 public:
     /**
-     * Definition for an event-handling routine.
+     * @brief The signals to react upon. Multiple signals can be provided using
+     * bitwise OR'ing.
      */
-    typedef std::function<void(event&)> handler_fn;
-
-    /**
-     * The signals to react upon. Multiple signals can be provided using bit-
-     * wise OR'ing.
-     */
-    enum class signal_t : int32_t
+    enum class signal_type : int32_t
     {
         NONE     = 0,         /**< No mask */
         READY    = ~0,        /**< Any event (non-descriptive) */
@@ -40,39 +35,52 @@ public:
     };
 
     /**
-     * @brief Constructor, defining an event, the signal and the handler.
-     * @param handle [in] The handle to examine.
-     * @param handler [in] The handler to invoke.
-     * @param mask [in] The signal mask to register.
+     * @brief Return type of the event function.
      */
-    event(const std::unique_ptr<mud::core::handle>& handle,
-            handler_fn handler, signal_t mask);
+    enum class return_type
+    {
+        REMOVE   = 0,         /**< Remove the registration */
+        CONTINUE = 1          /**< Continue with same registration */
+    };
 
     /**
-     * @brief Constructor for lookup purposes.
+     * @brief Type definition of the event function
+     */
+    typedef std::function<return_type(void)> function_type;
+
+    /**
+     * @brief Constructor, defining an event, the signal and the handler.
+     * @param handle [in] The handle to examine.
+     * @param mask [in] The signal mask to register.
+     * @param handler [in] The callable handler function
+     */
+    event(const std::unique_ptr<mud::core::handle>& handle, signal_type mask,
+            function_type&& handler);
+
+    /**
+     * @brief Constructor for lookup purposes only.
      * @param handle [in] The handle to look up.
      */
     event(const std::unique_ptr<mud::core::handle>& handle);
 
     /**
      * @brief Copy constructor.
-     * @param[in] rhs The event to copy.
      */
     event(const event& rhs);
 
     /**
-     * Destructor.
+     * @brief Destructor.
      */
     virtual ~event();
 
     /**
-     * Equality operator, based on the handle only.
+     * @brief Equality operator, based on the handle only.
      * @param[in] rhs The event to compare against.
      */
     bool operator==(const event& rhs) const;
 
     /**
-     * Inequality operator, based on the handle only.
+     * @brief Inequality operator, based on the handle only.
      * @param[in] rhs The event to compare against.
      */
     bool operator!=(const event& rhs) const;
@@ -83,39 +91,46 @@ public:
     const std::unique_ptr<mud::core::handle>& handle() const;
 
     /**
-     * The signal mask.
+     * @brief The signal mask.
      */
-    signal_t mask() const;
+    signal_type mask() const;
 
     /**
-     * @brief Call the event handler.
+     * @brief The function handler.
      */
-    void call();
+    function_type handler() const;
 
     /**
-     * Not assignable.
+     * Not copy-assignable
      */
     event& operator=(const event& rhs) = delete;
+
+    /**
+     * Not moveable
+     */
+    event(event&& rhs) = delete;
+    event& operator=(event&& rhs) = delete;
+
 private:
     /** The handle to examine. */
     const std::unique_ptr<mud::core::handle>& _handle;
 
-    /** The handler to call when the event has fired. */
-    handler_fn _handler;
-
     /** The signal mask to register */
-    signal_t _mask;
+    signal_type _mask;
+
+    /** The function handler. */
+    function_type _fn;
 };
 
 /**
  * Bit-wise OR of event signals.
  */
-event::signal_t operator|(event::signal_t lhs, event::signal_t rhs);
+event::signal_type operator|(event::signal_type lhs, event::signal_type rhs);
 
 /**
  * Bit-wise AND of event signals.
  */
-event::signal_t operator&(event::signal_t lhs, event::signal_t rhs);
+event::signal_type operator&(event::signal_type lhs, event::signal_type rhs);
 
 END_MUDLIB_EVENT_NS
 

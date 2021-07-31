@@ -6,14 +6,14 @@
 #include <memory>
 #include <mud/event/ns.h>
 #include <mud/core/handle.h>
-#include "mechanism.h"
+#include "event_mechanism.h"
 
 BEGIN_MUDLIB_EVENT_NS
 
 /**
  * @brief The event-loop mechanism using the POSIX @c select call.
  */
-class select_mechanism : public mechanism
+class select_mechanism : public event_mechanism
 {
 public:
     /**
@@ -32,8 +32,10 @@ public:
 
     /**
      * @brief Default constructor.
+     * @param [in] The queue to hold signaled events.
      */
-    select_mechanism();
+    select_mechanism(
+            const std::shared_ptr<mud::core::simple_task_queue>& queue);
 
     /**
      * @brief Move constructor.
@@ -50,14 +52,14 @@ public:
      *
      * @param[in] event  The event to register.
      */
-    virtual void register_handler(const event& event);
+    virtual void register_handler(event&& event);
 
     /**
      * Deregister an event handler from the loop.
      *
      * @param[in] event  The event to deregister.
      */
-    virtual void deregister_handler(const event& event);
+    virtual void deregister_handler(event&& event);
 
     /**
      * Initiate the mechanism.
@@ -75,11 +77,6 @@ public:
      */
     select_mechanism(const select_mechanism&) = delete;
     select_mechanism& operator=(const select_mechanism&) = delete;
-
-    /**
-     * Return the global event-loop.
-     */
-    static select_mechanism& global();
 
 private:
     /**

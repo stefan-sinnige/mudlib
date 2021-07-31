@@ -3,6 +3,7 @@
 
 #include "mud/event/ns.h"
 #include "mud/core/handle.h"
+#include "mud/core/task.h"
 #include "mud/event/event.h"
 #include <future>
 
@@ -11,13 +12,13 @@ BEGIN_MUDLIB_EVENT_NS
 /**
  * @brief An abstract base class representing an event-loop mechanism.
  */
-class mechanism
+class event_mechanism
 {
 public:
     /**
      * Virtual destructor.
      */
-    virtual ~mechanism() = default;
+    virtual ~event_mechanism() = default;
 
     /**
      * @brief Register an event handler with the loop.
@@ -26,7 +27,7 @@ public:
      *
      * @param[in] event  The event to register.
      */
-    virtual void register_handler(const event& event) = 0;
+    virtual void register_handler(event&& event) = 0;
 
     /**
      * @brief  Deregister an event handler from the loop.
@@ -35,7 +36,7 @@ public:
      *
      * @param[in] event  The event to deregister.
      */
-    virtual void deregister_handler(const event& event) = 0;
+    virtual void deregister_handler(event&& event) = 0;
 
     /**
      * Initiate the mechanism.

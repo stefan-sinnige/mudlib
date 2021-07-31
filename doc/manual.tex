@@ -21,7 +21,9 @@
 % COMMANDS
 % ============================================================================
 
-\newcommand{\indextt}[1]{\index{#1@\texttt{#1}}}
+\newcommand{\indexrm}[2][]{\textrm{#2}\index{#2#1}}
+\newcommand{\indextt}[2][]{\texttt{#2}\index{#2@\texttt{#2}#1}}
+
 \begin{document}
 
 % Set the C++ listing style
@@ -49,7 +51,7 @@
   \end{center}
   \vspace{10mm}
   \begin{center}
-    {\LARGE MUDLib Manual}
+    {\LARGE \MUDLib Manual}
     \vskip 3em
     {\large Stefan Sinnige\\ Kalion}
   \end{center}
@@ -103,11 +105,11 @@ qualifications of a poet is to mix the usefulness with sweetness in order to
 both delight and instruct the reader, little would he have known that this
 would not only apply to the written art of poetry, but to the art of
 programming as well. Taken from verse 343 of this poem is the Latin phrase
-\textit{miscere utile dulci} that captures this principle. Abbreviated to MUD,
+\textit{miscere utile dulci} that captures this principle. Abbreviated to \MUD,
 is the project name that is being uses as the basis for naming various
-projects. Included in this, is the MUD Library.
+projects. Included in this, is the \MUD Library.
 
-MUDLib is a general purpose application framework library that conceptualises
+\MUDLib is a general purpose application framework library that conceptualises
 various aspects of \Cpp application development. A number of such frameworks
 already exists and have been quite successful. So why is there a need for yet
 another one? Well, there probably is not really a need for it, but I will
@@ -159,7 +161,7 @@ to convey. Such libraries are often integrated with an adapter pattern to make
 them fit within the confinements of the application framework, even though some
 concessions may need to be made in the process.
 
-In this aspect, MUDLib serves the purpose foremost, to present yet another
+In this aspect, \MUDLib serves the purpose foremost, to present yet another
 view of the current technologies and how they can be applied in application
 development. It is advocating a certain viewpoint on how different
 technologies can operate together, with the same underlying concepts and
@@ -186,7 +188,7 @@ application. This library is therefore ever evolving!
 % CHAPTER
 % ============================================================================
 
-\chapter{Tour of MUDLib: Methodologies}
+\chapter{Tour of \MUDLib: Methodologies}
 
 The methodologies that form the basis of this library. Talk about namespaces, streaming, C++11,
 perhaps even formatting?
@@ -195,7 +197,7 @@ perhaps even formatting?
 % CHAPTER
 % ============================================================================
 
-\chapter{Tour of MUDLib: Components}
+\chapter{Tour of \MUDLib: Components}
 
 Talk about the component layering, namespace inclusion. Which components, the functions they
 provide and the support they give to other layer. Be clear that dependency of layers is only one-way!
@@ -204,7 +206,7 @@ provide and the support they give to other layer. Be clear that dependency of la
 % CHAPTER
 % ============================================================================
 
-\chapter{Tour of MUDLib: Unit testing}
+\chapter{Tour of \MUDLib: Unit testing}
 
 % ============================================================================
 % PART
@@ -219,7 +221,7 @@ provide and the support they give to other layer. Be clear that dependency of la
 \chapter{Exceptions}
 \label{chp:core-exceptions}
 
-Exceptions are used in the MUDLib library for signalling an erroneous condition. Although exceptional behaviour does not necessarily mean conditions
+Exceptions are used in the \MUDLib library for signalling an erroneous condition. Although exceptional behaviour does not necessarily mean conditions
 that rarely occur, they can be a useful tool in situations where certain
 error conditions are excepted. For example, an application may choose to raise
 an exception when a connection cannot be established to a remote machine.
@@ -236,9 +238,9 @@ additional ones have been defined that are used within the library.
 \section{Exception Classes}
 \label{sct:core-exception-classes}
 
-\subsection{\texttt{not\_owner}}\indextt{not\_owner}
+\subsection{\texttt{not\_owner}}
 
-The \texttt{not\_owner} exception is used to indicate that an operation is
+The \indextt{not\_owner} exception is used to indicate that an operation is
 attempted on a resource which is currently not the \textit{exclusive} owner
 of that resource. Exclusive ownership is often represented through a
 \texttt{unique\_ptr}, where a \texttt{nullptr} value of the underlying
@@ -262,18 +264,16 @@ if {ptr == nullptr} {
 \chapter{Handles}
 \label{chp:handles}
 
-The core library defines an abstract concept of a handle\index{handle} as a
+The core library defines an abstract concept of a \indexrm{handle} as a
 unique reference to s single resource of any kind. This can be resources that
 have a direct link with an operating system supported device but can also refer
-to a reference to a software construct, like a window\index{handle!window}
-handle.
+to a reference to a software construct, like a window \indexrm[!window]{handle}.
 
 In either case, each of these handles are represented as an instantiation of a
-\texttt{basic\_handle}\indextt{basic\_handle}. This
-class is templated with the underlying type of the resource. For example,
-POSIX style kernel handles are represented by an integer type, while
-Microsoft Windows window handles are of type \texttt{HANDLE}. The
-\texttt{basic\_handle} simply defines the constraints that are put on these
+\indextt{basic\_handle}. This class is templated with the underlying type of
+he resource. For example, POSIX style kernel handles are represented by an
+nteger type, while Microsoft Windows window handles are of type \texttt{HANDLE}.
+The \texttt{basic\_handle} simply defines the constraints that are put on these
 handle types, and are:
 \begin{itemize}
 \item No default constructor
@@ -293,8 +293,8 @@ In general, the underlying resource is abstracted away behind the
 \texttt{handle} class and in most cases does not need to be accessed. However,
 in cases where it is required to access the underlying resource value, it
 should then be known what that underlying type should be and can then be
-accessed using the \texttt{internel\_handle}\indextt{internal\_handle} template
-as presented in listing~\ref{lst:internal_handle}.
+accessed using the \indextt{internal\_handle} template as presented in
+listing~\ref{lst:internal_handle}.
 
 \begin{lstlisting}[%
   frame=single,
@@ -323,8 +323,8 @@ Platform independent networking techologies often opt for a big endian value
 representation (also known as \textit{network order}\index{network order}). In
 systems whose architecture is based on little-endian, every representation of
 a mutli-byte integral value needs to convert its value when reading from
-a network protocol or writing to a network protocol. The \texttt{endian}%
-\indextt{endian} class can assist in that conversion.
+a network protocol or writing to a network protocol. The \indextt{endian}
+class can assist in that conversion.
 
 The \texttt{endian} class can assess the current architecture to determine
 its native endian system. It can also convert any native integral to any
@@ -341,6 +341,78 @@ uint32_t big = mud::core::endian::convert(
         mud::core::endian::native(),
         mud::core::endian::endian_t::big,
         value);
+\end{lstlisting}
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
+\chapter{Tasks}
+\label{chp:tasks}\index{tasks}
+
+A task is a finite operation that can be performed on its own, and which can
+potentially be performed in an asynchroneous way. The  \MUD
+\indextt{task} is conceptually identical to a \texttt{std::packaged\_task}. The
+creator of the task can request a \indextt{std::future} and be notified when
+the task has finished its execution.
+
+As a task is an instance of a specified execution, it can be moved around
+as long as it has not started execution. This allows a task to be created,
+stored in a container or being passed on to a separate thread.
+
+In its most rudimentary example, a task can be created and executed as in
+listing~\ref{lst:task-lambda}. This example created a task object, but when
+executed, it requires additional parameters to be passed in. The result can
+either be available as shown, or be returned as part of a \texttt{std::future}.
+When using \texttt{std::bind}, a task can be bound to input parameters at
+creation time.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Lambda task with parameters and return value.},
+  label=lst:task-lambda]
+mud::core::task<int(int, int)> mult([](int i, int j) {
+    return i*j;
+  });
+int result = mult(2, 3);
+\end{lstlisting}
+
+Any exception that is thrown while executing the task is captured within
+the \texttt{std::future}.
+
+A task can also be executed on a different thread, for example by using a
+\texttt{std::thread} or by using the \indextt{task\_worker}. The worker is a
+\texttt{std::thread} that is associated with a \indextt{task\_queue}. The queue
+is a queue container onto which tasks can be pushed and tasks can be popped.
+This is implemented in a thread-safe manner such that threads can push and pop
+freely.
+
+As the task worker is a single thread that can executes tasks from a queue,
+a \indextt{task\_worker\_pool} is a pool of workers that can all pop and
+execute tasks independently of the same queue.  Listing~\ref{lst:task-pool}
+shows an example of a task pool that can execute simple tasks. A
+\indextt{simple\_task} is a task that has no arguments when executed and does
+not return a return value. Similarly, a \indextt{simple\_task\_queue} is a
+queue for \texttt{simple\_task}'s; a \indextt{simple\_task\_worker} is a worker
+executing a \texttt{simple\_task}; and a \indextt{simple\_task\_worker\_pool}
+is a pool of \texttt{simple\_task\_worker}.
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={Task pool executing simple tasks.}
+  label=lst:task-pool]
+mud::core::simple_task_queue queue = std::make_shared_ptr<mud::core::simple_task_queue>();
+mud::core::simple_task_worker_pool pool;
+
+// Any thread can push tasks, for example
+mud::core::simple_task tsk([](){
+    // Execute something on a separate simple_task_worker thread
+  });
+queue.push(std::move(tsk));
+
+// Stop the workers in the pool
+pool.stop();
 \end{lstlisting}
 
 % ============================================================================
@@ -363,7 +435,7 @@ of event technology than listing for an incoming TCP packet. This makes
 applications that integrate with multiple event frameworks at once, quite
 an 'eventful' exercise.
 
-The event framework provided by the MUDLib library aims to overcome this by
+The event framework provided by the \MUDLib library aims to overcome this by
 creating a single event frameowkr interface that creates a facade to the
 underlying pre-existing technologies.
 
@@ -373,15 +445,15 @@ underlying pre-existing technologies.
 
 \chapter{Event abstraction}
 
-At the heart of the event framework is the concept of an \texttt{event}%
-\indextt{event} and an event-loop that runs forever, listening for any kind
+At the heart of the event framework is the concept of an \indextt{event} and
+an event-loop that runs forever, listening for any kind
 of event and invoking a user-defined handler when such an event occurs.
 
 The event itself is a container that holds three key properties:
 
 \begin{itemize}
-  \item The \texttt{handle}\indextt{handle} to the resource that is associated
-        to that event. This can be a file descriptor\index{file descriptor},
+  \item The \indextt{handle} to the resource that is associated to that event.
+        This can be a file descriptor\index{file descriptor},
         a window handle\index{window handle}, etc.
   \item A signal mask to define what to listen for on that resource
   \item A handler to call when an event occurs
@@ -401,8 +473,8 @@ In modern software architecture, event-loops play a significant role. It allows
 the application to be reactive on eny event while in the mean-time continue
 with other tasks. It also brings a level of abstraction to the application
 as a single event-loop can be used for a variety of events. For example, the
-POSIX \texttt{select}\indextt{select} mechanism allows an application to wait
-for multiple file-descriptors with one call. When any of these file-descriptors
+POSIX \indextt{select} mechanism allows an application to wait for multiple
+file-descriptors with one call. When any of these file-descriptors
 detect an event, the application can examine the \texttt{select} structure to
 determine which file descriptor has been triggered.
 
@@ -426,10 +498,9 @@ implementation of common technologies. For example, a \textit{pipe}\index{pipe}
 can be used for inter- and intra-process communication, but they are defined
 differently on UNIX based systems where the pipe is a file-descriptor that uses
 the \texttt{select} mechanism, and on Microsoft Windows system that uses a
-\texttt{HANDLE}\indextt{HANDLE} and a \texttt{WaitForMultipleObjects}~%
-\indextt{WaitForMultipleObjects} mechanism to wait for any data arriving on
-the pipe. Since the concept of a pipe is already abstracted behind a
-\texttt{handle}\indextt{handle} abstraction, the event-loop can register that
+\indextt{HANDLE} and a \indextt{WaitForMultipleObjects} mechanism to wait for
+any data arriving on the pipe. Since the concept of a pipe is already abstracted
+behind a \indextt{handle} abstraction, the event-loop can register that
 handle using the appropriate mechanism as well. On UNIX system, the pipe handle
 is an integer file-descriptor that registers the pipe with  the
 \texttt{select} mechanism, while on Microsoft Windows systems, the pipe handle
@@ -437,13 +508,12 @@ is a Windows \texttt{HANDLE} and regsiters the pipe with the
 \texttt{WaitForMultipleObjects} mechanism.
 
 \section{\texttt{event\_loop}}
-\indextt{event\_loop}
 \label{sct:event_loop}
 
 Most operating systems have means available to let the kernel wait for any
 event on a kernel handle and inform an application that was actively waiting
 for that to occur. That concept is the driving factor behind the
-\texttt{kernel\_event\_loop}. Kernel handles can be registered with the
+\indextt{kernel\_event\_loop}. Kernel handles can be registered with the
 event loop together with an associated function that is to be invoked when
 an event is triggered on the handle.
 
@@ -497,12 +567,11 @@ resources like files, keyboard or through an internet socket connection; while
 output can be a display, a printer, a file or perhaps a row in a database.
 
 As can be seen, there is a whole variety of I/O and at various levels. The
-types of I/O that are dealt with in this layer of the MUDLib library is the
+types of I/O that are dealt with in this layer of the \MUDLib library is the
 low-level operating system supported I/O. This is typically I/O that is
 supported by, for example, the POSIX standard and would typically require a
 method where multiple kernel events can be examined and processed (e.g.
-\texttt{select}\indextt{select}, \texttt{poll}\indextt{poll} and
-\texttt{kevent}\indextt{kevent}).
+\indextt{select}, \indextt{poll} and \indextt{kevent}).
 
 % ============================================================================
 % CHAPTER
@@ -511,17 +580,15 @@ method where multiple kernel events can be examined and processed (e.g.
 \chapter{Stream Buffers}
 \label{chp:stream-buffers}
 
-The \indextt{stream\_buffer} class is a specialised
-\texttt{std::streambuf}\indextt{std::streambuf} that is capable of reading
-from and writing to a \texttt{kernel\_handle}\indextt{kernel\_handle}. The
+The \indextt{stream\_buffer} class is a specialised \indextt{std::streambuf}
+that is capable of reading from and writing to a \indextt{kernel\_handle}. The
 underlying implementation that performs the direct access to the resource
-is the POSIX \texttt{read}\indextt{read} and \texttt{write}\indextt{write}
-routines. The data when reading from the device is buffered in an internal
-buffer. When the buffer is exhausted and more data is required to be read
-from the device, the \texttt{underflow} method is called. If that device is
-set-up in a \textit{blocking} mode and there is not enough data, then the call
-may be blocked until the data is available, or until the device is no longer
-accessible.
+is the POSIX \indextt{read} and \indextt{write} routines. The data when reading
+from the device is buffered in an internal buffer. When the buffer is exhausted
+and more data is required to be read from the device, the \texttt{underflow}
+method is called. If that device is set-up in a \textit{blocking} mode and
+there is not enough data, then the call may be blocked until the data is
+available, or until the device is no longer accessible.
 
 The same holds for writing to the device. As the data is buffered, the actual
 writing to the device may be delayed, for example, when the buffer becomes
@@ -537,12 +604,12 @@ stream instead.
 \chapter{Pipes}
 \label{chp:pipes}
 
-A pipe~\indextt{pipe} defines the concept of a uni-directional data channel.
-Both ends of the pipe have their own unique 
-\texttt{kernel\_handle}\indextt{kernel\_handle}. One end, the source, is the
-side that is attached to the output stream and is used to send data over the
-pipe to the other side. That side, the sink, is the side that is attached to
-the input stream and is used to receive the data from the other side.
+A \indextt{pipe} defines the concept of a uni-directional data channel.
+Both ends of the pipe have their own unique \indextt{kernel\_handle}. One end,
+the source, is the side that is attached to the output stream and is used to
+end data over the pipe to the other side. That side, the sink, is the side that
+is attached to the input stream and is used to receive the data from the other
+side.
 
 \begin{figure}[hbt]
   \centering
@@ -606,17 +673,16 @@ the input stream and is used to receive the data from the other side.
 
 Figure~\ref{fig:mud-io-pipe-class} illustrates the relationship of all the
 classes involved in the \texttt{pipe}. The pipe itself keeps an instance of
-the \texttt{std::streambuf}\indextt{std::streambuf} instances that handle the
-buffered input and output to the source and sink end of the pipe. In order to
-stream data over the pipe, a reference to the input and output stream is
-acquired from the pipe which is automatically attached to the appropriate
-stream buffer.
+the \indextt{std::streambuf} instances that handle the buffered input and
+output to the source and sink end of the pipe. In order to stream data over
+the pipe, a reference to the input and output stream is acquired from the pipe
+which is automatically attached to the appropriate stream buffer.
 
 \section{Writing to the pipe}
 
 Writing to a pipe can use all the standard functionality that is provided
-by the \texttt{std::ostream}\indextt{std::ostream}. This includes formatted
-stream functionality and unformatted (binary) output.
+by the \indextt{std::ostream}. This includes formatted stream functionality
+and unformatted (binary) output.
 
 \begin{lstlisting}[%
   frame=single,
@@ -637,8 +703,8 @@ p.ostr().write((const char*) block), 4) << std::flush();
 \section{Reading from the pipe}
 
 Reading from a pipe can use all the standard functionality that is provided
-by the \texttt{std::istream}\indextt{std::istream}. This includes formatted
-stream functionality and unformatted (binary) input.
+by the \indextt{std::istream}. This includes formatted stream functionality and
+unformatted (binary) input.
 
 \begin{lstlisting}[%
   frame=single,
@@ -689,7 +755,7 @@ above.
   \label{fig:osi}
 \end{figure}
 
-MUDLib provides functionality to support some of the core networking protocols
+\MUDLib provides functionality to support some of the core networking protocols
 in these layers and focuses primarily on the protocols that are used in
 the Internet Protocol Suite. This includes the widely used Transmission Control
 Protocol\index{Transmission Control Protocol} (TCP)\index{UDP} and User Datagram
@@ -709,7 +775,7 @@ and IPsec.
 The network layer defines (amongst others), the Internet Protocol
 \index{Internet Protocol} (IP)\index{IP}. This if the principal protocol in
 the internet protocol suite and is used to relay data packets across the
-network boundaries. MUDLib has only support for the Internet Protocol
+network boundaries. \MUDLib has only support for the Internet Protocol
 version 4 (IPv4), even-though version 6 (IPv6) is becoming more widely spread.
 Later editions may include support for version 6.
 
@@ -741,33 +807,30 @@ numbers. This allows for a human representation using \textit{dotted decimals}
 \index{dotted-decimal notation} like \texttt{192.168.2.23}, which is
 represented by a 32-bit number of \texttt{0xC0A80217}.
 
-The \texttt{ip::address}~\indextt{ip::address} class is an abstraction of the
-IPv4 address representation. Addresses can be specified by using a string
-representing a dotted-decimal, or directly as a 32-bit value (in network byte
-order), represented by the POSIX \texttt{in\_addr\_t}\indextt{in\_addr\_t}
-structure.
+The \indextt{ip::address} class is an abstraction of the IPv4 address
+representation. Addresses can be specified by using a string representing a
+dotted-decimal, or directly as a 32-bit value (in network byte order),
+represented by the POSIX \indextt{in\_addr\_t} structure.
 
 Once the socket has been bound to a local address or when a connection to a
 remote peer~\index{peer}\index{socket!peer} has been established, the address
-of the local and remote peer is available through the
-\texttt{source\_address}\indextt{source\_address}\index{socket!source address}
-and the \texttt{destination\_address}\indextt{destination\_address}%
+of the local and remote peer is available through the \indextt{source\_address}%
+\index{socket!source address} and the \indextt{destination\_address}%
 \index{socket!destination address} methods.
 
 \subsubsection{Sockets}
 
 The Network Layer socket consist of the \texttt{basic\_socket}
 \texttt{basic\_socket} that holds the reference to the socket resource handle
-and the \texttt{ip::socket}\indextt{ip::socket}. These do not provide the
-direct functionality of sending and receiving data, but rather the concepts
-of representing the Network Layer socket model. The \texttt{basic\_socket}
-defines the framework for a socket that can be used on \textit{all} higher
-layered communication protocols. It does provide the definition of the
-socket's communication domain (i.e. IPv4\index{IPv4} and IPv6\index{IPv6}),
-the type of the socket (i.e. stream, datagram or raw) and the communication
-protocol (i.e. TCP\index{TCP}, UDP\index{UDP} and ICMP\index{ICMP}). This
-combination is often constrained by the capabilities provided by the
-underlying platform's operating system.
+and the \indextt{ip::socket}. These do not provide the direct functionality of
+sending and receiving data, but rather the concepts of representing the Network
+Layer socket model. The \texttt{basic\_socket} defines the framework for a
+socket that can be used on \textit{all} higher layered communication protocols.
+It does provide the definition of the socket's communication domain (i.e.
+IPv4\index{IPv4} and IPv6\index{IPv6}), the type of the socket (i.e. stream,
+datagram or raw) and the communication protocol (i.e. TCP\index{TCP},
+UDP\index{UDP} and ICMP\index{ICMP}). This combination is often constrained by
+the capabilities provided by the underlying platform's operating system.
 
 \section{Transport Layer} 
 
@@ -813,12 +876,10 @@ supported.
 
 Figure~\ref{fig:mud-io-socket-class} illustrates the relationship of all the
 classes involved in the Network and Transport Layer sockets. The Network Layer
-sockets all derive from the \texttt{basic\_socket}\texttt{basic\_socket}
-and \texttt{ip::socket}\indextt{ip::socket} base classes.
-The Transport Layer sockets are defined by the \texttt{tcp::socket}
-\indextt{tcp::socket} and \texttt{udp::socket}\indextt{udp::socket} classes.
-Only the latter ones provide the functionality to actually send and receive
-data.
+sockets all derive from the \indextt{basic\_socket} and \indextt{ip::socket}
+base classes.  The Transport Layer sockets are defined by the
+\indextt{tcp::socket} and \indextt{udp::socket} classes.  Only the latter ones
+provide the functionality to actually send and receive data.
 
 \subsection{TCP}
 
@@ -835,23 +896,21 @@ to additional incoming requests from other clients, and each successful
 connection establishment will be given its own unique communication channel.
 
 Each side of this communication channel is represented by an instance of the
-\texttt{tcp::socket}\indextt{tcp::socket}. The associated kernel resource
-that unique defines the peer's side of the communication channel is a
-\texttt{kernel\_handle}\indextt{kernel\_handle} that is owned by the
-\texttt{basic\_socket}\indextt{basic\_socket} base class. Only \textit{one}
-instance of a socket owns this resource handle. Therefore, it is not possible
-to copy a socket to another socket (but they can be referenced or they can
-be moved to another socket instance).
+\indextt{tcp::socket}. The associated kernel resource that unique defines the
+peer's side of the communication channel is a \indextt{kernel\_handle} that is
+owned by the \indextt{basic\_socket} base class. Only \textit{one} instance of
+a socket owns this resource handle. Therefore, it is not possible to copy a
+socket to another socket (but they can be referenced or they can be moved to
+another socket instance).
 
 The TCP protocol defines a unique connection by the combination of a host
 address and a port number. This combination is represented by the
-\texttt{tcp::endpoint}\indextt{tcp::endpoint} class. The endpoint is used
-by both the server-side to define the connection paramters to listen to and
-for a client-side endpoint to connect to. Once a connection has been
-established, a new port is allocated on the server-side to represent the
-communication channel that has been established. As a new port is being used,
-the original port can still be re-used for accepting additional client-side
-connections. 
+\indextt{tcp::endpoint} class. The endpoint is used by both the server-side to
+define the connection paramters to listen to and for a client-side endpoint to
+connect to. Once a connection has been established, a new port is allocated on
+the server-side to represent the communication channel that has been
+established. As a new port is being used, the original port can still be
+re-used for accepting additional client-side connections. 
 
 \begin{figure}[hbt]
   \centering
@@ -911,7 +970,7 @@ to the socket handle resource in order to perform the sending and receiving
 of the data. How the communication protocol is defined, in terms of the
 format of the messages, whether or not a peer is expected to send or recieve
 data, is out of the scope of this manual and is very much protocol specific.
-The classes provided by MUDLib are just the foundation stones on which the
+The classes provided by \MUDLib are just the foundation stones on which the
 protocol specific definitions can be implemented.
 
 As alluded before, the TCP protocol defines one side to be actively listening
@@ -922,18 +981,18 @@ very specific to either side and are supported by two different helper classes.
 
 On the server-side, an endpoint is to be allocated to start listening for, and
 accepting incoming connection requests. This is handled by the
-\indextt{tcp::acceptor}\indextt{tcp::acceptor} class. This controller class
-requires a listening socket resource and an endpoint. Once a connection has
-been established, a new socket denoting this new connection is returned from
-the \indextt{tcp::acceptor}.
+\indextt{tcp::acceptor} class. This controller class requires a listening
+socket resource and an endpoint. Once a connection has been established, a new
+socket denoting this new connection is returned from the
+\texttt{tcp::acceptor}.
 
 There are, in broad terms, two ways to wait for an incoming connection. Either
 the accepting class is blocking\index{blocking I/O} the thread until such a
 connection has been established, or it can wait for a signal until the
 listening socket has detected an incoming connection request. The latter
 approach (also referred to non-blocking\index{non-blocking I/O} I/O, is using
-the \texttt{kernel\_event\_loop}\indextt{kernel\_event\_loop} to set-up the
-mechanism for waiting for a connection, and is the default mechanism.
+the \indextt{kernel\_event\_loop} to set-up the mechanism for waiting for a
+connection, and is the default mechanism.
 
 \begin{lstlisting}[%
   frame=single,
@@ -952,10 +1011,10 @@ acceptor.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
 \subsubsection{Client-Side}
 
 Similar to the server-side, the client-side has a controller class that is
-responsible for perfoming the connection request. The \texttt{tcp::connector}
-\indextt{tcp::connector}. A default socket is used as a placeholder for when
-the connection has been established. The \texttt{tcp::connector} will
-attempt to connect to a specified endpoint\indextt{tcp::endpoint}.
+responsible for perfoming the connection request. The \indextt{tcp::connector}.
+A default socket is used as a placeholder for when the connection has been
+established. The \texttt{tcp::connector} will attempt to connect to a specified
+\indextt{tcp::endpoint}.
 
 A non-blocking connection attempt requires more overhead, but allows more
 control on the connection process. For example, it can be used to wait for a
@@ -979,11 +1038,10 @@ connector.open(mud::io::tcp::endpoint("127.0.0.1", 12345));
 \subsubsection{Communications}
 
 Once a connection has been established, the communication over the socket
-connection can be maintained by the \texttt{tcp::communicator}%
-\indextt{tcp::communicator} class. It takes over the ownership of the
-socket and provides access to the socket's input and output streams.
-It also registers itself as a handler for any received message at the
-\texttt{kernel\_event\_loop}. 
+connection can be maintained by the \indextt{tcp::communicator} class. It takes
+over the ownership of the socket and provides access to the socket's input and
+output streams.  It also registers itself as a handler for any received message
+at the \texttt{kernel\_event\_loop}. 
 
 \subsection{UDP}
 
@@ -996,24 +1054,22 @@ generally be replied to by using the source address in the UDP packet as
 the destination address of the reply.
 
 Each side of this communication channel is represented by an instance of the
-\texttt{udp::socket}\indextt{udp::socket}. The associated kernel resource
-that unique defines the peer's side of the communication channel is a
-\texttt{kernel\_handle}\indextt{kernel\_handle} that is owned by the
-\texttt{basic\_socket}\indextt{basic\_socket} base class. Only \textit{one}
-instance of a socket owns this resource handle. Therefore, it is not possible
-to copy a socket to another socket (but they can be referenced or they can
-be moved to another socket instance).
+\indextt{udp::socket}. The associated kernel resource that unique defines the
+peer's side of the communication channel is a \indextt{kernel\_handle} that is
+owned by the \indextt{basic\_socket} base class. Only \textit{one} instance of
+a socket owns this resource handle. Therefore, it is not possible to copy a
+socket to another socket (but they can be referenced or they can be moved to
+another socket instance).
 
 The UDP protocol defines a unique connection by the combination of a host
 address and a port number. This combination is represented by the
-\texttt{udp::endpoint}\indextt{udp::endpoint} class. Thech packet contains
-a source and destination endpoint and can be used to send messages and
-respond with replies. An initial receiving side requires to bind to a
-specified address and port such that the operating system knows to what
-application to route the UDP packets to. A sending application can also
-bind to a address (but is not a requirement) in order to define the address
-and port to bind to (i.e. to define a particular network interface for
-communications).
+\indextt{udp::endpoint} class. Thech packet contains a source and destination
+endpoint and can be used to send messages and respond with replies. An initial
+receiving side requires to bind to a specified address and port such that the
+operating system knows to what application to route the UDP packets to. A
+sending application can also bind to a address (but is not a requirement) in
+order to define the address and port to bind to (i.e. to define a particular
+network interface for communications).
 
 \begin{figure}[hbt]
   \centering
@@ -1073,7 +1129,7 @@ to the socket handle resource in order to perform the sending and receiving
 of the data. How the communication protocol is defined, in terms of the
 format of the messages, whether or not a peer is expected to send or recieve
 data, is out of the scope of this manual and is very much protocol specific.
-The classes provided by MUDLib are just the foundation stones on which the
+The classes provided by \MUDLib are just the foundation stones on which the
 protocol specific definitions can be implemented.
 
 There are, in broad terms, two ways to  for socket communication. Either
@@ -1081,8 +1137,8 @@ the socket class is blocking\index{blocking I/O} the thread until a message
 has been received, or it can wait for a signal until the socket has detected
 an incoming message. The latter approach (also referred to
 non-blocking\index{non-blocking I/O} I/O, is using the
-\texttt{kernel\_event\_loop}\indextt{kernel\_event\_loop} to set-up the
-mechanism for waiting for a connection, and is the default mechanism.
+\indextt{kernel\_event\_loop} to set-up the mechanism for waiting for a
+connection, and is the default mechanism.
 
 \subsubsection{Server-Side}
 
@@ -1126,11 +1182,10 @@ acceptor.on_receive([](mud::io::tcp::socket&& server) {
 \subsubsection{Communications}
 
 Once a socket has been created, the communication over the socket
-connection can be maintained by the \texttt{udp::communicator}%
-\indextt{udp::communicator} class. It takes over the ownership of the
-socket and provides access to the socket's input and output streams.
-It also registers itself as a handler for any received message at the
-\texttt{kernel\_event\_loop}. 
+connection can be maintained by the \indextt{udp::communicator} class. It
+takes over the ownership of the socket and provides access to the socket's
+input and output streams.  It also registers itself as a handler for any
+received message at the \texttt{kernel\_event\_loop}. 
 
 \subsection{Socket Options}
 \index{socket options}
@@ -1141,10 +1196,10 @@ request, the listening socket is not always immediately available to accept
 another incoming request. This can lead to a socket in a \texttt{TIME]\_WAIT}
 state and a connection attempt will subsequently not be possible. A socket
 option to re-use the endpoint address is available to eliminate this
-scenario. Another option is to allow a \texttt{tcp::connector}
-\indextt{tcp::connector} to perform a non-blocking connection attempt such
-that it can be passively monitored by another thread until the connection has
-been made, or until a particular connection timeout has expired.
+scenario. Another option is to allow a \indextt{tcp::connector} to perform a
+non-blocking connection attempt such that it can be passively monitored by
+another thread until the connection has been made, or until a particular
+connection timeout has expired.
 
 These options can all be provided though the \texttt{option} template that is
 available on the Network and Transport Layer socket definitions. Only those
@@ -1152,9 +1207,9 @@ options that are applicable to a certain type of socket can be applied
 successfully to the \texttt{option} function. An incompatible option will
 result in a compilation error.
 
-For example, the \texttt{tcp::acceptor}\indextt{tcp::acceptor} will always
-set the \texttt{ip::reuse\_address}\indextt{ip::reuse\_address} socket
-option as specified in listing~\ref{lst:reuse-address}.
+For example, the \indextt{tcp::acceptor} will always set the
+\indextt{ip::reuse\_address} socket option as specified in listing~
+\ref{lst:reuse-address}.
 
 \begin{lstlisting}[%
   frame=single,
@@ -1220,54 +1275,54 @@ would have a set of scenarios, written roughly in the same narrative as
 presented above, that define the acceptance criteria of that particular
 feature. 
 
-MUDLib has adopted roughly the same language principles in its the testing
+\MUDLib has adopted roughly the same language principles in its the testing
 module and has provided the language elements as a set of \Cpp macros. 
 These macros are defined. as follows:
 
 \begin{description}
-  \item[CONTEXT()] \indextt{CONTEXT()} \hfill \\
+  \item[\indextt{CONTEXT()}] \hfill \\
         Defines the context that is used by the \texttt{FEATURE}. A constructor
         and destructor can be defined for any additional functionality to
         be executed before and after each \texttt{SCENARIO} test run. The
         name of the context class is \indextt{context}.
-  \item[END\_CONTEXT()] \indextt{END\_CONTEXT()} \hfill \\
+  \item[\indextt{END\_CONTEXT()}] \hfill \\
         Marks the end of a context.
-  \item[FEATURE(ID)] \indextt{FEATURE(ID)} \hfill \\
+  \item[\indextt{FEATURE(ID)}] \hfill \\
         Defines the feature by specifying the ID (as a string) and the
         context type that is used by all the scenarios and their steps.
-  \item[DEFINE\_GIVEN(ID,FUNC)] \indextt{DEFINE\_GIVEN(ID,FUNC)} \hfill \\
+  \item[\indextt{DEFINE\_GIVEN(ID,FUNC)}] \hfill \\
         Defines a pre-defined \textbf{Given} step with a feature unique ID and
         associated function that sets up the initial context.
-  \item[DEFINE\_WHEN(ID,FUNC)] \indextt{DEFINE\_WHEN} \hfill \\
+  \item[\indextt{DEFINE\_WHEN}] \hfill \\
         Defines a pre-defined \textbf{When} step with a feature unique ID and
         associated function that performs a particular action.
-  \item[DEFINE\_THEN(ID,FUNC)] \indextt{DEFINE\_THEN} \hfill \\
+  \item[\indextt{DEFINE\_THEN}] \hfill \\
         Defines a pre-defined \textbf{Then} step with a feature unique ID and
         associated function that performs a particular assertion on an
         observable outcome.
-  \item[END\_DEFINES(ID,FUNC)] \indextt{END\_DEFINES} \hfill \\
+  \item[\indextt{END\_DEFINES}] \hfill \\
         Marks the end of all the predefined steps. This macro should
         \textit{always} be called between the feature and scenario definitions.
-  \item[SCENARIO(ID)] \indextt{SCENARIO(ID)} \hfill \\
+  \item[\indextt{SCENARIO(ID)}] \hfill \\
         Defines a new scenario.
-  \item[GIVEN(...)] \indextt{GIVEN(...)} \hfill \\
+  \item[\indextt{GIVEN(...)}] \hfill \\
         Defines \textbf{Given} step. If only an ID is specified, then the step
         refers to a pre-defined step. Otherwise it should be provided with a
         function definition. It is used to set-up the initial context of the
         scenario.
-  \item[WHEN(...)] \indextt{WHEN(...)} \hfill \\
+  \item[\indextt{WHEN(...)}] \hfill \\
         Defines \textbf{When} step. If only an ID is specified, then the step
         refers to a pre-defined step. Otherwise it should be provided with a
         function definition. It is used to specify the action to perform.
-  \item[THEN(...)] \indextt{THEN(...)} \hfill \\
+  \item[\indextt{THEN(...)}] \hfill \\
         Defines \textbf{Then} step. If only an ID is specified, then the step
         refers to a pre-defined step. Otherwise it should be provided with a
         function definition. It is used to verify the observable outcome by
         using \textbf{ASSERT} macros.
-  \item[AND(...)] \indextt{AND(...)} \hfill \\
+  \item[\indextt{AND(...)}] \hfill \\
         Defines an additional \textbf{GIVEN}, \textbf{WHEN} or \textbf{THEN}
         specification.
-  \item[DATA(...)] \indextt{DATA(...)} \hfill \\
+  \item[\indextt{DATA(...)}] \hfill \\
         Defines a data-table with an (optional) list of column names. If no
         column names are provided, the number of columns are determined by
         the \texttt{ROW} specification. \hfill \\
@@ -1275,24 +1330,24 @@ These macros are defined. as follows:
         \texttt{WHEN}, \texttt{THEN} and \texttt{AND} and will be only
         acessible within that particular step. The data is available through
         the \indextt{base\_context}.
-  \item[DATA\_ROW(...)] \indextt{DATA\_ROW(...)} \hfill \\
+  \item[\indextt{DATA\_ROW(...)}] \hfill \\
         Define a row in the data-table.
-  \item[END\_DATA()] \indextt{END\_DATA()} \hfill \\
+  \item[\indextt{END\_DATA()}] \hfill \\
         Marks the end of a data-table.
-  \item[SAMPLES(...)] \indextt{SAMPLES} \hfill \\
+  \item[\indextt{SAMPLES}] \hfill \\
         Defines a sample-table with an (optional) list of column names. If no
         column names are provided, the number of columns are determined by
         the \texttt{ROW} specification. \hfill \\
         The sample-table can be provided as part of a \texttt{SCENARIO}. The
         scenario is run for every sample in the table, and only the contents
         of a particular sample is available though the \indextt{base\_context}.
-  \item[SAMPLE(...)] \indextt{SAMPLE(...)} \hfill \\
+  \item[\indextt{SAMPLE(...)}] \hfill \\
         Define a sample in the sample-table.
-  \item[END\_SAMPLES()] \indextt{END\_SAMPLES()} \hfill \\
+  \item[\indextt{END\_SAMPLES()}] \hfill \\
         Marks the end of a sample-table.
-  \item[END\_FEATURE()] \indextt{END\_FEATURE()} \hfill \\
+  \item[\indextt{END\_FEATURE()}] \hfill \\
         Marks the end of a feature.
-  \item[FEATURE\_RUN(...)] \indextt{FEATURE\_RUN(...)} \hfill \\
+  \item[\indextt{FEATURE\_RUN(...)}] \hfill \\
         Run all the registered features and their scenarios and return the
         overall result as a pair of \texttt{size\_t} values. The first value
         indicating the total number of scenarios being run, and the second
@@ -1317,14 +1372,15 @@ the context-type as a reference parameter.
 When verifying the expected outcome, a number of assertion macros can be used:
 
 \begin{description}
-  \item[ASSERT(OUTCOME,EXPECTED)] \hfill \\ Verifies if the outcome is equal
-        to the expected and raises an assertion exception if it doesn't.
-  \item[ASSERT\_THROW(EX,STATEMENTS)] \hfill \\ Verifies if the statements
-        throw an exception of a particular type, and raises an assertion
-        exception if it doesn't.
-  \item[ASSERT\_NO\_THROW(STATEMENTS)] \hfill \\ Verifies if the statements
-        do not throw an exception, and raises an assertion exception if it
-        doesn't.
+  \item[\indextt{ASSERT(OUTCOME,EXPECTED)}] \hfill \\
+        Verifies if the outcome is equal to the expected and raises an
+        assertion exception if it doesn't.
+  \item[\indextt{ASSERT\_THROW(EX,STATEMENTS)}] \hfill \\
+        Verifies if the statements throw an exception of a particular type,
+        and raises an assertion exception if it doesn't.
+  \item[\indextt{ASSERT\_NO\_THROW(STATEMENTS)}] \hfill \\
+        Verifies if the statements do not throw an exception, and raises an
+        assertion exception if it doesn't.
 \end{description}
 
 As an example of the usage of the macros, consider listing~\ref{lst:gherkin}.
@@ -1501,19 +1557,19 @@ do so. However, it may be required to extend the implementation
 \section{Exception Classes}
 \label{sct:test-exception-classes}
 
-\subsection{\texttt{assertion\_failed}}\indextt{assertion\_failed}
+\subsection{\texttt{assertion\_failed}}
 
-The \texttt{assertion\_failed} exception is used to indicate that an test-case
+The \indextt{assertion\_failed} exception is used to indicate that an test-case
 has failed a testable condition. These are captured by the feature test
 runner and their details are recorded. These exceptions would therefore not
 fail the total execution of the test run, but are used to record that a particular test scenario has failed.
 
-\subsection{\texttt{not\_specified}}\indextt{not\_specified}
+\subsection{\texttt{not\_specified}}
 
 When setting up test scenarios within a feature, it is a common practice to
 define elements that are re-used by multiple scenarios only once and let each
 scenario reference these generically defined elements. However, when a
-reference is not known, it shall raise a \texttt{not\_specified} exception.
+reference is not known, it shall raise a \indextt{not\_specified} exception.
 These exceptions are captured by the feature test running and their details
 are recorded. These exceptions would therefore not fail the total execution of
 the test run, but are used to record that a particular test scenario has
@@ -1522,14 +1578,12 @@ failed.
 \section{Gherkin classes}
 
 A number of classes are defined, one for each Gherkin item, and include the
-\texttt{\_given}\indextt{\_given}, \texttt{\_when}\indextt{\_when} and
-\texttt{\_then}\indextt{\_then} classes. Each of them hold a single Gherkin
-step and have the ability to chain other similar items by means of the
-\texttt{And} method (note that \texttt{and} is a keyword in \Cpp, the method
-name differs from the coding standard by having a capital first letter).
-The \texttt{\_scenario}\indextt{\_scenario} and 
-\texttt{\_feature}\indextt{\_feature} types refer to the Gherkin steps and
-predefined Gherkin steps. 
+\indextt{\_given}, \indextt{\_when} and \indextt{\_then} classes. Each of them
+hold a single Gherkin step and have the ability to chain other similar items by
+means of the \texttt{And} method (note that \texttt{and} is a keyword in \Cpp,
+the method name differs from the coding standard by having a capital first
+letter).  The \indextt{\_scenario} and \indextt{\_feature} types refer to the
+Gherkin steps and predefined Gherkin steps. 
 
 Note that the naming convention for the Gherkin implementation class names is
 to prepend their name with an underscore. This is a signal that the class is
@@ -1538,20 +1592,17 @@ to prepend their name with an underscore. This is a signal that the class is
 When creating a new feature (as accomplished through the \Cpp macros), that
 feature is defined in a new class that is derived from \texttt{\_feature},
 with its constructor populating the predefined Gherkin steps. As the
-\texttt{\_feature} is an abstract class (as the 
-\texttt{\_base\_feature}\indextt{\_base\_feature} has an abstract \texttt{run}
-method), the new feature class will need to implement the \texttt{run}
-method. This method should create all the scenarios and run them, while
-accumulating their results. 
+\texttt{\_feature} is an abstract class (as the \indextt{\_base\_feature} has
+an abstract \texttt{run} method), the new feature class will need to implement
+the \texttt{run} method. This method should create all the scenarios and run
+them, while accumulating their results. 
 
 \section{Feature Factory}
 
 All the defined feature classes are auto-registered to the
-\texttt{\_feature\_factory}\indextt{\_feature\_factory}. A convenience
-template wrapper is available  
-\texttt{\_feature\_registrar}\indextt{\_feature\_registrar}
-that can be used as a file-scope global variable, to facilitate in the
-registration.
+\indextt{\_feature\_factory}. A convenience template wrapper is available,
+\indextt{\_feature\_registrar}, that can be used as a file-scope global
+variable, to facilitate in the registration.
 
 A macro can be used to execute all registered features, or it can be
 manually executed through its static \texttt{run} method.

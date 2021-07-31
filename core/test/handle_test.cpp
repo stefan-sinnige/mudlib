@@ -32,12 +32,12 @@ FEATURE("Handle")
         [](context& ctx) {
             ctx.resource = 10;
             ctx.handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::int_handle(ctx.resource));
+                new mud::core::select_handle(ctx.resource));
         })
       DEFINE_WHEN ("A handle is assigned",
         [](context& ctx) {
             ctx.handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::int_handle(ctx.resource));
+                new mud::core::select_handle(ctx.resource));
         })
      DEFINE_THEN ("The handle is non-existent",
         [](context& ctx) {
@@ -78,10 +78,9 @@ FEATURE("Handle")
             ASSERT(false, std::is_copy_constructible<
                   mud::core::handle>::value);
         })
-    AND  ("The type is not assignable",
+    AND  ("The type is not copy-assignable",
         [](context& ctx) {
-            ASSERT(false, std::is_assignable<
-                  mud::core::handle,
+            ASSERT(false, std::is_copy_assignable<
                   mud::core::handle>::value);
         })
     AND  ("The type is not move-constructible",
@@ -101,35 +100,34 @@ FEATURE("Handle")
     THEN ("The type is default constructible",
         [](context& ctx) {
             ASSERT(true, std::is_default_constructible<
-                  mud::core::int_handle>::value);
+                  mud::core::select_handle>::value);
         })
     AND  ("The type is not copy-constructible",
         [](context& ctx) {
             ASSERT(false, std::is_copy_constructible<
-                  mud::core::int_handle>::value);
+                  mud::core::select_handle>::value);
         })
-    AND  ("The type is not assignable",
+    AND  ("The type is not copy-assignable",
         [](context& ctx) {
-            ASSERT(false, std::is_assignable<
-                  mud::core::handle,
-                  mud::core::int_handle>::value);
+            ASSERT(false, std::is_copy_assignable<
+                  mud::core::select_handle>::value);
         })
     AND  ("The type is move-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_move_constructible<
-                  mud::core::int_handle>::value);
+                  mud::core::select_handle>::value);
         })
     AND  ("The type is not move-assignable",
         [](context& ctx) {
             ASSERT(false, std::is_move_assignable<
-                  mud::core::int_handle>::value);
+                  mud::core::select_handle>::value);
         })
 
-  SCENARIO("Default constucted handle")
+  SCENARIO("Default constructed handle")
     GIVEN("An default constructed integer handle",
         [](context& ctx){
             ctx.handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::int_handle());
+                new mud::core::select_handle());
         })
     WHEN ("The handle is examined", [](context&){})
     THEN ("The handle is invalid")
