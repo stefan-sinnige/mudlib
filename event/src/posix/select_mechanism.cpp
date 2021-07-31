@@ -114,6 +114,9 @@ private:
     /** Registered events. */
     std::list<event> _events;
 
+    /** Guard for exclusive access to _events list. */
+    std::mutex _lock;
+
     /** Flag to indicate if the loop is running. */
     std::atomic<bool> _running;
 
@@ -161,6 +164,7 @@ select_mechanism::impl::~impl()
 void
 select_mechanism::impl::register_handler(event&& event)
 {
+    std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end())
     {
@@ -173,6 +177,7 @@ select_mechanism::impl::register_handler(event&& event)
 void
 select_mechanism::impl::deregister_handler(event&& event)
 {
+    std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end())
     {
@@ -246,6 +251,7 @@ select_mechanism::impl::multiplex(
         fd_set& exceptfds,
         int& maxfd)
 {
+    std::lock_guard<std::mutex> lock(_lock);
     FD_ZERO(&readfds);
     FD_ZERO(&writefds);
     FD_ZERO(&exceptfds);
@@ -283,6 +289,8 @@ select_mechanism::impl::demultiplex(
         const fd_set& writefds,
         const fd_set& exceptfds)
 {
+    std::lock_guard<std::mutex> lock(_lock);
+
     /* Check all excepts */
 
     /* Check all reads */
