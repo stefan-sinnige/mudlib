@@ -24,7 +24,8 @@ public:
      */
     enum class type_t {
         SELECT,     /*!< Handle used with @c select mechanisms */
-        W32HANDLE   /*!< Windows @c HANDLE */
+        W32HANDLE,  /*!< Windows @c HANDLE */
+        __TEST      /*!< Do not use, for testing purposes one */
     };
 
     /**
@@ -213,6 +214,13 @@ template<> MUDLIB_CORE_API int internal_handle<int>(const
     template<> MUDLIB_CORE_API HANDLE internal_handle<HANDLE>
     (const std::unique_ptr<handle>&);
 #endif
+
+/**
+ * @brief: A handle to an @c test resource type.
+ */
+typedef basic_handle<handle::type_t::__TEST, int, 0> __test_handle;
+template<> MUDLIB_CORE_API int internal_handle<int>(const
+        std::unique_ptr<handle>&);
 
 END_MUDLIB_CORE_NS
 

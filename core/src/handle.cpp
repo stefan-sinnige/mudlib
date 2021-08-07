@@ -11,7 +11,8 @@ int
 internal_handle<int>
 (const std::unique_ptr<handle>& handle)
 {
-    if (handle->type() != handle::type_t::SELECT) {
+    if ((handle->type() != handle::type_t::SELECT) &&
+            (handle->type() != handle::type_t::__TEST)) {
         throw std::invalid_argument("Handle of incorrect type");
     }
     select_handle* h = static_cast<select_handle*>(handle.get());

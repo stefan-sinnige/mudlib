@@ -6,6 +6,7 @@
 #include <mud/event/ns.h>
 #include <mud/core/handle.h>
 #include <mud/event/event.h>
+#include <mud/event/event_mechanism.h>
 
 BEGIN_MUDLIB_EVENT_NS
 
@@ -45,6 +46,17 @@ public:
     virtual ~event_loop();
 
     /**
+     * @brief Add a mechanism that processes events for a handle @c type.
+     *
+     * A mechanism is an instance of @c event_mechanism that defines the type
+     * of handles it processes and the machinery of waiting for and dispatching
+     * events.
+     *
+     * @param type [in]  The handle type associated to the mechanism.
+     */
+    void add_mechanism(mud::core::handle::type_t type);
+
+    /**
      * @brief Register an event with the loop.
      *
      * If an event is already associated with the same @c handle, then it
@@ -52,7 +64,7 @@ public:
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event o regsietr.
+     * @param[in] event  The event to regsietr.
      */
     virtual void register_handler(event&& event);
 

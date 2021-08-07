@@ -1,138 +1,18 @@
 #include "posix/select_mechanism.h"
-#include "posix/select_self.h"
 #include <errno.h>
 #include <algorithm>
-#include <thread>
 #include <system_error>
-#include <list>
-#if defined(WINDOWS) && defined(NATIVE)
-    #include <windows.h>
-#else
-    #include <sys/select.h>
-#endif
 
 BEGIN_MUDLIB_EVENT_NS
 
-/**
- * @brief An implementation class of an @c mud::event::event_loop for POSIX
- * systems using the @c select mechanism.
- *
- * The I/O event-loop for POSIX systems uses the @c select to perform the
- * multiplexing of I/O @c handle's. A self-event trick (pipe/UDP socket) is
- * used for self-signalling events.
- */
-class select_mechanism::impl
-{
-public:
-    /**
-     * Default constructor.
-     */
-    impl(const std::shared_ptr<mud::core::simple_task_queue>& queue);
+/* Register this mechaism to the factory */
+event_mechanism_factory::registrar<
+mud::core::handle::type_t::SELECT,
+    select_mechanism> _registrar;
 
-    /**
-     * Destructor.
-     */
-    virtual ~impl();
-
-    /**
-     * Register an event handler with the loop.
-     */
-    void register_handler(event&& event);
-
-    /**
-     * Deregister an event handler associated to a handle from the loop.
-     */
-    void deregister_handler(event&& event);
-
-    /**
-     * Initiate the mechanism.
-     */
-    std::shared_future<void> initiate();
-
-    /*
-     * Request to terminate the run @c loop.
-     */
-    void terminate();
-
-    /**
-     * Non-copyable
-     */
-    impl(const impl&) = delete;
-    impl& operator=(const impl&) = delete;
-
-private:
-    /**
-     * Run the loop, waiting for all registered @c event obkects and invoke the
-     * associated @event::handler when needed.
-     */
-    void loop();
-
-    /*
-     * Request to a no-operation. This will effectively stop the @c select
-     * and re-multiplex.
-     */
-    void nop();
-
-    /**
-     * Multiplex the registered events into an @fd_set
-     */
-    void multiplex(
-            fd_set& readfds,   /**< [out] The set of file descriptors to wait
-                                          for a read. */
-            fd_set& writefds,  /**< [out] The set of file descriptors to wait
-                                          for a write. */
-            fd_set& exceptfds, /**< [out] The set of file descriptors to wait
-                                          for an exceptional condition. */
-            int& maxfd         /**< [out] The maximum file descriptor handle
-                                          number */
-    );
-
-    /**
-     * Demultiplex the @fd_set and dispatch the events handlers on those that
-     * fired.
-     */
-    void demultiplex(
-            const fd_set& readfds,  /**< [out] The set of file descriptors to
-                                         wait for a read. */
-            const fd_set& writefds, /**< [out] The set of file descriptors to
-                                         wait for a write. */
-            const fd_set& exceptfds /**< [out] The set of file descriptors to
-                                         wait for an exceptional condition. */
-    );
-
-    /**
-     * Handle commands send to the event-loop from the self-event.
-     */
-    void command_handler();
-
-    /** The queue for signaled events */
-    std::shared_ptr<mud::core::simple_task_queue> _queue;
-
-    /** Self-signalling resource */
-    select_self* _self;
-
-    /** Registered events. */
-    std::list<event> _events;
-
-    /** Guard for exclusive access to _events list. */
-    std::mutex _lock;
-
-    /** Flag to indicate if the loop is running. */
-    std::atomic<bool> _running;
-
-    /** The thread running the loop */
-    std::thread _thread;
-
-    /** The promise tied to the thread */
-    std::promise<void> _promise;
-
-    /** The future thread object. */
-    std::shared_future<void> _future;
-};
-
-select_mechanism::impl::impl(
+select_mechanism::select_mechanism(
         const std::shared_ptr<mud::core::simple_task_queue>& queue)
-    : _queue(queue), _running(false)
+    : mud::event::event_mechanism(queue), _running(false)
 {
     /* Always register the self-event to receive the command */
     _self = new select_self();
@@ -144,7 +24,7 @@ select_mechanism::impl::impl(
     _events.push_back(ev);
 }
 
-select_mechanism::impl::~impl()
+select_mechanism::~select_mechanism()
 {
     /* Make sure the loop is terminated */
     terminate();
@@ -162,7 +42,7 @@ select_mechanism::impl::~impl()
 }
 
 void
-select_mechanism::impl::register_handler(event&& event)
+select_mechanism::register_handler(event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -175,7 +55,7 @@ select_mechanism::impl::register_handler(event&& event)
 }
 
 void
-select_mechanism::impl::deregister_handler(event&& event)
+select_mechanism::deregister_handler(event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -187,7 +67,7 @@ select_mechanism::impl::deregister_handler(event&& event)
 }
 
 std::shared_future<void>
-select_mechanism::impl::initiate()
+select_mechanism::initiate()
 {
     if (_running.exchange(true) == false)
     {
@@ -196,14 +76,14 @@ select_mechanism::impl::initiate()
             _thread.join();
         }
         _promise = std::promise<void>();
-        _thread = std::thread(&select_mechanism::impl::loop, this);
+        _thread = std::thread(&select_mechanism::loop, this);
         _future = _promise.get_future();
     }
     return _future;
 }
 
 void
-select_mechanism::impl::loop()
+select_mechanism::loop()
 {
     /* Loop until we're told to stop. This loop is run on it's own thread. */
     while (_running.load() == true)
@@ -223,13 +103,12 @@ select_mechanism::impl::loop()
      * again. */
     nop();
 
-
     /* Signal the end of the thread. */
     _promise.set_value();
 }
 
 void
-select_mechanism::impl::terminate()
+select_mechanism::terminate()
 {
     if (_running.load() == true)
     {
@@ -239,13 +118,13 @@ select_mechanism::impl::terminate()
 }
 
 void
-select_mechanism::impl::nop()
+select_mechanism::nop()
 {
     _self->send();
 }
 
 void
-select_mechanism::impl::multiplex(
+select_mechanism::multiplex(
         fd_set& readfds,
         fd_set& writefds,
         fd_set& exceptfds,
@@ -284,7 +163,7 @@ select_mechanism::impl::multiplex(
 }
 
 void
-select_mechanism::impl::demultiplex(
+select_mechanism::demultiplex(
         const fd_set& readfds,
         const fd_set& writefds,
         const fd_set& exceptfds)
@@ -325,7 +204,7 @@ select_mechanism::impl::demultiplex(
                             this->register_handler(std::move(ev));
                         }
                     });
-                    _queue->push(std::move(task));
+                    queue()->push(std::move(task));
                     event_it = _events.erase(event_it);
                 }
             }
@@ -372,7 +251,7 @@ select_mechanism::impl::demultiplex(
                             this->register_handler(std::move(ev));
                         }
                     });
-                    _queue->push(std::move(task));
+                    queue()->push(std::move(task));
                     event_it = _events.erase(event_it);
                 }
             }
@@ -386,48 +265,6 @@ select_mechanism::impl::demultiplex(
             ++event_it;
         }
     }
-}
-
-void
-select_mechanism::impl_deleter::operator()(select_mechanism::impl* ptr) const
-{
-    delete ptr;
-}
-
-/** The explicit implementation for POSIX event loops. */
-
-select_mechanism::select_mechanism(
-        const std::shared_ptr<mud::core::simple_task_queue>& queue)
-{
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(queue));
-}
-
-select_mechanism::~select_mechanism()
-{
-}
-
-void
-select_mechanism::register_handler(event&& event)
-{
-    _impl->register_handler(std::move(event));
-}
-
-void
-select_mechanism::deregister_handler(event&& event)
-{
-    _impl->deregister_handler(std::move(event));
-}
-
-std::shared_future<void>
-select_mechanism::initiate()
-{
-    return _impl->initiate();
-}
-
-void
-select_mechanism::terminate()
-{
-    _impl->terminate();
 }
 
 END_MUDLIB_EVENT_NS
