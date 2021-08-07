@@ -1,11 +1,12 @@
 #include "mud/event/event_loop.h"
-#include "event_mechanism.h"
 #include "posix/select_mechanism.h"
 #include <errno.h>
 #include <algorithm>
 #include <system_error>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <stdexcept>
 #include <vector>
 
 BEGIN_MUDLIB_EVENT_NS
@@ -26,6 +27,11 @@ public:
      * Destructor.
      */
     virtual ~impl();
+
+    /**
+     * Add a mechanism
+     */
+    void add_mechanism(mud::core::handle::type_t type);
 
     /**
      * Register an event handler with the loop.
@@ -55,6 +61,9 @@ public:
     impl& operator=(const impl&) = delete;
 
 private:
+    /** Assert that the event-loop is not running */
+    void assert_not_running();
+
     /** The task queue to hold signaled event tasks. */
     std::shared_ptr<mud::core::simple_task_queue> _queue;
 
@@ -62,15 +71,24 @@ private:
     mud::core::task_worker_pool<mud::core::simple_task> _pool;
 
     /** Map of supported event loop mechanisms */
-    std::map<mud::core::handle::type_t, event_mechanism*> _mechanisms;
+    std::map<mud::core::handle::type_t,
+        std::unique_ptr<event_mechanism>> _mechanisms;
+
+    /** Lock to protect the list of mechanisms. */
+    std::mutex _lock;
+
+    /** Flag to indicate that the loop is running */
+    std::atomic_bool _running;
 };
 
 event_loop::impl::impl()
     : _queue(std::make_shared<mud::core::simple_task_queue>()),
-      _pool(_queue)
+      _pool(_queue, 2), _running(false)
 {
-    _mechanisms[mud::core::handle::type_t::SELECT]
-        = new select_mechanism(_queue);
+    /* Always load the select mechanism which is used by the self-pipe. This
+     * is either a UDP socket connection or an unnamed pipe - both of which
+     * are handled through the SELECT mechanism. */
+    add_mechanism(mud::core::handle::type_t::SELECT);
 
 }
 
@@ -78,28 +96,43 @@ event_loop::impl::~impl()
 {
     /* Make sure the loop is terminated */
     terminate();
+}
 
-    /* Cleanup all mechanism instances */
-    for (auto mech: _mechanisms)
+void
+event_loop::impl::add_mechanism(mud::core::handle::type_t type)
+{
+    assert_not_running();
+    std::lock_guard<std::mutex> lock(_lock);
+    if (_mechanisms.find(type) == _mechanisms.end())
     {
-        delete mech.second;
+        auto mechanism = event_mechanism_factory::instance().create(
+                        type, _queue);
+        _mechanisms[type] = std::move(mechanism);
     }
 }
 
 void
 event_loop::impl::register_handler(event&& event)
 {
+    std::lock_guard<std::mutex> lock(_lock);
+
     // Register the event with the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
     if (find != _mechanisms.end())
     {
         find->second->register_handler(std::move(event));
     }
+    else
+    {
+        throw std::invalid_argument("event for unregistered mechanism");
+    }
 }
 
 void
 event_loop::impl::deregister_handler(event&& event)
 {
+    std::lock_guard<std::mutex> lock(_lock);
+
     // Deregister the event from the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
     if (find != _mechanisms.end())
@@ -111,20 +144,32 @@ event_loop::impl::deregister_handler(event&& event)
 void
 event_loop::impl::loop()
 {
+    // Only run the loop if it is not yet running.
+    if (_running.exchange(true) == true)
+    {
+        assert_not_running();
+    }
+
     // Start the task workers in the pool
     _pool.start();
 
     // Start the loop on all mechanism
     std::vector<std::shared_future<void>> futures;
-    for (auto& mech: _mechanisms)
     {
-        futures.push_back(mech.second->initiate());
+        std::lock_guard<std::mutex> lock(_lock);
+        for (auto& mech: _mechanisms)
+        {
+            futures.push_back(mech.second->initiate());
+        }
     }
 
     // Wait until all mechanisms have stopped
     for (auto future: futures)
     {
-        future.wait();
+        //if (future.valid())
+        {
+            future.wait();
+        }
     }
 
     // Wait for the pool to stop
@@ -134,6 +179,8 @@ event_loop::impl::loop()
 void
 event_loop::impl::terminate()
 {
+    std::lock_guard<std::mutex> lock(_lock);
+
     // Stop the task workers in the pool
     _pool.stop();
 
@@ -141,6 +188,16 @@ event_loop::impl::terminate()
     for (auto& mech: _mechanisms)
     {
         mech.second->terminate();
+    }
+    _running = false;
+}
+
+void
+event_loop::impl::assert_not_running()
+{
+    if (_running == true)
+    {
+        throw std::invalid_argument("mud::event::event_loop already running");
     }
 }
 
@@ -153,6 +210,12 @@ event_loop::event_loop()
 
 event_loop::~event_loop()
 {
+}
+
+void
+event_loop::add_mechanism (mud::core::handle::type_t type)
+{
+    _impl->add_mechanism(type);
 }
 
 void

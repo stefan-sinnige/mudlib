@@ -4,6 +4,7 @@
 #include <mud/event/ns.h>
 #include <mud/event/event.h>
 #include <mud/event/event_loop.h>
+#include <mud/event/event_mechanism.h>
 
 /* vi: set ai ts=4 expandtab: */
 

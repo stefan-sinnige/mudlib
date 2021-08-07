@@ -261,6 +261,42 @@ if {ptr == nullptr} {
 % CHAPTER
 % ============================================================================
 
+\chapter{Factory}
+\label{chp:core-factory}
+
+A factory is a common pattern to create instances of an class based on a
+specific key. All the concrete classes registred to the factory are derived
+from a common abstract class.
+
+The key can be an enumeration type or a \texttt{std::type\_index}. The
+enumeration can create an associated concrete class (i.e. the concrete class
+is not known, but the identifying key is). While the \texttt{std::index\_type}
+creates the object directly by the type of the class.
+
+\begin{lstlisting}[%
+  frame=single,
+  captionpos=b,
+  caption={TBD}
+  label=lst:TBD]
+// Factory by enumeration key
+typedef mud::core::factory<Base::type_t, Base> BaseFactoryByKey;
+BaseFactoryByKey::registrar<Base::type_t::DERIVED, Derived> registrar_derived;
+
+auto object = BaseFactoryByKey::instance().create(Base::type_t::DERIVED);
+
+// Factory by class type
+typedef mud::core::factory<std::index_type, Base> BaseFactoryByType;
+BaseFactoryByKey::registrar<Derived> registrar_derived;
+
+auto object = BaseFactoryByKey::instance().create(typeid(DERIVED));
+\end{lstlisting}
+
+Factories can use creator function with or without any arguments.
+
+% ============================================================================
+% CHAPTER
+% ============================================================================
+
 \chapter{Handles}
 \label{chp:handles}
 
