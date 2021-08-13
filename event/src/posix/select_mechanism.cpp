@@ -14,11 +14,9 @@ select_mechanism::select_mechanism(
         const std::shared_ptr<mud::core::simple_task_queue>& queue)
     : mud::event::event_mechanism(queue), _running(false)
 {
-    /* Always register the self-event to receive the command */
-    _self = new select_self();
-    int handle = mud::core::internal_handle<int>(_self->handle());
-    event ev(_self->handle(), event::signal_type::READING, [&]() {
-        _self->receive();
+    /* Always register the self-event to receive the trigger */
+    event ev(_self.handle(), event::signal_type::READING, [&]() {
+        _self.capture();
         return mud::event::event::return_type::CONTINUE;
     });
     _events.push_back(ev);
@@ -36,9 +34,6 @@ select_mechanism::~select_mechanism()
         _future.wait();
         _thread.join();
     }
-
-    /* Remove the self event */
-    delete _self;
 }
 
 void
@@ -113,14 +108,14 @@ select_mechanism::terminate()
     if (_running.load() == true)
     {
         _running.store(false);
-        _self->send();
+        nop();
     }
 }
 
 void
 select_mechanism::nop()
 {
-    _self->send();
+    _self.trigger();
 }
 
 void
@@ -183,7 +178,7 @@ select_mechanism::demultiplex(
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &readfds))
             {
-                if (event_it->handle() == _self->handle())
+                if (event_it->handle() == _self.handle())
                 {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
@@ -230,7 +225,7 @@ select_mechanism::demultiplex(
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &writefds))
             {
-                if (event_it->handle() == _self->handle())
+                if (event_it->handle() == _self.handle())
                 {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */

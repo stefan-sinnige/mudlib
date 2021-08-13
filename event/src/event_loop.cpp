@@ -85,11 +85,10 @@ event_loop::impl::impl()
     : _queue(std::make_shared<mud::core::simple_task_queue>()),
       _pool(_queue, 2), _running(false)
 {
-    /* Always load the select mechanism which is used by the self-pipe. This
-     * is either a UDP socket connection or an unnamed pipe - both of which
-     * are handled through the SELECT mechanism. */
+    /* Always load the select mechanism which is used by the self-signalling
+     * resource. This is either a UDP socket connection or an unnamed pipe -
+     * both of which are handled through the SELECT mechanism. */
     add_mechanism(mud::core::handle::type_t::SELECT);
-
 }
 
 event_loop::impl::~impl()

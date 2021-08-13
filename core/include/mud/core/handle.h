@@ -25,7 +25,65 @@ public:
     enum class type_t {
         SELECT,     /*!< Handle used with @c select mechanisms */
         W32HANDLE,  /*!< Windows @c HANDLE */
+        X11,        /*!< X11 handle */
         __TEST      /*!< Do not use, for testing purposes one */
+    };
+
+    /**
+     * @brief A self-signalling resource using the handle's @c resource_type.
+     *
+     * A self-signalling resource is a resource that is built using the same
+     * resource_type and can be used to send and catch triggers.
+     */
+    class signal
+    {
+    public:
+        /**
+         * @brief Constructor.
+         *
+         * Creating a new self-signalling resource.
+         */
+        signal() = default;
+
+        /**
+         * @brief Destructor.
+         *
+         * Remove the self-signalling resource and free any underlying
+         * implementation dependent resources.
+         */
+        virtual ~signal() = default;
+
+        /**
+         * @brief The handle associated to the resource.
+         */
+        virtual const std::unique_ptr<mud::core::handle>& handle() const = 0;
+
+        /**
+         * @brief Signal the resources.
+         *
+         * Signal the resource such that it can be captured by any thread
+         * waiting for it.
+         */
+        virtual void trigger() = 0;
+
+        /**
+         * @brief Capture the signal's trigger.
+         *
+         * Capture the signal and return true if it has been caught.
+         */
+        virtual bool capture() = 0;
+
+        /**
+         * Non-copyable.
+         */
+        signal(const signal&) = delete;
+        signal& operator=(const signal&) = delete;
+
+        /**
+         * Non-moveable.
+         */
+        signal(signal&&) = delete;
+        signal& operator=(signal&&) = delete;
     };
 
     /**
@@ -91,6 +149,55 @@ class basic_handle: public handle
 {
 public:
     typedef Resource resource_type;
+
+    class signal: public handle::signal
+    {
+    public:
+        /**
+         * @brief Constructor.
+         *
+         * Creating a new self-signalling resource.
+         */
+        signal();
+
+        /**
+         * @brief Destructor.
+         *
+         * Remove the self-signalling resource and free any underlying
+         * implementation dependent resources.
+         */
+        virtual ~signal();
+
+        /**
+         * @brief The handle associated to the resource.
+         */
+        virtual const std::unique_ptr<mud::core::handle>& handle() const override;
+
+        /**
+         * @brief Signal the resources.
+         *
+         * Signal the resource such that it can be captured by any thread
+         * waiting for it.
+         */
+        virtual void trigger() override;
+
+        /**
+         * @brief Capture the signal's trigger.
+         *
+         * Capture the signal and return true if it has been caught.
+         */
+        virtual bool capture() override;
+
+    private:
+        /**
+         * Platform specific implementation.
+         */
+        class impl;
+        struct impl_deleter {
+            void operator()(impl*) const;
+        };
+        std::unique_ptr<impl, impl_deleter> _impl;
+    };
 
     /**
      * @brief Construct an invalid handle.

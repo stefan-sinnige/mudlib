@@ -1,14 +1,16 @@
-#include "posix/select_self.h"
+#include "mud/core/handle.h"
 #include <system_error>
 #include <fcntl.h>
 #include <unistd.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
- * Implementation of a @select_self signalling resource.
+ * Implementation of a @signal signalling resource.
  */
-class select_self::impl
+template<>
+//class handle::signal<handle::type_t::SELECT>::impl
+class select_handle::signal::impl
 {
 public:
     /**
@@ -29,12 +31,12 @@ public:
     /**
      * Send a signal to the resource.
      */
-    void send();
+    void trigger();
 
     /**
      * Receive a signal.
      */
-    void receive();
+    bool capture();
 
 private:
     /** The read handle */
@@ -44,13 +46,15 @@ private:
     std::unique_ptr<mud::core::handle> _write_handle;
 };
 
+template<>
 void
-select_self::impl_deleter::operator()(select_self::impl* ptr) const
+select_handle::signal::impl_deleter::operator()(
+        signal::impl* ptr) const
 {
     delete ptr;
 }
 
-select_self::impl::impl()
+select_handle::signal::impl::impl()
 {
     /* Create the pipe */
     int pfd[2];
@@ -71,7 +75,7 @@ select_self::impl::impl()
                     new mud::core::select_handle(int(pfd[1])));
 }
 
-select_self::impl::~impl()
+select_handle::signal::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_read_handle));
@@ -84,54 +88,60 @@ select_self::impl::~impl()
 }
 
 const std::unique_ptr<mud::core::handle>&
-select_self::impl::handle() const
+select_handle::signal::impl::handle() const
 {
     return _read_handle;
 }
 
 void
-select_self::impl::send()
+select_handle::signal::impl::trigger()
 {
     char ch = 'N';
     (void) ::write(mud::core::internal_handle<int>(_write_handle), &ch, 1);
 }
 
-void
-select_self::impl::receive()
+bool
+select_handle::signal::impl::capture()
 {
     char ch;
     int n = ::read(mud::core::internal_handle<int>(_read_handle), &ch, 1);
+    return (n == 1);
 }
 
 /** The explicit implementation for self signalling resources. */
 
-select_self::select_self()
+template<>
+select_handle::signal::signal()
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
-select_self::~select_self()
+template<>
+select_handle::signal::~signal()
 {
 }
 
+template<>
 const std::unique_ptr<mud::core::handle>&
-select_self::handle() const
+select_handle::signal::handle() const
 {
     return _impl->handle();
 }
 
+template<>
 void
-select_self::send()
+select_handle::signal::trigger()
 {
-    _impl->send();
+    _impl->trigger();
 }
 
-void
-select_self::receive()
+template<>
+bool
+select_handle::signal::capture()
 {
-    _impl->receive();
+    return _impl->capture();
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */

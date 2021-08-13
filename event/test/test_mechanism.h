@@ -1,0 +1,91 @@
+#ifndef _MUDLIB_EVENT_TEST_MECHANISM_H_
+#define _MUDLIB_EVENT_TEST_MECHANISM_H_
+
+#include <mud/core/handle.h>
+#include <mud/event/event_mechanism.h>
+#include <list>
+#include <map>
+
+/*
+ * Simulation of simple OS handle with a state to indicate if there is
+ * something to read or not.
+ */
+enum class os_handle_signal
+{
+    NONE,
+    READY_TO_READ
+};
+
+/*
+ * A test resource
+ */
+class test_resource
+{
+public:
+    /* Constructor, creating a UDP socket. */
+    test_resource();
+
+    /* Destructor */
+    ~test_resource();
+
+    /* Write a character */
+    void write(char ch);
+
+    /* Read a character */
+    char read();
+
+    /* Return the handle */
+    const std::unique_ptr<mud::core::handle>& handle() const;
+
+private:
+    /* The character buffer */
+    char _ch;
+
+    /* The handle. */
+    std::unique_ptr<mud::core::handle> _handle;
+};
+
+/*
+ * A Test mechanism for the test-resources. The main loop running on the
+ * separate thread is implementing a simple polling mechanism.
+ */
+class test_mechanism: public mud::event::event_mechanism
+{
+public:
+    /* Type definition to the handler type */
+    typedef std::function<void(void)> event_handler;
+
+    /* Constructor */
+    test_mechanism(const std::shared_ptr<mud::core::simple_task_queue>& queue);
+
+    /* Destructor */
+    ~test_mechanism();
+
+    /* Register handler */
+    void register_handler(mud::event::event&& event) override;
+
+    /* Deregister handler */
+    void deregister_handler(mud::event::event&& event) override;
+
+    /* Initiate */
+    std::shared_future<void> initiate() override;
+
+    /* Terminate */
+    void terminate() override;
+
+private:
+    /* Thread function */
+    void loop();
+
+    std::list<mud::event::event> _events;
+    std::mutex _lock;
+    std::atomic_bool _running;
+    std::thread _thread;
+    std::promise<void> _promise;
+    std::shared_future<void> _future;
+};
+
+/* vi: set ai ts=4 expandtab: */
+
+#endif /* _MUDLIB_EVENT_TEST_MECHANISM_H_ */
+

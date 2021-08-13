@@ -4,20 +4,26 @@
     #include <io.h>
     #define RECVFROM_CAST (char*)
     #define SENDTO_CAST   (const char*)
+    #define WOULDBLOCK    WSAEWOULDBLOCK
     #ifndef MUDLIB_SSIZE_T
         #define MUDLIB_SSIZE_T
         typedef long ssize_t;
     #endif
 #else
+    #include <arpa/inet.h>
+    #include <netinet/in.h>
+    #include <sys/ioctl.h>
+    #include <sys/socket.h>
     #include <unistd.h>
     #define RECVFROM_CAST (void*)
     #define SENDTO_CAST   (const void*)
+    #define WOULDBLOCK    EWOULDBLOCK
 #endif
-#include "posix/select_self.h"
+#include "mud/core/handle.h"
 #include <system_error>
 #include <fcntl.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 #if defined(WINDOWS) && defined(NATIVE)
 /* Winsock initialiser. */
@@ -37,9 +43,10 @@ struct WSAInitialiser
 #endif
 
 /**
- * Implementation of a @select_self signalling resource using a UDP socket.
+ * Implementation of a @signal signalling resource using a UDP socket.
  */
-class select_self::impl
+template<>
+class select_handle::signal::impl
 {
 public:
     /**
@@ -60,12 +67,12 @@ public:
     /**
      * Send a signal to the resource.
      */
-    void send();
+    void trigger();
 
     /**
      * Receive a signal.
      */
-    void receive();
+    bool capture();
 
 private:
     /** The socket handle */
@@ -75,13 +82,15 @@ private:
     struct sockaddr_in _addr;
 };
 
+template<>
 void
-select_self::impl_deleter::operator()(select_self::impl* ptr) const
+select_handle::signal::impl_deleter::operator()(
+        signal::impl* ptr) const
 {
     delete ptr;
 }
 
-select_self::impl::impl()
+select_handle::signal::impl::impl()
 {
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
@@ -100,6 +109,29 @@ select_self::impl::impl()
         throw std::system_error(errno, std::system_category(), "bind");
     }
 
+    // Make the socket non-blocking
+#if defined(WINDOWS) && defined(NATIVE)
+    u_long mode = true;
+    if (::ioctlsocket(fd, FIONBIO, &mode) != 0)
+    {
+        throw std::system_error(::WSAGetLastError(), std::system_category(),
+                "setting socket option (non-blocking)");
+    }
+#else
+    int flags;
+    if ((flags = ::fcntl(fd, F_GETFL, 0)) < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "setting socket option (non-blocking)");
+    }
+    flags |= O_NONBLOCK;
+    if (::fcntl(fd, F_SETFL, flags) < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+                "setting socket option (non-blocking)");
+    }
+#endif
+
     // Get address
     len = sizeof(_addr);
     ::memset(&_addr, 0, len);
@@ -111,7 +143,7 @@ select_self::impl::impl()
     _handle = std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
 }
 
-select_self::impl::~impl()
+select_handle::signal::impl::~impl()
 {
     if (_handle != nullptr) {
 #if defined(WINDOWS) && defined(NATIVE)
@@ -124,7 +156,7 @@ select_self::impl::~impl()
 }
 
 void
-select_self::impl::send()
+select_handle::signal::impl::trigger()
 {
     // Write over UDP
     struct sockaddr_in write_addr;
@@ -138,8 +170,8 @@ select_self::impl::send()
     }
 }
 
-void
-select_self::impl::receive()
+bool
+select_handle::signal::impl::capture()
 {
     // Read from UDP
     struct sockaddr_in recv_addr;
@@ -149,46 +181,52 @@ select_self::impl::receive()
     int nread = ::recvfrom(
                     mud::core::internal_handle<int>(_handle), RECVFROM_CAST &ch, 1, 0,
                     (struct sockaddr*)&recv_addr, &len);
-    if (nread <= 0) {
+    if (nread < 0 && errno != WOULDBLOCK) {
         throw std::system_error(errno, std::system_category(), "recvfrom");
     }
+    return nread == 1;
 }
 
 const std::unique_ptr<mud::core::handle>&
-select_self::impl::handle() const
+select_handle::signal::impl::handle() const
 {
     return _handle;
 }
 
 /** The explicit implementation for self signalling resources. */
 
-select_self::select_self()
+template<>
+select_handle::signal::signal()
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
-select_self::~select_self()
+template<>
+select_handle::signal::~signal()
 {
 }
 
+template<>
 const std::unique_ptr<mud::core::handle>&
-select_self::handle() const
+select_handle::signal::handle() const
 {
     return _impl->handle();
 }
 
+template<>
 void
-select_self::send()
+select_handle::signal::trigger()
 {
-    _impl->send();
+    _impl->trigger();
 }
 
-void
-select_self::receive()
+template<>
+bool
+select_handle::signal::capture()
 {
-    _impl->receive();
+    return _impl->capture();
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
