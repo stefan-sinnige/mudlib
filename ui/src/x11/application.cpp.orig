@@ -1,0 +1,63 @@
+#include "mud/ui/application.h"
+#include "mud/event/event_loop.h"
+
+BEGIN_MUDLIB_UI_NS
+
+/**
+ * @brief Implementation for X11 User-Interface application.
+ */
+
+class application::impl
+{
+public:
+    /**
+     * Constructor
+     */
+    impl();
+
+    /**
+     * Destructor
+     */
+    ~impl();
+
+private:
+};
+
+application::impl::impl()
+{
+}
+
+application::impl::~impl()
+{
+}
+
+/** The explicit specialisation of an X11 application. */
+
+std::unique_ptr<application::impl, application::impl_deleter>
+    application::_impl;
+
+void
+application::impl_deleter::operator()(application::impl* ptr) const
+{
+    delete ptr;
+}
+
+application::application()
+{
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
+}
+
+application::~application()
+{
+}
+
+void
+application::loop()
+{
+    mud::event::event_loop::global().loop();
+}
+
+END_MUDLIB_UI_NS
+
+/* vi: set ai ts=4 expandtab: */
+

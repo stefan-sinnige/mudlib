@@ -1,6 +1,7 @@
 #ifndef _MUDLIB_CORE_TASK_H_
 #define _MUDLIB_CORE_TASK_H_
 
+#include <chrono>
 #include <exception>
 #include <future>
 #include <memory>
@@ -499,7 +500,7 @@ task_worker<Task>::run()
         }
         else
         {
-            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 }

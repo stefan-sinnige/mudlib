@@ -1,0 +1,176 @@
+#include "x11/x11_mechanism.h"
+#include "x11/x11_application.h"
+#include "mud/ui/exception.h"
+#include "mud/ui/task.h"
+#if defined(WINDOWS) && defined(NATIVE)
+    #include <windows.h>
+#else
+    #include <sys/select.h>
+#endif
+
+BEGIN_MUDLIB_UI_NS
+
+mud::event::event_mechanism_factory::registrar<
+mud::core::handle::type_t::X11,
+    x11_mechanism> _registrar;
+
+x11_mechanism::x11_mechanism(
+        const std::shared_ptr<mud::core::simple_task_queue>& queue)
+    : mud::event::event_mechanism(queue), _running(false)
+{
+}
+
+x11_mechanism::~x11_mechanism()
+{
+    terminate();
+    if (_future.valid())
+    {
+        _future.wait();
+        _thread.join();
+    }
+}
+
+void
+x11_mechanism::register_handler(mud::event::event&& event)
+{
+}
+
+void
+x11_mechanism::deregister_handler(mud::event::event&& event)
+{
+}
+
+std::shared_future<void>
+x11_mechanism::initiate()
+{
+    bool was_running = _running.exchange(true);
+    if (was_running == false)
+    {
+        if (_thread.joinable())
+        {
+            _thread.join();
+        }
+        _promise = std::promise<void>();
+        _thread = std::thread(&x11_mechanism::loop, this);
+        _future = _promise.get_future();
+    }
+    return _future;
+}
+
+void
+x11_mechanism::terminate()
+{
+    if (_running.load() == true)
+    {
+        _terminate_signal.trigger();
+        _running.store(false);
+    }
+}
+
+void
+x11_mechanism::setup()
+{
+    x11::application::instance().initialise();
+}
+
+void
+x11_mechanism::closedown()
+{
+    x11::application::instance().finalise();
+}
+
+void
+x11_mechanism::loop()
+{
+    fd_set readfds;
+
+    // Set-up the UI in the same theread that runs the event loop. After set-up
+    // has completed, the UI is ready to create UI elements.
+    setup();
+
+    // Set-up the handles to listen to and their handlers to invoke.
+    _handlers[mud::core::internal_handle<int>(
+                    _terminate_signal.handle())]
+        = std::bind(&x11_mechanism::terminate_signal_handler, this);
+    _handlers[mud::core::internal_handle<int>(
+                    task_queue::instance().available().handle())]
+        = std::bind(&x11_mechanism::task_queue_signal_handler, this);
+    _handlers[::XConnectionNumber(x11::application::instance().display().get())]
+        = std::bind(&x11_mechanism::display_signal_handler, this);
+
+    // Use ::select to wait for all event.
+    while (_running)
+    {
+        // Set-up the select and wait until signalled.
+        FD_ZERO(&readfds);
+        int maxfd = -1;
+        for (auto& entry: _handlers)
+        {
+            FD_SET(entry.first, &readfds);
+            if (maxfd < entry.first) {
+                maxfd = entry.first;
+            }
+        }
+        if (::select(maxfd+1, &readfds, nullptr, nullptr, nullptr) < 0)
+        {
+            throw std::system_error(errno, std::system_category(), "select");
+        }
+
+        // Invoke any signalled hander.
+        for (auto& entry: _handlers)
+        {
+            if (FD_ISSET(entry.first, &readfds))
+            {
+                entry.second();
+            }
+        }
+
+        // Yield this thread
+        std::this_thread::yield();
+    }
+
+    // Close-down the UI, after which UI elements can no longer be used.
+    closedown();
+
+    // Signal the end of the mechanism thread
+    _promise.set_value();
+}
+
+void
+x11_mechanism::terminate_signal_handler()
+{
+    // The _running flag is already set to false. This handler is merely used
+    // to break the ::select.
+    _terminate_signal.capture();
+}
+
+void
+x11_mechanism::task_queue_signal_handler()
+{
+    task_queue::instance().available().capture();
+
+    // If there is task in the queue, execute it
+    task tsk;
+    if (task_queue::instance().pop(tsk))
+    {
+        tsk();
+    }
+}
+
+void
+x11_mechanism::display_signal_handler()
+{
+
+    // If there is a pending XEvent, process it
+    if (::XPending(x11::application::instance().display().get()) > 0)
+    {
+        XEvent event;
+        XNextEvent(x11::application::instance().display().get(), &event);
+    }
+
+}
+
+END_MUDLIB_UI_NS
+
+/* vi: set ai ts=4 expandtab: */
+

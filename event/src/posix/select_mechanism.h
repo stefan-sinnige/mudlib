@@ -4,7 +4,6 @@
 #include <mud/core/handle.h>
 #include <mud/event/ns.h>
 #include <mud/event/event_mechanism.h>
-#include "posix/select_self.h"
 #include <functional>
 #include <future>
 #include <list>
@@ -125,7 +124,7 @@ private:
     void command_handler();
 
     /** Self-signalling resource */
-    select_self* _self;
+    mud::core::select_handle::signal  _self;
 
     /** Registered events. */
     std::list<event> _events;
