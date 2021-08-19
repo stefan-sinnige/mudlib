@@ -25,6 +25,7 @@ public:
     enum class type_t {
         SELECT,     /*!< Handle used with @c select mechanisms */
         W32HANDLE,  /*!< Windows @c HANDLE */
+        W32WND,     /*!< Windows @c HWND */
         X11,        /*!< X11 handle */
         __TEST      /*!< Do not use, for testing purposes one */
     };
@@ -35,7 +36,7 @@ public:
      * A self-signalling resource is a resource that is built using the same
      * resource_type and can be used to send and catch triggers.
      */
-    class signal
+    class MUDLIB_CORE_API signal
     {
     public:
         /**
@@ -150,7 +151,7 @@ class basic_handle: public handle
 public:
     typedef Resource resource_type;
 
-    class signal: public handle::signal
+    class MUDLIB_CORE_API signal: public handle::signal
     {
     public:
         /**
@@ -313,12 +314,19 @@ typedef basic_handle<handle::type_t::SELECT, int, 0> select_handle;
 template<> MUDLIB_CORE_API int internal_handle<int>(const
         std::unique_ptr<handle>&);
 
-/**
- * @brief: A handle to a windows @c HANDLE resource tpe.
- */
 #ifdef WINDOWS
+    /**
+    * @brief: A handle to a windows @c HANDLE resource tpe.
+    */
     typedef basic_handle<handle::type_t::W32HANDLE, HANDLE, nullptr> windows_handle;
     template<> MUDLIB_CORE_API HANDLE internal_handle<HANDLE>
+    (const std::unique_ptr<handle>&);
+
+    /**
+    * @brief: A handle to a windows @c HHWND resource tpe.
+    */
+    typedef basic_handle<handle::type_t::W32WND, HWND, nullptr> win32_handle;
+    template<> MUDLIB_CORE_API HWND internal_handle<HWND>
     (const std::unique_ptr<handle>&);
 #endif
 

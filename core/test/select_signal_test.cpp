@@ -3,7 +3,11 @@
 #include <memory>
 #include <future>
 #include <type_traits>
-#include <sys/select.h>
+#if defined(WINDOWS) && defined(NATIVE)
+    #include <windows.h>
+#else
+    #include <sys/select.h>
+#endif
 
 /* *INDENT-OFF* */
 

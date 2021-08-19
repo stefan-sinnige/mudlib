@@ -42,6 +42,18 @@ public:
      */
     std::future<void> show();
 
+    /**
+     * Not copyable.
+     */
+    window(const window&) = delete;
+    window& operator=(const window&) = delete;
+
+    /**
+     * Not moveable.
+     */
+    window(window&&) = delete;
+    window& operator=(window&&) = delete;
+
 protected:
     /**
      * @brief Initialise the window

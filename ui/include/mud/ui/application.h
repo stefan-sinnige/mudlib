@@ -11,6 +11,9 @@ BEGIN_MUDLIB_UI_NS
 namespace x11 {
 class application;
 }
+namespace win32 {
+class application;
+}
 
 /**
  * @brief An application with a user interface.
@@ -83,6 +86,7 @@ private:
     application();
 
     friend class x11::application;
+    friend class win32::application;
 };
 
 END_MUDLIB_UI_NS

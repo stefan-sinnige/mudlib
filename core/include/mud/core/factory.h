@@ -2,6 +2,7 @@
 #define _MUDLIB_CORE_FACTORY_H_
 
 #include <map>
+#include <functional>
 #include <sstream>
 #include <stdexcept>
 #include <typeinfo>
@@ -25,7 +26,7 @@ template <typename, class, class...> class factory;
  * associated concrete key, that is registered within the factory.
  */
 template<typename AbstractKey, class AbstractClass, class... Args>
-class factory
+class MUDLIB_CORE_API_EXPORT factory
 {
 public:
     /**
@@ -93,11 +94,7 @@ public:
     /**
      * @brief The instance of the factory.
      */
-    static factory&
-    instance() {
-        static factory _instance;
-        return _instance;
-    }
+    static factory& instance();
 
     /**
      * Not copyable.

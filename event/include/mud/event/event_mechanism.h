@@ -13,7 +13,7 @@ BEGIN_MUDLIB_EVENT_NS
 /**
  * @brief An abstract base class representing an event-loop mechanism.
  */
-class event_mechanism
+class MUDLIB_EVENT_API event_mechanism
 {
 public:
     /**
@@ -105,7 +105,7 @@ private:
  */
 typedef mud::core::factory<
 mud::core::handle::type_t,
-    event_mechanism,
+    mud::event::event_mechanism,
     const std::shared_ptr<mud::core::simple_task_queue>&>
     event_mechanism_factory;
 

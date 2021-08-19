@@ -63,7 +63,7 @@ FEATURE("TCP sockets")
     })
   DEFINE_WHEN("And the TCP server accepts the connection",
     [](context& ctx){
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     })
   DEFINE_THEN("A connection is established",
     [](context& ctx){

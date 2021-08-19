@@ -181,8 +181,13 @@ select_handle::signal::impl::capture()
     int nread = ::recvfrom(
                     mud::core::internal_handle<int>(_handle), RECVFROM_CAST &ch, 1, 0,
                     (struct sockaddr*)&recv_addr, &len);
-    if (nread < 0 && errno != WOULDBLOCK) {
-        throw std::system_error(errno, std::system_category(), "recvfrom");
+#if defined(WINDOWS) && defined(NATIVE)
+    int error =  ::GetLastError();
+#else
+    int error = errno;
+#endif
+    if (nread < 0 && error != WOULDBLOCK) {
+        throw std::system_error(error, std::system_category(), "recvfrom");
     }
     return nread == 1;
 }
