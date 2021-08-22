@@ -1,4 +1,5 @@
 #include <mud/ui/task.h>
+#include "cocoa/cocoa_application.h"
 
 BEGIN_MUDLIB_UI_NS
 
@@ -40,6 +41,7 @@ task_queue::push(task&& tsk)
 {
     mud::core::task_queue<task>::push(std::move(tsk));
     available().trigger();
+    cocoa::application::instance().wakeup();
 }
 
 bool

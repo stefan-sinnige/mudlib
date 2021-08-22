@@ -51,8 +51,9 @@ cocoa::mechanism::terminate()
 {
     if (_running.load() == true)
     {
-        _terminate_signal.trigger();
         _running.store(false);
+        _terminate_signal.trigger();
+        cocoa::application::instance().wakeup();
     }
 }
 
@@ -84,23 +85,6 @@ cocoa::mechanism::loop()
         [pool release];
         pool = [[NSAutoreleasePool alloc] init];
 
-        // Check for NSEvent
-        NSEvent* event = [NSApp
-                        nextEventMatchingMask: NSEventMaskAny
-                        untilDate: [NSDate distantPast]
-                        inMode: NSDefaultRunLoopMode
-                        dequeue: NO];
-        if (event != nullptr)
-        {
-            event = [NSApp
-                            nextEventMatchingMask: NSEventMaskAny
-                            untilDate: [NSDate distantPast]
-                            inMode: NSDefaultRunLoopMode
-                            dequeue: YES];
-            [NSApp sendEvent: event];
-            [NSApp updateWindows];
-        }
-
         // Check for Task queue events
         if (task_queue::instance().available().capture())
         {
@@ -113,9 +97,20 @@ cocoa::mechanism::loop()
             terminate_signal_handler();
         }
 
-        // Wait a bit
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        std::this_thread::yield();
+        // Wait(blocking) for NSEvents and process them
+        NSEvent* event;
+        event = [NSApp  nextEventMatchingMask: NSEventMaskAny
+                        untilDate: [NSDate distantFuture]
+                        inMode: NSDefaultRunLoopMode
+                        dequeue: NO];
+        while (event != nullptr)
+        {
+            event = [NSApp  nextEventMatchingMask: NSEventMaskAny
+                            untilDate: [NSDate distantPast]
+                            inMode: NSDefaultRunLoopMode
+                            dequeue: YES];
+            [NSApp sendEvent: event];
+        }
     }
     [pool release];
 
