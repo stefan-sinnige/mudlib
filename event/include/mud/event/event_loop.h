@@ -84,6 +84,9 @@ public:
      * This method does not usually terminate unless it was explicitely
      * requested to do so through the @c terminate method. It will therefore
      * block the thread it is currently running on.
+     *
+     * Any mechanism that is marked as non-detachable will be run on the same
+     * thread as this loop. These are typically UI threads.
      */
     virtual void loop();
 

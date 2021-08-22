@@ -47,7 +47,7 @@ window::initialise()
                     CLASS_NAME,
                     "Window Title",
                     WS_OVERLAPPEDWINDOW,
-                    10, 1, 100, 100,
+                    10, 10, 100, 100,
                     nullptr,
                     nullptr,
                     ::GetModuleHandle(nullptr),
@@ -58,23 +58,6 @@ window::initialise()
                 "CrateWindowEx");
     }
     ::ShowWindow(wnd, SW_NORMAL);
-
-
-    /*
-        x11::application& application = x11::application::instance();
-
-        Window w;
-        int s = DefaultScreen(application.display().get());
-        w = ::XCreateSimpleWindow(
-                        application.display().get(),
-                        RootWindow(application.display().get(), s),
-                        10, 10, 100, 100, 1,
-                        BlackPixel(application.display().get(), s),
-                        WhitePixel(application.display().get(), s));
-        XSelectInput(application.display().get(), w, ExposureMask | KeyPressMask);
-        XMapWindow(application.display().get(), w);
-        XFlush(application.display().get());
-    */
 }
 
 END_MUDLIB_UI_NS

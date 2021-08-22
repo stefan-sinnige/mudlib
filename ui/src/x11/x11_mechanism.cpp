@@ -12,53 +12,46 @@ BEGIN_MUDLIB_UI_NS
 
 mud::event::event_mechanism_factory::registrar<
 mud::core::handle::type_t::X11,
-    x11_mechanism> _registrar;
+    x11::mechanism> _registrar;
 
-x11_mechanism::x11_mechanism(
+x11::mechanism::mechanism(
         const std::shared_ptr<mud::core::simple_task_queue>& queue)
     : mud::event::event_mechanism(queue), _running(false)
 {
 }
 
-x11_mechanism::~x11_mechanism()
+x11::mechanism::~mechanism()
 {
     terminate();
-    if (_future.valid())
-    {
-        _future.wait();
-        _thread.join();
-    }
 }
 
 void
-x11_mechanism::register_handler(mud::event::event&& event)
+x11::mechanism::register_handler(mud::event::event&& event)
 {
 }
 
 void
-x11_mechanism::deregister_handler(mud::event::event&& event)
+x11::mechanism::deregister_handler(mud::event::event&& event)
 {
 }
 
 std::shared_future<void>
-x11_mechanism::initiate()
+x11::mechanism::initiate()
 {
+    // As this mechanism is not-detachable, run it on the current thread and
+    // only return after completion.
     bool was_running = _running.exchange(true);
     if (was_running == false)
     {
-        if (_thread.joinable())
-        {
-            _thread.join();
-        }
+        loop();
         _promise = std::promise<void>();
-        _thread = std::thread(&x11_mechanism::loop, this);
         _future = _promise.get_future();
     }
     return _future;
 }
 
 void
-x11_mechanism::terminate()
+x11::mechanism::terminate()
 {
     if (_running.load() == true)
     {
@@ -67,20 +60,26 @@ x11_mechanism::terminate()
     }
 }
 
+bool
+x11::mechanism::detachable() const
+{
+    return false;
+}
+
 void
-x11_mechanism::setup()
+x11::mechanism::setup()
 {
     x11::application::instance().initialise();
 }
 
 void
-x11_mechanism::closedown()
+x11::mechanism::closedown()
 {
     x11::application::instance().finalise();
 }
 
 void
-x11_mechanism::loop()
+x11::mechanism::loop()
 {
     fd_set readfds;
 
@@ -91,12 +90,12 @@ x11_mechanism::loop()
     // Set-up the handles to listen to and their handlers to invoke.
     _handlers[mud::core::internal_handle<int>(
                     _terminate_signal.handle())]
-        = std::bind(&x11_mechanism::terminate_signal_handler, this);
+        = std::bind(&x11::mechanism::terminate_signal_handler, this);
     _handlers[mud::core::internal_handle<int>(
                     task_queue::instance().available().handle())]
-        = std::bind(&x11_mechanism::task_queue_signal_handler, this);
+        = std::bind(&x11::mechanism::task_queue_signal_handler, this);
     _handlers[::XConnectionNumber(x11::application::instance().display().get())]
-        = std::bind(&x11_mechanism::display_signal_handler, this);
+        = std::bind(&x11::mechanism::display_signal_handler, this);
 
     // Use ::select to wait for all event.
     while (_running)
@@ -137,7 +136,7 @@ x11_mechanism::loop()
 }
 
 void
-x11_mechanism::terminate_signal_handler()
+x11::mechanism::terminate_signal_handler()
 {
     // The _running flag is already set to false. This handler is merely used
     // to break the ::select.
@@ -145,7 +144,7 @@ x11_mechanism::terminate_signal_handler()
 }
 
 void
-x11_mechanism::task_queue_signal_handler()
+x11::mechanism::task_queue_signal_handler()
 {
     task_queue::instance().available().capture();
 
@@ -158,7 +157,7 @@ x11_mechanism::task_queue_signal_handler()
 }
 
 void
-x11_mechanism::display_signal_handler()
+x11::mechanism::display_signal_handler()
 {
 
     // If there is a pending XEvent, process it

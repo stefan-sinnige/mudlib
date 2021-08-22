@@ -20,11 +20,6 @@ win32::mechanism::mechanism(
 win32::mechanism::~mechanism()
 {
     terminate();
-    if (_future.valid())
-    {
-        _future.wait();
-        _thread.join();
-    }
 }
 
 void
@@ -40,15 +35,13 @@ win32::mechanism::deregister_handler(mud::event::event&& event)
 std::shared_future<void>
 win32::mechanism::initiate()
 {
+    // As this mechanism is not-detachable, run it on the current thread and
+    // only return after completion.
     bool was_running = _running.exchange(true);
     if (was_running == false)
     {
-        if (_thread.joinable())
-        {
-            _thread.join();
-        }
+        loop();
         _promise = std::promise<void>();
-        _thread = std::thread(&win32::mechanism::loop, this);
         _future = _promise.get_future();
     }
     return _future;
@@ -62,6 +55,12 @@ win32::mechanism::terminate()
         _terminate_signal.trigger();
         _running.store(false);
     }
+}
+
+bool
+win32::mechanism::detachable() const
+{
+    return false;
 }
 
 void

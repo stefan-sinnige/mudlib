@@ -1,7 +1,15 @@
 #include <stdio.h>
+#include <future>
 #include <mud/test.h>
+#include <mud/core/task.h>
 
+/* The delay to be applied to each test-run in order to visually verify the
+ * affect of the test-cases. */
 int g_delay = 0;
+
+/* The task queue for the test-cases to run the application object on the
+ * main thread.  */
+mud::core::simple_task_queue g_app_queue;
 
 void
 help(int retval)
@@ -18,6 +26,9 @@ help(int retval)
 int
 main(int argc, char** argv)
 {
+    /* Flag to indicate to keep on running the app-queue run-loop. */
+    bool running = true;
+
     /* Parse command line arguments */
     std::string test;
     while (--argc && *(++argv)[0] == '-')
@@ -62,11 +73,44 @@ main(int argc, char** argv)
         help(1);
     }
 
-    /* Run all features */
-    std::pair<size_t, size_t> result = FEATURE_RUN(test);
+    /* The application needs to be run on a main thread. This is not so much an
+     * issue with Win32 / X11 as these UI threads can run on any thread, but
+     * Cocoa in particular requires the UI actions on the main thread.
+     *
+     * We can therefore not run the test cases on the main thread as that would
+     * be assigned to run the application's main run-loop. The test cases will
+     * need to be executed in its own thread instead and use a task-queue to
+     * the main thread to control the UI applicaition from the test cases. */
+
+    /* Run all features on a separate thread. */
+    std::future<std::pair<size_t, size_t>> result;
+    result = std::async(std::launch::async, [&]() {
+        /* Run the tests */
+        std::pair<size_t, size_t> test_result = FEATURE_RUN(test);
+
+        /* Push a tassk to break the app-queue run loop */
+        running = false;
+        mud::core::simple_task tsk([]() {});
+        g_app_queue.push(std::move(tsk));
+
+        return test_result;
+    });
+
+    /* Continue to run the task loop. We stop running until the test-cases
+     * have run. */
+    while (running)
+    {
+        mud::core::simple_task tsk;
+        if (g_app_queue.pop(tsk))
+        {
+            tsk();
+        }
+        std::this_thread::yield();
+    }
 
     /* Return 0 upon success */
-    return result.first == result.second ? 0 : 1;
+    auto test_result = result.get();
+    return test_result.first == test_result.second ? 0 : 1;
 }
 
 /* vi: set ai ts=4 expandtab: */

@@ -14,6 +14,9 @@ class application;
 namespace win32 {
 class application;
 }
+namespace cocoa {
+class application;
+}
 
 /**
  * @brief An application with a user interface.
@@ -87,6 +90,7 @@ private:
 
     friend class x11::application;
     friend class win32::application;
+    friend class cocoa::application;
 };
 
 END_MUDLIB_UI_NS

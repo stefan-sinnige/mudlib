@@ -152,14 +152,28 @@ event_loop::impl::loop()
     // Start the task workers in the pool
     _pool.start();
 
-    // Start the loop on all mechanism
+    // Start the loop on all detachable  mechanism
+    mud::core::handle::type_t non_detachable = mud::core::handle::type_t::NONE;
     std::vector<std::shared_future<void>> futures;
     {
         std::lock_guard<std::mutex> lock(_lock);
         for (auto& mech: _mechanisms)
         {
-            futures.push_back(mech.second->initiate());
+            if (mech.second->detachable())
+            {
+                futures.push_back(mech.second->initiate());
+            }
+            else
+            {
+                non_detachable = mech.first;
+            }
         }
+    }
+
+    // Run the mechanism on this thread that is not detachable
+    if (non_detachable != mud::core::handle::type_t::NONE)
+    {
+        _mechanisms[non_detachable]->initiate();
     }
 
     // Wait until all mechanisms have stopped

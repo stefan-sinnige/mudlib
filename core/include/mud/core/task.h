@@ -67,7 +67,7 @@ public:
     void operator()(Args... );
 
     /**
-     * @brief Return teh future to access the return upon completion.
+     * @brief Return the future to access the return upon completion.
      */
     std::future<result_type> get_future();
 
@@ -206,7 +206,7 @@ public:
     void operator()(Args... );
 
     /**
-     * @brief Return teh future to access the return upon completion.
+     * @brief Return the future to access the return upon completion.
      */
     std::future<result_type> get_future();
 
