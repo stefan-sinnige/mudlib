@@ -41,6 +41,14 @@ public:
      * This function will be invoked on the implementation dependent UI thread.
      */
     virtual void finalise() override;
+
+    /**
+     * @brief Send a wake-up event
+     *
+     * This will send a custom NSEvent to wake-up from the blocking event
+     * loop in order to process a non-NSEvent signal.
+     */
+    void wakeup();
 };
 
 } // namespace cocoa
