@@ -47,8 +47,14 @@ public:
     virtual void deregister_handler(event&& event) = 0;
 
     /**
-     * Initiate the mechanism.
-     * @return The future associated to the underlying thread has terminated.
+     * Initiate the mechanism on it's own thread.
+     *
+     * @return The future associated when the mechanism has terminated.
+     *
+     * Detachable mechanisms will run on their own thread and return the
+     * future while the thread continues to run in the background. A
+     * non-detachable mechanism will block execution until the mechanism has
+     * finished execution.
      */
     virtual std::shared_future<void> initiate() = 0;
 
@@ -58,10 +64,10 @@ public:
     virtual void terminate() = 0;
 
     /**
-     * @brief Return @c true if the mechanism is to be detached and executed in
-     * its own thread.
+     * @brief Flag to indicate if the mechanism can be run detached in its
+     * own thread.
      *
-     * Any mechanism that is marked as detachable will be executed in a
+     * Any mechanism that is marked as detachable can be executed in a
      * separate thread when added to the @c event_loop.
      *
      * There can be at most one event-mechanism in an event-loop that

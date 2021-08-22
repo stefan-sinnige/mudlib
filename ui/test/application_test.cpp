@@ -1,11 +1,16 @@
 #include "mud/ui/application.h"
 #include "mud/ui/window.h"
+#include "mud/core/task.h"
 #include "mud/test.h"
 #include <future>
 #include <memory>
 #include <type_traits>
 
 /* *INDENT-OFF* */
+
+/* The task queue for the test-cases to run the application object on the
+ * main thread.  */
+extern mud::core::simple_task_queue g_app_queue;
 
 CONTEXT()
     // Constructor, executed before each scenario run
@@ -37,9 +42,12 @@ FEATURE("Application")
   // Pre-defined steps
   DEFINE_GIVEN("A running application",
       [](context& ctx) {
-          ctx.future_app = std::async(std::launch::async, [&ctx]() {
+          // Schedule the application to run the loop on the main thread
+          mud::core::simple_task tsk([]() {
               mud::ui::application::instance().loop();
           });
+          ctx.future_app = tsk.get_future();
+          g_app_queue.push(std::move(tsk));
           std::this_thread::sleep_for(std::chrono::milliseconds(10));
       })
   DEFINE_WHEN("The application is requested to terminate",

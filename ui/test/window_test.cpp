@@ -9,13 +9,20 @@ extern int g_delay;
 
 /* *INDENT-OFF* */
 
+/* The task queue for the test-cases to run the application object on the
+ * main thread.  */
+extern mud::core::simple_task_queue g_app_queue;
+
 CONTEXT()
     // Constructor, executed before each scenario run
     context()
     {
-        future_app = std::async(std::launch::async, []() {
-            mud::ui::application::instance().loop();
+        // Schedule the application to run the loop on the main thread
+        mud::core::simple_task tsk([]() {
+              mud::ui::application::instance().loop();
         });
+        future_app = tsk.get_future();
+        g_app_queue.push(std::move(tsk));
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 

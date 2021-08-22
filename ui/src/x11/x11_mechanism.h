@@ -14,17 +14,19 @@ mud::core::handle::type_t::X11,
     None>
     x11_handle;
 
-class x11_mechanism: public mud::event::event_mechanism
+namespace x11 {
+
+class mechanism: public mud::event::event_mechanism
 {
 public:
     /* Type definition to the handler type */
     typedef std::function<void(void)> event_handler;
 
     /* Constructor */
-    x11_mechanism(const std::shared_ptr<mud::core::simple_task_queue>& queue);
+    mechanism(const std::shared_ptr<mud::core::simple_task_queue>& queue);
 
     /* Destructor */
-    ~x11_mechanism();
+    ~mechanism();
 
     /* Register handler */
     void register_handler(mud::event::event&& event) override;
@@ -37,6 +39,9 @@ public:
 
     /* Terminate */
     void terminate() override;
+
+    /* Detachable */
+    virtual bool detachable() const override;
 
 private:
     /* Thread function */
@@ -55,12 +60,13 @@ private:
 
     /* UI thread */
     std::atomic_bool _running;
-    std::thread _thread;
     std::promise<void> _promise;
     std::shared_future<void> _future;
     mud::core::select_handle::signal _terminate_signal;
     std::map<int, std::function<void(void)>> _handlers;
 };
+
+} // namespace x11
 
 END_MUDLIB_UI_NS
 
