@@ -97,13 +97,9 @@ cocoa::mechanism::loop()
             terminate_signal_handler();
         }
 
-        // Wait(blocking) for NSEvents and process them
+        // Process UI Events
         NSEvent* event;
-        event = [NSApp  nextEventMatchingMask: NSEventMaskAny
-                        untilDate: [NSDate distantFuture]
-                        inMode: NSDefaultRunLoopMode
-                        dequeue: NO];
-        while (event != nullptr)
+        do
         {
             event = [NSApp  nextEventMatchingMask: NSEventMaskAny
                             untilDate: [NSDate distantPast]
@@ -111,6 +107,14 @@ cocoa::mechanism::loop()
                             dequeue: YES];
             [NSApp sendEvent: event];
         }
+        while (event != nullptr);
+
+        // Use the UI run-loop to block on any event (including custom ones
+        // from the task-queue and the termination signal.
+        event = [NSApp  nextEventMatchingMask: NSEventMaskAny
+                        untilDate: [NSDate distantFuture]
+                        inMode: NSDefaultRunLoopMode
+                        dequeue: NO];
     }
     [pool release];
 

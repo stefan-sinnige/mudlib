@@ -2,9 +2,11 @@
 #define _MUDLIB_CORE_TASK_H_
 
 #include <chrono>
+#include <condition_variable>
 #include <exception>
 #include <future>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <thread>
 #include <mud/core/ns.h>
@@ -301,6 +303,60 @@ task<void(Args...)>::valid() const
 typedef task<void(void)> simple_task;
 
 /**
+ * @brief Synchronisation between the task-queue and its workers is controlled
+ * by a condition variable with two flags. One flag to indicate that there is
+ * data available in the queue and another one to indicate that the workers
+ * are requested to terminate.
+ */
+
+typedef struct task_queue_synchronisation
+{
+    /**
+     * @brief Create a synchronisation object that is initiated.
+     */
+    task_queue_synchronisation() {
+        _available = false;
+        _terminate = false;
+    }
+
+    /**
+     * @brief Destruct a synchronisation object.
+     */
+    ~task_queue_synchronisation() = default;
+
+    /**
+     * @brief Initiate the synchronisation by resetting the termination flag.
+     */
+    void
+    initiate() {
+        std::lock_guard<std::mutex> lock(_cv_lock);
+        _terminate = false;
+    }
+
+    /**
+     * @brief Request all workers to terminate
+     */
+    void
+    terminate() {
+        std::lock_guard<std::mutex> lock(_cv_lock);
+        _terminate = true;
+        _cv.notify_all();
+    }
+
+    /** The condition variable */
+    std::condition_variable _cv;
+
+    /** The mutex associated with the condition variable */
+    std::mutex _cv_lock;
+
+    /** The flag to indicate there is are tasks available in the queue. */
+    bool _available;
+
+    /** The flag to indicate that the workers are requested to terminate. */
+    bool _terminate;
+} task_queue_synchronisation;
+
+/**
  * @brief A queue of tasks that can be accessed asynchroneously. The queue can
  * be shared (e.g. through a @c shared_ptr) with mutlitple threads who can
  * either push new tasks or pop tasks from the queue.
@@ -330,12 +386,31 @@ public:
     void push(task_type&& tsk);
 
     /**
-     * @brief Try to pop a task from the queue.
+     * @brief Pop a task off the queue if one is available.
+     * @param tsk [out] The task if it has been popped.
+     * @return True if a task has been popped. The task is available in @c tsk.
+     */
+    bool pop(task_type& tsk);
+
+    /**
+     * @brief Wait until a task is available and pop it off the queue.
+     * @param tsk [out] The task if it has been popped.
+     * @return True if a task has been popped. The task is available in @c tsk.
+     *
+     * If there is no task available on the queue, wait until one becomes
+     * available, or until the synchronsiation object is flagged to terminate.
      *
      * If a task has been popped, it is moved to the @tsk object and @c true
      * is returned. If there is no task available, @c false is returned.
      */
-    bool pop(task_type& tsk);
+    bool wait_pop(task_type& tsk);
+
+    /**
+     * @brief The reference to the synchronisation object which can be used
+     * by consumers of the tasks to be notified when data is available or
+     * by requesting waiting consumers to terminate.
+     */
+    const std::shared_ptr<task_queue_synchronisation>& synchronisation();
 
     /**
      * Non-copyable.
@@ -350,39 +425,77 @@ public:
     task_queue& operator=(task_queue&&) = delete;
 
 private:
+    /** The task queue and its mutext protecting its contents */
     std::queue<task_type> _tasks;
-    std::mutex _lock;
+
+    /** The task queue synchronisation object */
+    std::shared_ptr<task_queue_synchronisation> _sync;
 };
 
 template <typename Task>
 task_queue<Task>::task_queue()
+    : _sync(new task_queue_synchronisation)
 {
 }
 
 template <typename Task>
 task_queue<Task>::~task_queue()
 {
+    _sync->terminate();
 }
 
 template <typename Task>
 void
 task_queue<Task>::push(task_type&& tsk)
 {
-    std::lock_guard<std::mutex> lock(_lock);
+    std::lock_guard<std::mutex> lock(_sync->_cv_lock);
     _tasks.push(std::move(tsk));
+    _sync->_available = true;
+    _sync->_cv.notify_one();
 }
 
 template <typename Task>
 bool
 task_queue<Task>::pop(task_type& tsk)
 {
-    std::lock_guard<std::mutex> lock(_lock);
-    if (_tasks.empty()) {
-        return false;
+    std::lock_guard<std::mutex> lock(_sync->_cv_lock);
+    bool popped = false;
+    if (!_tasks.empty()) {
+        tsk = std::move(_tasks.front());
+        _tasks.pop();
+        popped = true;
     }
-    tsk = std::move(_tasks.front());
-    _tasks.pop();
-    return true;
+    _sync->_available = !_tasks.empty();
+    return popped;
+}
+
+template <typename Task>
+bool
+task_queue<Task>::wait_pop(task_type& tsk)
+{
+    std::unique_lock<std::mutex> lock(_sync->_cv_lock);
+    _sync->_cv.wait(lock, [this] {
+        return _sync->_available || _sync->_terminate;
+    });
+    bool popped = false;
+    if (!_sync->_terminate)
+    {
+        if (!_tasks.empty()) {
+            tsk = std::move(_tasks.front());
+            _tasks.pop();
+            popped = true;
+        }
+    }
+    _sync->_available = !_tasks.empty();
+    lock.unlock();
+    return popped;
+}
+
+template <typename Task>
+const std::shared_ptr<task_queue_synchronisation>&
+task_queue<Task>::synchronisation()
+{
+    return _sync;
 }
 
 /**
@@ -427,11 +540,6 @@ public:
     virtual ~task_worker();
 
     /**
-     * @brief Request the task worker to stop.
-     */
-    void stop();
-
-    /**
      * Non-copyable.
      */
     task_worker(const task_worker&) = delete;
@@ -443,22 +551,22 @@ private:
      */
     void run();
 
+    /** The task queue */
     std::shared_ptr<task_queue<task_type>> _queue;
-    std::atomic_bool _stop;
 };
 
 template <typename Task>
 task_worker<Task>::task_worker(const std::shared_ptr<task_queue<task_type>>&
         queue)
     : std::thread(&task_worker::run, this),
-      _queue(queue), _stop(false)
+      _queue(queue)
 {
 }
 
 template <typename Task>
 task_worker<Task>::task_worker(task_worker&& rhs)
     : std::thread(std::move((std::thread&&)rhs)),
-      _queue(std::move(rhs._queue)), _stop(rhs._stop)
+      _queue(std::move(rhs._queue))
 {
 }
 
@@ -468,13 +576,11 @@ task_worker<Task>::operator=(task_worker&& rhs)
 {
     std::thread::operator=(std::move((std::thread&&)rhs));
     _queue = std::move(rhs._queue);
-    _stop = rhs._stop;
 }
 
 template <typename Task>
 task_worker<Task>::~task_worker()
 {
-    stop();
     if (joinable()) {
         join();
     }
@@ -482,25 +588,14 @@ task_worker<Task>::~task_worker()
 
 template <typename Task>
 void
-task_worker<Task>::stop()
-{
-    _stop = true;
-}
-
-template <typename Task>
-void
 task_worker<Task>::run()
 {
-    while (!_stop)
+    while (!_queue->synchronisation()->_terminate)
     {
         task_type tsk;
-        if (_queue->pop(tsk))
+        if (_queue->wait_pop(tsk))
         {
             tsk();
-        }
-        else
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 }
@@ -529,20 +624,25 @@ public:
     task_worker_pool(
             const std::shared_ptr<task_queue<task_type>>& queue,
             size_t nr_workers = std::thread::hardware_concurrency());
+
+    /** Destructor */
     virtual ~task_worker_pool();
 
     /**
-     * Start all the task workers in the pool.
+     * @brief Start all the task workers in the pool.
      */
-    void start();
+    void initiate();
 
     /**
-     * Request all workers to stop.
+     * @brief Terminate all the task workers in the pool by terminating the
+     * associated task queue.
      */
-    void stop();
+    void terminate();
 
     /**
-     * Wait for the pool workers to have stopped.
+     * @brief Wait for all the pool workers to have terminated.
+     *
+     * The termination signal is
      */
     void wait();
 
@@ -559,6 +659,7 @@ public:
     task_worker_pool& operator=(task_worker_pool&&) = delete;
 
 private:
+    /** The task workers and the queue */
     size_t _nr_workers;
     std::vector<std::unique_ptr<task_worker<task_type>>> _pool;
     std::shared_ptr<task_queue<task_type>> _queue;
@@ -575,18 +676,21 @@ task_worker_pool<Task>::task_worker_pool(
 template <typename Task>
 task_worker_pool<Task>::~task_worker_pool()
 {
-    stop();
+    terminate();
     wait();
 }
 
 template <typename Task>
 void
-task_worker_pool<Task>::start()
+task_worker_pool<Task>::initiate()
 {
     // Do nothing if already started.
     if (_pool.size() > 0) {
         return;
     }
+
+    // Ensure the synchronisation is reset
+    _queue->synchronisation()->initiate();
 
     // Create task-worker threads
     try
@@ -599,19 +703,16 @@ task_worker_pool<Task>::start()
     }
     catch (...)
     {
-        stop();
+        terminate();
         throw;
     }
 }
 
 template <typename Task>
 void
-task_worker_pool<Task>::stop()
+task_worker_pool<Task>::terminate()
 {
-    for (auto& worker: _pool)
-    {
-        worker->stop();
-    }
+    _queue->synchronisation()->terminate();
 }
 
 template <typename Task>

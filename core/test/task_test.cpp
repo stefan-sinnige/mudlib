@@ -14,6 +14,9 @@ CONTEXT()
 
     /* Destructor after each scenario */
     ~context() {
+        if (queue != nullptr) {
+            queue->synchronisation()->terminate();
+        }
     }
 
     /* Operating system resource */
@@ -84,7 +87,17 @@ FEATURE("Task")
         ctx.queue = std::make_unique<mud::core::simple_task_queue>();
         ctx.pool = std::make_unique<mud::core::simple_task_worker_pool>(
                 ctx.queue, 4);
-        ctx.pool->start();
+        ctx.pool->initiate();
+      })
+    DEFINE_GIVEN ("A restarted task worker pool",
+      [](context& ctx){
+        ctx.queue = std::make_unique<mud::core::simple_task_queue>();
+        ctx.pool = std::make_unique<mud::core::simple_task_worker_pool>(
+                ctx.queue, 4);
+        ctx.pool->initiate();
+        ctx.pool->terminate();
+        ctx.pool->wait();
+        ctx.pool->initiate();
       })
     DEFINE_WHEN ("The task is executed with arguments",
       [](context& ctx) {
@@ -216,7 +229,7 @@ FEATURE("Task")
     WHEN ("The task is pushed")
     THEN ("The task can be popped")
 
-  SCENARIO("Task Worker type traits")
+  SCENARIO("Task worker type traits")
     GIVEN("A task worker type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
     THEN ("The type is not default-constructible",
@@ -245,12 +258,12 @@ FEATURE("Task")
                   mud::core::simple_task_worker>::value);
         })
 
-  SCENARIO("Task worker stops on request")
+  SCENARIO("Task worker terminates on request")
     GIVEN("A task worker")
-    WHEN ("The task worker is requested to stop", [](context& ctx) {
-            ctx.worker->stop();
+    WHEN ("The task worker is requested to terminate", [](context& ctx) {
+            ctx.queue->synchronisation()->terminate();
         })
-    THEN ("The task worker is stopped", [](context& ctx) {
+    THEN ("The task worker is terminated", [](context& ctx) {
             ctx.worker->join();
         })
 
@@ -260,7 +273,7 @@ FEATURE("Task")
     WHEN ("The task is pushed")
     THEN ("The future is signaled")
 
-  SCENARIO("Task Worker Pool type traits")
+  SCENARIO("Task worker pool type traits")
     GIVEN("A task worker pool type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
     THEN ("The type is not default-constructible",
@@ -291,6 +304,12 @@ FEATURE("Task")
 
   SCENARIO("Task worker pool executes a queued task")
     GIVEN("A task worker pool")
+      AND("A simple task")
+    WHEN ("The task is pushed")
+    THEN ("The future is signaled")
+
+  SCENARIO("Restarted task worker pool executes a queued task")
+    GIVEN("A restarted task worker pool")
       AND("A simple task")
     WHEN ("The task is pushed")
     THEN ("The future is signaled")

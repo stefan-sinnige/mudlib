@@ -45,7 +45,6 @@ window::initialise()
     if (!wnd) {
         throw std::runtime_error("cannot create window");
     }
-    [wnd setDelegate: NSApp];
     [wnd makeKeyAndOrderFront: wnd];
 }
 
