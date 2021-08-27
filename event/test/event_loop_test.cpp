@@ -68,6 +68,20 @@ FEATURE("Event loop")
           /* Give it some time to start-up */
           std::this_thread::sleep_for(ctx.timeout);
       })
+  DEFINE_GIVEN("A restarted running event loop",
+      [](context& ctx) {
+          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+              ctx.event_loop.add_mechanism(mud::core::handle::type_t::__TEST);
+              ctx.event_loop.loop();
+          });
+          std::this_thread::sleep_for(ctx.timeout);
+          ctx.event_loop.terminate();
+          ctx.future_loop.wait();
+          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+              ctx.event_loop.loop();
+          });
+          std::this_thread::sleep_for(ctx.timeout);
+      })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
               ctx.event_loop.register_handler(std::move(mud::event::event(
@@ -79,7 +93,7 @@ FEATURE("Event loop")
                     ctx.promise_task.set_value();
                     return mud::event::event::return_type::CONTINUE;
                 })));
-          })
+      })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
               ctx.event_loop.register_handler(std::move(mud::event::event(
@@ -91,15 +105,27 @@ FEATURE("Event loop")
                     ctx.promise_task.set_value();
                     return mud::event::event::return_type::CONTINUE;
                 })));
-          })
+      })
   DEFINE_WHEN("The event is triggered",
       [](context& ctx) {
               ctx.itc.write('A');
-          })
+      })
   DEFINE_WHEN ("The event loop is requested to terminate",
         [](context& ctx) {
             ctx.event_loop.terminate();
-        })
+      })
+  DEFINE_WHEN ("The event loop is terminated",
+      [](context& ctx) {
+          ctx.event_loop.terminate();
+          ctx.future_loop.wait();
+      })
+  DEFINE_WHEN ("The event loop is restarted",
+      [](context& ctx) {
+          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+              ctx.event_loop.loop();
+          });
+          std::this_thread::sleep_for(ctx.timeout);
+      })
   DEFINE_THEN("The event loop is terminated",
       [](context& ctx) {
           ctx.future_loop.wait();
@@ -108,12 +134,12 @@ FEATURE("Event loop")
       [](context& ctx) {
           std::this_thread::sleep_for(ctx.timeout);
           ASSERT(0, ctx.calls);
-     })
+      })
   DEFINE_THEN("The event handler is called exactly once",
       [](context& ctx) {
           ctx.future_task.wait();
           ASSERT(1, ctx.calls);
-     })
+      })
   DEFINE_THEN("The other event handler is called exactly once",
       [](context& ctx) {
           ctx.future_task.wait();
@@ -197,18 +223,8 @@ FEATURE("Event loop")
 
   SCENARIO("Event loop can restart after being terminated")
     GIVEN("A running event loop")
-    WHEN ("The event loop is terminated",
-      [](context& ctx) {
-          ctx.event_loop.terminate();
-          ctx.future_loop.wait();
-      })
-     AND ("The event loop is restarted",
-      [](context& ctx) {
-          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
-              ctx.event_loop.loop();
-          });
-          std::this_thread::sleep_for(ctx.timeout);
-      })
+    WHEN ("The event loop is terminated")
+     AND ("The event loop is restarted")
     THEN ("The event loop is running",
       [](context& ctx) {
           std::future_status status = ctx.future_loop.wait_for(ctx.timeout);
@@ -222,6 +238,12 @@ FEATURE("Event loop")
       [](context& ctx) {
         ASSERT_THROW(std::invalid_argument, ctx.event_loop.loop());
       })
+
+  SCENARIO("Event loop that is restarted calls an event handler when triggered")
+    GIVEN("A restarted running event loop")
+     AND ("A registered handler that handles an event")
+    WHEN ("The event is triggered")
+    THEN ("The event handler is called exactly once")
 /*
   SCENARIO("Registering an event for a mechanism that is not loaded fails")
     GIVEN("A running event loop")

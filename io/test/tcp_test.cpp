@@ -1,6 +1,7 @@
 #include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
+#include <atomic>
 #include <future>
 #include <memory>
 #include <type_traits>
@@ -35,8 +36,8 @@ CONTEXT()
     mud::io::tcp::socket client;
     mud::io::tcp::acceptor acceptor;
     mud::io::tcp::connector connector;
-    bool accepted;
-    bool connected;
+    std::atomic_bool accepted;
+    std::atomic_bool connected;
 END_CONTEXT()
 
 FEATURE("TCP sockets")
@@ -63,12 +64,13 @@ FEATURE("TCP sockets")
     })
   DEFINE_WHEN("And the TCP server accepts the connection",
     [](context& ctx){
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        while (!ctx.accepted);
+        while (!ctx.connected);
     })
   DEFINE_THEN("A connection is established",
     [](context& ctx){
-        ASSERT(true, ctx.accepted);
-        ASSERT(true, ctx.connected);
+        ASSERT(true, (bool)ctx.accepted);
+        ASSERT(true, (bool)ctx.connected);
     })
   END_DEFINES()
 

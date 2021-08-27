@@ -150,7 +150,7 @@ event_loop::impl::loop()
     }
 
     // Start the task workers in the pool
-    _pool.start();
+    _pool.initiate();
 
     // Start the loop on all detachable  mechanism
     mud::core::handle::type_t non_detachable = mud::core::handle::type_t::NONE;
@@ -195,7 +195,7 @@ event_loop::impl::terminate()
     std::lock_guard<std::mutex> lock(_lock);
 
     // Stop the task workers in the pool
-    _pool.stop();
+    _pool.terminate();
 
     // request to terminate  all mechanism.
     for (auto& mech: _mechanisms)

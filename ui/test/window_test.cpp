@@ -23,7 +23,9 @@ CONTEXT()
         });
         future_app = tsk.get_future();
         g_app_queue.push(std::move(tsk));
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+        // Can we do the following better?
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     // Destructor, executed after each scenario run

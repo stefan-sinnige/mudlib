@@ -353,6 +353,7 @@ tcp::acceptor::~acceptor()
 void
 tcp::acceptor::open(const endpoint& endpoint)
 {
+
     /* Bind the socket to the endpoint. */
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
