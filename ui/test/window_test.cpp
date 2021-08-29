@@ -21,11 +21,7 @@ CONTEXT()
         mud::core::simple_task tsk([]() {
               mud::ui::application::instance().loop();
         });
-        future_app = tsk.get_future();
         g_app_queue.push(std::move(tsk));
-
-        // Can we do the following better?
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     // Destructor, executed after each scenario run
@@ -34,15 +30,12 @@ CONTEXT()
         {
             std::this_thread::sleep_for(std::chrono::seconds(g_delay));
         }
-        mud::ui::application::instance().terminate();
-        if (future_app.valid())
+        auto future = mud::ui::application::instance().terminate();
+        if (future.valid())
         {
-            future_app.wait();
+            future.wait();
         }
     }
-
-    /* The status of the application */
-    std::future<void> future_app;
 
     /* The status of the window */
     std::future<void> future_window;

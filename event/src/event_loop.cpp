@@ -52,7 +52,7 @@ public:
     /*
      * Request to terminate the run @c loop.
      */
-    void terminate();
+    std::shared_future<void> terminate();
 
     /**
      * Non-copyable
@@ -79,12 +79,21 @@ private:
 
     /** Flag to indicate that the loop is running */
     std::atomic_bool _running;
+
+    /** The promise and sahred-future to set the result of the loop */
+    std::promise<void> _promise;
+    std::shared_future<void> _future;
 };
 
 event_loop::impl::impl()
     : _queue(std::make_shared<mud::core::simple_task_queue>()),
       _pool(_queue, 2), _running(false)
 {
+    /* Get the future from the promise such that it can easily be shared
+     * with multiple threads that terminate the loop, whitout raising a
+     * future_already_retrieved exception. */
+    _future = _promise.get_future();
+
     /* Always load the select mechanism which is used by the self-signalling
      * resource. This is either a UDP socket connection or an unnamed pipe -
      * both of which are handled through the SELECT mechanism. */
@@ -93,8 +102,6 @@ event_loop::impl::impl()
 
 event_loop::impl::~impl()
 {
-    /* Make sure the loop is terminated */
-    terminate();
 }
 
 void
@@ -187,9 +194,12 @@ event_loop::impl::loop()
 
     // Wait for the pool to stop
     _pool.wait();
+
+    // Set the promise to indiate we've stopped
+    _promise.set_value();
 }
 
-void
+std::shared_future<void>
 event_loop::impl::terminate()
 {
     std::lock_guard<std::mutex> lock(_lock);
@@ -203,6 +213,8 @@ event_loop::impl::terminate()
         mech.second->terminate();
     }
     _running = false;
+
+    return _future;
 }
 
 void
@@ -249,10 +261,10 @@ event_loop::loop()
     _impl->loop();
 }
 
-void
+std::shared_future<void>
 event_loop::terminate()
 {
-    this->_impl->terminate();
+    return _impl->terminate();
 }
 
 /* static */ event_loop&

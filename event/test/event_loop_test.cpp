@@ -21,8 +21,8 @@ CONTEXT()
     /* Destructor after each scenario */
     ~context() {
         event_loop.terminate();
-        if (future_loop.valid()) {
-          std::future_status status = future_loop.wait_for(timeout);
+        if (future_thread.valid()) {
+          std::future_status status = future_thread.wait_for(timeout);
         }
     }
 
@@ -32,8 +32,11 @@ CONTEXT()
     /* The event loop */
     mud::event::event_loop event_loop;
 
+    /* The status of the thread running the event loop */
+    std::future<void> future_thread;
+
     /* The status of the event loop */
-    std::future<void> future_loop;
+    std::shared_future<void> future_loop;
 
     /* A handle for testing purposes (inter-thread communiation) */
     test_resource itc;
@@ -61,7 +64,7 @@ FEATURE("Event loop")
   DEFINE_GIVEN("A running event loop",
       [](context& ctx) {
           /* Run the event loop in an asynchronous operation. */
-          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+          ctx.future_thread = std::async(std::launch::async, [&ctx]() {
               ctx.event_loop.add_mechanism(mud::core::handle::type_t::__TEST);
               ctx.event_loop.loop();
           });
@@ -70,14 +73,14 @@ FEATURE("Event loop")
       })
   DEFINE_GIVEN("A restarted running event loop",
       [](context& ctx) {
-          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+          ctx.future_thread = std::async(std::launch::async, [&ctx]() {
               ctx.event_loop.add_mechanism(mud::core::handle::type_t::__TEST);
               ctx.event_loop.loop();
           });
           std::this_thread::sleep_for(ctx.timeout);
           ctx.event_loop.terminate();
-          ctx.future_loop.wait();
-          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+          ctx.future_thread.wait();
+          ctx.future_thread = std::async(std::launch::async, [&ctx]() {
               ctx.event_loop.loop();
           });
           std::this_thread::sleep_for(ctx.timeout);
@@ -112,16 +115,16 @@ FEATURE("Event loop")
       })
   DEFINE_WHEN ("The event loop is requested to terminate",
         [](context& ctx) {
-            ctx.event_loop.terminate();
+            ctx.future_loop = ctx.event_loop.terminate();
       })
   DEFINE_WHEN ("The event loop is terminated",
       [](context& ctx) {
-          ctx.event_loop.terminate();
+          ctx.future_loop = ctx.event_loop.terminate();
           ctx.future_loop.wait();
       })
   DEFINE_WHEN ("The event loop is restarted",
       [](context& ctx) {
-          ctx.future_loop = std::async(std::launch::async, [&ctx]() {
+          ctx.future_thread = std::async(std::launch::async, [&ctx]() {
               ctx.event_loop.loop();
           });
           std::this_thread::sleep_for(ctx.timeout);
@@ -172,6 +175,14 @@ FEATURE("Event loop")
                   mud::event::event_loop>::value);
         })
 
+  SCENARIO("A stopped event loop returns an invalid termination future")
+    GIVEN("A stopped event loop", [](context&){})
+    WHEN ("The event loop is terminated")
+    THEN ("The termination future is invalid",
+      [](context& ctx) {
+        ASSERT(false, ctx.future_loop.valid());
+      })
+
   SCENARIO("Event loop terminates by request")
     GIVEN("A running event loop")
     WHEN ("The event loop is requested to terminate")
@@ -212,7 +223,7 @@ FEATURE("Event loop")
               [&ctx]() {
                 ctx.itc.read();
                 ++ctx.calls;
-                ctx.event_loop.terminate();
+                ctx.future_loop = ctx.event_loop.terminate();
                 ctx.promise_task.set_value();
                 return mud::event::event::return_type::REMOVE;
               })));
@@ -227,7 +238,7 @@ FEATURE("Event loop")
      AND ("The event loop is restarted")
     THEN ("The event loop is running",
       [](context& ctx) {
-          std::future_status status = ctx.future_loop.wait_for(ctx.timeout);
+          std::future_status status = ctx.future_thread.wait_for(ctx.timeout);
           ASSERT(status, std::future_status::timeout);
       })
 

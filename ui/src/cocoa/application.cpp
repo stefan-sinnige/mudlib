@@ -20,10 +20,10 @@ application::loop()
     mud::event::event_loop::global().loop();
 }
 
-void
+std::shared_future<void>
 application::terminate()
 {
-    mud::event::event_loop::global().terminate();
+    return mud::event::event_loop::global().terminate();
 }
 
 void

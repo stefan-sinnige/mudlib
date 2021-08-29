@@ -1,3 +1,4 @@
+#include <mud/core/handle.h>
 #include <mud/ui/task.h>
 #include "cocoa/cocoa_application.h"
 
@@ -53,7 +54,7 @@ task_queue::pop(task& tsk)
 mud::core::handle::signal&
 task_queue::available()
 {
-    static mud::core::atomic_bool_handle::signal _signal;
+    static mud::core::cocoa_handle::signal _signal;
     return _signal;
 }
 

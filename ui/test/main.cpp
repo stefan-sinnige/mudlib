@@ -101,7 +101,7 @@ main(int argc, char** argv)
     while (running)
     {
         mud::core::simple_task tsk;
-        if (g_app_queue.pop(tsk))
+        if (g_app_queue.wait_pop(tsk))
         {
             tsk();
         }

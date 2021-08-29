@@ -1,5 +1,5 @@
-#include "mud/core/handle.h"
-#include <windows.h>
+#include <mud/core/handle.h>
+#include "cocoa/cocoa_application.h"
 
 BEGIN_MUDLIB_CORE_NS
 
@@ -7,7 +7,7 @@ BEGIN_MUDLIB_CORE_NS
  * Implementation of a signalling resource.
  */
 template<>
-class windows_handle::signal::impl
+class cocoa_handle::signal::impl
 {
 public:
     /**
@@ -42,83 +42,75 @@ private:
 
 template<>
 void
-windows_handle::signal::impl_deleter::operator()(
+cocoa_handle::signal::impl_deleter::operator()(
         signal::impl* ptr) const
 {
     delete ptr;
 }
 
-windows_handle::signal::impl::impl()
+cocoa_handle::signal::impl::impl()
 {
-    // Create a manual reset event.
-    HANDLE handle = ::CreateEvent(nullptr, true, false, nullptr);
-
-    // Dave the handle
-    _handle = std::unique_ptr<mud::core::handle>(
-                    new mud::core::windows_handle(handle));
+    _handle = std::unique_ptr<mud::core::handle>(new cocoa_handle(nullptr));
 }
 
-windows_handle::signal::impl::~impl()
+cocoa_handle::signal::impl::~impl()
 {
-    if (_handle != nullptr)
-    {
-        ::CloseHandle(mud::core::internal_handle<HANDLE>(_handle));
-        _handle.reset(nullptr);
-    }
+    _handle.reset(nullptr);
 }
 
 const std::unique_ptr<mud::core::handle>&
-windows_handle::signal::impl::handle() const
+cocoa_handle::signal::impl::handle() const
 {
     return _handle;
 }
 
 void
-windows_handle::signal::impl::trigger()
+cocoa_handle::signal::impl::trigger()
 {
-    ::SetEvent(mud::core::internal_handle<HANDLE>(_handle));
+    mud::ui::cocoa::application::instance().wakeup();
 }
 
 bool
-windows_handle::signal::impl::capture()
+cocoa_handle::signal::impl::capture()
 {
-    ::ResetEvent(mud::core::internal_handle<HANDLE>(_handle));
-    // Cannot determine the current state
+    // Nothing to capture really. The trigger event is used to wake-up the
+    // application UI thread loop
     return true;
 }
 
 /** The explicit implementation for self signalling resources. */
 
 template<>
-windows_handle::signal::signal()
+cocoa_handle::signal::signal()
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
 template<>
-windows_handle::signal::~signal()
+cocoa_handle::signal::~signal()
 {
 }
 
 template<>
 const std::unique_ptr<mud::core::handle>&
-windows_handle::signal::handle() const
+cocoa_handle::signal::handle() const
 {
     return _impl->handle();
 }
 
 template<>
 void
-windows_handle::signal::trigger()
+cocoa_handle::signal::trigger()
 {
     _impl->trigger();
 }
 
 template<>
 bool
-windows_handle::signal::capture()
+cocoa_handle::signal::capture()
 {
     return _impl->capture();
 }
 
 END_MUDLIB_CORE_NS
+

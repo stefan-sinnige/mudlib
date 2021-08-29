@@ -30,7 +30,7 @@ public:
         W32HANDLE,      /*!< Windows @c HANDLE */
         W32WND,         /*!< Windows @c HWND */
         X11,            /*!< X11 handle */
-        COCOA,          /*!< X11 handle */
+        COCOA,          /*!< MacOS-X Cocoa Event handle */
         __TEST          /*!< Do not use, for testing purposes one */
     };
 
@@ -553,37 +553,58 @@ internal_handle(const std::unique_ptr<handle>& handle)
 /**
  * @brief: A handle to an atomic boolean state type.
  */
-typedef atomic_handle<handle::type_t::ATOMIC_BOOL, bool> atomic_bool_handle;
+typedef atomic_handle<
+handle::type_t::ATOMIC_BOOL, bool>
+atomic_bool_handle;
 template<> MUDLIB_CORE_API bool internal_handle<bool>(const
         std::unique_ptr<handle>&);
 
 /**
  * @brief: A handle to an @c select resource type.
  */
-typedef basic_handle<handle::type_t::SELECT, int, 0> select_handle;
+typedef basic_handle<
+handle::type_t::SELECT, int, 0>
+select_handle;
 template<> MUDLIB_CORE_API int internal_handle<int>(const
         std::unique_ptr<handle>&);
 
 #ifdef WINDOWS
     /**
-    * @brief: A handle to a windows @c HANDLE resource tpe.
+    * @brief: A handle to a windows @c HANDLE resource type.
     */
-    typedef basic_handle<handle::type_t::W32HANDLE, HANDLE, nullptr> windows_handle;
+    typedef basic_handle<
+    handle::type_t::W32HANDLE, HANDLE, nullptr>
+    windows_handle;
     template<> MUDLIB_CORE_API HANDLE internal_handle<HANDLE>
     (const std::unique_ptr<handle>&);
 
     /**
-    * @brief: A handle to a windows @c HHWND resource tpe.
+    * @brief: A handle to a windows @c HHWND resource type.
     */
-    typedef basic_handle<handle::type_t::W32WND, HWND, nullptr> win32_handle;
+    typedef basic_handle<
+    handle::type_t::W32WND, HWND, nullptr>
+    win32_handle;
     template<> MUDLIB_CORE_API HWND internal_handle<HWND>
     (const std::unique_ptr<handle>&);
+#endif
+
+#ifdef DARWIN
+    /**
+    * @brief: A dummy handle for a MacOSX UI loop wake-up trigger.
+    */
+    typedef mud::core::basic_handle<
+    mud::core::handle::type_t::COCOA,
+    void*,
+    nullptr>
+    cocoa_handle;
 #endif
 
 /**
  * @brief: A handle to an @c test resource type.
  */
-typedef basic_handle<handle::type_t::__TEST, int, 0> __test_handle;
+typedef basic_handle<
+handle::type_t::__TEST, int, 0>
+__test_handle;
 template<> MUDLIB_CORE_API int internal_handle<int>(const
         std::unique_ptr<handle>&);
 
