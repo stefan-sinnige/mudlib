@@ -91,11 +91,13 @@ public:
     virtual void loop();
 
     /*
-     * Request to terminate the run @c loop.
+     * @brief Request to terminate the run @c loop.
+     * @return The future object returning the result of the @c loop. This
+     * object can be used to wait upon the end of the running of the loop.
      *
-     * This is a thread-safe operation.
+     # @note This is a thread-safe operation.
      */
-    virtual void terminate();
+    virtual std::shared_future<void> terminate();
 
     /**
      * Non-copyable

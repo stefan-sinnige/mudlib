@@ -94,6 +94,9 @@ cocoa::mechanism::loop()
         // Check for termination
         if (_terminate_signal.capture())
         {
+            if (!_running)
+            {
+            }
             terminate_signal_handler();
         }
 

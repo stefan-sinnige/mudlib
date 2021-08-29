@@ -2,6 +2,7 @@
 #define _MUDLIB_UI_APPLICATION_H_
 
 #include <string>
+#include <future>
 #include <mud/ui/ns.h>
 #include <mud/ui/task.h>
 
@@ -44,8 +45,12 @@ public:
 
     /**
      * @brief Request to terminate the application.
+     * @return The future object returning the result of the @c loop. This
+     * object can be used to wait upon the end of the running of the loop.a
+     *
+     * @note This is a thread-safe operation.
      */
-    void terminate();
+    std::shared_future<void> terminate();
 
     /**
      * @brief Push a UI task to be executed.
