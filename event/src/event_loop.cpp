@@ -89,11 +89,6 @@ event_loop::impl::impl()
     : _queue(std::make_shared<mud::core::simple_task_queue>()),
       _pool(_queue, 2), _running(false)
 {
-    /* Get the future from the promise such that it can easily be shared
-     * with multiple threads that terminate the loop, whitout raising a
-     * future_already_retrieved exception. */
-    _future = _promise.get_future();
-
     /* Always load the select mechanism which is used by the self-signalling
      * resource. This is either a UDP socket connection or an unnamed pipe -
      * both of which are handled through the SELECT mechanism. */
@@ -155,6 +150,12 @@ event_loop::impl::loop()
     {
         assert_not_running();
     }
+
+    /* Get the future from a new promise such that it can easily be shared
+     * with multiple threads that terminate the loop, whitout raising a
+     * future_already_retrieved exception. */
+    _promise = std::promise<void>();
+    _future = _promise.get_future();
 
     // Start the task workers in the pool
     _pool.initiate();
