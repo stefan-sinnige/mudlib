@@ -20,9 +20,12 @@ CONTEXT()
 
     /* Destructor after each scenario */
     ~context() {
-        event_loop.terminate();
+        future_loop = event_loop.terminate();
+        if (future_loop.valid()) {
+            future_loop.wait();
+        }
         if (future_thread.valid()) {
-          std::future_status status = future_thread.wait_for(timeout);
+            future_thread.wait();
         }
     }
 
@@ -63,12 +66,10 @@ FEATURE("Event loop")
 
   DEFINE_GIVEN("A running event loop",
       [](context& ctx) {
-          /* Run the event loop in an asynchronous operation. */
           ctx.future_thread = std::async(std::launch::async, [&ctx]() {
               ctx.event_loop.add_mechanism(mud::core::handle::type_t::__TEST);
               ctx.event_loop.loop();
           });
-          /* Give it some time to start-up */
           std::this_thread::sleep_for(ctx.timeout);
       })
   DEFINE_GIVEN("A restarted running event loop",
@@ -78,7 +79,10 @@ FEATURE("Event loop")
               ctx.event_loop.loop();
           });
           std::this_thread::sleep_for(ctx.timeout);
-          ctx.event_loop.terminate();
+          ctx.future_loop = ctx.event_loop.terminate();
+          ASSERT(true, ctx.future_loop.valid());
+          ctx.future_loop.wait();
+          ASSERT(true, ctx.future_thread.valid());
           ctx.future_thread.wait();
           ctx.future_thread = std::async(std::launch::async, [&ctx]() {
               ctx.event_loop.loop();
@@ -87,40 +91,43 @@ FEATURE("Event loop")
       })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(std::move(mud::event::event(
-                ctx.itc.handle(),
-                mud::event::event::signal_type::READING,
-                [&ctx]() {
-                    ctx.ch = ctx.itc.read();
-                    ++ctx.calls;
-                    ctx.promise_task.set_value();
-                    return mud::event::event::return_type::CONTINUE;
-                })));
+          ctx.event_loop.register_handler(std::move(mud::event::event(
+          ctx.itc.handle(),
+          mud::event::event::signal_type::READING,
+              [&ctx]() {
+                  ctx.ch = ctx.itc.read();
+                  ++ctx.calls;
+                  ctx.promise_task.set_value();
+                  return mud::event::event::return_type::CONTINUE;
+          })));
       })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
-              ctx.event_loop.register_handler(std::move(mud::event::event(
-                ctx.itc.handle(),
-                mud::event::event::signal_type::READING,
-                [&ctx]() {
-                    ctx.ch = ctx.itc.read();
-                    ++ctx.other_calls;
-                    ctx.promise_task.set_value();
-                    return mud::event::event::return_type::CONTINUE;
-                })));
+          ctx.event_loop.register_handler(std::move(mud::event::event(
+          ctx.itc.handle(),
+          mud::event::event::signal_type::READING,
+              [&ctx]() {
+                  ctx.ch = ctx.itc.read();
+                  ++ctx.other_calls;
+                  ctx.promise_task.set_value();
+                  return mud::event::event::return_type::CONTINUE;
+          })));
       })
   DEFINE_WHEN("The event is triggered",
       [](context& ctx) {
-              ctx.itc.write('A');
+          ctx.itc.write('A');
       })
   DEFINE_WHEN ("The event loop is requested to terminate",
         [](context& ctx) {
-            ctx.future_loop = ctx.event_loop.terminate();
+          ctx.future_loop = ctx.event_loop.terminate();
       })
   DEFINE_WHEN ("The event loop is terminated",
       [](context& ctx) {
           ctx.future_loop = ctx.event_loop.terminate();
+          ASSERT(true, ctx.future_loop.valid());
           ctx.future_loop.wait();
+          ASSERT(true, ctx.future_thread.valid());
+          ctx.future_thread.wait();
       })
   DEFINE_WHEN ("The event loop is restarted",
       [](context& ctx) {
@@ -131,7 +138,10 @@ FEATURE("Event loop")
       })
   DEFINE_THEN("The event loop is terminated",
       [](context& ctx) {
+          ASSERT(true, ctx.future_loop.valid());
           ctx.future_loop.wait();
+          ASSERT(true, ctx.future_thread.valid());
+          ctx.future_thread.wait();
       })
   DEFINE_THEN("The event handler is not called",
       [](context& ctx) {
@@ -140,11 +150,13 @@ FEATURE("Event loop")
       })
   DEFINE_THEN("The event handler is called exactly once",
       [](context& ctx) {
+          ASSERT(true, ctx.future_task.valid());
           ctx.future_task.wait();
           ASSERT(1, ctx.calls);
       })
   DEFINE_THEN("The other event handler is called exactly once",
       [](context& ctx) {
+          ASSERT(true, ctx.future_task.valid());
           ctx.future_task.wait();
           ASSERT(1, ctx.other_calls);
      })
@@ -177,7 +189,7 @@ FEATURE("Event loop")
 
   SCENARIO("A stopped event loop returns an invalid termination future")
     GIVEN("A stopped event loop", [](context&){})
-    WHEN ("The event loop is terminated")
+    WHEN ("The event loop is requested to terminate")
     THEN ("The termination future is invalid",
       [](context& ctx) {
         ASSERT(false, ctx.future_loop.valid());
@@ -238,6 +250,7 @@ FEATURE("Event loop")
      AND ("The event loop is restarted")
     THEN ("The event loop is running",
       [](context& ctx) {
+          ASSERT(true, ctx.future_thread.valid());
           std::future_status status = ctx.future_thread.wait_for(ctx.timeout);
           ASSERT(status, std::future_status::timeout);
       })

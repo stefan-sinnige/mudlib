@@ -49,7 +49,7 @@ public:
  * A queue to hold UI tasks. There can only be a single instance of a UI
  * task_queue.
  */
-class MUDLIB_UI_API task_queue: public mud::core::task_queue<task>
+class MUDLIB_UI_API task_queue: public mud::core::simple_task_queue
 {
 public:
     /**
