@@ -311,7 +311,7 @@ class atomic_handle: public handle
 public:
     typedef AtomicType atomic_type;
 
-    class MUDLIB_CORE_API signal: public handle::signal
+    class signal: public handle::signal
     {
     public:
         /**
