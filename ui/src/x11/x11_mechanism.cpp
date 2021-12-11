@@ -1,24 +1,23 @@
 #include "x11/x11_mechanism.h"
-#include "x11/x11_application.h"
-#include "x11/x11_control.h"
-#include "x11/x11_event.h"
 #include "mud/ui/event.h"
 #include "mud/ui/exception.h"
 #include "mud/ui/task.h"
+#include "x11/x11_application.h"
+#include "x11/x11_control.h"
+#include "x11/x11_event.h"
 #include <memory>
 #include <sys/select.h>
 
 BEGIN_MUDLIB_UI_NS
 
-mud::event::event_mechanism_factory::registrar<
-mud::core::handle::type_t::X11,
-    x11::mechanism> _registrar;
+mud::event::event_mechanism_factory::registrar<mud::core::handle::type_t::X11,
+                                               x11::mechanism>
+    _registrar;
 
 x11::mechanism::mechanism(
-        const std::shared_ptr<mud::core::simple_task_queue>& queue)
-    : mud::event::event_mechanism(queue), _running(false)
-{
-}
+    const std::shared_ptr<mud::core::simple_task_queue>& queue)
+  : mud::event::event_mechanism(queue), _running(false)
+{}
 
 x11::mechanism::~mechanism()
 {
@@ -27,13 +26,11 @@ x11::mechanism::~mechanism()
 
 void
 x11::mechanism::register_handler(mud::event::event&& event)
-{
-}
+{}
 
 void
 x11::mechanism::deregister_handler(mud::event::event&& event)
-{
-}
+{}
 
 std::shared_future<void>
 x11::mechanism::initiate()
@@ -41,8 +38,7 @@ x11::mechanism::initiate()
     // As this mechanism is not-detachable, run it on the current thread and
     // only return after completion.
     bool was_running = _running.exchange(true);
-    if (was_running == false)
-    {
+    if (was_running == false) {
         loop();
         _promise = std::promise<void>();
         _future = _promise.get_future();
@@ -53,8 +49,7 @@ x11::mechanism::initiate()
 void
 x11::mechanism::terminate()
 {
-    if (_running.load() == true)
-    {
+    if (_running.load() == true) {
         _terminate_signal.trigger();
         _running.store(false);
     }
@@ -88,38 +83,33 @@ x11::mechanism::loop()
     setup();
 
     // Set-up the handles to listen to and their handlers to invoke.
+    _handlers[mud::core::internal_handle<int>(_terminate_signal.handle())] =
+        std::bind(&x11::mechanism::terminate_signal_handler, this);
     _handlers[mud::core::internal_handle<int>(
-                    _terminate_signal.handle())]
-        = std::bind(&x11::mechanism::terminate_signal_handler, this);
-    _handlers[mud::core::internal_handle<int>(
-                    task_queue::instance().available().handle())]
-        = std::bind(&x11::mechanism::task_queue_signal_handler, this);
-    _handlers[::XConnectionNumber(x11::application::instance().display().get())]
-        = std::bind(&x11::mechanism::display_signal_handler, this);
+        task_queue::instance().available().handle())] =
+        std::bind(&x11::mechanism::task_queue_signal_handler, this);
+    _handlers[::XConnectionNumber(
+        x11::application::instance().display().get())] =
+        std::bind(&x11::mechanism::display_signal_handler, this);
 
     // Use ::select to wait for all event.
-    while (_running)
-    {
+    while (_running) {
         // Set-up the select and wait until signalled.
         FD_ZERO(&readfds);
         int maxfd = -1;
-        for (auto& entry: _handlers)
-        {
+        for (auto& entry : _handlers) {
             FD_SET(entry.first, &readfds);
             if (maxfd < entry.first) {
                 maxfd = entry.first;
             }
         }
-        if (::select(maxfd+1, &readfds, nullptr, nullptr, nullptr) < 0)
-        {
+        if (::select(maxfd + 1, &readfds, nullptr, nullptr, nullptr) < 0) {
             throw std::system_error(errno, std::system_category(), "select");
         }
 
         // Invoke any signalled hander.
-        for (auto& entry: _handlers)
-        {
-            if (FD_ISSET(entry.first, &readfds))
-            {
+        for (auto& entry : _handlers) {
+            if (FD_ISSET(entry.first, &readfds)) {
                 entry.second();
             }
         }
@@ -150,8 +140,7 @@ x11::mechanism::task_queue_signal_handler()
 
     // If there is task in the queue, execute it
     task tsk;
-    if (task_queue::instance().pop(tsk))
-    {
+    if (task_queue::instance().pop(tsk)) {
         tsk();
     }
 }
@@ -160,23 +149,17 @@ void
 x11::mechanism::display_signal_handler()
 {
     // If there are pending XEvents, process them
-    while (::XPending(x11::application::instance().display().get()) > 0)
-    {
+    while (::XPending(x11::application::instance().display().get()) > 0) {
         XEvent x11_event;
         XNextEvent(x11::application::instance().display().get(), &x11_event);
         std::unique_ptr<event> event = event_factory(x11_event);
-        if (event != nullptr)
-        {
+        if (event != nullptr) {
             event->control().dispatch(*event);
-        }
-        else
-        {
+        } else {
         }
     }
-
 }
 
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

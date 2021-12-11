@@ -1,9 +1,9 @@
 #ifndef _MUDLIB_UI_TASK_H_
 #define _MUDLIB_UI_TASK_H_
 
-#include <mud/ui/ns.h>
 #include <mud/core/handle.h>
 #include <mud/core/task.h>
+#include <mud/ui/ns.h>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -14,7 +14,7 @@ BEGIN_MUDLIB_UI_NS
  * includes the creation of windows and wigets.
  *
  */
-class MUDLIB_UI_API task: public mud::core::simple_task
+class MUDLIB_UI_API task : public mud::core::simple_task
 {
 public:
     /**
@@ -49,7 +49,7 @@ public:
  * A queue to hold UI tasks. There can only be a single instance of a UI
  * task_queue.
  */
-class MUDLIB_UI_API task_queue: public mud::core::simple_task_queue
+class MUDLIB_UI_API task_queue : public mud::core::simple_task_queue
 {
 public:
     /**
@@ -95,4 +95,3 @@ END_MUDLIB_UI_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_UI_TASK_H_ */
-

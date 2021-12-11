@@ -1,17 +1,13 @@
 #include "mud/ui/application.h"
+#include "mud/event/event_loop.h"
 #include "mud/ui/control.h"
 #include "mud/ui/event.h"
-#include "mud/event/event_loop.h"
 
 BEGIN_MUDLIB_UI_NS
 
-application::application()
-{
-}
+application::application() {}
 
-application::~application()
-{
-}
+application::~application() {}
 
 void
 application::loop()
@@ -33,20 +29,16 @@ application::push(task&& tsk)
 
 void
 application::initialise()
-{
-}
+{}
 
 void
 application::finalise()
-{
-}
+{}
 
 std::future<void>
 application::inject(const mud::ui::event& event)
 {
-    mud::ui::task tsk([&event]() {
-        event.control().dispatch(event);
-    });
+    mud::ui::task tsk([&event]() { event.control().dispatch(event); });
 
     std::future<void> future = tsk.get_future();
     push(std::move(tsk));
@@ -56,4 +48,3 @@ application::inject(const mud::ui::event& event)
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

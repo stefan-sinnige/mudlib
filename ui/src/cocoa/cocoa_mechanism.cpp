@@ -1,4 +1,3 @@
-#include <Cocoa/Cocoa.h>
 #include "cocoa/cocoa_mechanism.h"
 #include "cocoa/cocoa_application.h"
 #include "cocoa/cocoa_event.h"
@@ -6,18 +5,18 @@
 #include "mud/ui/event.h"
 #include "mud/ui/exception.h"
 #include "mud/ui/task.h"
+#include <Cocoa/Cocoa.h>
 
 BEGIN_MUDLIB_UI_NS
 
-mud::event::event_mechanism_factory::registrar<
-mud::core::handle::type_t::COCOA,
-    cocoa::mechanism> _registrar;
+mud::event::event_mechanism_factory::registrar<mud::core::handle::type_t::COCOA,
+                                               cocoa::mechanism>
+    _registrar;
 
 cocoa::mechanism::mechanism(
-        const std::shared_ptr<mud::core::simple_task_queue>& queue)
-    : mud::event::event_mechanism(queue), _running(false)
-{
-}
+    const std::shared_ptr<mud::core::simple_task_queue>& queue)
+  : mud::event::event_mechanism(queue), _running(false)
+{}
 
 cocoa::mechanism::~mechanism()
 {
@@ -26,13 +25,11 @@ cocoa::mechanism::~mechanism()
 
 void
 cocoa::mechanism::register_handler(mud::event::event&& event)
-{
-}
+{}
 
 void
 cocoa::mechanism::deregister_handler(mud::event::event&& event)
-{
-}
+{}
 
 std::shared_future<void>
 cocoa::mechanism::initiate()
@@ -40,8 +37,7 @@ cocoa::mechanism::initiate()
     // As this mechanism is not-detachable, run it on the current thread and
     // only return after completion.
     bool was_running = _running.exchange(true);
-    if (was_running == false)
-    {
+    if (was_running == false) {
         loop();
         _promise = std::promise<void>();
         _future = _promise.get_future();
@@ -52,8 +48,7 @@ cocoa::mechanism::initiate()
 void
 cocoa::mechanism::terminate()
 {
-    if (_running.load() == true)
-    {
+    if (_running.load() == true) {
         _running.store(false);
         _terminate_signal.trigger();
         cocoa::application::instance().wakeup();
@@ -83,52 +78,44 @@ cocoa::mechanism::loop()
 {
     [NSApplication sharedApplication];
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    while (_running)
-    {
+    while (_running) {
         [pool release];
         pool = [[NSAutoreleasePool alloc] init];
 
         // Check for Task queue events
-        if (task_queue::instance().available().capture())
-        {
+        if (task_queue::instance().available().capture()) {
             task_queue_signal_handler();
         }
 
         // Check for termination
-        if (_terminate_signal.capture())
-        {
-            if (!_running)
-            {
+        if (_terminate_signal.capture()) {
+            if (!_running) {
             }
             terminate_signal_handler();
         }
 
         // Process UI Events
         NSEvent* cocoa_event;
-        do
-        {
-            cocoa_event = [NSApp  nextEventMatchingMask: NSEventMaskAny
-                                   untilDate: [NSDate distantPast]
-                                   inMode: NSDefaultRunLoopMode
-                                   dequeue: YES];
-            if (cocoa_event != nullptr)
-            {
+        do {
+            cocoa_event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                             untilDate:[NSDate distantPast]
+                                                inMode:NSDefaultRunLoopMode
+                                               dequeue:YES];
+            if (cocoa_event != nullptr) {
                 std::unique_ptr<event> event = event_factory(cocoa_event);
-                if (event != nullptr)
-                {
+                if (event != nullptr) {
                     event->control().dispatch(*event);
                 }
             }
-            [NSApp sendEvent: cocoa_event];
-        }
-        while (cocoa_event != nullptr);
+            [NSApp sendEvent:cocoa_event];
+        } while (cocoa_event != nullptr);
 
         // Use the UI run-loop to block on any event (including custom ones
         // from the task-queue and the termination signal.
-        cocoa_event = [NSApp  nextEventMatchingMask: NSEventMaskAny
-                               untilDate: [NSDate distantFuture]
-                               inMode: NSDefaultRunLoopMode
-                               dequeue: NO];
+        cocoa_event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                         untilDate:[NSDate distantFuture]
+                                            inMode:NSDefaultRunLoopMode
+                                           dequeue:NO];
     }
     [pool release];
 
@@ -147,18 +134,15 @@ void
 cocoa::mechanism::task_queue_signal_handler()
 {
     task tsk;
-    while (task_queue::instance().pop(tsk))
-    {
+    while (task_queue::instance().pop(tsk)) {
         tsk();
     }
 }
 
 void
 cocoa::mechanism::display_signal_handler()
-{
-}
+{}
 
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

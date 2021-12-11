@@ -1,10 +1,10 @@
 #ifndef _MUDLIB_IO_PIPE_H_
 #define _MUDLIB_IO_PIPE_H_
 
-#include <mud/io/ns.h>
-#include <mud/core/handle.h>
-#include <memory>
 #include <istream>
+#include <memory>
+#include <mud/core/handle.h>
+#include <mud/io/ns.h>
 #include <ostream>
 
 BEGIN_MUDLIB_IO_NS
@@ -73,7 +73,8 @@ private:
      * Platform specific implementation.
      */
     class impl;
-    struct impl_deleter {
+    struct impl_deleter
+    {
         void operator()(impl*) const;
     };
     std::unique_ptr<impl, impl_deleter> _impl;

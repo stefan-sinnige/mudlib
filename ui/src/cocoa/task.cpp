@@ -1,22 +1,16 @@
+#include "cocoa/cocoa_application.h"
 #include <mud/core/handle.h>
 #include <mud/ui/task.h>
-#include "cocoa/cocoa_application.h"
 
 BEGIN_MUDLIB_UI_NS
 
-task::task()
-{
-}
+task::task() {}
 
 task::task(mud::core::simple_task::function_type&& fn)
-    : mud::core::simple_task(std::move(fn))
-{
-}
+  : mud::core::simple_task(std::move(fn))
+{}
 
-task::task(task&& other)
-    : mud::core::simple_task(std::move(other))
-{
-}
+task::task(task&& other) : mud::core::simple_task(std::move(other)) {}
 
 task&
 task::operator=(task&& other)
@@ -25,17 +19,11 @@ task::operator=(task&& other)
     return *this;
 }
 
-task::~task()
-{
-}
+task::~task() {}
 
-task_queue::task_queue()
-{
-}
+task_queue::task_queue() {}
 
-task_queue::~task_queue()
-{
-}
+task_queue::~task_queue() {}
 
 void
 task_queue::push(task&& tsk)
@@ -69,4 +57,3 @@ task_queue::instance()
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

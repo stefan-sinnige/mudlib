@@ -3,10 +3,10 @@
 
 #include <atomic>
 #include <memory>
+#include <mud/core/ns.h>
 #include <sstream>
 #include <stdexcept>
 #include <typeinfo>
-#include <mud/core/ns.h>
 #if defined(WINDOWS) && defined(NATIVE)
     #include <windows.h>
 #endif
@@ -23,15 +23,16 @@ public:
      * @brief The underlying representation of the resource handle that is
      * associated to the event-loop mechanism.
      */
-    enum class type_t {
-        NONE,           /*!< Handle to represent an unknown type. */
-        ATOMIC_BOOL,    /*!< Handle to represent a boolean state */
-        SELECT,         /*!< Handle used with @c select mechanisms */
-        W32HANDLE,      /*!< Windows @c HANDLE */
-        W32WND,         /*!< Windows @c HWND */
-        X11,            /*!< X11 handle */
-        COCOA,          /*!< MacOS-X Cocoa Event handle */
-        __TEST          /*!< Do not use, for testing purposes one */
+    enum class type_t
+    {
+        NONE,        /*!< Handle to represent an unknown type. */
+        ATOMIC_BOOL, /*!< Handle to represent a boolean state */
+        SELECT,      /*!< Handle used with @c select mechanisms */
+        W32HANDLE,   /*!< Windows @c HANDLE */
+        W32WND,      /*!< Windows @c HWND */
+        X11,         /*!< X11 handle */
+        COCOA,       /*!< MacOS-X Cocoa Event handle */
+        __TEST       /*!< Do not use, for testing purposes one */
     };
 
     /**
@@ -125,11 +126,7 @@ private:
     type_t _type;
 };
 
-inline
-handle::handle(type_t type)
-    : _type(type)
-{
-}
+inline handle::handle(type_t type) : _type(type) {}
 
 inline handle::type_t
 handle::type() const
@@ -150,12 +147,12 @@ handle::type() const
  * used in combination with a @c std::unique_ptr to ensure unique access.
  */
 template<handle::type_t Type, typename Resource, Resource Invalid>
-class basic_handle: public handle
+class basic_handle : public handle
 {
 public:
     typedef Resource resource_type;
 
-    class MUDLIB_CORE_API signal: public handle::signal
+    class MUDLIB_CORE_API signal : public handle::signal
     {
     public:
         /**
@@ -176,7 +173,8 @@ public:
         /**
          * @brief The handle associated to the resource.
          */
-        virtual const std::unique_ptr<mud::core::handle>& handle() const override;
+        virtual const std::unique_ptr<mud::core::handle>& handle()
+            const override;
 
         /**
          * @brief Signal the resources.
@@ -198,7 +196,8 @@ public:
          * Platform specific implementation.
          */
         class impl;
-        struct impl_deleter {
+        struct impl_deleter
+        {
             void operator()(impl*) const;
         };
         std::unique_ptr<impl, impl_deleter> _impl;
@@ -257,15 +256,13 @@ private:
 
 template<handle::type_t Type, typename Resource, Resource Invalid>
 basic_handle<Type, Resource, Invalid>::basic_handle()
-    : handle(Type), _handle(Invalid)
-{
-}
+  : handle(Type), _handle(Invalid)
+{}
 
 template<handle::type_t Type, typename Resource, Resource Invalid>
 basic_handle<Type, Resource, Invalid>::basic_handle(Resource h)
-    : handle(Type), _handle(h)
-{
-}
+  : handle(Type), _handle(h)
+{}
 
 template<handle::type_t Type, typename Resource, Resource Invalid>
 basic_handle<Type, Resource, Invalid>::basic_handle(basic_handle&& rhs)
@@ -306,12 +303,12 @@ basic_handle<Type, Resource, Invalid>::valid() const
  * An atomic resource handle can generally not be waited (until C++20).
  */
 template<handle::type_t Type, typename AtomicType>
-class atomic_handle: public handle
+class atomic_handle : public handle
 {
 public:
     typedef AtomicType atomic_type;
 
-    class signal: public handle::signal
+    class signal : public handle::signal
     {
     public:
         /**
@@ -332,7 +329,8 @@ public:
         /**
          * @brief The handle associated to the resource.
          */
-        virtual const std::unique_ptr<mud::core::handle>& handle() const override;
+        virtual const std::unique_ptr<mud::core::handle>& handle()
+            const override;
 
         /**
          * @brief Signal the resources.
@@ -440,16 +438,13 @@ private:
 };
 
 template<handle::type_t Type, typename AtomicType>
-atomic_handle<Type, AtomicType>::atomic_handle()
-    : handle(Type), _valid(false)
-{
-}
+atomic_handle<Type, AtomicType>::atomic_handle() : handle(Type), _valid(false)
+{}
 
 template<handle::type_t Type, typename AtomicType>
 atomic_handle<Type, AtomicType>::atomic_handle(AtomicType h)
-    : handle(Type), _handle(h), _valid(true)
-{
-}
+  : handle(Type), _handle(h), _valid(true)
+{}
 
 template<handle::type_t Type, typename AtomicType>
 atomic_handle<Type, AtomicType>::atomic_handle(atomic_handle&& rhs)
@@ -483,13 +478,12 @@ template<handle::type_t Type, typename AtomicType>
 atomic_handle<Type, AtomicType>::signal::signal()
 {
     _impl = std::unique_ptr<mud::core::handle>(
-                    new mud::core::atomic_handle<Type, AtomicType>(false));
+        new mud::core::atomic_handle<Type, AtomicType>(false));
 }
 
 template<handle::type_t Type, typename AtomicType>
 atomic_handle<Type, AtomicType>::signal::~signal()
-{
-}
+{}
 
 template<handle::type_t Type, typename AtomicType>
 const std::unique_ptr<mud::core::handle>&
@@ -509,8 +503,8 @@ template<handle::type_t Type, typename AtomicType>
 void
 atomic_handle<Type, AtomicType>::signal::trigger(AtomicType value)
 {
-    auto ptr = static_cast<mud::core::atomic_handle<Type, AtomicType>*>(
-                    _impl.get());
+    auto ptr =
+        static_cast<mud::core::atomic_handle<Type, AtomicType>*>(_impl.get());
     ptr->_handle.store(value);
 }
 
@@ -524,11 +518,11 @@ atomic_handle<Type, AtomicType>::signal::capture()
 template<handle::type_t Type, typename AtomicType>
 bool
 atomic_handle<Type, AtomicType>::signal::capture(AtomicType expected,
-        AtomicType value)
+                                                 AtomicType value)
 {
     AtomicType data = expected;
-    auto ptr = static_cast<mud::core::atomic_handle<Type, AtomicType>*>(
-                    _impl.get());
+    auto ptr =
+        static_cast<mud::core::atomic_handle<Type, AtomicType>*>(_impl.get());
     return ptr->_handle.compare_exchange_strong(data, value);
 }
 
@@ -553,60 +547,53 @@ internal_handle(const std::unique_ptr<handle>& handle)
 /**
  * @brief: A handle to an atomic boolean state type.
  */
-typedef atomic_handle<
-handle::type_t::ATOMIC_BOOL, bool>
-atomic_bool_handle;
-template<> MUDLIB_CORE_API bool internal_handle<bool>(const
-        std::unique_ptr<handle>&);
+typedef atomic_handle<handle::type_t::ATOMIC_BOOL, bool> atomic_bool_handle;
+template<>
+MUDLIB_CORE_API bool
+internal_handle<bool>(const std::unique_ptr<handle>&);
 
 /**
  * @brief: A handle to an @c select resource type.
  */
-typedef basic_handle<
-handle::type_t::SELECT, int, 0>
-select_handle;
-template<> MUDLIB_CORE_API int internal_handle<int>(const
-        std::unique_ptr<handle>&);
+typedef basic_handle<handle::type_t::SELECT, int, 0> select_handle;
+template<>
+MUDLIB_CORE_API int
+internal_handle<int>(const std::unique_ptr<handle>&);
 
 #ifdef WINDOWS
-    /**
-    * @brief: A handle to a windows @c HANDLE resource type.
-    */
-    typedef basic_handle<
-    handle::type_t::W32HANDLE, HANDLE, nullptr>
-    windows_handle;
-    template<> MUDLIB_CORE_API HANDLE internal_handle<HANDLE>
-    (const std::unique_ptr<handle>&);
+/**
+ * @brief: A handle to a windows @c HANDLE resource type.
+ */
+typedef basic_handle<handle::type_t::W32HANDLE, HANDLE, nullptr> windows_handle;
+template<>
+MUDLIB_CORE_API HANDLE
+internal_handle<HANDLE>(const std::unique_ptr<handle>&);
 
-    /**
-    * @brief: A handle to a windows @c HHWND resource type.
-    */
-    typedef basic_handle<
-    handle::type_t::W32WND, HWND, nullptr>
-    win32_handle;
-    template<> MUDLIB_CORE_API HWND internal_handle<HWND>
-    (const std::unique_ptr<handle>&);
+/**
+ * @brief: A handle to a windows @c HHWND resource type.
+ */
+typedef basic_handle<handle::type_t::W32WND, HWND, nullptr> win32_handle;
+template<>
+MUDLIB_CORE_API HWND
+internal_handle<HWND>(const std::unique_ptr<handle>&);
 #endif
 
 #ifdef DARWIN
-    /**
-    * @brief: A dummy handle for a MacOSX UI loop wake-up trigger.
-    */
-    typedef mud::core::basic_handle<
-    mud::core::handle::type_t::COCOA,
-    void*,
-    nullptr>
+/**
+ * @brief: A dummy handle for a MacOSX UI loop wake-up trigger.
+ */
+typedef mud::core::basic_handle<mud::core::handle::type_t::COCOA, void*,
+                                nullptr>
     cocoa_handle;
 #endif
 
 /**
  * @brief: A handle to an @c test resource type.
  */
-typedef basic_handle<
-handle::type_t::__TEST, int, 0>
-__test_handle;
-template<> MUDLIB_CORE_API int internal_handle<int>(const
-        std::unique_ptr<handle>&);
+typedef basic_handle<handle::type_t::__TEST, int, 0> __test_handle;
+template<>
+MUDLIB_CORE_API int
+internal_handle<int>(const std::unique_ptr<handle>&);
 
 END_MUDLIB_CORE_NS
 

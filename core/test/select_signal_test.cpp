@@ -1,7 +1,7 @@
 #include "mud/core/handle.h"
 #include "mud/test.h"
-#include <memory>
 #include <future>
+#include <memory>
 #include <type_traits>
 #if defined(WINDOWS) && defined(NATIVE)
     #include <windows.h>
@@ -9,7 +9,7 @@
     #include <sys/select.h>
 #endif
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 typedef mud::core::select_handle::signal trigger;
 
@@ -120,6 +120,6 @@ FEATURE("Select handle trigger")
       AND("The signal cannot be not captured again")
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

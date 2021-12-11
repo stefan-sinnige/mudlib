@@ -11,8 +11,12 @@
     #define MUDLIB_TEST_API
 #endif
 
-#define BEGIN_MUDLIB_TEST_NS namespace mud { namespace test {
-#define END_MUDLIB_TEST_NS   } }
+#define BEGIN_MUDLIB_TEST_NS                                                   \
+    namespace mud {                                                            \
+        namespace test {
+#define END_MUDLIB_TEST_NS                                                     \
+    }                                                                          \
+    }
 
 /* vi: set ai ts=4 expandtab: */
 

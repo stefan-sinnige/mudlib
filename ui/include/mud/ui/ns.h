@@ -11,8 +11,12 @@
     #define MUDLIB_UI_API
 #endif
 
-#define BEGIN_MUDLIB_UI_NS namespace mud { namespace ui {
-#define END_MUDLIB_UI_NS   } }
+#define BEGIN_MUDLIB_UI_NS                                                     \
+    namespace mud {                                                            \
+        namespace ui {
+#define END_MUDLIB_UI_NS                                                       \
+    }                                                                          \
+    }
 
 /* vi: set ai ts=4 expandtab: */
 

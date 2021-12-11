@@ -1,13 +1,13 @@
-#include "test_mechanism.h"
 #include "mud/event/event_loop.h"
 #include "mud/event/event_mechanism.h"
 #include "mud/test.h"
+#include "test_mechanism.h"
 #include <future>
 #include <list>
 #include <ostream>
 #include <type_traits>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 CONTEXT()
     /* Constructor initialised for each scenario run */
@@ -283,6 +283,6 @@ FEATURE("Event loop")
 */
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

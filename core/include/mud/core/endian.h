@@ -17,7 +17,8 @@ public:
     /**
      * The supported endian systems.
      * */
-    enum class endian_t {
+    enum class endian_t
+    {
         unresolved, /**< Unresolved native endian */
         little,     /**< Little-endian */
         big         /**< Big-endian */

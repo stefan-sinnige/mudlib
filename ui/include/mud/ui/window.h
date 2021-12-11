@@ -1,9 +1,9 @@
 #ifndef _MUDLIB_UI_WINDOW_H_
 #define _MUDLIB_UI_WINDOW_H_
 
-#include <mud/ui/ns.h>
-#include <mud/ui/control.h>
 #include <future>
+#include <mud/ui/control.h>
+#include <mud/ui/ns.h>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -16,7 +16,7 @@ BEGIN_MUDLIB_UI_NS
  * top level windows.
  *
  */
-class MUDLIB_UI_API window: public control
+class MUDLIB_UI_API window : public control
 {
 public:
     /**
@@ -92,7 +92,8 @@ protected:
 
     /** Platform specific implementation.  */
     class impl;
-    struct impl_deleter {
+    struct impl_deleter
+    {
         void operator()(impl*) const;
     };
     std::unique_ptr<impl, impl_deleter> _impl;
@@ -108,4 +109,3 @@ END_MUDLIB_UI_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_UI_WINDOW_H_ */
-

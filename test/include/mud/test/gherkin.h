@@ -4,12 +4,12 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <mud/test/exception.h>
+#include <mud/test/ns.h>
 #include <sstream>
 #include <string>
-#include <vector>
 #include <utility>
-#include <mud/test/ns.h>
-#include <mud/test/exception.h>
+#include <vector>
 
 BEGIN_MUDLIB_TEST_NS
 
@@ -20,9 +20,8 @@ BEGIN_MUDLIB_TEST_NS
 template<typename T>
 std::ostream&
 operator<<(
-        typename std::enable_if<std::is_enum<T>::value,
-        std::ostream>::type& ostr,
-        const T& e)
+    typename std::enable_if<std::is_enum<T>::value, std::ostream>::type& ostr,
+    const T& e)
 {
     return ostr << static_cast<typename std::underlying_type<T>::type>(e);
 }
@@ -30,8 +29,10 @@ operator<<(
 /*
  * Forward declararions
  */
-template<typename Context> class _scenario;
-template<typename Context> class _feature;
+template<typename Context>
+class _scenario;
+template<typename Context>
+class _feature;
 
 /**
  * @brief A generic multi-type data table container.
@@ -44,10 +45,10 @@ template<typename Context> class _feature;
 class MUDLIB_TEST_API _table
 {
 public:
-    typedef std::string                column_type;
+    typedef std::string column_type;
     typedef std::map<column_type, int> columns_type;
-    typedef std::vector<std::string>   row_type;
-    typedef std::vector<row_type>      rows_type;
+    typedef std::vector<std::string> row_type;
+    typedef std::vector<row_type> rows_type;
 
     /**
      * @brief Constructor, creating an empty table without any definition.
@@ -190,20 +191,23 @@ private:
 
 template<typename... A>
 void
-mud::test::_table::columns(A... args) {
+mud::test::_table::columns(A... args)
+{
     column_elements(0, args...);
 }
 
 template<typename... A>
 void
-mud::test::_table::row(A... args) {
+mud::test::_table::row(A... args)
+{
     _rows.push_back(row_type());
     row_elements(args...);
 }
 
 template<typename T>
 T
-mud::test::_table::entry(int row, const std::string& column) const {
+mud::test::_table::entry(int row, const std::string& column) const
+{
     T dummy;
     int column_index = _columns.at(column);
     return entry(row, column_index, dummy);
@@ -211,14 +215,16 @@ mud::test::_table::entry(int row, const std::string& column) const {
 
 template<typename T>
 T
-mud::test::_table::entry(int row, int column) const {
+mud::test::_table::entry(int row, int column) const
+{
     T dummy;
     return entry(row, column, dummy);
 }
 
 template<typename T>
 T
-mud::test::_table::entry(const std::string& field) const {
+mud::test::_table::entry(const std::string& field) const
+{
     T dummy;
     int column_index = _columns.at(field);
     return entry(0, column_index, dummy);
@@ -226,21 +232,24 @@ mud::test::_table::entry(const std::string& field) const {
 
 template<typename T>
 T
-mud::test::_table::entry(int field) const {
+mud::test::_table::entry(int field) const
+{
     T dummy;
     return entry(0, field, dummy);
 }
 
 template<typename T, typename... A>
 void
-mud::test::_table::column_elements(size_t idx, T element, A... args) {
+mud::test::_table::column_elements(size_t idx, T element, A... args)
+{
     column_elements(idx, element);
-    column_elements(idx+1, args...);
+    column_elements(idx + 1, args...);
 };
 
 template<typename T>
 void
-mud::test::_table::row_elements(T element) {
+mud::test::_table::row_elements(T element)
+{
     std::stringstream sstr;
     sstr << element;
     _rows.back().push_back(sstr.str());
@@ -248,14 +257,16 @@ mud::test::_table::row_elements(T element) {
 
 template<typename T, typename... A>
 void
-mud::test::_table::row_elements(T element, A... args) {
+mud::test::_table::row_elements(T element, A... args)
+{
     row_elements(element);
     row_elements(args...);
 };
 
 template<typename T>
 T
-mud::test::_table::entry(int row, int column, const T& dummy) const {
+mud::test::_table::entry(int row, int column, const T& dummy) const
+{
     T var;
     std::string element = _rows[row][column];
     std::stringstream sstr(element);
@@ -274,28 +285,16 @@ class _base_context
 {
 public:
     // Set the data table.
-    void
-    data(const _table& data) {
-        _data = data;
-    }
+    void data(const _table& data) { _data = data; }
 
     // Return the data table.
-    const _table&
-    data() const {
-        return _data;
-    }
+    const _table& data() const { return _data; }
 
     // Set a specific sample for this test-run.
-    void
-    sample(const _table& sample) {
-        _sample = sample;
-    }
+    void sample(const _table& sample) { _sample = sample; }
 
     // Return the Sample data.
-    const _table&
-    sample() const {
-        return _sample;
-    }
+    const _table& sample() const { return _sample; }
 
 private:
     // The data table.
@@ -333,9 +332,8 @@ public:
      * @param func [in] The function detailing the initial condition of the
      *        @c context_type.
      */
-    _given(_feature<context_type>& feature,
-            const std::string& id,
-            function_type func);
+    _given(_feature<context_type>& feature, const std::string& id,
+           function_type func);
 
     /**
      * @brief Add an additional predefined 'given' step.
@@ -381,23 +379,16 @@ private:
 };
 
 template<typename Context>
-mud::test::_given<Context>::_given(
-        ::mud::test::_feature<context_type>& feature,
-        const std::string& id)
-    : _feature(feature), _id(id),
-      _func(nullptr), _chain(nullptr)
-{
-}
+mud::test::_given<Context>::_given(::mud::test::_feature<context_type>& feature,
+                                   const std::string& id)
+  : _feature(feature), _id(id), _func(nullptr), _chain(nullptr)
+{}
 
 template<typename Context>
-mud::test::_given<Context>::_given(
-        mud::test::_feature<context_type>& feature,
-        const std::string& id,
-        function_type func)
-    : _feature(feature), _id(id),
-      _func(func), _chain(nullptr)
-{
-}
+mud::test::_given<Context>::_given(mud::test::_feature<context_type>& feature,
+                                   const std::string& id, function_type func)
+  : _feature(feature), _id(id), _func(func), _chain(nullptr)
+{}
 
 template<typename Context>
 mud::test::_given<Context>&
@@ -409,9 +400,7 @@ mud::test::_given<Context>::And(const std::string& id)
 
 template<typename Context>
 mud::test::_given<Context>&
-mud::test::_given<Context>::And(
-        const std::string& id,
-        function_type func)
+mud::test::_given<Context>::And(const std::string& id, function_type func)
 {
     _chain = new mud::test::_given<Context>(_feature, id, func);
     return *_chain;
@@ -427,45 +416,35 @@ mud::test::_given<Context>::Data(std::function<_table()> func)
 
 template<typename Context>
 bool
-mud::test::_given<Context>::operator()(
-        context_type& ctx)
+mud::test::_given<Context>::operator()(context_type& ctx)
 {
-    if (_func == nullptr)
-    {
+    if (_func == nullptr) {
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
     bool result = true;
-    try
-    {
+    try {
         ctx.data(_data);
         _func(ctx);
-    }
-    catch (const mud::test::assertion_failed& ex)
-    {
+    } catch (const mud::test::assertion_failed& ex) {
         // An assertion failed
-        std::cerr << "'" << id() << "' threw an assertion:"
-                << std::endl << ex.what() << std::endl;
+        std::cerr << "'" << id() << "' threw an assertion:" << std::endl
+                  << ex.what() << std::endl;
         result = false;
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         // Any standard exception
-        std::cerr << "'" << id() << "' threw an unexpected exception:"
-                << std::endl << ex.what() << std::endl;
+        std::cerr << "'" << id()
+                  << "' threw an unexpected exception:" << std::endl
+                  << ex.what() << std::endl;
         result = false;
 
-    }
-    catch (...)
-    {
+    } catch (...) {
         // Any unknown exception
         std::cerr << "'" << id() << "' threw an unknown exception."
-                << std::endl;
+                  << std::endl;
         result = false;
-
     }
-    if (_chain != nullptr)
-    {
+    if (_chain != nullptr) {
         result &= (*_chain)(ctx);
     }
     return result;
@@ -483,8 +462,7 @@ void
 mud::test::_given<Context>::dump(const char* prefix /* = "Given" */)
 {
     std::cout << "  " << prefix << " " << _id << std::endl;
-    if (_chain != nullptr)
-    {
+    if (_chain != nullptr) {
         _chain->dump("  And");
     }
 }
@@ -551,6 +529,7 @@ public:
      * @brief Dump the 'When' step and it's chain to standard output.
      */
     void dump(const char* prefix = "When");
+
 private:
     _feature<context_type>& _feature;
     std::string _id;
@@ -560,23 +539,16 @@ private:
 };
 
 template<typename Context>
-mud::test::_when<Context>::_when(
-        mud::test::_feature<Context>& feature,
-        const std::string& id)
-    : _feature(feature), _id(id),
-      _func(nullptr), _chain(nullptr)
-{
-}
+mud::test::_when<Context>::_when(mud::test::_feature<Context>& feature,
+                                 const std::string& id)
+  : _feature(feature), _id(id), _func(nullptr), _chain(nullptr)
+{}
 
 template<typename Context>
-mud::test::_when<Context>::_when(
-        mud::test::_feature<Context>& feature,
-        const std::string& id,
-        function_type func)
-    : _feature(feature), _id(id),
-      _func(func), _chain(nullptr)
-{
-}
+mud::test::_when<Context>::_when(mud::test::_feature<Context>& feature,
+                                 const std::string& id, function_type func)
+  : _feature(feature), _id(id), _func(func), _chain(nullptr)
+{}
 
 template<typename Context>
 mud::test::_when<Context>&
@@ -588,9 +560,7 @@ mud::test::_when<Context>::And(const std::string& id)
 
 template<typename Context>
 mud::test::_when<Context>&
-mud::test::_when<Context>::And(
-        const std::string& id,
-        function_type func)
+mud::test::_when<Context>::And(const std::string& id, function_type func)
 {
     _chain = new mud::test::_when<Context>(_feature, id, func);
     return *_chain;
@@ -613,45 +583,35 @@ mud::test::_when<Context>::id() const
 
 template<typename Context>
 bool
-mud::test::_when<Context>::operator()(
-        context_type& ctx)
+mud::test::_when<Context>::operator()(context_type& ctx)
 {
-    if (_func == nullptr)
-    {
+    if (_func == nullptr) {
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
     bool result = true;
-    try
-    {
+    try {
         ctx.data(_data);
         _func(ctx);
-    }
-    catch (const mud::test::assertion_failed& ex)
-    {
+    } catch (const mud::test::assertion_failed& ex) {
         // An assertion failed
-        std::cerr << "'" << id() << "' threw an assertion:"
-                << std::endl << ex.what() << std::endl;
+        std::cerr << "'" << id() << "' threw an assertion:" << std::endl
+                  << ex.what() << std::endl;
         result = false;
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         // Any standard exception
-        std::cerr << "'" << id() << "' threw an unexpected exception:"
-                << std::endl << ex.what() << std::endl;
+        std::cerr << "'" << id()
+                  << "' threw an unexpected exception:" << std::endl
+                  << ex.what() << std::endl;
         result = false;
 
-    }
-    catch (...)
-    {
+    } catch (...) {
         // Any unknown exception
         std::cerr << "'" << id() << "' threw an unknown exception."
-                << std::endl;
+                  << std::endl;
         result = false;
-
     }
-    if (_chain != nullptr)
-    {
+    if (_chain != nullptr) {
         result &= (*_chain)(ctx);
     }
     return result;
@@ -662,8 +622,7 @@ void
 mud::test::_when<Context>::dump(const char* prefix /* = "When" */)
 {
     std::cout << "   " << prefix << " " << _id << std::endl;
-    if (_chain != nullptr)
-    {
+    if (_chain != nullptr) {
         _chain->dump(" And");
     }
 }
@@ -743,23 +702,16 @@ private:
 };
 
 template<typename Context>
-mud::test::_then<Context>::_then(
-        mud::test::_feature<Context>& feature,
-        const std::string& id)
-    : _feature(feature), _id(id),
-      _func(nullptr), _chain(nullptr)
-{
-}
+mud::test::_then<Context>::_then(mud::test::_feature<Context>& feature,
+                                 const std::string& id)
+  : _feature(feature), _id(id), _func(nullptr), _chain(nullptr)
+{}
 
 template<typename Context>
-mud::test::_then<Context>::_then(
-        mud::test::_feature<Context>& feature,
-        const std::string& id,
-        function_type func)
-    : _feature(feature), _id(id),
-      _func(func), _chain(nullptr)
-{
-}
+mud::test::_then<Context>::_then(mud::test::_feature<Context>& feature,
+                                 const std::string& id, function_type func)
+  : _feature(feature), _id(id), _func(func), _chain(nullptr)
+{}
 
 template<typename Context>
 mud::test::_then<Context>&
@@ -771,9 +723,7 @@ mud::test::_then<Context>::And(const std::string& id)
 
 template<typename Context>
 mud::test::_then<Context>&
-mud::test::_then<Context>::And(
-        const std::string& id,
-        function_type func)
+mud::test::_then<Context>::And(const std::string& id, function_type func)
 {
     _chain = new mud::test::_then<Context>(_feature, id, func);
     return *_chain;
@@ -789,46 +739,36 @@ mud::test::_then<Context>::Data(std::function<_table()> func)
 
 template<typename Context>
 bool
-mud::test::_then<Context>::operator()(
-        context_type& ctx)
+mud::test::_then<Context>::operator()(context_type& ctx)
 {
-    if (_func == nullptr)
-    {
+    if (_func == nullptr) {
         std::cerr << "'" << _id << "' has no function" << std::endl;
         throw std::bad_function_call();
     }
 
     bool result = true;
-    try
-    {
+    try {
         ctx.data(_data);
         _func(ctx);
-    }
-    catch (const mud::test::assertion_failed& ex)
-    {
+    } catch (const mud::test::assertion_failed& ex) {
         // An assertion failed
-        std::cerr << "'" << id() << "' threw an assertion:"
-                << std::endl << ex.what() << std::endl;
+        std::cerr << "'" << id() << "' threw an assertion:" << std::endl
+                  << ex.what() << std::endl;
         result = false;
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         // Any standard exception
-        std::cerr << "'" << id() << "' threw an unexpected exception:"
-                << std::endl << ex.what() << std::endl;
+        std::cerr << "'" << id()
+                  << "' threw an unexpected exception:" << std::endl
+                  << ex.what() << std::endl;
         result = false;
 
-    }
-    catch (...)
-    {
+    } catch (...) {
         // Any unknown exception
         std::cerr << "'" << id() << "' threw an unknown exception."
-                << std::endl;
+                  << std::endl;
         result = false;
-
     }
-    if (_chain != nullptr)
-    {
+    if (_chain != nullptr) {
         result &= (*_chain)(ctx);
     }
     return result;
@@ -846,8 +786,7 @@ void
 mud::test::_then<Context>::dump(const char* prefix /* = "Then" */)
 {
     std::cout << "   " << prefix << " " << _id << std::endl;
-    if (_chain != nullptr)
-    {
+    if (_chain != nullptr) {
         _chain->dump(" And");
     }
 }
@@ -937,6 +876,7 @@ public:
      * output.
      */
     void dump();
+
 private:
     /**
      * @brief Run the scenario with a specific context.
@@ -953,12 +893,10 @@ private:
 };
 
 template<typename Context>
-mud::test::_scenario<Context>::_scenario(
-        mud::test::_feature<Context>& feature,
-        const std::string& id)
-    : _feature(feature), _id(id)
-{
-}
+mud::test::_scenario<Context>::_scenario(mud::test::_feature<Context>& feature,
+                                         const std::string& id)
+  : _feature(feature), _id(id)
+{}
 
 template<typename Context>
 mud::test::_given<Context>&
@@ -970,9 +908,7 @@ mud::test::_scenario<Context>::Given(const std::string& id)
 
 template<typename Context>
 mud::test::_given<Context>&
-mud::test::_scenario<Context>::Given(
-        const std::string& id,
-        function_type func)
+mud::test::_scenario<Context>::Given(const std::string& id, function_type func)
 {
     _given = new mud::test::_given<Context>(_feature, id, func);
     return *_given;
@@ -988,9 +924,7 @@ mud::test::_scenario<Context>::When(const std::string& id)
 
 template<typename Context>
 mud::test::_when<Context>&
-mud::test::_scenario<Context>::When(
-        const std::string& id,
-        function_type func)
+mud::test::_scenario<Context>::When(const std::string& id, function_type func)
 {
     _when = new mud::test::_when<Context>(_feature, id, func);
     return *_when;
@@ -1006,9 +940,7 @@ mud::test::_scenario<Context>::Then(const std::string& id)
 
 template<typename Context>
 mud::test::_then<Context>&
-mud::test::_scenario<Context>::Then(
-        const std::string& id,
-        function_type func)
+mud::test::_scenario<Context>::Then(const std::string& id, function_type func)
 {
     _then = new mud::test::_then<Context>(_feature, id, func);
     return *_then;
@@ -1050,8 +982,7 @@ mud::test::_scenario<Context>::run()
             result &= run(ctx);
         }
         return result;
-    }
-    else {
+    } else {
         context_type ctx;
         return run(ctx);
     }
@@ -1062,29 +993,25 @@ bool
 mud::test::_scenario<Context>::run(context_type& ctx)
 {
     static const char* color_default = "\x1b[0m";
-    static const char* color_red     = "\x1b[31m";
-    static const char* color_green   = "\x1b[32m";
+    static const char* color_red = "\x1b[31m";
+    static const char* color_green = "\x1b[32m";
     if (!(*_given)(ctx)) {
-        std::cout << "["
-                << color_red << "FAIL" << color_default
-                << "] " << _id << std::endl;
+        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id
+                  << std::endl;
         return false;
     }
     if (!(*_when)(ctx)) {
-        std::cout << "["
-                << color_red << "FAIL" << color_default
-                << "] " << _id << std::endl;
+        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id
+                  << std::endl;
         return false;
     }
     if (!(*_then)(ctx)) {
-        std::cout << "["
-                << color_red << "FAIL" << color_default
-                << "] " << _id << std::endl;
+        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id
+                  << std::endl;
         return false;
     }
-    std::cout << "["
-            << color_green << "PASS" << color_default
-            << "] " << _id << std::endl;
+    std::cout << "[" << color_green << "PASS" << color_default << "] " << _id
+              << std::endl;
     return true;
 }
 
@@ -1108,7 +1035,7 @@ public:
      *   have been run, the second field the number of successfull ones.
      */
     virtual std::pair<size_t, size_t> run(
-            const std::string& filter = std::string()) = 0;
+        const std::string& filter = std::string()) = 0;
 };
 
 /**
@@ -1178,24 +1105,24 @@ private:
 
 template<typename Context>
 void
-mud::test::_feature<Context>::register_given(
-        const std::string& id, function_type func)
+mud::test::_feature<Context>::register_given(const std::string& id,
+                                             function_type func)
 {
     _given_library[id] = func;
 }
 
 template<typename Context>
 void
-mud::test::_feature<Context>::register_when(
-        const std::string& id, function_type func)
+mud::test::_feature<Context>::register_when(const std::string& id,
+                                            function_type func)
 {
     _when_library[id] = func;
 }
 
 template<typename Context>
 void
-mud::test::_feature<Context>::register_then(
-        const std::string& id, function_type func)
+mud::test::_feature<Context>::register_then(const std::string& id,
+                                            function_type func)
 {
     _then_library[id] = func;
 }
@@ -1205,8 +1132,7 @@ mud::test::_given<Context>*
 mud::test::_feature<Context>::construct_given(const std::string& id)
 {
     auto iter = _given_library.find(id);
-    if (iter != _given_library.end())
-    {
+    if (iter != _given_library.end()) {
         return new mud::test::_given<Context>(*this, iter->first, iter->second);
     }
     throw mud::test::not_specified(id);
@@ -1217,8 +1143,7 @@ mud::test::_when<Context>*
 mud::test::_feature<Context>::construct_when(const std::string& id)
 {
     auto iter = _when_library.find(id);
-    if (iter != _when_library.end())
-    {
+    if (iter != _when_library.end()) {
         return new mud::test::_when<Context>(*this, iter->first, iter->second);
     }
     throw mud::test::not_specified(id);
@@ -1229,8 +1154,7 @@ mud::test::_then<Context>*
 mud::test::_feature<Context>::construct_then(const std::string& id)
 {
     auto iter = _then_library.find(id);
-    if (iter != _then_library.end())
-    {
+    if (iter != _then_library.end()) {
         return new mud::test::_then<Context>(*this, iter->first, iter->second);
     }
     throw mud::test::not_specified(id);
@@ -1243,8 +1167,8 @@ mud::test::_feature<Context>::construct_then(const std::string& id)
  * @param line [in] The line number.
  * @param details [in] Additinal context details about the assertion.
  */
-MUDLIB_TEST_API bool AssertFailed(const char* file, int line,
-        const std::string& details);
+MUDLIB_TEST_API bool
+AssertFailed(const char* file, int line, const std::string& details);
 
 /**
  * @brief Template class that verifies if two values (result and expected) are
@@ -1259,11 +1183,10 @@ template<typename T, typename Y>
 bool
 Assert(const char* file, int line, T expected, Y result)
 {
-    if (result != expected)
-    {
+    if (result != expected) {
         std::stringstream sstr;
         sstr << "  Expected: " << expected << std::endl
-                << "  Result  : " << result;
+             << "  Result  : " << result;
         AssertFailed(file, line, sstr.str());
     }
     return true;
@@ -1294,8 +1217,9 @@ public:
      * @return The test result. The first field is the total test cases that
      *   have been run, the second field the number of successfull ones.
      */
-    static std::pair<size_t,size_t> run(
-            const std::string& filter = std::string());
+    static std::pair<size_t, size_t> run(
+        const std::string& filter = std::string());
+
 private:
     static std::map<std::string, creator_func> _map;
 };
@@ -1307,14 +1231,13 @@ template<typename Feature>
 class _feature_registrar
 {
 public:
-    _feature_registrar(const std::string& id) {
-        _feature_factory::register_feature(id, [] {
-            return new Feature();
-        });
+    _feature_registrar(const std::string& id)
+    {
+        _feature_factory::register_feature(id, [] { return new Feature(); });
     }
 };
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 /**
  * @brief Macro to define a context.
@@ -1557,11 +1480,10 @@ public:
 #define FEATURE_RUN(...)                                                    \
     mud::test::_feature_factory::run(__VA_ARGS__)
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 END_MUDLIB_TEST_NS
 
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_TEST_GHERKIN_H_ */
-

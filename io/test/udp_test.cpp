@@ -3,7 +3,7 @@
 #include <memory>
 #include <type_traits>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 CONTEXT()
     // Constructor, executed before each scenario run
@@ -118,6 +118,6 @@ FEATURE("UDP sockets")
           })
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-foramt on */
 
 /* vi: set ai ts=4 expandtab: */

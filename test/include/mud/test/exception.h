@@ -2,15 +2,15 @@
 #define _MUDLIB_TEST_EXCEPTION_H_
 
 #include <exception>
-#include <string>
 #include <mud/test/ns.h>
+#include <string>
 
 BEGIN_MUDLIB_TEST_NS
 
 /**
  * @brief Reporting a test that failed an asserting.
  */
-class assertion_failed: public std::exception
+class assertion_failed : public std::exception
 {
 public:
     /**
@@ -34,19 +34,12 @@ private:
     std::string _what;
 };
 
-inline
-assertion_failed::assertion_failed(const std::string& what)
-    : _what(what)
-{
-}
+inline assertion_failed::assertion_failed(const std::string& what) : _what(what)
+{}
 
-inline
-assertion_failed::~assertion_failed()
-{
-}
+inline assertion_failed::~assertion_failed() {}
 
-inline
-const char*
+inline const char*
 assertion_failed::what() const noexcept
 {
     return _what.c_str();
@@ -55,7 +48,7 @@ assertion_failed::what() const noexcept
 /**
  * @brief Reporting a test that references an unknown gherkin element.
  */
-class not_specified: public std::exception
+class not_specified : public std::exception
 {
 public:
     /**
@@ -74,23 +67,16 @@ public:
      * @return The description.
      */
     virtual const char* what() const noexcept;
+
 private:
     std::string _what;
 };
 
-inline
-not_specified::not_specified(const std::string& what)
-    : _what(what)
-{
-}
+inline not_specified::not_specified(const std::string& what) : _what(what) {}
 
-inline
-not_specified::~not_specified()
-{
-}
+inline not_specified::~not_specified() {}
 
-inline
-const char*
+inline const char*
 not_specified::what() const noexcept
 {
     return _what.c_str();

@@ -12,7 +12,7 @@ BEGIN_MUDLIB_CORE_NS
  * Typically being used with @c unique_ptr objects where the object that is
  * accessing the underlying resource does not have the ownership.
  */
-class not_owner: public std::exception
+class not_owner : public std::exception
 {
 public:
     /**
@@ -26,15 +26,9 @@ public:
     virtual ~not_owner();
 };
 
-inline
-not_owner::not_owner()
-{
-}
+inline not_owner::not_owner() {}
 
-inline
-not_owner::~not_owner()
-{
-}
+inline not_owner::~not_owner() {}
 
 END_MUDLIB_CORE_NS
 

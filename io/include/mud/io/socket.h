@@ -1,9 +1,9 @@
 #ifndef _MUDLIB_IO_SOCKET_H_
 #define _MUDLIB_IO_SOCKET_H_
 
-#include <string>
 #include <mud/core/handle.h>
 #include <mud/io/ns.h>
+#include <string>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -21,7 +21,8 @@ public:
      * The communication domain. These may not all be supported by all
      * operating systems.
      */
-    enum class domain_t {
+    enum class domain_t
+    {
         UNIX,      /**< Local communication */
         LOCAL,     /**< Synonym for UNIX */
         INET,      /**< IPv4 */
@@ -51,7 +52,8 @@ public:
     /**
      * The socket communication type.
      */
-    enum class type_t {
+    enum class type_t
+    {
         STREAM,    /**< Sequenced, reliable, two-way connection based byte
                         streams */
         DGRAM,     /**< Connectionless, unreliable datagrams of fixed
@@ -65,7 +67,8 @@ public:
     /**
      * The socket communication protocol (as defined by IANA).
      */
-    enum class protocol_t {
+    enum class protocol_t
+    {
         INTRINSIC, /**< Native to the socket type. */
         IP,        /**< dummy for IP */
         HOPOPTS,   /**< IP6 hop-by-hop options */
@@ -237,7 +240,7 @@ protected:
      * @param handle [in] The existing socket handle.
      */
     basic_socket(domain_t domain, type_t type, protocol_t protocol,
-            std::unique_ptr<mud::core::handle> handle);
+                 std::unique_ptr<mud::core::handle> handle);
 
     /**
      * @brief The error code of a socket operation. This has to be
@@ -259,10 +262,8 @@ private:
     protocol_t _protocol;
 };
 
-
 END_MUDLIB_IO_NS
 
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_IO_SOCKET_H_ */
-

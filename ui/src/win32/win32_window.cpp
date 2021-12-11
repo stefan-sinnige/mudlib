@@ -1,28 +1,21 @@
+#include "win32/win32_window.h"
 #include "mud/ui/application.h"
 #include "mud/ui/event.h"
 #include "mud/ui/task.h"
 #include "mud/ui/window.h"
 #include "win32/win32_application.h"
-#include "win32/win32_window.h"
 #include <windows.h>
 
 BEGIN_MUDLIB_UI_NS
 
-window::impl::impl(window& wnd)
-    : win32::control(wnd), _window(wnd)
-{
-}
+window::impl::impl(window& wnd) : win32::control(wnd), _window(wnd) {}
 
-window::impl::~impl()
-{
-}
+window::impl::~impl() {}
 
 LRESULT CALLBACK
 WindowProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    switch (msg)
-    {
-    }
+    switch (msg) {}
     return ::DefWindowProc(wnd, msg, wParam, lParam);
 }
 
@@ -38,28 +31,18 @@ window::impl::initialise()
     ::RegisterClass(&wc);
 
     HWND wnd = ::CreateWindowEx(
-                    0,
-                    CLASS_NAME,
-                    "Window Title",
-                    WS_OVERLAPPEDWINDOW,
-                    _window.property<position>().x(),
-                    _window.property<position>().y(),
-                    _window.property<size>().width(),
-                    _window.property<size>().height(),
-                    nullptr,
-                    nullptr,
-                    ::GetModuleHandle(nullptr),
-                    nullptr);
-    if (wnd == nullptr)
-    {
+        0, CLASS_NAME, "Window Title", WS_OVERLAPPEDWINDOW,
+        _window.property<position>().x(), _window.property<position>().y(),
+        _window.property<size>().width(), _window.property<size>().height(),
+        nullptr, nullptr, ::GetModuleHandle(nullptr), nullptr);
+    if (wnd == nullptr) {
         throw std::system_error(::GetLastError(), std::system_category(),
-                "CrateWindowEx");
+                                "CrateWindowEx");
     }
     NativeControl(wnd);
 
     // Create the controls (should this be part of WM_CREATE ?).
-    for (auto& control: _controls)
-    {
+    for (auto& control : _controls) {
         control.get().initialise();
     }
 
@@ -86,9 +69,7 @@ window::window()
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this));
 }
 
-window::~window()
-{
-}
+window::~window() {}
 
 void
 window::initialise()
@@ -98,8 +79,7 @@ window::initialise()
 
 void
 window::dispatch(const mud::ui::event& event)
-{
-}
+{}
 
 const std::unique_ptr<window::impl, window::impl_deleter>&
 window::impl::get(window& wnd)
@@ -110,4 +90,3 @@ window::impl::get(window& wnd)
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

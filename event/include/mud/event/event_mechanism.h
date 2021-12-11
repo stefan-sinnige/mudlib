@@ -1,12 +1,12 @@
 #ifndef _MUDLIB_EVENT_MECHANISM_H_
 #define _MUDLIB_EVENT_MECHANISM_H_
 
-#include <mud/event/ns.h>
+#include <future>
 #include <mud/core/factory.h>
 #include <mud/core/handle.h>
 #include <mud/core/task.h>
 #include <mud/event/event.h>
-#include <future>
+#include <mud/event/ns.h>
 
 BEGIN_MUDLIB_EVENT_NS
 
@@ -20,7 +20,7 @@ public:
      * @brief Constructor.
      */
     event_mechanism(const std::shared_ptr<mud::core::simple_task_queue>& queue)
-        : _queue(queue)
+      : _queue(queue)
     {}
 
     /**
@@ -75,10 +75,7 @@ public:
      * the same thread as the thread that executes the @c event_loop @c loop
      * function.
      */
-    virtual bool
-    detachable() const {
-        return true;
-    }
+    virtual bool detachable() const { return true; }
 
     /**
      * Not copyable
@@ -96,8 +93,8 @@ protected:
     /**
      * The queue for signaled events.
      */
-    const std::shared_ptr<mud::core::simple_task_queue>&
-    queue() const {
+    const std::shared_ptr<mud::core::simple_task_queue>& queue() const
+    {
         return _queue;
     }
 
@@ -109,10 +106,9 @@ private:
 /**
  * @brief The factory of event mechanisms.
  */
-typedef mud::core::factory<
-mud::core::handle::type_t,
-    mud::event::event_mechanism,
-    const std::shared_ptr<mud::core::simple_task_queue>&>
+typedef mud::core::factory<mud::core::handle::type_t,
+                           mud::event::event_mechanism,
+                           const std::shared_ptr<mud::core::simple_task_queue>&>
     event_mechanism_factory;
 
 END_MUDLIB_EVENT_NS

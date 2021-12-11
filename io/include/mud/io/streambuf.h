@@ -4,12 +4,12 @@
 #if defined(WINDOWS) && defined(NATIVE)
     #ifndef MUDLIB_SSIZE_T
         #define MUDLIB_SSIZE_T
-        typedef long ssize_t;
+typedef long ssize_t;
     #endif
 #endif
+#include <memory>
 #include <mud/core/handle.h>
 #include <mud/io/ns.h>
-#include <memory>
 #include <streambuf>
 
 BEGIN_MUDLIB_IO_NS
@@ -29,10 +29,8 @@ public:
      * @param [in] bufsize The initial buffer size.
      * @param [in] putbacksize The size of the putback buffer.
      */
-    basic_streambuf(
-            const std::unique_ptr<mud::core::handle>& handle,
-            size_t bufsize = 10,
-            size_t putbacksize = 4);
+    basic_streambuf(const std::unique_ptr<mud::core::handle>& handle,
+                    size_t bufsize = 10, size_t putbacksize = 4);
 
     /**
      * Destructor.
@@ -84,4 +82,3 @@ END_MUDLIB_IO_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_IO_STREAMBUF_H_ */
-

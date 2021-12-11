@@ -1,9 +1,9 @@
 #ifndef _MUDLIB_UI_PUSHBUTTON_H_
 #define _MUDLIB_UI_PUSHBUTTON_H_
 
-#include <mud/ui/ns.h>
 #include <mud/ui/control.h>
 #include <mud/ui/event.h>
+#include <mud/ui/ns.h>
 #include <mud/ui/window.h>
 
 BEGIN_MUDLIB_UI_NS
@@ -12,7 +12,7 @@ BEGIN_MUDLIB_UI_NS
  * @brief A pushbutton is a region on the window that can be activated by
  * a mouse-click or in-focus keyboard event to perform a particular action.
  */
-class MUDLIB_UI_API pushbutton: public control
+class MUDLIB_UI_API pushbutton : public control
 {
 public:
     /**
@@ -82,7 +82,8 @@ private:
 
     /** Platform specific implementation.  */
     class impl;
-    struct impl_deleter {
+    struct impl_deleter
+    {
         void operator()(impl*) const;
     };
     std::unique_ptr<impl, impl_deleter> _impl;
@@ -93,4 +94,3 @@ END_MUDLIB_UI_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_UI_PUSHBUTTON_H_ */
-

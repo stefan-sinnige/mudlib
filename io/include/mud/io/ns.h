@@ -11,8 +11,12 @@
     #define MUDLIB_IO_API
 #endif
 
-#define BEGIN_MUDLIB_IO_NS namespace mud { namespace io {
-#define END_MUDLIB_IO_NS   } }
+#define BEGIN_MUDLIB_IO_NS                                                     \
+    namespace mud {                                                            \
+        namespace io {
+#define END_MUDLIB_IO_NS                                                       \
+    }                                                                          \
+    }
 
 /* vi: set ai ts=4 expandtab: */
 

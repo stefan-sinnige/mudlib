@@ -1,5 +1,5 @@
-#include "win32/win32_control.h"
 #include "win32/win32_event.h"
+#include "win32/win32_control.h"
 
 BEGIN_MUDLIB_UI_NS
 
@@ -26,25 +26,20 @@ std::unique_ptr<event>
 event_factory(const MSG& msg)
 {
     std::unique_ptr<event> ev;
-    try
-    {
-        switch (msg.message)
-        {
+    try {
+        switch (msg.message) {
             case WM_LBUTTONDOWN:
             case WM_LBUTTONUP:
             case WM_RBUTTONDOWN:
             case WM_RBUTTONUP:
             case WM_MBUTTONDOWN:
-            case WM_MBUTTONUP:
-            {
+            case WM_MBUTTONUP: {
                 Adapter<event::mouse> adapter;
                 ev = adapter(msg);
                 break;
             }
         }
-    }
-    catch (...)
-    {
+    } catch (...) {
         // Error mapping event, ignoring it.
     }
     return ev;
@@ -53,4 +48,3 @@ event_factory(const MSG& msg)
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

@@ -6,10 +6,10 @@
 #include <exception>
 #include <future>
 #include <memory>
+#include <mud/core/ns.h>
 #include <mutex>
 #include <queue>
 #include <thread>
-#include <mud/core/ns.h>
 
 BEGIN_MUDLIB_CORE_NS
 
@@ -17,13 +17,14 @@ BEGIN_MUDLIB_CORE_NS
  * Forward declaration of the template type such that specialisations can be
  * made.
  */
-template <class> class task;
+template<class>
+class task;
 
 /**
  * @brief A representation of an executable task which can be run
  * asynchroneously and returns a non-void result.
  */
-template <class Result, class... Args>
+template<class Result, class... Args>
 class task<Result(Args...)>
 {
 public:
@@ -66,7 +67,7 @@ public:
      * @brief Execute the task function with the supplied arguments. The
      * result is available through the future.
      */
-    void operator()(Args... );
+    void operator()(Args...);
 
     /**
      * @brief Return the future to access the return upon completion.
@@ -94,29 +95,24 @@ private:
      * @brief The promise to pass the result.
      */
     std::promise<result_type> _promise;
-
 };
 
-template <class Result, class ...Args>
-task<Result(Args...)>::task()
-    : _fn(nullptr)
-{
-}
+template<class Result, class... Args>
+task<Result(Args...)>::task() : _fn(nullptr)
+{}
 
-template <class Result, class ...Args>
-task<Result(Args...)>::task(function_type&& fn)
-    : _fn(std::move(fn))
-{
-}
+template<class Result, class... Args>
+task<Result(Args...)>::task(function_type&& fn) : _fn(std::move(fn))
+{}
 
-template <class Result, class ...Args>
+template<class Result, class... Args>
 task<Result(Args...)>::task(task&& rhs)
 {
     _fn.swap(rhs._fn);
     _promise.swap(rhs._promise);
 }
 
-template <class Result, class ...Args>
+template<class Result, class... Args>
 task<Result(Args...)>&
 task<Result(Args...)>::operator=(task&& rhs)
 {
@@ -125,33 +121,29 @@ task<Result(Args...)>::operator=(task&& rhs)
     return *this;
 }
 
-template <class Result, class ...Args>
+template<class Result, class... Args>
 task<Result(Args...)>::~task()
-{
-}
+{}
 
-template <class Result, class ...Args>
+template<class Result, class... Args>
 void
 task<Result(Args...)>::operator()(Args... args)
 {
-    try
-    {
+    try {
         _promise.set_value(_fn(std::forward<Args>(args)...));
-    }
-    catch (...)
-    {
+    } catch (...) {
         _promise.set_exception(std::current_exception());
     }
 }
 
-template <class Result, class ...Args>
+template<class Result, class... Args>
 std::future<Result>
 task<Result(Args...)>::get_future()
 {
     return _promise.get_future();
 }
 
-template <class Result, class ...Args>
+template<class Result, class... Args>
 bool
 task<Result(Args...)>::valid() const
 {
@@ -162,7 +154,7 @@ task<Result(Args...)>::valid() const
  * @brief A representation of an executable task which can be run
  * asynchroneously and returns a void result.
  */
-template <class... Args>
+template<class... Args>
 class task<void(Args...)>
 {
 public:
@@ -205,7 +197,7 @@ public:
      * @brief Execute the task function with the supplied arguments. The
      * result is available through the future.
      */
-    void operator()(Args... );
+    void operator()(Args...);
 
     /**
      * @brief Return the future to access the return upon completion.
@@ -235,26 +227,22 @@ private:
     std::promise<result_type> _promise;
 };
 
-template <class ...Args>
-task<void(Args...)>::task()
-    : _fn(nullptr)
-{
-}
+template<class... Args>
+task<void(Args...)>::task() : _fn(nullptr)
+{}
 
-template <class ...Args>
-task<void(Args...)>::task(function_type&& fn)
-    : _fn(std::move(fn))
-{
-}
+template<class... Args>
+task<void(Args...)>::task(function_type&& fn) : _fn(std::move(fn))
+{}
 
-template <class ...Args>
+template<class... Args>
 task<void(Args...)>::task(task&& rhs)
 {
     _fn.swap(rhs._fn);
     _promise.swap(rhs._promise);
 }
 
-template <class ...Args>
+template<class... Args>
 task<void(Args...)>&
 task<void(Args...)>::operator=(task&& rhs)
 {
@@ -263,34 +251,30 @@ task<void(Args...)>::operator=(task&& rhs)
     return *this;
 }
 
-template <class ...Args>
+template<class... Args>
 task<void(Args...)>::~task()
-{
-}
+{}
 
-template <class ...Args>
+template<class... Args>
 void
 task<void(Args...)>::operator()(Args... args)
 {
-    try
-    {
+    try {
         _fn(std::forward<Args>(args)...);
         _promise.set_value();
-    }
-    catch (...)
-    {
+    } catch (...) {
         _promise.set_exception(std::current_exception());
     }
 }
 
-template <class ...Args>
+template<class... Args>
 std::future<void>
 task<void(Args...)>::get_future()
 {
     return _promise.get_future();
 }
 
-template <class ...Args>
+template<class... Args>
 bool
 task<void(Args...)>::valid() const
 {
@@ -314,7 +298,8 @@ typedef struct task_queue_synchronisation
     /**
      * @brief Create a synchronisation object that is initiated.
      */
-    task_queue_synchronisation() {
+    task_queue_synchronisation()
+    {
         _available = false;
         _terminate = false;
     }
@@ -327,8 +312,8 @@ typedef struct task_queue_synchronisation
     /**
      * @brief Initiate the synchronisation by resetting the termination flag.
      */
-    void
-    initiate() {
+    void initiate()
+    {
         std::lock_guard<std::mutex> lock(_cv_lock);
         _terminate = false;
     }
@@ -336,8 +321,8 @@ typedef struct task_queue_synchronisation
     /**
      * @brief Request all workers to terminate
      */
-    void
-    terminate() {
+    void terminate()
+    {
         std::lock_guard<std::mutex> lock(_cv_lock);
         _terminate = true;
         _cv.notify_all();
@@ -361,7 +346,7 @@ typedef struct task_queue_synchronisation
  * be shared (e.g. through a @c shared_ptr) with mutlitple threads who can
  * either push new tasks or pop tasks from the queue.
  */
-template <typename Task>
+template<typename Task>
 class task_queue
 {
 public:
@@ -432,19 +417,17 @@ private:
     std::shared_ptr<task_queue_synchronisation> _sync;
 };
 
-template <typename Task>
-task_queue<Task>::task_queue()
-    : _sync(new task_queue_synchronisation)
-{
-}
+template<typename Task>
+task_queue<Task>::task_queue() : _sync(new task_queue_synchronisation)
+{}
 
-template <typename Task>
+template<typename Task>
 task_queue<Task>::~task_queue()
 {
     _sync->terminate();
 }
 
-template <typename Task>
+template<typename Task>
 void
 task_queue<Task>::push(task_type&& tsk)
 {
@@ -454,7 +437,7 @@ task_queue<Task>::push(task_type&& tsk)
     _sync->_cv.notify_one();
 }
 
-template <typename Task>
+template<typename Task>
 bool
 task_queue<Task>::pop(task_type& tsk)
 {
@@ -469,17 +452,15 @@ task_queue<Task>::pop(task_type& tsk)
     return popped;
 }
 
-template <typename Task>
+template<typename Task>
 bool
 task_queue<Task>::wait_pop(task_type& tsk)
 {
     std::unique_lock<std::mutex> lock(_sync->_cv_lock);
-    _sync->_cv.wait(lock, [this] {
-        return _sync->_available || _sync->_terminate;
-    });
+    _sync->_cv.wait(lock,
+                    [this] { return _sync->_available || _sync->_terminate; });
     bool popped = false;
-    if (!_sync->_terminate)
-    {
+    if (!_sync->_terminate) {
         if (!_tasks.empty()) {
             tsk = std::move(_tasks.front());
             _tasks.pop();
@@ -491,7 +472,7 @@ task_queue<Task>::wait_pop(task_type& tsk)
     return popped;
 }
 
-template <typename Task>
+template<typename Task>
 const std::shared_ptr<task_queue_synchronisation>&
 task_queue<Task>::synchronisation()
 {
@@ -509,8 +490,8 @@ typedef task_queue<task<void(void)>> simple_task_queue;
  * A worker thread that executes tasks as thet become available on a task
  * queue.
  */
-template <typename Task>
-class task_worker: public std::thread
+template<typename Task>
+class task_worker : public std::thread
 {
 public:
     /**
@@ -555,30 +536,26 @@ private:
     std::shared_ptr<task_queue<task_type>> _queue;
 };
 
-template <typename Task>
-task_worker<Task>::task_worker(const std::shared_ptr<task_queue<task_type>>&
-        queue)
-    : std::thread(&task_worker::run, this),
-      _queue(queue)
-{
-}
+template<typename Task>
+task_worker<Task>::task_worker(
+    const std::shared_ptr<task_queue<task_type>>& queue)
+  : std::thread(&task_worker::run, this), _queue(queue)
+{}
 
-template <typename Task>
+template<typename Task>
 task_worker<Task>::task_worker(task_worker&& rhs)
-    : std::thread(std::move((std::thread&&)rhs)),
-      _queue(std::move(rhs._queue))
-{
-}
+  : std::thread(std::move((std::thread &&) rhs)), _queue(std::move(rhs._queue))
+{}
 
-template <typename Task>
+template<typename Task>
 task_worker<Task>&
 task_worker<Task>::operator=(task_worker&& rhs)
 {
-    std::thread::operator=(std::move((std::thread&&)rhs));
+    std::thread::operator=(std::move((std::thread &&) rhs));
     _queue = std::move(rhs._queue);
 }
 
-template <typename Task>
+template<typename Task>
 task_worker<Task>::~task_worker()
 {
     if (joinable()) {
@@ -586,15 +563,13 @@ task_worker<Task>::~task_worker()
     }
 }
 
-template <typename Task>
+template<typename Task>
 void
 task_worker<Task>::run()
 {
-    while (!_queue->synchronisation()->_terminate)
-    {
+    while (!_queue->synchronisation()->_terminate) {
         task_type tsk;
-        if (_queue->wait_pop(tsk))
-        {
+        if (_queue->wait_pop(tsk)) {
             tsk();
         }
     }
@@ -621,9 +596,8 @@ public:
      * Constructor, associating a queue to the pool and the number of task
      * workers.
      */
-    task_worker_pool(
-            const std::shared_ptr<task_queue<task_type>>& queue,
-            size_t nr_workers = std::thread::hardware_concurrency());
+    task_worker_pool(const std::shared_ptr<task_queue<task_type>>& queue,
+                     size_t nr_workers = std::thread::hardware_concurrency());
 
     /** Destructor */
     virtual ~task_worker_pool();
@@ -665,22 +639,20 @@ private:
     std::shared_ptr<task_queue<task_type>> _queue;
 };
 
-template <typename Task>
+template<typename Task>
 task_worker_pool<Task>::task_worker_pool(
-        const std::shared_ptr<task_queue<task_type>>& queue,
-        size_t nr_workers)
-    : _nr_workers(nr_workers), _queue(queue)
-{
-}
+    const std::shared_ptr<task_queue<task_type>>& queue, size_t nr_workers)
+  : _nr_workers(nr_workers), _queue(queue)
+{}
 
-template <typename Task>
+template<typename Task>
 task_worker_pool<Task>::~task_worker_pool()
 {
     terminate();
     wait();
 }
 
-template <typename Task>
+template<typename Task>
 void
 task_worker_pool<Task>::initiate()
 {
@@ -693,36 +665,30 @@ task_worker_pool<Task>::initiate()
     _queue->synchronisation()->initiate();
 
     // Create task-worker threads
-    try
-    {
-        for (int i = 0; i < _nr_workers; ++i)
-        {
+    try {
+        for (int i = 0; i < _nr_workers; ++i) {
             _pool.push_back(std::unique_ptr<task_worker<task_type>>(
-                            new task_worker<task_type>(_queue)));
+                new task_worker<task_type>(_queue)));
         }
-    }
-    catch (...)
-    {
+    } catch (...) {
         terminate();
         throw;
     }
 }
 
-template <typename Task>
+template<typename Task>
 void
 task_worker_pool<Task>::terminate()
 {
     _queue->synchronisation()->terminate();
 }
 
-template <typename Task>
+template<typename Task>
 void
 task_worker_pool<Task>::wait()
 {
-    for (auto& worker: _pool)
-    {
-        if (worker->joinable())
-        {
+    for (auto& worker : _pool) {
+        if (worker->joinable()) {
             worker->join();
         }
     }

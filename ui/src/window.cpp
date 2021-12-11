@@ -1,12 +1,12 @@
-#include "mud/ui/application.h"
 #include "mud/ui/window.h"
+#include "mud/ui/application.h"
 
 BEGIN_MUDLIB_UI_NS
 
 void
 window::default_properties()
 {
-    _properties[std::type_index(typeid(position))] = position(0,0);
+    _properties[std::type_index(typeid(position))] = position(0, 0);
     _properties[std::type_index(typeid(size))] = size(200, 150);
 }
 
@@ -22,4 +22,3 @@ window::show()
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

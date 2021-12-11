@@ -1,12 +1,12 @@
 #ifndef _MUD_UI_X11_WINDOW_H_
 #define _MUD_UI_X11_WINDOW_H_
 
-#include <mud/core/handle.h>
-#include <mud/ui/ns.h>
-#include <mud/ui/window.h>
-#include <mud/event/event_mechanism.h>
 #include "x11/x11_control.h"
 #include <X11/Xlib.h>
+#include <mud/core/handle.h>
+#include <mud/event/event_mechanism.h>
+#include <mud/ui/ns.h>
+#include <mud/ui/window.h>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -40,7 +40,7 @@ public:
 
     /** Return the implementation dependent window details. */
     static const std::unique_ptr<window::impl, window::impl_deleter>& get(
-            window&);
+        window&);
 
 private:
     /** Reference to the window */
@@ -50,10 +50,8 @@ private:
     std::vector<std::reference_wrapper<mud::ui::control>> _controls;
 };
 
-
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUD_UI_X11_WINDOW_H_ */
-

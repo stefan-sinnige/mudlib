@@ -1,9 +1,9 @@
 #if defined(WINDOWS) && defined(NATIVE)
-// This should not be here - it is socket specific!
-#include <winSock2.h>
-#include <windows.h>
+    // This should not be here - it is socket specific!
+    #include <winSock2.h>
+    #include <windows.h>
 #else
-#include <unistd.h>
+    #include <unistd.h>
 #endif
 #include "mud/core/exception.h"
 #include "mud/io/streambuf.h"
@@ -13,22 +13,19 @@
 BEGIN_MUDLIB_IO_NS
 
 basic_streambuf::basic_streambuf(
-        const std::unique_ptr<mud::core::handle>& handle,
-        size_t bufsize /* = 10 */,
-        size_t putbacksize /* = 4 */)
-    : _handle(handle), _bufsize(bufsize), _putbacksize(putbacksize)
+    const std::unique_ptr<mud::core::handle>& handle, size_t bufsize /* = 10 */,
+    size_t putbacksize /* = 4 */)
+  : _handle(handle), _bufsize(bufsize), _putbacksize(putbacksize)
 {
     /* Allocate the data structure */
     _buffer = new char[_bufsize + _putbacksize];
 
     /* Set the pointers for reading */
-    setg(_buffer + _putbacksize,
-            _buffer + _putbacksize,
-            _buffer + _putbacksize);
+    setg(_buffer + _putbacksize, _buffer + _putbacksize,
+         _buffer + _putbacksize);
 
     /* Set the pointers for writing */
-    setp(_buffer,
-            _buffer + (_bufsize - 1));
+    setp(_buffer, _buffer + (_bufsize - 1));
 }
 
 basic_streambuf::~basic_streambuf()
@@ -67,9 +64,8 @@ basic_streambuf::underflow()
     }
 
     /* Reset the buffer pointers with the number of characters read. */
-    setg(_buffer + _putbacksize,
-            _buffer + _putbacksize,
-            _buffer + _putbacksize + nread);
+    setg(_buffer + _putbacksize, _buffer + _putbacksize,
+         _buffer + _putbacksize + nread);
 
     /* Return the next character. */
     return traits_type::to_int_type(*gptr());
@@ -117,4 +113,3 @@ basic_streambuf::handle() const
 END_MUDLIB_IO_NS
 
 /* vi: set ai ts=4 expandtab: */
-

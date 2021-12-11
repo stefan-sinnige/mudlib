@@ -1,20 +1,21 @@
 #ifndef _MUDLIB_CORE_FACTORY_H_
 #define _MUDLIB_CORE_FACTORY_H_
 
-#include <map>
 #include <functional>
+#include <map>
+#include <mud/core/ns.h>
 #include <sstream>
 #include <stdexcept>
-#include <typeinfo>
 #include <typeindex>
-#include <mud/core/ns.h>
+#include <typeinfo>
 
 BEGIN_MUDLIB_CORE_NS
 
 /**
  * Forward declarartion to allow specializations.
  */
-template <typename, class, class...> class factory;
+template<typename, class, class...>
+class factory;
 
 /**
  * @brief Template class to create a generic factory by enumeration key.
@@ -41,9 +42,10 @@ public:
          * @brief Constructor that registers the class and key into the
          * factory.
          */
-        registrar() {
-            factory<AbstractKey, AbstractClass, Args...>::instance().
-            register_registrar(ConcreteKey, creator);
+        registrar()
+        {
+            factory<AbstractKey, AbstractClass, Args...>::instance()
+                .register_registrar(ConcreteKey, creator);
         }
 
         /**
@@ -56,10 +58,10 @@ public:
          * @brief The creator function that creates an instance of the
          * concrete class.
          */
-        static std::unique_ptr<AbstractClass>
-        creator(Args... args) {
+        static std::unique_ptr<AbstractClass> creator(Args... args)
+        {
             return std::unique_ptr<AbstractClass>(
-                            new ConcreteClass(std::forward<Args>(args)...));
+                new ConcreteClass(std::forward<Args>(args)...));
         }
 
         /**
@@ -131,15 +133,13 @@ private:
 
 template<typename AbstractKey, class AbstractClass, class... Args>
 std::unique_ptr<AbstractClass>
-factory<AbstractKey, AbstractClass, Args...>::create(
-        AbstractKey key, Args... args)
+factory<AbstractKey, AbstractClass, Args...>::create(AbstractKey key,
+                                                     Args... args)
 {
     auto find = _map.find(key);
-    if (find == _map.end())
-    {
+    if (find == _map.end()) {
         std::stringstream sstr;
-        sstr << "no creator registered in factory "
-                << typeid(*this).name();
+        sstr << "no creator registered in factory " << typeid(*this).name();
         throw std::invalid_argument(sstr.str());
     }
     return find->second(std::forward<Args>(args)...);
@@ -148,7 +148,7 @@ factory<AbstractKey, AbstractClass, Args...>::create(
 template<typename AbstractKey, class AbstractClass, class... Args>
 void
 factory<AbstractKey, AbstractClass, Args...>::register_registrar(
-        AbstractKey key, creator_type creator)
+    AbstractKey key, creator_type creator)
 {
     _map[key] = creator;
 }
@@ -178,9 +178,10 @@ public:
          * @brief Constructor that registers the class and key into the
          * factory.
          */
-        registrar() {
-            factory<std::type_index, AbstractClass, Args...>::instance().
-            register_registrar(typeid(ConcreteClass), creator);
+        registrar()
+        {
+            factory<std::type_index, AbstractClass, Args...>::instance()
+                .register_registrar(typeid(ConcreteClass), creator);
         }
 
         /**
@@ -193,10 +194,10 @@ public:
          * @brief The creator function that creates an instance of the
          * concrete class.
          */
-        static std::unique_ptr<AbstractClass>
-        creator(Args... args) {
+        static std::unique_ptr<AbstractClass> creator(Args... args)
+        {
             return std::unique_ptr<AbstractClass>(
-                            new ConcreteClass(std::forward<Args>(args)...));
+                new ConcreteClass(std::forward<Args>(args)...));
         }
 
         /**
@@ -231,8 +232,8 @@ public:
     /**
      * @brief The instance of the factory.
      */
-    static factory&
-    instance() {
+    static factory& instance()
+    {
         static factory _instance;
         return _instance;
     }
@@ -272,15 +273,13 @@ private:
 
 template<class AbstractClass, class... Args>
 std::unique_ptr<AbstractClass>
-factory<std::type_index, AbstractClass, Args...>::create(
-        std::type_index key, Args... args)
+factory<std::type_index, AbstractClass, Args...>::create(std::type_index key,
+                                                         Args... args)
 {
     auto find = _map.find(key);
-    if (find == _map.end())
-    {
+    if (find == _map.end()) {
         std::stringstream sstr;
-        sstr << "no creator registered in factory "
-                << typeid(*this).name();
+        sstr << "no creator registered in factory " << typeid(*this).name();
         throw std::invalid_argument(sstr.str());
     }
     return find->second(std::forward<Args>(args)...);
@@ -289,7 +288,7 @@ factory<std::type_index, AbstractClass, Args...>::create(
 template<class AbstractClass, class... Args>
 void
 factory<std::type_index, AbstractClass, Args...>::register_registrar(
-        std::type_index key, creator_type creator)
+    std::type_index key, creator_type creator)
 {
     _map[key] = creator;
 }
@@ -299,4 +298,3 @@ END_MUDLIB_CORE_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_CORE_FACTORY_H_ */
-

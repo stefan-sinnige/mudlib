@@ -1,14 +1,13 @@
-#include <stdio.h>
 #include <mud/test.h>
+#include <stdio.h>
 
 void
 help(int retval)
 {
-    std::cout <<
-            "Command line options:\n"
-            "  --test <spec>   Specify the test(s) to run:\n"
-            "                      feature[#<scenario>]\n"
-            "  --help          Show this help\n";
+    std::cout << "Command line options:\n"
+                 "  --test <spec>   Specify the test(s) to run:\n"
+                 "                      feature[#<scenario>]\n"
+                 "  --help          Show this help\n";
     exit(retval);
 }
 
@@ -17,32 +16,22 @@ main(int argc, char** argv)
 {
     /* Parse command line arguments */
     std::string test;
-    while (--argc && *(++argv)[0] == '-')
-    {
-        if (strcmp(*argv, "--test") == 0)
-        {
-            if (!--argc)
-            {
+    while (--argc && *(++argv)[0] == '-') {
+        if (strcmp(*argv, "--test") == 0) {
+            if (!--argc) {
                 std::cerr << "Option --test requires a test specification\n";
                 help(1);
-            }
-            else
-            {
+            } else {
                 test = *(++argv);
             }
-        }
-        else if (strcmp(*argv, "--help") == 0 || strcmp(*argv, "-h") == 0)
-        {
+        } else if (strcmp(*argv, "--help") == 0 || strcmp(*argv, "-h") == 0) {
             help(0);
-        }
-        else
-        {
+        } else {
             std::cerr << "Unrecognised command line option(s)\n";
             help(1);
         }
     }
-    if (argc)
-    {
+    if (argc) {
         std::cerr << "Unrecognised command line option(s)\n";
         help(1);
     }

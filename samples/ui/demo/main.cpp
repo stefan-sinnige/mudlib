@@ -1,13 +1,13 @@
+#include <iostream>
 #include <mud/ui/application.h>
 #include <mud/ui/pushbutton.h>
 #include <mud/ui/window.h>
-#include <iostream>
 
 /* ======================================================================
  * Main Window
  * ====================================================================== */
 
-class main_window: public mud::ui::window
+class main_window : public mud::ui::window
 {
 public:
     main_window();
@@ -18,10 +18,7 @@ private:
     mud::ui::pushbutton _pushbutton;
 };
 
-main_window::main_window()
-    : _pushbutton(*this)
-{
-}
+main_window::main_window() : _pushbutton(*this) {}
 
 void
 main_window::initialise()
@@ -30,8 +27,8 @@ main_window::initialise()
 
     // Initialise the push-button
     _pushbutton.property<mud::ui::position>(10, 10)
-    .property<mud::ui::size>(80, 25)
-    .property<mud::ui::text>("Press Me");
+        .property<mud::ui::size>(80, 25)
+        .property<mud::ui::text>("Press Me");
     _pushbutton.event([](const mud::ui::event::mouse& ev) {
         std::cout << "Mouse event" << std::endl;
     });
@@ -54,4 +51,3 @@ main(int argc, char** argv)
     // Start the application
     mud::ui::application::instance().loop();
 }
-

@@ -14,15 +14,11 @@ BEGIN_MUDLIB_UI_NS
  * occur on the UI thread, as is the lookup of the control. */
 std::map<Window, std::reference_wrapper<mud::ui::control>> g_controls;
 
-x11::control::control(mud::ui::control& ctrl)
-    : _control(ctrl),  _wnd(None)
-{
-}
+x11::control::control(mud::ui::control& ctrl) : _control(ctrl), _wnd(None) {}
 
 x11::control::~control()
 {
-    if (_wnd != None)
-    {
+    if (_wnd != None) {
         g_controls.erase(_wnd);
     }
 }
@@ -46,15 +42,13 @@ x11::control::find(Window ctrl)
 {
     // TODO: verify the current thread-id is the UI thread-id
     auto found = g_controls.find(ctrl);
-    if (found == g_controls.end())
-    {
+    if (found == g_controls.end()) {
         std::stringstream sstr;
         sstr << "no mud::ui::control associattion found for native control "
-                << "[" << (unsigned long)ctrl << "]";
+             << "[" << (unsigned long)ctrl << "]";
         throw std::runtime_error(sstr.str());
     }
     return found->second;
 }
 
 END_MUDLIB_UI_NS
-

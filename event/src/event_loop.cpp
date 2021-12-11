@@ -1,12 +1,12 @@
 #include "mud/event/event_loop.h"
 #include "posix/select_mechanism.h"
-#include <errno.h>
 #include <algorithm>
-#include <system_error>
+#include <errno.h>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
+#include <system_error>
 #include <vector>
 
 BEGIN_MUDLIB_EVENT_NS
@@ -71,8 +71,8 @@ private:
     mud::core::task_worker_pool<mud::core::simple_task> _pool;
 
     /** Map of supported event loop mechanisms */
-    std::map<mud::core::handle::type_t,
-        std::unique_ptr<event_mechanism>> _mechanisms;
+    std::map<mud::core::handle::type_t, std::unique_ptr<event_mechanism>>
+        _mechanisms;
 
     /** Lock to protect the list of mechanisms. */
     std::mutex _lock;
@@ -86,8 +86,8 @@ private:
 };
 
 event_loop::impl::impl()
-    : _queue(std::make_shared<mud::core::simple_task_queue>()),
-      _pool(_queue, 2), _running(false)
+  : _queue(std::make_shared<mud::core::simple_task_queue>()), _pool(_queue, 2),
+    _running(false)
 {
     /* Always load the select mechanism which is used by the self-signalling
      * resource. This is either a UDP socket connection or an unnamed pipe -
@@ -95,19 +95,16 @@ event_loop::impl::impl()
     add_mechanism(mud::core::handle::type_t::SELECT);
 }
 
-event_loop::impl::~impl()
-{
-}
+event_loop::impl::~impl() {}
 
 void
 event_loop::impl::add_mechanism(mud::core::handle::type_t type)
 {
     assert_not_running();
     std::lock_guard<std::mutex> lock(_lock);
-    if (_mechanisms.find(type) == _mechanisms.end())
-    {
-        auto mechanism = event_mechanism_factory::instance().create(
-                        type, _queue);
+    if (_mechanisms.find(type) == _mechanisms.end()) {
+        auto mechanism =
+            event_mechanism_factory::instance().create(type, _queue);
         _mechanisms[type] = std::move(mechanism);
     }
 }
@@ -119,12 +116,9 @@ event_loop::impl::register_handler(event&& event)
 
     // Register the event with the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
-    if (find != _mechanisms.end())
-    {
+    if (find != _mechanisms.end()) {
         find->second->register_handler(std::move(event));
-    }
-    else
-    {
+    } else {
         throw std::invalid_argument("event for unregistered mechanism");
     }
 }
@@ -136,8 +130,7 @@ event_loop::impl::deregister_handler(event&& event)
 
     // Deregister the event from the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
-    if (find != _mechanisms.end())
-    {
+    if (find != _mechanisms.end()) {
         find->second->deregister_handler(std::move(event));
     }
 }
@@ -146,8 +139,7 @@ void
 event_loop::impl::loop()
 {
     // Only run the loop if it is not yet running.
-    if (_running.exchange(true) == true)
-    {
+    if (_running.exchange(true) == true) {
         assert_not_running();
     }
 
@@ -165,29 +157,23 @@ event_loop::impl::loop()
     std::vector<std::shared_future<void>> futures;
     {
         std::lock_guard<std::mutex> lock(_lock);
-        for (auto& mech: _mechanisms)
-        {
-            if (mech.second->detachable())
-            {
+        for (auto& mech : _mechanisms) {
+            if (mech.second->detachable()) {
                 futures.push_back(mech.second->initiate());
-            }
-            else
-            {
+            } else {
                 non_detachable = mech.first;
             }
         }
     }
 
     // Run the mechanism on this thread that is not detachable
-    if (non_detachable != mud::core::handle::type_t::NONE)
-    {
+    if (non_detachable != mud::core::handle::type_t::NONE) {
         _mechanisms[non_detachable]->initiate();
     }
 
     // Wait until all mechanisms have stopped
-    for (auto future: futures)
-    {
-        //if (future.valid())
+    for (auto future : futures) {
+        // if (future.valid())
         {
             future.wait();
         }
@@ -209,8 +195,7 @@ event_loop::impl::terminate()
     _pool.terminate();
 
     // request to terminate  all mechanism.
-    for (auto& mech: _mechanisms)
-    {
+    for (auto& mech : _mechanisms) {
         mech.second->terminate();
     }
     _running = false;
@@ -221,8 +206,7 @@ event_loop::impl::terminate()
 void
 event_loop::impl::assert_not_running()
 {
-    if (_running == true)
-    {
+    if (_running == true) {
         throw std::invalid_argument("mud::event::event_loop already running");
     }
 }
@@ -234,12 +218,10 @@ event_loop::event_loop()
     _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
-event_loop::~event_loop()
-{
-}
+event_loop::~event_loop() {}
 
 void
-event_loop::add_mechanism (mud::core::handle::type_t type)
+event_loop::add_mechanism(mud::core::handle::type_t type)
 {
     _impl->add_mechanism(type);
 }
@@ -285,19 +267,18 @@ event::signal_type
 operator|(event::signal_type lhs, event::signal_type rhs)
 {
     return static_cast<event::signal_type>(
-                    static_cast<std::underlying_type<event::signal_type>::type>(lhs) |
-                    static_cast<std::underlying_type<event::signal_type>::type>(rhs));
+        static_cast<std::underlying_type<event::signal_type>::type>(lhs) |
+        static_cast<std::underlying_type<event::signal_type>::type>(rhs));
 }
 
 event::signal_type
 operator&(event::signal_type lhs, event::signal_type rhs)
 {
     return static_cast<event::signal_type>(
-                    static_cast<std::underlying_type<event::signal_type>::type>(lhs) &
-                    static_cast<std::underlying_type<event::signal_type>::type>(rhs));
+        static_cast<std::underlying_type<event::signal_type>::type>(lhs) &
+        static_cast<std::underlying_type<event::signal_type>::type>(rhs));
 }
 
 END_MUDLIB_EVENT_NS
 
 /* vi: set ai ts=4 expandtab: */
-

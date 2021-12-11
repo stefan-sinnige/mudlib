@@ -4,7 +4,7 @@
 @end
 
 @implementation View
-- (BOOL) isFlipped
+- (BOOL)isFlipped
 {
     return YES;
 }
@@ -23,14 +23,12 @@ BEGIN_MUDLIB_UI_NS
 std::map<NSWindow*, std::reference_wrapper<mud::ui::window>> g_windows;
 
 window::impl::impl(window& wnd)
-    : cocoa::control(wnd), _window(wnd), _wnd(nullptr), _vw(nullptr)
-{
-}
+  : cocoa::control(wnd), _window(wnd), _wnd(nullptr), _vw(nullptr)
+{}
 
 window::impl::~impl()
 {
-    if (_wnd != nullptr)
-    {
+    if (_wnd != nullptr) {
         g_windows.erase(_wnd);
     }
 }
@@ -40,38 +38,33 @@ window::impl::initialise()
 {
     // Create the Cocoa window
     NSRect rect = NSMakeRect(
-                    _window.property<position>().x(),
-                    _window.property<position>().y(),
-                    _window.property<size>().width(),
-                    _window.property<size>().height());
+        _window.property<position>().x(), _window.property<position>().y(),
+        _window.property<size>().width(), _window.property<size>().height());
     _wnd = [[[Window alloc]
-                            initWithContentRect: rect
-                            styleMask: NSWindowStyleMaskClosable |
+        initWithContentRect:rect
+                  styleMask:NSWindowStyleMaskClosable |
                             NSWindowStyleMaskMiniaturizable |
-                            NSWindowStyleMaskResizable |
-                            NSWindowStyleMaskTitled
-                            backing: NSBackingStoreBuffered
-                            defer: false] autorelease];
+                            NSWindowStyleMaskResizable | NSWindowStyleMaskTitled
+                    backing:NSBackingStoreBuffered
+                      defer:false] autorelease];
     if (!_wnd) {
         throw std::runtime_error("cannot create window");
     }
     g_windows.emplace(_wnd, std::ref(_window));
 
     // Create the Cocoa view
-    _vw = [[[View alloc]
-                            initWithFrame: NSZeroRect] autorelease];
-    [_vw setWantsLayer: YES];
-    [_wnd makeFirstResponder: _vw];
-    [_wnd setContentView: _vw];
+    _vw = [[[View alloc] initWithFrame:NSZeroRect] autorelease];
+    [_vw setWantsLayer:YES];
+    [_wnd makeFirstResponder:_vw];
+    [_wnd setContentView:_vw];
 
     // Initialise all controls
-    for (auto& control: _controls)
-    {
+    for (auto& control : _controls) {
         control.get().initialise();
     }
 
     // Push it to the foreground
-    [_wnd makeKeyAndOrderFront: _wnd];
+    [_wnd makeKeyAndOrderFront:_wnd];
 }
 
 void
@@ -83,15 +76,13 @@ window::impl::add_control(mud::ui::control& ctrl)
 mud::ui::control&
 window::impl::control(const mud::ui::position& pos) const
 {
-    for (auto& control: _controls)
-    {
+    for (auto& control : _controls) {
         auto& ctrl_pos = control.get().property<position>();
-        auto& ctrl_sz  = control.get().property<size>();
+        auto& ctrl_sz = control.get().property<size>();
         if (pos.x() >= ctrl_pos.x() &&
-                pos.x() <= ctrl_pos.x() + ctrl_sz.width()  &&
-                pos.y() >= ctrl_pos.y() &&
-                pos.y() <= ctrl_pos.y() + ctrl_sz.height())
-        {
+            pos.x() <= ctrl_pos.x() + ctrl_sz.width() &&
+            pos.y() >= ctrl_pos.y() &&
+            pos.y() <= ctrl_pos.y() + ctrl_sz.height()) {
             return control;
         }
     }
@@ -109,11 +100,10 @@ cocoa::window::find(NSWindow* wnd)
 {
     // TODO: verify the current thread-id is the UI thread-id
     auto found = g_windows.find(wnd);
-    if (found == g_windows.end())
-    {
+    if (found == g_windows.end()) {
         std::stringstream sstr;
         sstr << "no mud::ui::window associattion found for native control "
-                << "[" << (void*)wnd << "]";
+             << "[" << (void*)wnd << "]";
         throw std::runtime_error(sstr.str());
     }
     return found->second;
@@ -127,9 +117,7 @@ window::window()
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this));
 }
 
-window::~window()
-{
-}
+window::~window() {}
 
 void
 window::initialise()
@@ -139,8 +127,7 @@ window::initialise()
 
 void
 window::dispatch(const event& event)
-{
-}
+{}
 
 mud::ui::control&
 window::control(const mud::ui::position& pos) const
@@ -157,4 +144,3 @@ window::impl::get(window& wnd)
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

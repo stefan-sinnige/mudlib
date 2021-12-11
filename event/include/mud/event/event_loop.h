@@ -3,10 +3,10 @@
 
 #include <functional>
 #include <memory>
-#include <mud/event/ns.h>
 #include <mud/core/handle.h>
 #include <mud/event/event.h>
 #include <mud/event/event_mechanism.h>
+#include <mud/event/ns.h>
 
 BEGIN_MUDLIB_EVENT_NS
 
@@ -115,7 +115,8 @@ private:
      * Platform specific implementation.
      */
     class impl;
-    struct impl_deleter {
+    struct impl_deleter
+    {
         void operator()(impl*) const;
     };
     std::unique_ptr<impl, impl_deleter> _impl;

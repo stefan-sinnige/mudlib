@@ -1,6 +1,6 @@
 #include "mud/core/handle.h"
-#include <system_error>
 #include <fcntl.h>
+#include <system_error>
 #include <unistd.h>
 
 BEGIN_MUDLIB_CORE_NS
@@ -9,7 +9,7 @@ BEGIN_MUDLIB_CORE_NS
  * Implementation of a @signal signalling resource.
  */
 template<>
-//class handle::signal<handle::type_t::SELECT>::impl
+// class handle::signal<handle::type_t::SELECT>::impl
 class select_handle::signal::impl
 {
 public:
@@ -48,8 +48,7 @@ private:
 
 template<>
 void
-select_handle::signal::impl_deleter::operator()(
-        signal::impl* ptr) const
+select_handle::signal::impl_deleter::operator()(signal::impl* ptr) const
 {
     delete ptr;
 }
@@ -65,14 +64,14 @@ select_handle::signal::impl::impl()
     /* Ensure non-blocking I/O */
     if (::fcntl(pfd[0], F_SETFL, O_NONBLOCK) == -1) {
         throw std::system_error(errno, std::system_category(),
-                "set pipe non-blocking");
+                                "set pipe non-blocking");
     }
 
     /* Set the ownership of the pipe handles */
-    _read_handle  = std::unique_ptr<mud::core::handle>(
-                    new mud::core::select_handle(int(pfd[0])));
+    _read_handle = std::unique_ptr<mud::core::handle>(
+        new mud::core::select_handle(int(pfd[0])));
     _write_handle = std::unique_ptr<mud::core::handle>(
-                    new mud::core::select_handle(int(pfd[1])));
+        new mud::core::select_handle(int(pfd[1])));
 }
 
 select_handle::signal::impl::~impl()
@@ -97,7 +96,7 @@ void
 select_handle::signal::impl::trigger()
 {
     char ch = 'N';
-    (void) ::write(mud::core::internal_handle<int>(_write_handle), &ch, 1);
+    (void)::write(mud::core::internal_handle<int>(_write_handle), &ch, 1);
 }
 
 bool
@@ -118,8 +117,7 @@ select_handle::signal::signal()
 
 template<>
 select_handle::signal::~signal()
-{
-}
+{}
 
 template<>
 const std::unique_ptr<mud::core::handle>&

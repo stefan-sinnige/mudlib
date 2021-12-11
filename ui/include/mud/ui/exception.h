@@ -2,15 +2,15 @@
 #define _MUDLIB_UI_EXCEPTION_H_
 
 #include <exception>
-#include <string>
 #include <mud/ui/ns.h>
+#include <string>
 
 BEGIN_MUDLIB_UI_NS
 
 /**
  * @brief Reporting exceptions related to the underlying UI mechanism.
  */
-class exception: public std::exception
+class exception : public std::exception
 {
 public:
     /**
@@ -35,19 +35,11 @@ private:
     std::string _what;
 };
 
-inline
-exception::exception(const std::string& what)
-    : _what(what)
-{
-}
+inline exception::exception(const std::string& what) : _what(what) {}
 
-inline
-exception::~exception()
-{
-}
+inline exception::~exception() {}
 
-inline
-const char*
+inline const char*
 exception::what() const noexcept
 {
     return _what.c_str();

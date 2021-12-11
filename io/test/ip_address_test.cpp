@@ -3,7 +3,7 @@
 #include <memory>
 #include <type_traits>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 CONTEXT()
     mud::io::ip::address addr;
@@ -70,6 +70,6 @@ FEATURE("IP Address")
 
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

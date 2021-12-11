@@ -14,15 +14,12 @@ BEGIN_MUDLIB_UI_NS
  * occur on the UI thread, as is the lookup of the control. */
 std::map<NSControl*, std::reference_wrapper<mud::ui::control>> g_controls;
 
-cocoa::control::control(mud::ui::control& ctrl)
-    : _control(ctrl),  _ctrl(nullptr)
-{
-}
+cocoa::control::control(mud::ui::control& ctrl) : _control(ctrl), _ctrl(nullptr)
+{}
 
 cocoa::control::~control()
 {
-    if (_ctrl != nullptr)
-    {
+    if (_ctrl != nullptr) {
         g_controls.erase(_ctrl);
     }
 }
@@ -46,15 +43,13 @@ cocoa::control::find(NSControl* ctrl)
 {
     // TODO: verify the current thread-id is the UI thread-id
     auto found = g_controls.find(ctrl);
-    if (found == g_controls.end())
-    {
+    if (found == g_controls.end()) {
         std::stringstream sstr;
         sstr << "no mud::ui::control associattion found for native control "
-                << "[" << (void*)ctrl << "]";
+             << "[" << (void*)ctrl << "]";
         throw std::runtime_error(sstr.str());
     }
     return found->second;
 }
 
 END_MUDLIB_UI_NS
-

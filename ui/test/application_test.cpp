@@ -1,12 +1,12 @@
-#include "mud/ui/application.h"
-#include "mud/ui/window.h"
 #include "mud/core/task.h"
 #include "mud/test.h"
+#include "mud/ui/application.h"
+#include "mud/ui/window.h"
 #include <future>
 #include <memory>
 #include <type_traits>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 /* The task queue for the test-cases to run the application object on the
  * main thread.  */
@@ -101,6 +101,6 @@ FEATURE("Application")
 
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

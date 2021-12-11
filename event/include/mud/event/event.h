@@ -3,8 +3,8 @@
 
 #include <functional>
 #include <memory>
-#include <mud/event/ns.h>
 #include <mud/core/handle.h>
+#include <mud/event/ns.h>
 
 BEGIN_MUDLIB_EVENT_NS
 
@@ -28,10 +28,10 @@ public:
      */
     enum class signal_type : int32_t
     {
-        NONE     = 0,         /**< No mask */
-        READY    = ~0,        /**< Any event (non-descriptive) */
-        READING  = (1 <<  1), /**< Reading */
-        WRITING  = (1 <<  2)  /**< Writing */
+        NONE = 0,           /**< No mask */
+        READY = ~0,         /**< Any event (non-descriptive) */
+        READING = (1 << 1), /**< Reading */
+        WRITING = (1 << 2)  /**< Writing */
     };
 
     /**
@@ -39,8 +39,8 @@ public:
      */
     enum class return_type
     {
-        REMOVE   = 0,         /**< Remove the registration */
-        CONTINUE = 1          /**< Continue with same registration */
+        REMOVE = 0,  /**< Remove the registration */
+        CONTINUE = 1 /**< Continue with same registration */
     };
 
     /**
@@ -55,7 +55,7 @@ public:
      * @param handler [in] The callable handler function
      */
     event(const std::unique_ptr<mud::core::handle>& handle, signal_type mask,
-            function_type&& handler);
+          function_type&& handler);
 
     /**
      * @brief Constructor for lookup purposes only.
@@ -125,12 +125,14 @@ private:
 /**
  * Bit-wise OR of event signals.
  */
-event::signal_type operator|(event::signal_type lhs, event::signal_type rhs);
+event::signal_type
+operator|(event::signal_type lhs, event::signal_type rhs);
 
 /**
  * Bit-wise AND of event signals.
  */
-event::signal_type operator&(event::signal_type lhs, event::signal_type rhs);
+event::signal_type
+operator&(event::signal_type lhs, event::signal_type rhs);
 
 END_MUDLIB_EVENT_NS
 

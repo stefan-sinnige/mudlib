@@ -1,11 +1,11 @@
 #include "mud/core/task.h"
 #include "mud/test.h"
 #include <memory>
+#include <stdexcept>
 #include <thread>
 #include <type_traits>
-#include <stdexcept>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 CONTEXT()
     /* Constructor initialised for each scenario run */
@@ -316,6 +316,6 @@ FEATURE("Task")
 
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format-on */
 
 /* vi: set ai ts=4 expandtab: */

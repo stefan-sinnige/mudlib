@@ -1,9 +1,9 @@
 #ifndef _MUDLIB_IO_H_
 #define _MUDLIB_IO_H_
 
-#include <mud/io/ns.h>
 #include <mud/io/exception.h>
 #include <mud/io/io.h>
+#include <mud/io/ns.h>
 #include <mud/io/pipe.h>
 #include <mud/io/socket.h>
 #include <mud/io/streambuf.h>

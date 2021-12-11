@@ -14,8 +14,12 @@
     #define MUDLIB_CORE_API_EXPORT
 #endif
 
-#define BEGIN_MUDLIB_CORE_NS namespace mud { namespace core {
-#define END_MUDLIB_CORE_NS   } }
+#define BEGIN_MUDLIB_CORE_NS                                                   \
+    namespace mud {                                                            \
+        namespace core {
+#define END_MUDLIB_CORE_NS                                                     \
+    }                                                                          \
+    }
 
 /* vi: set ai ts=4 expandtab: */
 

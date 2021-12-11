@@ -1,23 +1,21 @@
+#include "x11/x11_pushbutton.h"
 #include "mud/ui/application.h"
 #include "mud/ui/event.h"
-#include "mud/ui/task.h"
 #include "mud/ui/pushbutton.h"
+#include "mud/ui/task.h"
 #include "x11/x11_application.h"
-#include "x11/x11_pushbutton.h"
 #include "x11/x11_theme.h"
 #include "x11/x11_window.h"
 
 BEGIN_MUDLIB_UI_NS
 
 pushbutton::impl::impl(pushbutton& pb, window& parent)
-    : x11::control(pb), _pushbutton(pb), _parent(parent)
+  : x11::control(pb), _pushbutton(pb), _parent(parent)
 {
     window::impl::get(_parent)->add_control(pb);
 }
 
-pushbutton::impl::~impl()
-{
-}
+pushbutton::impl::~impl() {}
 
 void
 pushbutton::impl::initialise()
@@ -28,26 +26,21 @@ pushbutton::impl::initialise()
     Window parent = window::impl::get(_parent)->NativeControl();
 
     // Get the gaphics context for thw window
-    GC gc = x11::theme::instance().gc(
-                    x11::theme::item_t::WINDOW,
-                    x11::theme::state_t::PASSIVE);
+    GC gc = x11::theme::instance().gc(x11::theme::item_t::WINDOW,
+                                      x11::theme::state_t::PASSIVE);
     XGCValues gc_values;
     XGetGCValues(dpy, gc, GCForeground | GCBackground, &gc_values);
 
     // Draw the window
-    Window btn = ::XCreateSimpleWindow(
-                    dpy,
-                    parent,
-                    _pushbutton.property<position>().x(),
-                    _pushbutton.property<position>().y(),
-                    _pushbutton.property<size>().width(),
-                    _pushbutton.property<size>().height(),
-                    0,
-                    gc_values.foreground,
-                    gc_values.background);
+    Window btn =
+        ::XCreateSimpleWindow(dpy, parent, _pushbutton.property<position>().x(),
+                              _pushbutton.property<position>().y(),
+                              _pushbutton.property<size>().width(),
+                              _pushbutton.property<size>().height(), 0,
+                              gc_values.foreground, gc_values.background);
     XSelectInput(dpy, btn,
-            ExposureMask | KeyPressMask |
-            ButtonPressMask | ButtonReleaseMask);
+                 ExposureMask | KeyPressMask | ButtonPressMask |
+                     ButtonReleaseMask);
     XMapWindow(dpy, btn);
     XFlush(dpy);
     NativeControl(btn);
@@ -76,9 +69,8 @@ pushbutton::impl::draw_rectangle(Display* dpy, int scr, Drawable win)
     cornerwidth = cornerheight = 7;
 
     // Get the gaphics context for the button background
-    GC gc = x11::theme::instance().gc(
-                    x11::theme::item_t::BACKGROUND,
-                    x11::theme::state_t::PASSIVE);
+    GC gc = x11::theme::instance().gc(x11::theme::item_t::BACKGROUND,
+                                      x11::theme::state_t::PASSIVE);
 
     // Create the four cornered filled corners.
 
@@ -151,18 +143,17 @@ pushbutton::impl::draw_text(Display* dpy, int scr, Drawable win)
     int height = _pushbutton.property<size>().height();
 
     // Get the gaphics context for the font and the font itself
-    GC gc = x11::theme::instance().gc(
-                    x11::theme::item_t::BACKGROUND,
-                    x11::theme::state_t::PASSIVE);
+    GC gc = x11::theme::instance().gc(x11::theme::item_t::BACKGROUND,
+                                      x11::theme::state_t::PASSIVE);
     XftFont* xft_font = x11::theme::instance().font();
 
     // Get the width of the text if drawn with the font and calculate the
     // text (x, y) coordinates for a centred text.
     XGlyphInfo extents;
-    XftTextExtentsUtf8(dpy, xft_font, (const XftChar8*)txt.c_str(),
-            txt.size(), &extents);
-    int tx = (width - extents.width)/2;
-    int ty = height - (height - x11::theme::instance().font_height())/2;
+    XftTextExtentsUtf8(dpy, xft_font, (const XftChar8*)txt.c_str(), txt.size(),
+                       &extents);
+    int tx = (width - extents.width) / 2;
+    int ty = height - (height - x11::theme::instance().font_height()) / 2;
 
     // Draw the text
     XColor color;
@@ -173,9 +164,9 @@ pushbutton::impl::draw_text(Display* dpy, int scr, Drawable win)
     xft_color.color.blue = color.blue;
     xft_color.color.alpha = 0xffff;
     XftDraw* xft_draw = XftDrawCreate(dpy, win, DefaultVisual(dpy, scr),
-                    x11::theme::instance().colormap());
+                                      x11::theme::instance().colormap());
     XftDrawStringUtf8(xft_draw, &xft_color, xft_font, tx, ty,
-            (XftChar8*)txt.c_str(), txt.size());
+                      (XftChar8*)txt.c_str(), txt.size());
     XftDrawDestroy(xft_draw);
 }
 
@@ -193,9 +184,7 @@ pushbutton::pushbutton(window& parent)
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, parent));
 }
 
-pushbutton::~pushbutton()
-{
-}
+pushbutton::~pushbutton() {}
 
 void
 pushbutton::initialise()
@@ -206,14 +195,12 @@ pushbutton::initialise()
 void
 pushbutton::dispatch(const mud::ui::event& event)
 {
-    switch (event.type())
-    {
+    switch (event.type()) {
         case event::type_t::EXPOSE:
             _impl->expose();
             break;
         case mud::ui::event::type_t::MOUSE:
-            if (_mouse_event_fn != nullptr)
-            {
+            if (_mouse_event_fn != nullptr) {
                 auto& ev = static_cast<const mud::ui::event::mouse&>(event);
                 _mouse_event_fn(ev);
             }
@@ -227,4 +214,3 @@ pushbutton::dispatch(const mud::ui::event& event)
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

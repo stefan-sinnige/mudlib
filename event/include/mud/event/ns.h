@@ -11,8 +11,12 @@
     #define MUDLIB_EVENT_API
 #endif
 
-#define BEGIN_MUDLIB_EVENT_NS namespace mud { namespace event {
-#define END_MUDLIB_EVENT_NS   } }
+#define BEGIN_MUDLIB_EVENT_NS                                                  \
+    namespace mud {                                                            \
+        namespace event {
+#define END_MUDLIB_EVENT_NS                                                    \
+    }                                                                          \
+    }
 
 /* vi: set ai ts=4 expandtab: */
 

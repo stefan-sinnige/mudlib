@@ -1,8 +1,8 @@
+#include "x11/x11_theme.h"
 #include "mud/ui/exception.h"
 #include "x11/x11_application.h"
-#include "x11/x11_theme.h"
-#include <X11/Xlib.h>
 #include <X11/Xft/Xft.h>
+#include <X11/Xlib.h>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -26,7 +26,7 @@ x11::theme::theme()
     int nr;
     visualinfo = XGetVisualInfo(dpy, 0, NULL, &nr);
     _colormap = XCreateColormap(dpy, DefaultRootWindow(dpy), visualinfo->visual,
-                    AllocNone);
+                                AllocNone);
     XColor color;
 
     // Window background colours
@@ -66,38 +66,33 @@ x11::theme::theme()
     // Window
     memset(&gc_values, 0, sizeof(XGCValues));
     gc_mask = GCForeground | GCBackground;
-    gc_values.foreground =
-            _color_map[item_t::WINDOW][state_t::PASSIVE].pixel;
-    gc_values.background =
-            _color_map[item_t::WINDOW][state_t::PASSIVE].pixel;
+    gc_values.foreground = _color_map[item_t::WINDOW][state_t::PASSIVE].pixel;
+    gc_values.background = _color_map[item_t::WINDOW][state_t::PASSIVE].pixel;
     _gc_map[item_t::WINDOW][state_t::PASSIVE] =
-            XCreateGC(dpy, DefaultRootWindow(dpy), gc_mask,  &gc_values);
+        XCreateGC(dpy, DefaultRootWindow(dpy), gc_mask, &gc_values);
 
     // Control background
     memset(&gc_values, 0, sizeof(XGCValues));
     gc_mask = GCForeground | GCBackground | GCLineWidth;
     gc_values.foreground =
-            _color_map[item_t::BACKGROUND][state_t::PASSIVE].pixel;
+        _color_map[item_t::BACKGROUND][state_t::PASSIVE].pixel;
     gc_values.background =
-            _color_map[item_t::BACKGROUND][state_t::PASSIVE].pixel;
+        _color_map[item_t::BACKGROUND][state_t::PASSIVE].pixel;
     _gc_map[item_t::BACKGROUND][state_t::PASSIVE] =
-            XCreateGC(dpy, DefaultRootWindow(dpy), gc_mask,  &gc_values);
+        XCreateGC(dpy, DefaultRootWindow(dpy), gc_mask, &gc_values);
     memset(&gc_values, 0, sizeof(XGCValues));
     gc_mask = GCForeground | GCBackground | GCLineWidth;
     gc_values.foreground =
-            _color_map[item_t::BACKGROUND][state_t::ACTIVE].pixel;
+        _color_map[item_t::BACKGROUND][state_t::ACTIVE].pixel;
     gc_values.background =
-            _color_map[item_t::BACKGROUND][state_t::ACTIVE].pixel;
+        _color_map[item_t::BACKGROUND][state_t::ACTIVE].pixel;
     _gc_map[item_t::BACKGROUND][state_t::ACTIVE] =
-            XCreateGC(dpy, DefaultRootWindow(dpy), gc_mask,  &gc_values);
+        XCreateGC(dpy, DefaultRootWindow(dpy), gc_mask, &gc_values);
 
     // Lookup the most appropriate font
-    _font = XftFontOpen(dpy, scr,
-                    XFT_FAMILY, XftTypeString, "Helvetica neue",
-                    XFT_SIZE, XftTypeDouble, 11.0,
-                    NULL);
-    if (_font == nullptr)
-    {
+    _font = XftFontOpen(dpy, scr, XFT_FAMILY, XftTypeString, "Helvetica neue",
+                        XFT_SIZE, XftTypeDouble, 11.0, NULL);
+    if (_font == nullptr) {
         throw std::runtime_error("No appropriate font found.");
     }
     XGlyphInfo extents;
@@ -112,30 +107,24 @@ x11::theme::~theme()
     Display* dpy = application.display().get();
 
     // Free all graphics contexts
-    for (auto& item_entry: _gc_map)
-    {
-        for (auto& state_entry: item_entry.second)
-        {
-            if (state_entry.second != nullptr)
-            {
+    for (auto& item_entry : _gc_map) {
+        for (auto& state_entry : item_entry.second) {
+            if (state_entry.second != nullptr) {
                 XFreeGC(dpy, state_entry.second);
             }
         }
     }
 
     // Free all color allocations and color map
-    for (auto& item_entry: _color_map)
-    {
-        for (auto& state_entry: item_entry.second)
-        {
+    for (auto& item_entry : _color_map) {
+        for (auto& state_entry : item_entry.second) {
             XFreeColors(dpy, _colormap, &(state_entry.second.pixel), 1, 0);
         }
     }
     XFreeColormap(dpy, _colormap);
 
     // Close the font
-    if (_font != nullptr)
-    {
+    if (_font != nullptr) {
         XftFontClose(dpy, _font);
     }
 }
@@ -150,11 +139,9 @@ XColor
 x11::theme::color(x11::theme::item_t item, x11::theme::state_t state) const
 {
     auto item_entry = _color_map.find(item);
-    if (item_entry != _color_map.end())
-    {
+    if (item_entry != _color_map.end()) {
         auto state_entry = item_entry->second.find(state);
-        if (state_entry != item_entry->second.end())
-        {
+        if (state_entry != item_entry->second.end()) {
             return state_entry->second;
         }
     }
@@ -165,11 +152,9 @@ GC
 x11::theme::gc(x11::theme::item_t item, x11::theme::state_t state) const
 {
     auto item_entry = _gc_map.find(item);
-    if (item_entry != _gc_map.end())
-    {
+    if (item_entry != _gc_map.end()) {
         auto state_entry = item_entry->second.find(state);
-        if (state_entry != item_entry->second.end())
-        {
+        if (state_entry != item_entry->second.end()) {
             return state_entry->second;
         }
     }
@@ -191,4 +176,3 @@ x11::theme::font_height() const
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

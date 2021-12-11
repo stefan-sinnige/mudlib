@@ -1,8 +1,8 @@
-#include <iostream>
-#include <string>
-#include <list>
 #include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
+#include <iostream>
+#include <list>
+#include <string>
 
 // Forward declarations
 class server;
@@ -24,10 +24,7 @@ public:
     ~client();
 
     // Flag to indicate if client is still connected
-    bool
-    connected() const {
-        return _connected;
-    }
+    bool connected() const { return _connected; }
 
 private:
     // The handler when receiving data
@@ -40,17 +37,14 @@ private:
     bool _connected;
 };
 
-client::client(mud::io::tcp::socket&& socket)
-    : _connected(true)
+client::client(mud::io::tcp::socket&& socket) : _connected(true)
 {
     // Open the communication channel
     _communicator.on_receive(std::bind(&client::on_receive, this));
     _communicator.open(std::move(socket));
 }
 
-client::~client()
-{
-}
+client::~client() {}
 
 void
 client::on_receive()
@@ -59,7 +53,7 @@ client::on_receive()
     std::string msg;
     _communicator.istr() >> msg;
     if (_communicator.istr().fail()) {
-        std::cout << "Connection closed" <<std::endl;
+        std::cout << "Connection closed" << std::endl;
         _connected = false;
         _communicator.close();
         return;
@@ -68,7 +62,7 @@ client::on_receive()
 
     // Response
     msg = "Goodbye";
-    std::cout << "Sending  : " << msg <<  std::endl;
+    std::cout << "Sending  : " << msg << std::endl;
     _communicator.ostr() << msg << std::endl;
     _communicator.close();
 }
@@ -97,21 +91,19 @@ private:
 
 server::server()
 {
-    _acceptor.on_accept(std::bind(&server::on_accept, this,
-                    std::placeholders::_1));
+    _acceptor.on_accept(
+        std::bind(&server::on_accept, this, std::placeholders::_1));
 }
 
-server::~server()
-{
-}
+server::~server() {}
 
 void
 server::run(const std::string& host, uint16_t port)
 {
     // Setup the acceptor.
     _acceptor.open(mud::io::tcp::endpoint(host, port));
-    std::cout << "Waiting for clients to connect to "
-            << host << ":" << port << std::endl;
+    std::cout << "Waiting for clients to connect to " << host << ":" << port
+              << std::endl;
 }
 
 void
@@ -119,27 +111,22 @@ server::on_accept(mud::io::tcp::socket&& socket)
 {
     // Accepting the client that is currently waiting.
     std::cout << "Connected ["
-            << "local: "  << socket.source_endpoint().address().str()
-            << ":"        << socket.source_endpoint().port() << " <-> "
-            << "remote: " << socket.destination_endpoint().address().str()
-            << ":"        << socket.destination_endpoint().port() << "]"
-            << std::endl;
+              << "local: " << socket.source_endpoint().address().str() << ":"
+              << socket.source_endpoint().port() << " <-> "
+              << "remote: " << socket.destination_endpoint().address().str()
+              << ":" << socket.destination_endpoint().port() << "]"
+              << std::endl;
 
     // Add the client to the list.
     clients.push_back(new client(std::move(socket)));
 
     // Remove any disconnected clients
-    for (auto iter = clients.begin();
-            iter != clients.end();
-            /* iterator progressed inside loop */)
-    {
-        if (!(*iter)->connected())
-        {
+    for (auto iter = clients.begin(); iter != clients.end();
+         /* iterator progressed inside loop */) {
+        if (!(*iter)->connected()) {
             delete *iter;
             iter = clients.erase(iter);
-        }
-        else
-        {
+        } else {
             ++iter;
         }
     }
@@ -160,7 +147,7 @@ main(int argc, char** argv)
             --argc, ++argv;
             if (argc <= 0) {
                 std::cerr << "Error: Option --host requires an argument."
-                        << std::endl;
+                          << std::endl;
                 return 1;
             }
             host = *argv;
@@ -169,7 +156,7 @@ main(int argc, char** argv)
             --argc, ++argv;
             if (argc <= 0) {
                 std::cerr << "Error: Option --port requires an argument."
-                        << std::endl;
+                          << std::endl;
                 return 1;
             }
             port = atoi(*argv);
@@ -178,12 +165,9 @@ main(int argc, char** argv)
 
     // Create the server.
     server server;
-    try
-    {
+    try {
         server.run(host, port);
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;
     }

@@ -42,8 +42,7 @@ private:
 
 template<>
 void
-windows_handle::signal::impl_deleter::operator()(
-        signal::impl* ptr) const
+windows_handle::signal::impl_deleter::operator()(signal::impl* ptr) const
 {
     delete ptr;
 }
@@ -55,13 +54,12 @@ windows_handle::signal::impl::impl()
 
     // Dave the handle
     _handle = std::unique_ptr<mud::core::handle>(
-                    new mud::core::windows_handle(handle));
+        new mud::core::windows_handle(handle));
 }
 
 windows_handle::signal::impl::~impl()
 {
-    if (_handle != nullptr)
-    {
+    if (_handle != nullptr) {
         ::CloseHandle(mud::core::internal_handle<HANDLE>(_handle));
         _handle.reset(nullptr);
     }
@@ -97,8 +95,7 @@ windows_handle::signal::signal()
 
 template<>
 windows_handle::signal::~signal()
-{
-}
+{}
 
 template<>
 const std::unique_ptr<mud::core::handle>&

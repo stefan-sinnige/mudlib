@@ -1,10 +1,10 @@
 #ifndef _MUDLIB_EVENT_TEST_MECHANISM_H_
 #define _MUDLIB_EVENT_TEST_MECHANISM_H_
 
-#include <mud/core/handle.h>
-#include <mud/event/event_mechanism.h>
 #include <list>
 #include <map>
+#include <mud/core/handle.h>
+#include <mud/event/event_mechanism.h>
 
 /*
  * Simulation of simple OS handle with a state to indicate if there is
@@ -49,7 +49,7 @@ private:
  * A Test mechanism for the test-resources. The main loop running on the
  * separate thread is implementing a simple polling mechanism.
  */
-class test_mechanism: public mud::event::event_mechanism
+class test_mechanism : public mud::event::event_mechanism
 {
 public:
     /* Type definition to the handler type */
@@ -88,4 +88,3 @@ private:
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_EVENT_TEST_MECHANISM_H_ */
-

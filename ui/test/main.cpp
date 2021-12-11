@@ -1,7 +1,7 @@
-#include <stdio.h>
 #include <future>
-#include <mud/test.h>
 #include <mud/core/task.h>
+#include <mud/test.h>
+#include <stdio.h>
 
 /* The delay to be applied to each test-run in order to visually verify the
  * affect of the test-cases. The delay is specified in milliseconds. */
@@ -14,12 +14,12 @@ mud::core::simple_task_queue g_app_queue;
 void
 help(int retval)
 {
-    std::cout <<
-            "Command line options:\n"
-            "  --test <spec>    Specify the test(s) to run:\n"
-            "                       feature[#<scenario>]\n"
-            "  --delay <msecs>  Wait for <msecs> at the end of each scenario\n"
-            "  --help           Show this help\n";
+    std::cout
+        << "Command line options:\n"
+           "  --test <spec>    Specify the test(s) to run:\n"
+           "                       feature[#<scenario>]\n"
+           "  --delay <msecs>  Wait for <msecs> at the end of each scenario\n"
+           "  --help           Show this help\n";
     exit(retval);
 }
 
@@ -31,44 +31,29 @@ main(int argc, char** argv)
 
     /* Parse command line arguments */
     std::string test;
-    while (--argc && *(++argv)[0] == '-')
-    {
-        if (strcmp(*argv, "--test") == 0)
-        {
-            if (!--argc)
-            {
+    while (--argc && *(++argv)[0] == '-') {
+        if (strcmp(*argv, "--test") == 0) {
+            if (!--argc) {
                 std::cerr << "Option --test requires a test specification\n";
                 help(1);
-            }
-            else
-            {
+            } else {
                 test = *(++argv);
             }
-        }
-        else if (strcmp(*argv, "--delay") == 0)
-        {
-            if (!--argc)
-            {
+        } else if (strcmp(*argv, "--delay") == 0) {
+            if (!--argc) {
                 std::cerr << "Option --delay requires a test specification\n";
                 help(1);
-            }
-            else
-            {
+            } else {
                 g_delay = atoi(*(++argv));
             }
-        }
-        else if (strcmp(*argv, "--help") == 0 || strcmp(*argv, "-h") == 0)
-        {
+        } else if (strcmp(*argv, "--help") == 0 || strcmp(*argv, "-h") == 0) {
             help(0);
-        }
-        else
-        {
+        } else {
             std::cerr << "Unrecognised command line option(s)\n";
             help(1);
         }
     }
-    if (argc)
-    {
+    if (argc) {
         std::cerr << "Unrecognised command line option(s)\n";
         help(1);
     }
@@ -96,11 +81,9 @@ main(int argc, char** argv)
 
     /* Continue to run the task loop. We stop running until the test-cases
      * have run. */
-    while (!g_app_queue.synchronisation()->_terminate)
-    {
+    while (!g_app_queue.synchronisation()->_terminate) {
         mud::core::simple_task tsk;
-        if (g_app_queue.wait_pop(tsk))
-        {
+        if (g_app_queue.wait_pop(tsk)) {
             tsk();
         }
     }

@@ -1,6 +1,6 @@
+#include "win32/win32_application.h"
 #include "mud/event/event_loop.h"
 #include "mud/ui/exception.h"
-#include "win32/win32_application.h"
 
 BEGIN_MUDLIB_UI_NS
 
@@ -22,24 +22,19 @@ win32::application::instance()
 win32::application::application()
 {
     mud::event::event_loop::global().add_mechanism(
-            mud::core::handle::type_t::W32WND);
+        mud::core::handle::type_t::W32WND);
 }
 
-win32::application::~application()
-{
-}
+win32::application::~application() {}
 
 void
 win32::application::initialise()
-{
-}
+{}
 
 void
 win32::application::finalise()
-{
-}
+{}
 
 END_MUDLIB_UI_NS
 
 /* vi: set ai ts=4 expandtab: */
-

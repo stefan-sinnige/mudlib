@@ -28,9 +28,10 @@ public:
     /**
      * @brief Enumeration of event types
      */
-    enum class type_t {
-        EXPOSE,     /**< Exposure event */
-        MOUSE       /**< Mouse event */
+    enum class type_t
+    {
+        EXPOSE, /**< Exposure event */
+        MOUSE   /**< Mouse event */
     };
 
     /**
@@ -85,7 +86,7 @@ event::control() const
  *
  * Not all UI implementations support the exposure event.
  */
-class MUDLIB_UI_API event::expose: public event
+class MUDLIB_UI_API event::expose : public event
 {
 public:
     /**
@@ -108,7 +109,7 @@ private:
  * A mouse event occurs when a mouse is clicked and/or moved within the
  * application's windows.
  */
-class MUDLIB_UI_API event::mouse: public event
+class MUDLIB_UI_API event::mouse : public event
 {
 public:
     /**
@@ -130,4 +131,3 @@ END_MUDLIB_UI_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_UI_EVENT_H_ */
-

@@ -2,8 +2,8 @@
 #define _MUDLIB_IO_EXCEPTION_H_
 
 #include <exception>
-#include <string>
 #include <mud/io/ns.h>
+#include <string>
 
 BEGIN_MUDLIB_IO_NS
 
@@ -11,7 +11,7 @@ BEGIN_MUDLIB_IO_NS
  * @brief Reporting I/O related exceptions. This is a generic exception that
  * more detailed exceptions are derived from.
  */
-class MUDLIB_IO_API exception: public std::exception
+class MUDLIB_IO_API exception : public std::exception
 {
 public:
     /**

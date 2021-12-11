@@ -1,13 +1,13 @@
 #if defined(WINDOWS) && defined(NATIVE)
+    #include <io.h>
     #include <winsock2.h>
     #include <ws2tcpip.h>
-    #include <io.h>
     #define RECVFROM_CAST (char*)
-    #define SENDTO_CAST   (const char*)
-    #define WOULDBLOCK    WSAEWOULDBLOCK
+    #define SENDTO_CAST (const char*)
+    #define WOULDBLOCK WSAEWOULDBLOCK
     #ifndef MUDLIB_SSIZE_T
         #define MUDLIB_SSIZE_T
-        typedef long ssize_t;
+typedef long ssize_t;
     #endif
 #else
     #include <arpa/inet.h>
@@ -16,12 +16,12 @@
     #include <sys/socket.h>
     #include <unistd.h>
     #define RECVFROM_CAST (void*)
-    #define SENDTO_CAST   (const void*)
-    #define WOULDBLOCK    EWOULDBLOCK
+    #define SENDTO_CAST (const void*)
+    #define WOULDBLOCK EWOULDBLOCK
 #endif
 #include "mud/core/handle.h"
-#include <system_error>
 #include <fcntl.h>
+#include <system_error>
 
 BEGIN_MUDLIB_CORE_NS
 
@@ -29,16 +29,15 @@ BEGIN_MUDLIB_CORE_NS
 /* Winsock initialiser. */
 struct WSAInitialiser
 {
-    WSAInitialiser() {
+    WSAInitialiser()
+    {
         WORD version = MAKEWORD(2, 2);
         WSADATA wsa;
         if (WSAStartup(version, &wsa) != 0) {
             exit(1);
         }
     }
-    ~WSAInitialiser() {
-        WSACleanup();
-    }
+    ~WSAInitialiser() { WSACleanup(); }
 } g_wsa_initialiser;
 #endif
 
@@ -84,8 +83,7 @@ private:
 
 template<>
 void
-select_handle::signal::impl_deleter::operator()(
-        signal::impl* ptr) const
+select_handle::signal::impl_deleter::operator()(signal::impl* ptr) const
 {
     delete ptr;
 }
@@ -105,30 +103,27 @@ select_handle::signal::impl::impl()
     }
 
     // Bind to port 0 to allocate a free port
-    if (::bind(fd, (struct sockaddr*) &addr, len) < 0) {
+    if (::bind(fd, (struct sockaddr*)&addr, len) < 0) {
         throw std::system_error(errno, std::system_category(), "bind");
     }
 
     // Make the socket non-blocking
 #if defined(WINDOWS) && defined(NATIVE)
     u_long mode = true;
-    if (::ioctlsocket(fd, FIONBIO, &mode) != 0)
-    {
+    if (::ioctlsocket(fd, FIONBIO, &mode) != 0) {
         throw std::system_error(::WSAGetLastError(), std::system_category(),
-                "setting socket option (non-blocking)");
+                                "setting socket option (non-blocking)");
     }
 #else
     int flags;
-    if ((flags = ::fcntl(fd, F_GETFL, 0)) < 0)
-    {
+    if ((flags = ::fcntl(fd, F_GETFL, 0)) < 0) {
         throw std::system_error(errno, std::system_category(),
-                "setting socket option (non-blocking)");
+                                "setting socket option (non-blocking)");
     }
     flags |= O_NONBLOCK;
-    if (::fcntl(fd, F_SETFL, flags) < 0)
-    {
+    if (::fcntl(fd, F_SETFL, flags) < 0) {
         throw std::system_error(errno, std::system_category(),
-                "setting socket option (non-blocking)");
+                                "setting socket option (non-blocking)");
     }
 #endif
 
@@ -140,7 +135,8 @@ select_handle::signal::impl::impl()
     }
 
     // Save the handle
-    _handle = std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
+    _handle =
+        std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
 }
 
 select_handle::signal::impl::~impl()
@@ -162,9 +158,9 @@ select_handle::signal::impl::trigger()
     struct sockaddr_in write_addr;
     ::memcpy(&write_addr, &_addr, sizeof(write_addr));
     char ch = 'N';
-    ssize_t nwrite = ::sendto(
-                    mud::core::internal_handle<int>(_handle), SENDTO_CAST & ch, 1, 0,
-                    (struct sockaddr*)&write_addr, sizeof(write_addr));
+    ssize_t nwrite =
+        ::sendto(mud::core::internal_handle<int>(_handle), SENDTO_CAST & ch, 1,
+                 0, (struct sockaddr*)&write_addr, sizeof(write_addr));
     if (nwrite < 0) {
         throw std::system_error(errno, std::system_category(), "sendto");
     }
@@ -178,11 +174,11 @@ select_handle::signal::impl::capture()
     ::memcpy(&recv_addr, &_addr, sizeof(recv_addr));
     socklen_t len = sizeof(recv_addr);
     char ch;
-    int nread = ::recvfrom(
-                    mud::core::internal_handle<int>(_handle), RECVFROM_CAST &ch, 1, 0,
-                    (struct sockaddr*)&recv_addr, &len);
+    int nread =
+        ::recvfrom(mud::core::internal_handle<int>(_handle), RECVFROM_CAST & ch,
+                   1, 0, (struct sockaddr*)&recv_addr, &len);
 #if defined(WINDOWS) && defined(NATIVE)
-    int error =  ::GetLastError();
+    int error = ::GetLastError();
 #else
     int error = errno;
 #endif
@@ -208,8 +204,7 @@ select_handle::signal::signal()
 
 template<>
 select_handle::signal::~signal()
-{
-}
+{}
 
 template<>
 const std::unique_ptr<mud::core::handle>&

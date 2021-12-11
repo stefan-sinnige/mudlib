@@ -1,7 +1,7 @@
-#include <iostream>
-#include <string>
 #include "mud/event/event_loop.h"
 #include "mud/io/udp.h"
+#include <iostream>
+#include <string>
 
 std::string host = "127.0.0.1";
 uint16_t port = 12345;
@@ -34,9 +34,7 @@ client::client()
     _communicator.on_receive(std::bind(&client::on_receive, this));
 }
 
-client::~client()
-{
-}
+client::~client() {}
 
 void
 client::run(const std::string& host, uint16_t port)
@@ -47,8 +45,8 @@ client::run(const std::string& host, uint16_t port)
 
     // Send a message
     std::string msg = "Hello";
-    std::cout << "Sending  to " << host << ":" << port << ": "
-            << msg <<  std::endl;
+    std::cout << "Sending  to " << host << ":" << port << ": " << msg
+              << std::endl;
     _communicator.ostr(mud::io::udp::endpoint(host, port)) << msg << std::endl;
 }
 
@@ -59,19 +57,18 @@ client::on_receive()
     std::string msg;
     _communicator.istr() >> msg;
     if (_communicator.istr().fail()) {
-        std::cout << "Connection closed" <<std::endl;
+        std::cout << "Connection closed" << std::endl;
         _communicator.close();
-    }
-    else
-    {
-        std::cout
-                << "Connected ["
-                        << "local: "  << _communicator.source_endpoint().address().str()
-                        << ":"        << _communicator.source_endpoint().port() << " <-> "
-                        << "remote: " << _communicator.destination_endpoint().address().str()
-                        << ":"        << _communicator.destination_endpoint().port() << "]"
-                        << std::endl;
-        std::cout << "Receiving: "<<  msg << std::endl;
+    } else {
+        std::cout << "Connected ["
+                  << "local: "
+                  << _communicator.source_endpoint().address().str() << ":"
+                  << _communicator.source_endpoint().port() << " <-> "
+                  << "remote: "
+                  << _communicator.destination_endpoint().address().str() << ":"
+                  << _communicator.destination_endpoint().port() << "]"
+                  << std::endl;
+        std::cout << "Receiving: " << msg << std::endl;
     }
 
     // Stop the event-loop, that will exit the application.
@@ -87,7 +84,7 @@ main(int argc, char** argv)
             --argc, ++argv;
             if (argc <= 0) {
                 std::cerr << "Error: Option --host requires an argument."
-                        << std::endl;
+                          << std::endl;
                 return 1;
             }
             host = *argv;
@@ -96,7 +93,7 @@ main(int argc, char** argv)
             --argc, ++argv;
             if (argc <= 0) {
                 std::cerr << "Error: Option --port requires an argument."
-                        << std::endl;
+                          << std::endl;
                 return 1;
             }
             port = atoi(*argv);
@@ -105,12 +102,9 @@ main(int argc, char** argv)
 
     // Create the client
     client client;
-    try
-    {
+    try {
         client.run(host, port);
-    }
-    catch (const std::exception& ex)
-    {
+    } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
     }
 

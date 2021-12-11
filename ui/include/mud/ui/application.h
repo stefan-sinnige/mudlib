@@ -1,12 +1,12 @@
 #ifndef _MUDLIB_UI_APPLICATION_H_
 #define _MUDLIB_UI_APPLICATION_H_
 
-#include <string>
 #include <future>
 #include <mud/ui/ns.h>
 #include <mud/ui/task.h>
+#include <string>
 
-#pragma comment(linker,"\"/manifestdependency:type='win32' \
+#pragma comment(linker, "\"/manifestdependency:type='win32' \
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -17,13 +17,13 @@ class event;
 
 // Fowrard declarations to implementation specific appications.
 namespace x11 {
-class application;
+    class application;
 }
 namespace win32 {
-class application;
+    class application;
 }
 namespace cocoa {
-class application;
+    class application;
 }
 
 /**

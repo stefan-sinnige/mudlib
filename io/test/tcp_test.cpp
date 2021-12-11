@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 CONTEXT()
     // Constructor, executed before each scenario run
@@ -225,6 +225,6 @@ FEATURE("TCP sockets")
 
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

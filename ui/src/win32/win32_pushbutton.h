@@ -1,11 +1,11 @@
 #ifndef _MUD_UI_COCOA_PUSHBUTTON_H_
 #define _MUD_UI_COCOA_PUSHBUTTON_H_
 
+#include "win32/win32_control.h"
 #include <mud/core/handle.h>
+#include <mud/event/event_mechanism.h>
 #include <mud/ui/ns.h>
 #include <mud/ui/pushbutton.h>
-#include <mud/event/event_mechanism.h>
-#include "win32/win32_control.h"
 #include <windows.h>
 
 BEGIN_MUDLIB_UI_NS
@@ -43,4 +43,3 @@ END_MUDLIB_UI_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUD_UI_COCOA_PUSHBUTTON_H_ */
-

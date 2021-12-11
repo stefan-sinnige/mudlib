@@ -3,9 +3,9 @@
 
 #include <any>
 #include <map>
+#include <mud/ui/ns.h>
 #include <string>
 #include <typeindex>
-#include <mud/ui/ns.h>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -14,13 +14,13 @@ BEGIN_MUDLIB_UI_NS
  */
 class event;
 namespace x11 {
-class mechanism;
+    class mechanism;
 }
 namespace win32 {
-class mechanism;
+    class mechanism;
 }
 namespace cocoa {
-class mechanism;
+    class mechanism;
 }
 
 /**
@@ -69,9 +69,9 @@ public:
      *
      * @trow std::logic_error The @c Property is not defined for this control.
      */
-    template <typename Property, class ...Args>
-    control&
-    property(Args... args) {
+    template<typename Property, class... Args>
+    control& property(Args... args)
+    {
         auto search = _properties.find(std::type_index(typeid(Property)));
         if (search == _properties.end()) {
             throw std::logic_error("No such property");
@@ -88,9 +88,9 @@ public:
      *
      * @trow std::logic_error The @c Property is not defined for this control.
      */
-    template <typename Property>
-    Property&
-    property() {
+    template<typename Property>
+    Property& property()
+    {
         auto search = _properties.find(std::type_index(typeid(Property)));
         if (search == _properties.end()) {
             throw std::logic_error("No such property");
@@ -106,9 +106,9 @@ public:
      *
      * @trow std::logic_error The @c Property is not defined for this control.
      */
-    template <typename Property>
-    const Property&
-    property() const {
+    template<typename Property>
+    const Property& property() const
+    {
         auto search = _properties.find(std::type_index(typeid(Property)));
         if (search == _properties.end()) {
             throw std::logic_error("No such property");
@@ -143,7 +143,6 @@ protected:
     friend class x11::mechanism;
 };
 
-
 /**
  * Position property.
  */
@@ -156,14 +155,13 @@ public:
      * @param x [in] The X coordinate (0 indicating the left).
      * @param y [in] The Y coordinate (0 indicating the top).
      */
-    position(int x, int y)
-        : _x(x), _y(y) {
-    }
+    position(int x, int y) : _x(x), _y(y) {}
 
     /**
      * Copy a position.
      */
-    position(const position& rhs) {
+    position(const position& rhs)
+    {
         _x = rhs._x;
         _y = rhs._y;
     }
@@ -171,38 +169,26 @@ public:
     /**
      * The X-coordinate.
      */
-    int
-    x() const {
-        return _x;
-    }
+    int x() const { return _x; }
 
     /**
      * Setting the X-coordinate.
      *
      * @param x [in] The X coordinate (0 indicating the left).
      */
-    void
-    x(int value) {
-        _x = value;
-    }
+    void x(int value) { _x = value; }
 
     /**
      * The X-coordinate.
      */
-    int
-    y() const {
-        return _y;
-    }
+    int y() const { return _y; }
 
     /**
      * Setting the Y-coordinate.
      *
      * @param x [in] The Y coordinate (0 indicating the left).
      */
-    void
-    y(int value) {
-        _y = value;
-    }
+    void y(int value) { _y = value; }
 
 private:
     /**
@@ -224,14 +210,13 @@ public:
      * @param width [in] The width of the control.
      * @param height [in] The height of the control.
      */
-    size(int width, int height)
-        : _width(width), _height(height) {
-    };
+    size(int width, int height) : _width(width), _height(height){};
 
     /**
      * Copy a position.
      */
-    size(const size& rhs) {
+    size(const size& rhs)
+    {
         _width = rhs._width;
         _height = rhs._height;
     }
@@ -239,38 +224,26 @@ public:
     /**
      * The width of the control.
      */
-    int
-    width() const {
-        return _width;
-    }
+    int width() const { return _width; }
 
     /**
      * Setting the width of the control.
      *
      * @param width [in] The width of the control.
      */
-    void
-    width(int value) {
-        _width = value;
-    }
+    void width(int value) { _width = value; }
 
     /**
      * The height of the control.
      */
-    int
-    height() const {
-        return _height;
-    }
+    int height() const { return _height; }
 
     /**
      * Setting the height of the control.
      *
      * @param height [in] The height of the control.
      */
-    void
-    height(int value) {
-        _height = value;
-    }
+    void height(int value) { _height = value; }
 
 private:
     /**
@@ -291,34 +264,24 @@ public:
      *
      * @param text [in] The text of the control.
      */
-    text(const std::string& text)
-        : _text(text) {
-    }
+    text(const std::string& text) : _text(text) {}
 
     /**
      * Copy a position.
      */
-    text(const text& rhs) {
-        _text = rhs._text;
-    }
+    text(const text& rhs) { _text = rhs._text; }
 
     /**
      * The text value.
      */
-    const std::string&
-    value() const {
-        return _text;
-    }
+    const std::string& value() const { return _text; }
 
     /**
      * Setting the value of the text.
      *
      * @param height [in] The text of the control.
      */
-    void
-    value(const std::string& value) {
-        _text = value;
-    }
+    void value(const std::string& value) { _text = value; }
 
 private:
     /**
@@ -332,4 +295,3 @@ END_MUDLIB_UI_NS
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_UI_CONTROL_H_ */
-

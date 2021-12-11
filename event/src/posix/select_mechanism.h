@@ -1,13 +1,13 @@
 #ifndef _MUDLIB_POSIX_SELECT_MECHANISM_H_
 #define _MUDLIB_POSIX_SELECT_MECHANISM_H_
 
-#include <mud/core/handle.h>
-#include <mud/event/ns.h>
-#include <mud/event/event_mechanism.h>
 #include <functional>
 #include <future>
 #include <list>
 #include <memory>
+#include <mud/core/handle.h>
+#include <mud/event/event_mechanism.h>
+#include <mud/event/ns.h>
 #include <thread>
 #if defined(WINDOWS) && defined(NATIVE)
     #include <windows.h>
@@ -46,7 +46,7 @@ public:
      * @param [in] The queue to hold signaled events.
      */
     select_mechanism(
-            const std::shared_ptr<mud::core::simple_task_queue>& queue);
+        const std::shared_ptr<mud::core::simple_task_queue>& queue);
 
     /**
      * Destructor.
@@ -94,15 +94,14 @@ private:
     /**
      * Multiplex the registered events into an @fd_set
      */
-    void multiplex(
-            fd_set& readfds,   /**< [out] The set of file descriptors to wait
-                                          for a read. */
-            fd_set& writefds,  /**< [out] The set of file descriptors to wait
-                                          for a write. */
-            fd_set& exceptfds, /**< [out] The set of file descriptors to wait
-                                          for an exceptional condition. */
-            int& maxfd         /**< [out] The maximum file descriptor handle
-                                          number */
+    void multiplex(fd_set& readfds,   /**< [out] The set of file descriptors to
+                                         wait   for a read. */
+                   fd_set& writefds,  /**< [out] The set of file descriptors to
+                                         wait  for a write. */
+                   fd_set& exceptfds, /**< [out] The set of file descriptors to
+                                         wait for an exceptional condition. */
+                   int& maxfd /**< [out] The maximum file descriptor handle
+                                         number */
     );
 
     /**
@@ -110,12 +109,12 @@ private:
      * fired.
      */
     void demultiplex(
-            const fd_set& readfds,  /**< [out] The set of file descriptors to
-                                         wait for a read. */
-            const fd_set& writefds, /**< [out] The set of file descriptors to
-                                         wait for a write. */
-            const fd_set& exceptfds /**< [out] The set of file descriptors to
-                                         wait for an exceptional condition. */
+        const fd_set& readfds,  /**< [out] The set of file descriptors to
+                                     wait for a read. */
+        const fd_set& writefds, /**< [out] The set of file descriptors to
+                                     wait for a write. */
+        const fd_set& exceptfds /**< [out] The set of file descriptors to
+                                     wait for an exceptional condition. */
     );
 
     /**
@@ -124,7 +123,7 @@ private:
     void command_handler();
 
     /** Self-signalling resource */
-    mud::core::select_handle::signal  _self;
+    mud::core::select_handle::signal _self;
 
     /** Registered events. */
     std::list<event> _events;

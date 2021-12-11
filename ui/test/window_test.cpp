@@ -1,13 +1,13 @@
+#include "mud/test.h"
 #include "mud/ui/application.h"
 #include "mud/ui/window.h"
-#include "mud/test.h"
 #include <future>
 #include <memory>
 #include <type_traits>
 
 extern int g_delay;
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 /* The task queue for the test-cases to run the application object on the
  * main thread.  */
@@ -101,6 +101,6 @@ FEATURE("Window")
 
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

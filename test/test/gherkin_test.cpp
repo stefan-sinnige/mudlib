@@ -2,7 +2,7 @@
 #include <memory>
 #include <type_traits>
 
-/* *INDENT-OFF* */
+/* clang-format off */
 
 CONTEXT()
     /* Constructor initialised for each scenario run */
@@ -88,6 +88,6 @@ FEATURE("Gherkin")
 
 END_FEATURE()
 
-/* *INDENT-ON* */
+/* clang-format on */
 
 /* vi: set ai ts=4 expandtab: */

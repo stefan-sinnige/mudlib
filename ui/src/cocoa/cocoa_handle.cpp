@@ -1,5 +1,5 @@
-#include <mud/core/handle.h>
 #include "cocoa/cocoa_application.h"
+#include <mud/core/handle.h>
 
 BEGIN_MUDLIB_CORE_NS
 
@@ -42,8 +42,7 @@ private:
 
 template<>
 void
-cocoa_handle::signal::impl_deleter::operator()(
-        signal::impl* ptr) const
+cocoa_handle::signal::impl_deleter::operator()(signal::impl* ptr) const
 {
     delete ptr;
 }
@@ -88,8 +87,7 @@ cocoa_handle::signal::signal()
 
 template<>
 cocoa_handle::signal::~signal()
-{
-}
+{}
 
 template<>
 const std::unique_ptr<mud::core::handle>&
@@ -115,4 +113,3 @@ cocoa_handle::signal::capture()
 END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
-
