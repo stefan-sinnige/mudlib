@@ -1,6 +1,9 @@
+#include "win32/win32_event.h"
 #include "win32/win32_mechanism.h"
 #include "win32/win32_application.h"
+#include "win32/win32_control.h"
 #include "mud/ui/exception.h"
+#include "mud/ui/event.h"
 #include "mud/ui/task.h"
 #include <windows.h>
 
@@ -160,6 +163,11 @@ win32::mechanism::display_signal_handler()
     MSG msg;
     while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
     {
+        std::unique_ptr<event> event = event_factory(msg);
+        if (event != nullptr)
+        {
+            event->control().dispatch(*event);
+        }
         ::TranslateMessage(&msg);
         ::DispatchMessage(&msg);
     }

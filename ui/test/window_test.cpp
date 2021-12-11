@@ -28,7 +28,7 @@ CONTEXT()
     ~context() {
         if (g_delay > 0)
         {
-            std::this_thread::sleep_for(std::chrono::seconds(g_delay));
+            std::this_thread::sleep_for(std::chrono::milliseconds(g_delay));
         }
         auto future = mud::ui::application::instance().terminate();
         if (future.valid())

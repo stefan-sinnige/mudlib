@@ -1,13 +1,12 @@
 #include "mud/ui/application.h"
+#include "mud/ui/control.h"
+#include "mud/ui/event.h"
 #include "mud/event/event_loop.h"
-#include "cocoa/cocoa_application.h"
 
 BEGIN_MUDLIB_UI_NS
 
 application::application()
 {
-    mud::event::event_loop::global().add_mechanism(
-            mud::core::handle::type_t::COCOA);
 }
 
 application::~application()
@@ -42,12 +41,16 @@ application::finalise()
 {
 }
 
-/* static */
-application&
-application::instance()
+std::future<void>
+application::inject(const mud::ui::event& event)
 {
-    static cocoa::application _instance;
-    return _instance;
+    mud::ui::task tsk([&event]() {
+        event.control().dispatch(event);
+    });
+
+    std::future<void> future = tsk.get_future();
+    push(std::move(tsk));
+    return future;
 }
 
 END_MUDLIB_UI_NS

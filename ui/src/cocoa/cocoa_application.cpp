@@ -1,15 +1,17 @@
+#include "mud/event/event_loop.h"
 #include "mud/ui/exception.h"
 #include "cocoa/cocoa_application.h"
+#include "cocoa/cocoa_event.h"
 #include <Cocoa/Cocoa.h>
 
 BEGIN_MUDLIB_UI_NS
 
-cocoa::application::application()
+/* static */
+application&
+application::instance()
 {
-}
-
-cocoa::application::~application()
-{
+    static cocoa::application _instance;
+    return _instance;
 }
 
 /* static */
@@ -17,6 +19,16 @@ cocoa::application&
 cocoa::application::instance()
 {
     return static_cast<cocoa::application&>(mud::ui::application::instance());
+}
+
+cocoa::application::application()
+{
+    mud::event::event_loop::global().add_mechanism(
+            mud::core::handle::type_t::COCOA);
+}
+
+cocoa::application::~application()
+{
 }
 
 void

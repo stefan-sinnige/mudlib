@@ -4,8 +4,8 @@
 #include <mud/core/task.h>
 
 /* The delay to be applied to each test-run in order to visually verify the
- * affect of the test-cases. */
-int g_delay = 0;
+ * affect of the test-cases. The delay is specified in milliseconds. */
+int g_delay = 100;
 
 /* The task queue for the test-cases to run the application object on the
  * main thread.  */
@@ -16,10 +16,10 @@ help(int retval)
 {
     std::cout <<
             "Command line options:\n"
-            "  --test <spec>   Specify the test(s) to run:\n"
-            "                      feature[#<scenario>]\n"
-            "  --delay <secs>  Wait for <secs> at the end of each scenario\n"
-            "  --help          Show this help\n";
+            "  --test <spec>    Specify the test(s) to run:\n"
+            "                       feature[#<scenario>]\n"
+            "  --delay <msecs>  Wait for <msecs> at the end of each scenario\n"
+            "  --help           Show this help\n";
     exit(retval);
 }
 
@@ -88,24 +88,21 @@ main(int argc, char** argv)
         /* Run the tests */
         std::pair<size_t, size_t> test_result = FEATURE_RUN(test);
 
-        /* Push a tassk to break the app-queue run loop */
-        running = false;
-        mud::core::simple_task tsk([]() {});
-        g_app_queue.push(std::move(tsk));
+        /* instruct the queue to terminate */
+        g_app_queue.synchronisation()->terminate();
 
         return test_result;
     });
 
     /* Continue to run the task loop. We stop running until the test-cases
      * have run. */
-    while (running)
+    while (!g_app_queue.synchronisation()->_terminate)
     {
         mud::core::simple_task tsk;
         if (g_app_queue.wait_pop(tsk))
         {
             tsk();
         }
-        std::this_thread::yield();
     }
 
     /* Return 0 upon success */

@@ -1,14 +1,15 @@
+#include "mud/event/event_loop.h"
 #include "mud/ui/exception.h"
 #include "win32/win32_application.h"
 
 BEGIN_MUDLIB_UI_NS
 
-win32::application::application()
+/* static */
+application&
+application::instance()
 {
-}
-
-win32::application::~application()
-{
+    static win32::application _instance;
+    return _instance;
 }
 
 /* static */
@@ -16,6 +17,16 @@ win32::application&
 win32::application::instance()
 {
     return static_cast<win32::application&>(mud::ui::application::instance());
+}
+
+win32::application::application()
+{
+    mud::event::event_loop::global().add_mechanism(
+            mud::core::handle::type_t::W32WND);
+}
+
+win32::application::~application()
+{
 }
 
 void

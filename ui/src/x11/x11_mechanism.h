@@ -8,12 +8,6 @@
 
 BEGIN_MUDLIB_UI_NS
 
-typedef mud::core::basic_handle<
-mud::core::handle::type_t::X11,
-    XID,
-    None>
-    x11_handle;
-
 namespace x11 {
 
 class mechanism: public mud::event::event_mechanism

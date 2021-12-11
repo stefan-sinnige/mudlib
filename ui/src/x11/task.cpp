@@ -38,14 +38,14 @@ task_queue::~task_queue()
 void
 task_queue::push(task&& tsk)
 {
-    mud::core::task_queue<task>::push(std::move(tsk));
+    mud::core::simple_task_queue::push(std::move(tsk));
     available().trigger();
 }
 
 bool
 task_queue::pop(task& tsk)
 {
-    return mud::core::task_queue<task>::pop(tsk);
+    return mud::core::simple_task_queue::pop(tsk);
 }
 
 mud::core::handle::signal&

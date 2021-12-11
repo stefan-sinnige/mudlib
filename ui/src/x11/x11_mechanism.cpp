@@ -1,12 +1,12 @@
 #include "x11/x11_mechanism.h"
 #include "x11/x11_application.h"
+#include "x11/x11_control.h"
+#include "x11/x11_event.h"
+#include "mud/ui/event.h"
 #include "mud/ui/exception.h"
 #include "mud/ui/task.h"
-#if defined(WINDOWS) && defined(NATIVE)
-    #include <windows.h>
-#else
-    #include <sys/select.h>
-#endif
+#include <memory>
+#include <sys/select.h>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -159,12 +159,19 @@ x11::mechanism::task_queue_signal_handler()
 void
 x11::mechanism::display_signal_handler()
 {
-
-    // If there is a pending XEvent, process it
-    if (::XPending(x11::application::instance().display().get()) > 0)
+    // If there are pending XEvents, process them
+    while (::XPending(x11::application::instance().display().get()) > 0)
     {
-        XEvent event;
-        XNextEvent(x11::application::instance().display().get(), &event);
+        XEvent x11_event;
+        XNextEvent(x11::application::instance().display().get(), &x11_event);
+        std::unique_ptr<event> event = event_factory(x11_event);
+        if (event != nullptr)
+        {
+            event->control().dispatch(*event);
+        }
+        else
+        {
+        }
     }
 
 }

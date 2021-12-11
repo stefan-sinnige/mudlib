@@ -6,7 +6,14 @@
 #include <mud/ui/ns.h>
 #include <mud/ui/task.h>
 
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 BEGIN_MUDLIB_UI_NS
+
+// Forward declarations
+class event;
 
 // Fowrard declarations to implementation specific appications.
 namespace x11 {
@@ -58,6 +65,18 @@ public:
      * Push a UI task that is to be executed on the UI thread.
      */
     void push(task&& tsk);
+
+    /**
+     * Inject the event. The event will be posted to the UI thread using the
+     * underlying native implenentation.
+     *
+     * This is mostly used to simulate user events in automated testing
+     * scenarios
+     *
+     * @param ev [int] The event to inject.
+     * @return The future raised when the event has been processed.
+     */
+    virtual std::future<void> inject(const event& ev);
 
     /**
      * Not copyable and not moveable

@@ -114,3 +114,5 @@ cocoa_handle::signal::capture()
 
 END_MUDLIB_CORE_NS
 
+/* vi: set ai ts=4 expandtab: */
+

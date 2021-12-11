@@ -1,12 +1,12 @@
-#include "mud/ui/object.h"
+#include "mud/ui/control.h"
 
 BEGIN_MUDLIB_UI_NS
 
-object::object()
+control::control()
 {
 }
 
-object::~object()
+control::~control()
 {
 }
 

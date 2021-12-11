@@ -2,7 +2,8 @@
 #define _MUDLIB_UI_WINDOW_H_
 
 #include <mud/ui/ns.h>
-#include <mud/ui/object.h>
+#include <mud/ui/control.h>
+#include <future>
 
 BEGIN_MUDLIB_UI_NS
 
@@ -15,7 +16,7 @@ BEGIN_MUDLIB_UI_NS
  * top level windows.
  *
  */
-class MUDLIB_UI_API window: public object
+class MUDLIB_UI_API window: public control
 {
 public:
     /**
@@ -43,6 +44,25 @@ public:
     std::future<void> show();
 
     /**
+     * @brief Initialise the window
+     *
+     * When initialising the window, other widgets that are part of the
+     * windaw can be created and initialised as well.
+     *
+     * This function will be invoked on the implementation dependent UI
+     * thread.
+     */
+    virtual void initialise() override;
+
+    /**
+     * @brief Return the control that occupies the specified position.
+     * @param pos [in] The position within the window.
+     *
+     * If the position is not occupied by a control, return the window itself.
+     */
+    mud::ui::control& control(const position& pos) const;
+
+    /**
      * Not copyable.
      */
     window(const window&) = delete;
@@ -56,14 +76,31 @@ public:
 
 protected:
     /**
-     * @brief Initialise the window
-     *
-     * When initialising the window, other widgets that are part of the
-     * winodw can be created and initialised as well.
-     *
-     * This function will be invoked on the implementation dependent UI thread.
+     * Initialise the suported properties with default values.
      */
-    virtual void initialise();
+    virtual void default_properties() override;
+
+    /**
+     * @brief Dispatch a UI event.
+     * @param event [in] The event details.
+     *
+     * The UI event that has been received is dispatched to this object for
+     * further handling. Depending on the type of event, the control-specific
+     * handling routine will be invoked.
+     */
+    virtual void dispatch(const event& event) override;
+
+    /** Platform specific implementation.  */
+    class impl;
+    struct impl_deleter {
+        void operator()(impl*) const;
+    };
+    std::unique_ptr<impl, impl_deleter> _impl;
+
+    /**
+     * Controls that can access the native implementation of the window.
+     */
+    friend class pushbutton;
 };
 
 END_MUDLIB_UI_NS

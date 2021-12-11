@@ -1,17 +1,17 @@
+#include "mud/event/event_loop.h"
 #include "mud/ui/exception.h"
 #include "x11/x11_application.h"
 #include <X11/Xlib.h>
 
 BEGIN_MUDLIB_UI_NS
 
-x11::application::application()
+/* static */
+application&
+application::instance()
 {
+    static x11::application _instance;
+    return _instance;
 }
-
-x11::application::~application()
-{
-}
-
 /* static */
 x11::application&
 x11::application::instance()
@@ -19,10 +19,14 @@ x11::application::instance()
     return static_cast<x11::application&>(mud::ui::application::instance());
 }
 
-const std::shared_ptr<Display>&
-x11::application::display() const
+x11::application::application()
 {
-    return _display;
+    mud::event::event_loop::global().add_mechanism(
+            mud::core::handle::type_t::X11);
+}
+
+x11::application::~application()
+{
 }
 
 void
@@ -42,6 +46,12 @@ void
 x11::application::finalise()
 {
     _display = nullptr;
+}
+
+const std::shared_ptr<Display>&
+x11::application::display() const
+{
+    return _display;
 }
 
 END_MUDLIB_UI_NS

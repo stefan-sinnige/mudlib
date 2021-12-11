@@ -43,7 +43,7 @@ public:
 private:
 };
 
-} // namespace x11
+} // namespace win32
 
 END_MUDLIB_UI_NS
 

@@ -105,7 +105,7 @@ task<Result(Args...)>::task()
 
 template <class Result, class ...Args>
 task<Result(Args...)>::task(function_type&& fn)
-    : _fn(fn)
+    : _fn(std::move(fn))
 {
 }
 
@@ -243,7 +243,7 @@ task<void(Args...)>::task()
 
 template <class ...Args>
 task<void(Args...)>::task(function_type&& fn)
-    : _fn(fn)
+    : _fn(std::move(fn))
 {
 }
 

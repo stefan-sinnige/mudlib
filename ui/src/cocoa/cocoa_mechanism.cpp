@@ -1,6 +1,9 @@
 #include <Cocoa/Cocoa.h>
 #include "cocoa/cocoa_mechanism.h"
 #include "cocoa/cocoa_application.h"
+#include "cocoa/cocoa_event.h"
+#include "cocoa/cocoa_window.h"
+#include "mud/ui/event.h"
 #include "mud/ui/exception.h"
 #include "mud/ui/task.h"
 
@@ -101,23 +104,31 @@ cocoa::mechanism::loop()
         }
 
         // Process UI Events
-        NSEvent* event;
+        NSEvent* cocoa_event;
         do
         {
-            event = [NSApp  nextEventMatchingMask: NSEventMaskAny
-                            untilDate: [NSDate distantPast]
-                            inMode: NSDefaultRunLoopMode
-                            dequeue: YES];
-            [NSApp sendEvent: event];
+            cocoa_event = [NSApp  nextEventMatchingMask: NSEventMaskAny
+                                   untilDate: [NSDate distantPast]
+                                   inMode: NSDefaultRunLoopMode
+                                   dequeue: YES];
+            if (cocoa_event != nullptr)
+            {
+                std::unique_ptr<event> event = event_factory(cocoa_event);
+                if (event != nullptr)
+                {
+                    event->control().dispatch(*event);
+                }
+            }
+            [NSApp sendEvent: cocoa_event];
         }
-        while (event != nullptr);
+        while (cocoa_event != nullptr);
 
         // Use the UI run-loop to block on any event (including custom ones
         // from the task-queue and the termination signal.
-        event = [NSApp  nextEventMatchingMask: NSEventMaskAny
-                        untilDate: [NSDate distantFuture]
-                        inMode: NSDefaultRunLoopMode
-                        dequeue: NO];
+        cocoa_event = [NSApp  nextEventMatchingMask: NSEventMaskAny
+                               untilDate: [NSDate distantFuture]
+                               inMode: NSDefaultRunLoopMode
+                               dequeue: NO];
     }
     [pool release];
 
@@ -129,7 +140,7 @@ void
 cocoa::mechanism::terminate_signal_handler()
 {
     // The _running flag is already set to false. This handler is merely used
-    // to break the ::select.
+    // to break the NSApp nextEvent.
 }
 
 void
