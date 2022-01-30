@@ -316,8 +316,7 @@ tcp::acceptor::operator=(acceptor&& rhs)
 
 tcp::acceptor::~acceptor()
 {
-    /* Deregister the listening socket from the event-loop */
-    _event_loop.deregister_handler(mud::event::event(_listen.handle()));
+    close();
 }
 
 void
@@ -355,6 +354,16 @@ tcp::acceptor::open(const endpoint& endpoint)
     _event_loop.register_handler(mud::event::event(
         _listen.handle(), mud::event::event::signal_type::READING,
         std::bind(&acceptor::on_ready_accept, this)));
+}
+
+void
+tcp::acceptor::close()
+{
+    if (_listen.handle() != nullptr) {
+        /* Deregister the listening socket from the event-loop */
+        _event_loop.deregister_handler(mud::event::event(_listen.handle()));
+        _listen.close();
+    }
 }
 
 void
@@ -405,8 +414,12 @@ tcp::acceptor::on_ready_accept()
         _on_accept_func(std::move(client));
     }
 
-    // Keep on accepting new connections.
-    return mud::event::event::return_type::CONTINUE;
+    // Keep on accepting new connections. while the socket is still open
+    if (_listen.handle() != nullptr) {
+        return mud::event::event::return_type::CONTINUE;
+    } else {
+        return mud::event::event::return_type::REMOVE;
+    }
 }
 
 /** The connector */
@@ -534,8 +547,10 @@ tcp::communicator::open(tcp::socket&& socket)
 void
 tcp::communicator::close()
 {
-    _event_loop.deregister_handler(mud::event::event(_socket.handle()));
-    _socket.close();
+    if (_socket.handle() != nullptr) {
+        _event_loop.deregister_handler(mud::event::event(_socket.handle()));
+        _socket.close();
+    }
 }
 
 std::ostream&
@@ -564,8 +579,12 @@ tcp::communicator::on_ready_receive()
         _on_receive_func();
     }
 
-    // Continue receiving
-    return mud::event::event::return_type::CONTINUE;
+    // Continue receiving while the socket is still open
+    if (_socket.handle() != nullptr) {
+        return mud::event::event::return_type::CONTINUE;
+    } else {
+        return mud::event::event::return_type::REMOVE;
+    }
 }
 
 END_MUDLIB_IO_NS

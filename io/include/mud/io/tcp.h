@@ -249,6 +249,11 @@ namespace tcp {
         void open(const endpoint& endpoint);
 
         /**
+         * @brief Close the socket that is listening for new connections.
+         */
+        void close();
+
+        /**
          * @brief Register a handler when a connection has been accepted.
          * @param func [in] The handler function.
          */
@@ -312,7 +317,7 @@ namespace tcp {
         virtual ~connector();
 
         /**
-         * @brief Open he socket connection to initiate a connection request.
+         * @brief Open the socket connection to initiate a connection request.
          * @param endpoint [in] The end-point to connect to.
          * @throw std::system_error
          */
