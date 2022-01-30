@@ -461,8 +461,12 @@ udp::communicator::on_ready_receive()
         _on_receive_func();
     }
 
-    // Continue receiving
-    return mud::event::event::return_type::CONTINUE;
+    // Continue receiving. while the socket is still open
+    if (_socket.handle() != nullptr) {
+        return mud::event::event::return_type::CONTINUE;
+    } else {
+        return mud::event::event::return_type::REMOVE;
+    }
 }
 
 END_MUDLIB_IO_NS

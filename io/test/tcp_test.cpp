@@ -2,6 +2,7 @@
 #include "mud/io/tcp.h"
 #include "mud/test.h"
 #include <atomic>
+#include <condition_variable>
 #include <future>
 #include <memory>
 #include <type_traits>
@@ -31,13 +32,26 @@ CONTEXT()
 
     }
 
+    /* Thread to run the event-loop */
     std::thread thr;
+
+    /* The TCP server */
     mud::io::tcp::socket server;
-    mud::io::tcp::socket client;
     mud::io::tcp::acceptor acceptor;
+
+    /* The TCP client */
+    mud::io::tcp::socket client;
     mud::io::tcp::connector connector;
-    std::atomic_bool accepted;
-    std::atomic_bool connected;
+
+    /* Flag when a connection has been accepted from a server perspective */
+    std::mutex accepted_lock;
+    std::condition_variable accepted_cv;
+    bool accepted;
+
+    /* Flag when a connection has been established from a client perspective */
+    std::mutex connected_lock;
+    std::condition_variable connected_cv;
+    bool connected;
 END_CONTEXT()
 
 FEATURE("TCP sockets")
@@ -48,29 +62,50 @@ FEATURE("TCP sockets")
         std::string localhost("127.0.0.1");
         ctx.acceptor.on_accept([&ctx](mud::io::tcp::socket&& socket) {
             ctx.server = std::move(socket);
-            ctx.accepted = true;
+            {
+                std::lock_guard<std::mutex> lock(ctx.accepted_lock);
+                ctx.accepted = true;
+            }
+            ctx.accepted_cv.notify_all();
         });
         ctx.acceptor.open(mud::io::tcp::endpoint(localhost, 52618));
     })
+  DEFINE_GIVEN("There is no TCP server listening for inbound connections",
+        [](context&){})
   DEFINE_WHEN("The TCP client connects",
     [](context& ctx){
         std::string localhost("127.0.0.1");
         ctx.connector.on_connect([&ctx](mud::io::tcp::socket&& socket) {
             ctx.client = std::move(socket);
             ctx.client.option<bool, mud::io::ip::nonblocking>(false);
-            ctx.connected = true;
+            {
+                std::lock_guard<std::mutex> lock(ctx.connected_lock);
+                ctx.connected = true;
+            }
+            ctx.connected_cv.notify_all();
         });
         ctx.connector.open(mud::io::tcp::endpoint(localhost, 52618));
     })
-  DEFINE_WHEN("And the TCP server accepts the connection",
+  DEFINE_WHEN("The TCP server accepts the connection",
     [](context& ctx){
-        while (!ctx.accepted);
-        while (!ctx.connected);
+        std::unique_lock<std::mutex> lock(ctx.accepted_lock);
+        ctx.accepted_cv.wait_for(lock, std::chrono::milliseconds(10),
+            [&ctx]{ return ctx.accepted; });
+        ASSERT(true, ctx.accepted);
     })
   DEFINE_THEN("A connection is established",
     [](context& ctx){
-        ASSERT(true, (bool)ctx.accepted);
-        ASSERT(true, (bool)ctx.connected);
+        std::unique_lock<std::mutex> lock(ctx.connected_lock);
+        ctx.connected_cv.wait_for(lock, std::chrono::milliseconds(10),
+            [&ctx]{ return ctx.connected; });
+        ASSERT(true, ctx.connected);
+    })
+  DEFINE_THEN("A connection is pending",
+    [](context& ctx){
+        std::unique_lock<std::mutex> lock(ctx.connected_lock);
+        ASSERT(
+            std::cv_status::timeout,
+            ctx.connected_cv.wait_for(lock, std::chrono::milliseconds(10)));
     })
   END_DEFINES()
 
@@ -197,13 +232,18 @@ FEATURE("TCP sockets")
     SCENARIO("Accepting connection")
       GIVEN("A TCP server is listening for inbound connection")
       WHEN ("The TCP client connects")
-       AND ("And the TCP server accepts the connection")
+       AND ("The TCP server accepts the connection")
       THEN ("A connection is established")
+
+    SCENARIO("Waiting for a connection when there is no listening socket")
+      GIVEN("There is no TCP server listening for inbound connections")
+      WHEN ("The TCP client connects")
+      THEN ("A connection is pending")
 
     SCENARIO("Writing and reading binary data")
       GIVEN("A TCP server is listening for inbound connection")
       WHEN ("The TCP client connects")
-       AND ("And the TCP server accepts the connection")
+       AND ("The TCP server accepts the connection")
        AND ("Binary data is written from one endpoint",
           [](context& ctx) {
               uint8_t block[] = {0x01, 0x92, 0x00, 0xF4};
