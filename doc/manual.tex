@@ -1273,46 +1273,13 @@ a particular option. An example is provided in listing~\ref{lst:reuse-address}.
 % PART
 % ============================================================================
 
+\part{XML and HTML}
+
+% ============================================================================
+% PART
+% ============================================================================
+
 \part{User Interface}
-
-% ============================================================================
-% CHAPTER
-% ============================================================================
-
-\chapter{Basic Concepts}
-\label{chp:ui-comcepts}
-
-At the heart of the user-interface is the window\index{window}. This concept
-is identical through all supported display mechanism and defines an
-particular area which is assigned to be under control by the application.
-This area is used for placing user interfaxe controls and drawing graphics.
-
-Interaction with a user is performed by listening to input devices (for
-example mouse movements and clicks, or keybaord presses) when these are
-directed to the window. The application typically waits contineously for
-any incoming user interface \it{events} by running a special event-loop. As
-some display systems require that this user-inetrface event loop is run on
-the main thread (the first thread) of the application, the \MUDLib
-\indextt{application} loop must be run on the main thread as well. All
-user-interface related handling will also be directed towards this main
-thread internally. This means that when another thread wishes to draw on
-the window canvas or change the user-interface controls, it has to post
-these actions in a specialised \indextt{ui::task} which will be executed
-by the application loop running on the main thread.
-
-% ============================================================================
-% CHAPTER
-% ============================================================================
-
-\chapter{Windows}
-\label{chp:ui-windows}
-
-% ============================================================================
-% CHAPTER
-% ============================================================================
-
-\chapter{Pushbuttons}
-\label{chp:ui-pushbuttons}
 
 % ============================================================================
 % PART
