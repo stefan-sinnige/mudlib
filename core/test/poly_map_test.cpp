@@ -251,7 +251,7 @@ FEATURE("Polymorphic Map")
    * The scenarios 
    */
 
-  SCENARIO("Polymorphoic map type traits")
+  SCENARIO("Polymorphic map type traits")
     GIVEN("A polymorphic map type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
     THEN ("The type is default constructible",
@@ -416,28 +416,28 @@ FEATURE("Polymorphic Map")
     AND  ("The constant reverse iterator accesses the item")
     THEN ("The constant reference points to the second last item")
 
-  SCENARIO("Retreating a past-the-end iterator")
+  SCENARIO("Retreating past-the-end iterator")
     GIVEN("A populated polymorphic map with ten entries")
     WHEN ("An iterator points to the past-the-end item")
     AND  ("An iterator retreats to the previous item")
     AND  ("The iterator accesses the item")
     THEN ("The reference points to the last item")
 
-  SCENARIO("Retreating a past-the-end constant iterator")
+  SCENARIO("Retreating past-the-end constant iterator")
     GIVEN("A populated polymorphic map with ten entries")
     WHEN ("A constant iterator points to the past-the-end item")
     AND  ("A constant iterator retreats to the previous item")
     AND  ("The constant iterator accesses the item")
     THEN ("The constant reference points to the last item")
 
-  SCENARIO("Retreating a past-the-end reverse iterator")
+  SCENARIO("Retreating past-the-end reverse iterator")
     GIVEN("A populated polymorphic map with ten entries")
     WHEN ("A reverse iterator points to the past-the-end item")
     AND  ("A reverse iterator retreats to the previous item")
     AND  ("The reverse iterator accesses the item")
     THEN ("The reference points to the first item")
 
-  SCENARIO("Retreating a past-the-end constant reverse iterator")
+  SCENARIO("Retreating past-the-end constant reverse iterator")
     GIVEN("A populated polymorphic map with ten entries")
     WHEN ("A constant reverse iterator points to the past-the-end item")
     AND  ("A constant reverse iterator retreats to the previous item")

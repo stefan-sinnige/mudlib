@@ -1,29 +1,24 @@
-#ifndef _MUDLIB_CORE_POLY_MAP_H_
-#define _MUDLIB_CORE_POLY_MAP_H_
+#ifndef _MUDLIB_CORE_POLY_VECTOR_H_
+#define _MUDLIB_CORE_POLY_VECTOR_H_
 
-#include <map>
 #include <mud/core/ns.h>
+#include <vector>
 
 BEGIN_MUDLIB_CORE_NS
 
 /*
- * @brief Map of polymorphic types.
+ * @brief Vector of polymorphic types.
  *
- * A map that is able to hold polymorphic instances of a certain base type.
+ * A vector that is able to hold polymorphic instances of a certain base type.
  */
-template<class Key, class Type, class Compare = std::less<Key>,
-         class Allocator =
-             std::allocator<std::pair<const Key, std::shared_ptr<Type>>>>
-class poly_map
-  : private std::map<Key, std::shared_ptr<Type>, Compare, Allocator>
+template<class Type, class Allocator = std::allocator<std::shared_ptr<Type>>>
+class poly_vector : private std::vector<std::shared_ptr<Type>, Allocator>
 {
 public:
     /**
      * Template parameter type definitions
      */
-    typedef Key key_type;
     typedef Type value_type;
-    typedef Compare key_compare;
     typedef Allocator allocator_type;
 
 private:
@@ -31,8 +26,7 @@ private:
      * Implementattion specific type definitions.
      */
     typedef std::shared_ptr<Type> storage_type;
-    typedef std::map<key_type, storage_type, key_compare, allocator_type>
-        impl_type;
+    typedef std::vector<storage_type, allocator_type> impl_type;
 
 public:
     /**
@@ -42,34 +36,31 @@ public:
     typedef typename impl_type::difference_type difference_type;
     typedef value_type& reference;
     typedef const value_type& const_reference;
-    typedef std::pair<key_type, value_type&> iterator_reference;
-    typedef std::pair<key_type, const value_type&> const_iterator_reference;
-    typedef std::pair<key_type, value_type&>* iterator_pointer;
-    typedef std::pair<key_type, const value_type&>* const_iterator_pointer;
+    typedef value_type& iterator_reference;
+    typedef const value_type& const_iterator_reference;
+    typedef value_type* iterator_pointer;
+    typedef const value_type* const_iterator_pointer;
 
     /**
      * @brief A bidirectional iterator accessing the elements in a forward
      * direction and returning references to the elements.
      */
     class iterator
-      : private std::map<Key, std::shared_ptr<Type>, Compare,
-                         Allocator>::iterator
+      : private std::vector<std::shared_ptr<Type>, Allocator>::iterator
     {
     public:
         /**
          * Template parameter type definitions.
          */
-        typedef Key key_type;
         typedef Type value_type;
-        typedef Compare key_compare;
         typedef Allocator allocator_type;
 
     private:
         /**
          * Implementation specific iterator type definition.
          */
-        typedef typename std::map<Key, std::shared_ptr<Type>, Compare,
-                                  Allocator>::iterator impl_type;
+        typedef typename std::vector<std::shared_ptr<Type>, Allocator>::iterator
+            impl_type;
 
     public:
         /**
@@ -77,18 +68,18 @@ public:
          */
         typedef typename impl_type::difference_type difference_type;
         typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::pair<key_type, value_type&> reference;
-        typedef std::pair<key_type, value_type&>* pointer;
+        typedef value_type& reference;
+        typedef value_type* pointer;
 
         /**
          * Construct an iterator.
          */
-        iterator() : _ptr(nullptr) {}
+        iterator() = default;
 
         /**
          * Destruct the iterator.
          */
-        virtual ~iterator() { delete _ptr; }
+        virtual ~iterator() = default;
 
         /**
          * Return a reference to the object pointed to by the iterator.
@@ -96,7 +87,7 @@ public:
         reference operator*()
         {
             auto ref = *_iter;
-            return std::pair<key_type, value_type&>(ref.first, *(ref.second));
+            return *ref;
         }
 
         /**
@@ -105,9 +96,7 @@ public:
         pointer operator->()
         {
             auto ref = *_iter;
-            _ptr =
-                new std::pair<key_type, value_type&>(ref.first, *(ref.second));
-            return _ptr;
+            return ref.get();
         }
 
         /**
@@ -165,20 +154,15 @@ public:
          * Construct an iterator and initialise it with the implementation
          * dependent iterator.
          */
-        iterator(impl_type impl) : _iter(impl), _ptr(nullptr) {}
+        iterator(impl_type impl) : _iter(impl) {}
 
         /**
          * The implementation dependent iterator.
          */
         impl_type _iter;
 
-        /**
-         * Reference to the current object (used by operator-> exclusively).
-         */
-        pointer _ptr;
-
         /** Allow the enclosing class access to the provate constructor. */
-        friend class poly_map;
+        friend class poly_vector;
     };
 
     /**
@@ -186,24 +170,21 @@ public:
      * direction and returning constant references to the elements.
      */
     class const_iterator
-      : private std::map<Key, std::shared_ptr<Type>, Compare,
-                         Allocator>::const_iterator
+      : private std::vector<std::shared_ptr<Type>, Allocator>::const_iterator
     {
     public:
         /**
          * Template parameter type definitions.
          */
-        typedef Key key_type;
         typedef Type value_type;
-        typedef Compare key_compare;
         typedef Allocator allocator_type;
 
     private:
         /**
          * Implementation specific iterator type definition.
          */
-        typedef typename std::map<Key, std::shared_ptr<Type>, Compare,
-                                  Allocator>::const_iterator impl_type;
+        typedef typename std::vector<std::shared_ptr<Type>,
+                                     Allocator>::const_iterator impl_type;
 
     public:
         /**
@@ -211,23 +192,23 @@ public:
          */
         typedef typename impl_type::difference_type difference_type;
         typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::pair<key_type, const value_type&> reference;
-        typedef std::pair<key_type, const value_type&>* pointer;
+        typedef const value_type& reference;
+        typedef const value_type* pointer;
 
         /**
          * Construct an iterator.
          */
-        const_iterator() : _ptr(nullptr) {}
+        const_iterator() = default;
 
         /**
          * Construct a constant iterator from a non-constant iterator.
          */
-        const_iterator(iterator rhs) : _iter(rhs._iter), _ptr(nullptr) {}
+        const_iterator(iterator rhs) : _iter(rhs._iter) {}
 
         /**
          * Destruct the iterator.
          */
-        virtual ~const_iterator() { delete _ptr; }
+        virtual ~const_iterator() = default;
 
         /**
          * Return a reference to the object pointed to by the iterator.
@@ -235,8 +216,7 @@ public:
         reference operator*()
         {
             auto ref = *_iter;
-            return std::pair<key_type, const value_type&>(ref.first,
-                                                          *(ref.second));
+            return *ref;
         }
 
         /**
@@ -245,9 +225,7 @@ public:
         pointer operator->()
         {
             auto ref = *_iter;
-            _ptr = new std::pair<key_type, const value_type&>(ref.first,
-                                                              *(ref.second));
-            return _ptr;
+            return ref.get();
         }
 
         /**
@@ -307,20 +285,15 @@ public:
          * Construct an iterator and initialise it with the implementation
          * dependent iterator.
          */
-        const_iterator(impl_type impl) : _iter(impl), _ptr(nullptr) {}
+        const_iterator(impl_type impl) : _iter(impl) {}
 
         /**
          * The implementation dependent iterator.
          */
         impl_type _iter;
 
-        /**
-         * Reference to the current object (used by operator-> exclusively).
-         */
-        pointer _ptr;
-
         /** Allow the enclosing class access to the provate constructor. */
-        friend class poly_map;
+        friend class poly_vector;
     };
 
     /**
@@ -328,24 +301,21 @@ public:
      * direction and returning references to the elements.
      */
     class reverse_iterator
-      : private std::map<Key, std::shared_ptr<Type>, Compare,
-                         Allocator>::reverse_iterator
+      : private std::vector<std::shared_ptr<Type>, Allocator>::reverse_iterator
     {
     public:
         /**
          * Template parameter type definitions.
          */
-        typedef Key key_type;
         typedef Type value_type;
-        typedef Compare key_compare;
         typedef Allocator allocator_type;
 
     private:
         /**
          * Implementation specific iterator type definition.
          */
-        typedef typename std::map<Key, std::shared_ptr<Type>, Compare,
-                                  Allocator>::reverse_iterator impl_type;
+        typedef typename std::vector<std::shared_ptr<Type>,
+                                     Allocator>::reverse_iterator impl_type;
 
     public:
         /**
@@ -353,18 +323,18 @@ public:
          */
         typedef typename impl_type::difference_type difference_type;
         typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::pair<key_type, value_type&> reference;
-        typedef std::pair<key_type, value_type&>* pointer;
+        typedef value_type& reference;
+        typedef value_type* pointer;
 
         /**
          * Construct an reverse iterator.
          */
-        reverse_iterator() : _ptr(nullptr) {}
+        reverse_iterator() = default;
 
         /**
          * Destruct the iterator.
          */
-        virtual ~reverse_iterator() { delete _ptr; }
+        virtual ~reverse_iterator() = default;
 
         /**
          * Return a reference to the object pointed to by the reverse iterator.
@@ -372,7 +342,7 @@ public:
         reference operator*()
         {
             auto ref = *_iter;
-            return std::pair<key_type, value_type&>(ref.first, *(ref.second));
+            return *ref;
         }
 
         /**
@@ -381,9 +351,8 @@ public:
         pointer operator->()
         {
             auto ref = *_iter;
-            _ptr =
-                new std::pair<key_type, value_type&>(ref.first, *(ref.second));
-            return _ptr;
+            return ref.get();
+            ;
         }
 
         /**
@@ -444,20 +413,15 @@ public:
          * Construct a reverse iterator and initialise it with the
          * implementation dependent reverse iterator.
          */
-        reverse_iterator(impl_type impl) : _iter(impl), _ptr(nullptr) {}
+        reverse_iterator(impl_type impl) : _iter(impl) {}
 
         /**
          * The implementation dependent reverse_iterator.
          */
         impl_type _iter;
 
-        /**
-         * Reference to the current object (used by operator-> exclusively).
-         */
-        pointer _ptr;
-
         /** Allow the enclosing class access to the provate constructor. */
-        friend class poly_map;
+        friend class poly_vector;
     };
 
     /**
@@ -465,24 +429,23 @@ public:
      * direction and returning constant references to the elements.
      */
     class const_reverse_iterator
-      : private std::map<Key, std::shared_ptr<Type>, Compare,
-                         Allocator>::const_reverse_iterator
+      : private std::vector<std::shared_ptr<Type>,
+                            Allocator>::const_reverse_iterator
     {
     public:
         /**
          * Template parameter type definitions.
          */
-        typedef Key key_type;
         typedef Type value_type;
-        typedef Compare key_compare;
         typedef Allocator allocator_type;
 
     private:
         /**
          * Implementation specific iterator type definition.
          */
-        typedef typename std::map<Key, std::shared_ptr<Type>, Compare,
-                                  Allocator>::const_reverse_iterator impl_type;
+        typedef
+            typename std::vector<std::shared_ptr<Type>,
+                                 Allocator>::const_reverse_iterator impl_type;
 
     public:
         /**
@@ -490,25 +453,23 @@ public:
          */
         typedef typename impl_type::difference_type difference_type;
         typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::pair<key_type, const value_type&> reference;
-        typedef std::pair<key_type, const value_type&>* pointer;
+        typedef const value_type& reference;
+        typedef const value_type* pointer;
 
         /**
          * Construct an reverse iterator.
          */
-        const_reverse_iterator() : _ptr(nullptr) {}
+        const_reverse_iterator() = default;
 
         /**
          * Construct a constant iterator from a non-constant iterator.
          */
-        const_reverse_iterator(reverse_iterator rhs)
-          : _iter(rhs._iter), _ptr(nullptr)
-        {}
+        const_reverse_iterator(reverse_iterator rhs) : _iter(rhs._iter) {}
 
         /**
          * Destruct the iterator.
          */
-        virtual ~const_reverse_iterator() { delete _ptr; }
+        virtual ~const_reverse_iterator() = default;
 
         /**
          * Return a reference to the object pointed to by the reverse iterator.
@@ -516,8 +477,7 @@ public:
         reference operator*()
         {
             auto ref = *_iter;
-            return std::pair<key_type, const value_type&>(ref.first,
-                                                          *(ref.second));
+            return *ref;
         }
 
         /**
@@ -526,9 +486,7 @@ public:
         pointer operator->()
         {
             auto ref = *_iter;
-            _ptr = new std::pair<key_type, const value_type&>(ref.first,
-                                                              *(ref.second));
-            return _ptr;
+            return ref.get();
         }
 
         /**
@@ -589,122 +547,157 @@ public:
          * Construct an reverse iterator and initialise it with the
          * implementation dependent reverse iterator.
          */
-        const_reverse_iterator(impl_type impl) : _iter(impl), _ptr(nullptr) {}
+        const_reverse_iterator(impl_type impl) : _iter(impl) {}
 
         /**
          * The implementation dependent reverse_iterator.
          */
         impl_type _iter;
 
-        /**
-         * Reference to the current object (used by operator-> exclusively).
-         */
-        pointer _ptr;
-
         /** Allow the enclosing class access to the provate constructor. */
-        friend class poly_map;
+        friend class poly_vector;
     };
 
     /**
-     * @brief Constructs a map.
+     * @brief Constructs a vector.
      */
-    poly_map() = default;
+    poly_vector() = default;
 
     /**
-     * @brief Constructs a new map by copying the contents from another one.
-     * @param[in] rhs The map to copy the contents from.
+     * @brief Constructs a new vector by copying the contents from another one.
+     * @param[in] rhs The vector to copy the contents from.
      */
-    poly_map(const poly_map& rhs) : impl_type(rhs){};
+    poly_vector(const poly_vector& rhs) : impl_type(rhs){};
 
     /**
-     * @brief Assign the contents of another polymorphic map.
-     * @param[in] rhs The map to copy the contents from.
+     * @brief Constructs a new vector by moving the contents from another one.
+     * @param[in] rhs The vector to move the contents from.
      */
-    poly_map& operator=(const poly_map& rhs)
+    poly_vector(poly_vector&& rhs) : impl_type(std::move(rhs)){};
+
+    /**
+     * @brief Assign the contents of another polymorphic vector.
+     * @param[in] rhs The vector to copy the contents from.
+     */
+    poly_vector& operator=(const poly_vector& rhs)
     {
         (void)impl_type::operator=(rhs);
         return *this;
     }
 
     /**
-     * @brief Destructs the map.
+     * @brief Assign the contents of another polymorphic vector.
+     * @param[in] rhs The vector to move the contents from.
      */
-    virtual ~poly_map() = default;
+    poly_vector& operator=(poly_vector&& rhs)
+    {
+        (void)impl_type::operator=(std::move(rhs));
+        return *this;
+    }
 
     /**
-     * Non-moveable.
+     * @brief Destructs the vector.
      */
-    poly_map(poly_map&&) = delete;
-    poly_map& operator=(poly_map&&) = delete;
+    virtual ~poly_vector() = default;
 
     /**
-     * @brief Return the number of elements in the map.
+     * @brief Return the number of elements in the vector.
      */
     size_t size() const { return impl_type::size(); }
 
     /**
-     * @brief Checks whether the map is empty.
+     * @brief Checks whether the vector is empty.
      */
     bool empty() const { return impl_type::empty(); }
+
+    /**
+     * Return a reference to the item at a position.
+     * @param[in] pos The position to query (zero-based);
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    reference at(size_type pos)
+    {
+        typename impl_type::reference ref = impl_type::at(pos);
+        return *ref;
+    }
+
+    /**
+     * Return a constant reference to the item at a position.
+     * @param[in] pos The position to query (zero-based);
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    const_reference at(size_type pos) const
+    {
+        typename impl_type::const_reference ref = impl_type::at(pos);
+        return *ref;
+    }
+
+    /**
+     * Return a reference to the item at a position.
+     * @param[in] pos The position to query (zero-based);
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    reference operator[](size_type pos)
+    {
+        typename impl_type::reference ref = impl_type::operator[](pos);
+        return *ref;
+    }
+
+    /**
+     * Return a constant reference to the item at a position.
+     * @param[in] pos The position to query (zero-based);
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    const_reference operator[](size_type pos) const
+    {
+        typename impl_type::const_reference ref = impl_type::operator[](pos);
+        return *ref;
+    }
+
+    /**
+     * Return a reference to the first item.
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    reference front()
+    {
+        typename impl_type::reference ref = impl_type::front();
+        return *ref;
+    }
+
+    /**
+     * Return a constant reference to the last item.
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    const_reference front() const
+    {
+        typename impl_type::const_reference ref = impl_type::front();
+        return *ref;
+    }
+
+    /**
+     * Return a reference to the last item.
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    reference back()
+    {
+        typename impl_type::reference ref = impl_type::back();
+        return *ref;
+    }
+
+    /**
+     * Return a constant reference to the last item.
+     * @throw std::out_of_range is the position is out of bounds.
+     */
+    const_reference back() const
+    {
+        typename impl_type::const_reference ref = impl_type::back();
+        return *ref;
+    }
 
     /**
      * @brief Clear the contents.
      */
     void clear() { return impl_type::clear(); }
-
-    /**
-     * @brief Insert an element in the map that is indexed by a key. If the
-     * key already exists, the mapped element is destructed and overwritten.
-     * @tparam[in] PolyType The type of the value.
-     * @param[in] key The key to find the value.
-     * @return The reference to the new value.
-     * @throws std::bad_type_id Value is not of type @c PolyType
-     */
-    template<class PolyType>
-    PolyType& insert(const key_type& key, const PolyType& value)
-    {
-        typename impl_type::iterator found = impl_type::find(key);
-        if (found != impl_type::end()) {
-            impl_type::erase(found);
-        }
-        auto res = impl_type::emplace(key, std::make_shared<PolyType>(value));
-        if (!res.second) {
-            throw std::bad_alloc();
-        }
-        return dynamic_cast<PolyType&>(*(res.first->second));
-    }
-
-    /**
-     * @brief Insert an element in the map that is indexed by a key. If the
-     * key already exists, the mapped element is destructed and overwritten.
-     * @tparam[in] PolyType The type of the value.
-     * @param[in] key The key to find the value.
-     * @return The reference to the new value.
-     * @throws std::bad_type_id Value is not of type @c PolyType
-     */
-    /*
-    template<class PolyType>
-    PolyType& insert(const key_type& key, PolyType&& value)
-    {
-        typename impl_type::iterator found = impl_type::find(key);
-        if (found != impl_type::end()) {
-            impl_type::erase(found);
-        }
-        auto res = impl_type::emplace(
-            key, std::make_shared<PolyType>(std::move(value)));
-        if (!res.second) {
-            throw std::bad_alloc();
-        }
-        return dynamic_cast<PolyType&>(*(res.first->second));
-    }
-    */
-
-    /**
-     * @brief Erase an element with matching key.
-     * @param[in] key The key value of element to remove.
-     * @returns The number of items removed (0 or 1).
-     */
-    size_type erase(const key_type& key) { return impl_type::erase(key); }
 
     /**
      * @brief Erase an element as a certain position.
@@ -741,58 +734,78 @@ public:
     }
 
     /**
-     * @brief Returns a reference to the value that is indexed by the key.
-     * @param[in] key The key to find the value.
-     * @return The reference to the value.
-     * @throws std::out_of_range Key is not present in the map
+     * @brief Append a new element to th end of the container.
+     * @param[in] value The value to copy into the container.
      */
-    reference at(const key_type& key) { return *(impl_type::at(key)); }
-
-    /**
-     * @brief Returns a reference to the value that is indexed by the key.
-     * @param[in] key The key to find the value.
-     * @return The reference to the value.
-     * @throws std::out_of_range Key is not present in the map
-     */
-    const_reference at(const key_type& key) const
+    template<class PolyType>
+    void push_back(const PolyType& value)
     {
-        return *(impl_type::at(key));
+        impl_type::push_back(std::make_shared<PolyType>(value));
     }
 
     /**
-     * @brief Find an element with a matching key.
-     * @returns Iterator to the matching element, or a past-the-end iterator
-     * if an element with matching key is not found.
+     * @brief Append a new element to the end of the container.
+     * @param[in] value The value to move into the container.
      */
-    iterator find(const key_type& key)
+    template<class PolyType>
+    void push_back(PolyType&& value)
     {
-        return iterator(impl_type::find(key));
+        /* Use forwarding references to correctly deduce as this is also
+         * invoked when used as a reference. Then we can deduce the correct
+         * _push_back helper to invoke. */
+        __push_back<typename std::decay<PolyType>::type>(
+            std::forward<PolyType>(value));
     }
 
     /**
-     * @brief Find an element with a matching key.
-     * @returns Iterator to the matching element, or a past-the-end iterator
-     * if an element with matching key is not found.
+     * @brief Insert a new element at a certain position in the container.
+     * @param[in] pos The position before to insert the element at.
+     * @param[in] value The value to copy into the container.
+     * @return The iterator pointing to the inserted item.
      */
-    const_iterator find(const key_type& key) const
+    template<class PolyType>
+    iterator insert(const_iterator pos, const PolyType& value)
     {
-        return const_iterator(impl_type::find(key));
+        auto new_pos =
+            impl_type::insert(pos._iter, std::make_shared<PolyType>(value));
+        return iterator(new_pos);
     }
 
     /**
-     * Return an iterator to the start of the map.
+     * @brief Inset a new element at a certain position in the container.
+     * @param[in] pos The position before to insert the element at.
+     * @param[in] value The value to move into the container.
+     * @return The iterator pointing to the inserted item.
+     */
+    template<class PolyType>
+    iterator insert(const_iterator pos, PolyType&& value)
+    {
+        /* Use forwarding references to correctly deduce as this is also
+         * invoked when used as a reference. Then we can deduce the correct
+         * __insert helper to invoke. */
+        return __insert<typename std::decay<PolyType>::type>(
+            pos._iter, std::forward<PolyType>(value));
+    }
+
+    /**
+     * @brief Remove the last element of the container.
+     */
+    void pop_back() { *(impl_type::pop_back()); }
+
+    /**
+     * Return an iterator to the start of the vector.
      */
     iterator begin() { return iterator(impl_type::begin()); }
     const_iterator begin() const { return const_iterator(impl_type::cbegin()); }
 
     /**
-     * Return an iterator to the element following the end of the map.
+     * Return an iterator to the element following the end of the vector.
      */
     iterator end() { return iterator(impl_type::end()); }
     const_iterator end() const { return const_iterator(impl_type::cend()); }
 
     /**
-     * Return an iterator to the start of the map.
+     * Return an iterator to the start of the vector.
      */
     const_iterator cbegin() const
     {
@@ -800,22 +813,22 @@ public:
     }
 
     /**
-     * Return an iterator to the element following the end of the map.
+     * Return an iterator to the element following the end of the vector.
      */
     const_iterator cend() const { return const_iterator(impl_type::cend()); }
 
     /**
-     * Return a reverse iterator to the start of the map.
+     * Return a reverse iterator to the start of the vector.
      */
     reverse_iterator rbegin() { return reverse_iterator(impl_type::rbegin()); }
 
     /**
-     * Return a reverse iterator to the element following the end of the map.
+     * Return a reverse iterator to the element following the end of the vector.
      */
     reverse_iterator rend() { return reverse_iterator(impl_type::rend()); }
 
     /**
-     * Return a reveerse iterator to the start of the map.
+     * Return a reveerse iterator to the start of the vector.
      */
     const_reverse_iterator crbegin() const
     {
@@ -823,11 +836,49 @@ public:
     }
 
     /**
-     * Return a reverse iterator to the element following the end of the map.
+     * Return a reverse iterator to the element following the end of the vector.
      */
     const_reverse_iterator crend() const
     {
         return const_reverse_iterator(impl_type::crend());
+    }
+
+private:
+    /**
+     * Helper functions for the  @c push_back(PolyType&&)
+     * function which re-routes to the correct push-back (either as lvalue
+     * or rvalue with move semantics).
+     */
+    template<class PolyType>
+    void __push_back(const PolyType& value)
+    {
+        impl_type::push_back(std::make_shared<PolyType>(value));
+    }
+    template<class PolyType>
+    void __push_back(PolyType&& value)
+    {
+        impl_type::push_back(std::make_shared<PolyType>(std::move(value)));
+    }
+
+    /**
+     * Helper functions for the  @c insert(PolyType&&)
+     * function which re-routes to the correct insert (either as lvalue
+     * or rvalue with move semantics).
+     */
+    template<class PolyType>
+    iterator __insert(const_iterator pos, const PolyType& value)
+    {
+        auto new_pos =
+            impl_type::insert(pos._iter, std::make_shared<PolyType>(value));
+        return iterator(new_pos);
+    }
+
+    template<class PolyType>
+    iterator __insert(const_iterator pos, PolyType&& value)
+    {
+        auto new_pos = impl_type::insert(
+            pos._iter, std::make_shared<PolyType>(std::move(value)));
+        return iterator(new_pos);
     }
 };
 
@@ -835,4 +886,4 @@ END_MUDLIB_CORE_NS
 
 /* vi: set expandtab ai ts=4: */
 
-#endif /*  _MUDLIB_CORE_POLY_MAP_H_ */
+#endif /*  _MUDLIB_CORE_POLY_VECTOR_H_ */
