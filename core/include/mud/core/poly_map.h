@@ -44,8 +44,6 @@ public:
     typedef const value_type& const_reference;
     typedef std::pair<key_type, value_type&> iterator_reference;
     typedef std::pair<key_type, const value_type&> const_iterator_reference;
-    typedef std::pair<key_type, value_type&>* iterator_pointer;
-    typedef std::pair<key_type, const value_type&>* const_iterator_pointer;
 
     /**
      * @brief A bidirectional iterator accessing the elements in a forward
