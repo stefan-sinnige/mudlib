@@ -566,6 +566,10 @@ public:
     /**
      * @brief Constructs a new vector by copying the contents from another one.
      * @param[in] rhs The vector to copy the contents from.
+     *
+     * Note that the copied items are not deep-copied, but their underlying
+     * smart-pointers are copied instead. This in effect shares the same object
+     * between two vectors.
      */
     poly_vector(const poly_vector& rhs) : impl_type(rhs){};
 
@@ -578,6 +582,10 @@ public:
     /**
      * @brief Assign the contents of another polymorphic vector.
      * @param[in] rhs The vector to copy the contents from.
+     *
+     * Note that the copied items are not deep-copied, but their underlying
+     * smart-pointers are copied instead. This in effect shares the same object
+     * between two vectors.
      */
     poly_vector& operator=(const poly_vector& rhs)
     {

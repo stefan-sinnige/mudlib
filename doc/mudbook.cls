@@ -17,13 +17,25 @@
 \ProcessOptions\relax
 \LoadClass{book}
 
+% Numbered section up to 4 levels (subsubsection)
+\setcounter{secnumdepth}{4}
+
+% Table of contents depth and spacing
+\usepackage{tocloft}
+\setcounter{tocdepth}{4}
+\cftsetindents{part}{12em}{0em}
+\cftsetindents{chapter}{0em}{2em}
+\cftsetindents{section}{3em}{3em}
+\cftsetindents{subsection}{4em}{4em}
+\cftsetindents{subsubsection}{5em}{5em}
+
 % ---------------------------------------------------------------------------
 % Additional packages
 % ---------------------------------------------------------------------------
 
-% Use the Computer Modern Bright fonts
-\usepackage{cmbright}
-\def\fontfamilyname{Computer Modern Bright}
+% Use the Bookman fonts
+\usepackage{bookman}
+\def\fontfamilyname{Bookman}
 \def\fontfamilylicense{\LaTeX Project Public License}
 
 % Use the geometry package to control page layout easily
@@ -54,8 +66,18 @@
 % Use the xcolor package to add colors
 \usepackage{xcolor}
  
+% Use the caption package to allow more control on captions.
+\usepackage{caption}
+
 % Use the listings package to format listing with highlighting
 \usepackage{listings}
+
+% Use the enumitem package to format lists (e.g. enumerate).
+\usepackage{enumitem}
+
+% Use the longtable package to allow tables spanning multiple pages
+\usepackage{longtable}
+\captionsetup[longtable]{skip=1em}
 
 % Use the mud-uml package (which in turn uses tikz), for UML diagramming.
 \usepackage{mud-uml}
@@ -68,6 +90,4 @@
 % names correctly. The mbox is used to keep the names together.
 \newcommand{\MUD}{MUD\xspace}
 \newcommand{\MUDLib}{MUDLib\xspace}
-\newcommand{\RaisedPlus}{\protect\hspace{-.1em}\protect\raisebox{.35ex}{\smaller{\smaller\textbf{+}}}}
-\newcommand{\Cpp}{\mbox{C\RaisedPlus\RaisedPlus}\xspace}
-
+\newcommand{\Cpp}{C\texttt{++}\xspace}

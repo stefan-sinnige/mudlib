@@ -5,7 +5,7 @@
 \RequirePackage{tikz}
 \RequirePackage{xstring}
 \usetikzlibrary{arrows,arrows.meta,decorations,decorations.markings,fit}
-\usetikzlibrary{shapes.multipart}
+\usetikzlibrary{shapes.multipart,calc}
 
 % ===========================================================================
 % Check if TikZ/PGF is of version 3.x
@@ -61,6 +61,27 @@
              dashed,black,thick,%
              arrows={-Straight Barb[scale=2]}%
         }}%
+
+% ===========================================================================A
+% Style: lines 
+% Line styles for pure horizontal & vertical lines
+% ===========================================================================
+\tikzset{
+  -|-/.style={
+    to path={
+      (\tikztostart) -| ($(\tikztostart)!#1!(\tikztotarget)$) |- (\tikztotarget)
+      \tikztonodes
+    }
+  },
+  -|-/.default=0.5,
+  |-|/.style={
+    to path={
+      (\tikztostart) |- ($(\tikztostart)!#1!(\tikztotarget)$) -| (\tikztotarget)
+      \tikztonodes
+    }
+  },
+  |-|/.default=0.5,
+}
 
 % ===========================================================================
 % Command: \umlclass[options]{class}{attributes}{methods}
