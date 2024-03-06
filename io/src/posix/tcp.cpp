@@ -1,4 +1,4 @@
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
 typedef short sa_family_t;
     #define RECV_CAST (char*)
     #define SEND_CAST (const char*)
@@ -455,7 +455,7 @@ tcp::connector::open(const endpoint& endpoint)
     addr.sin_addr.s_addr = endpoint.address();
     int sckt = mud::core::internal_handle<int>(_socket.handle());
     if (::connect(sckt, (struct sockaddr*)&addr, len) != 0) {
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
         if (_socket.error() != WSAEWOULDBLOCK) {
             throw std::system_error(_socket.error(), std::system_category(),
                                     "connecting TCP endpoint");

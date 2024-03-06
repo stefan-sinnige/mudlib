@@ -18,4 +18,15 @@ pushbutton::event(pushbutton::mouse_event_func fn)
 
 END_MUDLIB_UI_NS
 
+/*
+ * Include platform specific handle implementations.
+ */
+#if defined(_WIN32)
+  #include "src/win32/win32_pushbutton.cpp"
+#elif defined(__APPLE__)
+  #include "src/cocoa/cocoa_pushbutton.cpp"
+#else
+  #include "src/x11/x11_pushbutton.cpp"
+#endif
+
 /* vi: set ai ts=4 expandtab: */

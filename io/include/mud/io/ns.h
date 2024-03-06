@@ -1,7 +1,7 @@
 #ifndef _MUDLIB_IO_NS_H_
 #define _MUDLIB_IO_NS_H_
 
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #if defined(MUDLIB_IO_EXPORTS)
         #define MUDLIB_IO_API __declspec(dllexport)
     #else

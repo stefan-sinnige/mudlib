@@ -1,4 +1,4 @@
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #define SETSOCKOPT_CAST (const char*)
@@ -159,7 +159,7 @@ void
 ip::nonblocking::operator()(ip::socket& socket, bool value)
 {
     int handle = mud::core::internal_handle<int>(socket.handle());
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     u_long mode = value;
     if (::ioctlsocket(handle, FIONBIO, &mode) != 0) {
         throw std::system_error(::WSAGetLastError(), std::system_category(),
@@ -186,7 +186,7 @@ ip::nonblocking::operator()(ip::socket& socket, bool value)
 bool
 ip::nonblocking::operator()(ip::socket& socket)
 {
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     throw std::system_error(
         -1, std::system_category(),
         "retrieving socket option (noon-blocking) not supported");

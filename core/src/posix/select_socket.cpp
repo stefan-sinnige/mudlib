@@ -1,4 +1,4 @@
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #include <io.h>
     #include <winsock2.h>
     #include <ws2tcpip.h>
@@ -25,7 +25,7 @@ typedef long ssize_t;
 
 BEGIN_MUDLIB_CORE_NS
 
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
 /* Winsock initialiser. */
 struct WSAInitialiser
 {
@@ -108,7 +108,7 @@ select_handle::signal::impl::impl()
     }
 
     // Make the socket non-blocking
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     u_long mode = true;
     if (::ioctlsocket(fd, FIONBIO, &mode) != 0) {
         throw std::system_error(::WSAGetLastError(), std::system_category(),
@@ -142,7 +142,7 @@ select_handle::signal::impl::impl()
 select_handle::signal::impl::~impl()
 {
     if (_handle != nullptr) {
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
         ::closesocket(mud::core::internal_handle<int>(_handle));
 #else
         ::close(mud::core::internal_handle<int>(_handle));
@@ -177,7 +177,7 @@ select_handle::signal::impl::capture()
     int nread =
         ::recvfrom(mud::core::internal_handle<int>(_handle), RECVFROM_CAST & ch,
                    1, 0, (struct sockaddr*)&recv_addr, &len);
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     int error = ::GetLastError();
 #else
     int error = errno;

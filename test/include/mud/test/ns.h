@@ -1,7 +1,7 @@
 #ifndef _MUDLIB_TEST_NS_H_
 #define _MUDLIB_TEST_NS_H_
 
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #if defined(MUDLIB_TEST_EXPORTS)
         #define MUDLIB_TEST_API __declspec(dllexport)
     #else

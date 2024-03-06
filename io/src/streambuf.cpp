@@ -1,4 +1,4 @@
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     // This should not be here - it is socket specific!
     #include <winSock2.h>
     #include <windows.h>
@@ -49,7 +49,7 @@ basic_streambuf::underflow()
     /* Read new characters */
     int nread = read(_buffer + _putbacksize, _bufsize - _putbacksize);
     if (nread <= 0) {
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
         // This should not be here, it is socket specific
         int error = GetLastError();
         if (nread != 0 /* && error != WSAEAGAIN ? */) {

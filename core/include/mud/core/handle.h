@@ -7,7 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <typeinfo>
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #include <windows.h>
 #endif
 
@@ -560,7 +560,7 @@ template<>
 MUDLIB_CORE_API int
 internal_handle<int>(const std::unique_ptr<handle>&);
 
-#ifdef WINDOWS
+#if defined(_WIN32)
 /**
  * @brief: A handle to a windows @c HANDLE resource type.
  */
@@ -578,7 +578,7 @@ MUDLIB_CORE_API HWND
 internal_handle<HWND>(const std::unique_ptr<handle>&);
 #endif
 
-#ifdef DARWIN
+#if defined(__APPLE__)
 /**
  * @brief: A dummy handle for a MacOSX UI loop wake-up trigger.
  */

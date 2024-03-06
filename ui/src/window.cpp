@@ -21,4 +21,15 @@ window::show()
 
 END_MUDLIB_UI_NS
 
+/*
+ * Include platform specific handle implementations.
+ */
+#if defined(_WIN32)
+  #include "src/win32/win32_window.cpp"
+#elif defined(__APPLE__)
+  #include "src/cocoa/cocoa_window.cpp"
+#else
+  #include "src/x11/x11_window.cpp"
+#endif
+
 /* vi: set ai ts=4 expandtab: */
