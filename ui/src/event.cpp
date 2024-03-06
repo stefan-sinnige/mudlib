@@ -1,34 +1,12 @@
-#include "mud/ui/event.h"
-
-BEGIN_MUDLIB_UI_NS
-
-/**
- * Event
+/*
+ * Include platform specific handle implementations.
  */
-
-event::event(type_t type, mud::ui::control& ctrl) : _type(type), _ctrl(ctrl) {}
-
-event::~event() {}
-
-/**
- * Expose event
- */
-
-event::expose::expose(mud::ui::control& ctrl)
-  : event(event::type_t::EXPOSE, ctrl)
-{}
-
-event::expose::~expose() {}
-
-/**
- * Mouse event
- */
-
-event::mouse::mouse(mud::ui::control& ctrl) : event(event::type_t::MOUSE, ctrl)
-{}
-
-event::mouse::~mouse() {}
-
-END_MUDLIB_UI_NS
+#if defined(_WIN32)
+  #include "src/win32/win32_event.cpp"
+#elif defined(__APPLE__)
+  #include "src/cocoa/cocoa_event.cpp"
+#else
+  #include "src/x11/x11_event.cpp"
+#endif
 
 /* vi: set ai ts=4 expandtab: */

@@ -1,5 +1,4 @@
 /*
-        irc/entities_scanner.cpp
  * This is not part of the mudlib library.
  *
  * This tool uses the entities table and creates scanning tables for converting

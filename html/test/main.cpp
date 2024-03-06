@@ -1,17 +1,12 @@
 #include <mud/test.h>
 #include <stdio.h>
 
-bool g_scanner_debug = false;
-bool g_parser_debug = false;
-
 void
 help(int retval)
 {
     std::cout << "Command line options:\n"
                  "  --test <spec>    Specify the test(s) to run:\n"
                  "                       feature[#<scenario>]\n"
-                 "  --scanner-debug  Enable scanner debug\n"
-                 "  --parser-debug   Enable parser debug\n"
                  "  --help           Show this help\n";
     exit(retval);
 }
@@ -29,10 +24,6 @@ main(int argc, char** argv)
             } else {
                 test = *(++argv);
             }
-        } else if (strcmp(*argv, "--scanner-debug") == 0) {
-            g_scanner_debug = true;
-        } else if (strcmp(*argv, "--parser-debug") == 0) {
-            g_parser_debug = true;
         } else if (strcmp(*argv, "--help") == 0 || strcmp(*argv, "-h") == 0) {
             help(0);
         } else {

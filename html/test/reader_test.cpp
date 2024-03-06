@@ -11,9 +11,6 @@
 #include <sstream>
 #include <type_traits>
 
-extern bool g_scanner_debug;
-extern bool g_parser_debug;
-
 /* clang-format off */
 
 CONTEXT()
@@ -40,12 +37,6 @@ END_CONTEXT()
 FEATURE("Reader")
     DEFINE_WHEN("The text is read",
         [](context& ctx) {
-            if (g_scanner_debug) {
-                ctx.text >> mud::html::scanner_debug;
-            }
-            if (g_parser_debug) {
-                ctx.text >> mud::html::parser_debug;
-            }
             try {
                 ctx.text >> ctx.doc;
             }

@@ -3,6 +3,28 @@
 
 BEGIN_MUDLIB_CORE_NS
 
+template<>
+HANDLE
+internal_handle<HANDLE>(const std::unique_ptr<handle>& handle)
+{
+    if (handle->type() != handle::type_t::W32HANDLE) {
+        throw std::invalid_argument("Handle of incorrect type");
+    }
+    windows_handle* h = static_cast<windows_handle*>(handle.get());
+    return *h;
+}
+
+template<>
+HWND
+internal_handle<HWND>(const std::unique_ptr<handle>& handle)
+{
+    if (handle->type() != handle::type_t::W32WND) {
+        throw std::invalid_argument("Handle of incorrect type");
+    }
+    win32_handle* h = static_cast<win32_handle*>(handle.get());
+    return *h;
+}
+
 /**
  * Implementation of a signalling resource.
  */

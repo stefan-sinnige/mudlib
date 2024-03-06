@@ -1,5 +1,5 @@
 #include "mud/xml.h"
-#include "xml_parser.h"
+#include "src/parser.hpp"
 #include <utility>
 
 #include <iostream>
@@ -22,6 +22,28 @@ yyxml_scan_stream(std::istream&, yyscan_t);
 /* External declations from the reader */
 extern int yyxmldebug;
 
+/* Scanner and parser debug stream manipulators */
+static int __scanner_debug = std::ios_base::xalloc();
+static int __parser_debug = std::ios_base::xalloc();
+
+BEGIN_MUDLIB_XML_NS
+
+std::ios_base&
+scanner_debug(std::ios_base& istr)
+{
+    istr.iword(__scanner_debug) = 1;
+    return istr;
+}
+
+std::ios_base&
+parser_debug(std::ios_base& istr)
+{
+    istr.iword(__parser_debug) = 1;
+    return istr;
+}
+
+END_MUDLIB_XML_NS
+
 std::istream&
 operator>>(std::istream& istr, mud::xml::document& doc)
 {
@@ -31,9 +53,13 @@ operator>>(std::istream& istr, mud::xml::document& doc)
     yyxmllex_init(&(ctx.scanner));
     yyxml_scan_stream(istr, ctx.scanner);
 
-    // These should come from streaming manipulators
-    // yyxmlset_debug(_scanner_debugging ? 1 : 0, ctx.scanner);
-    // yyxmldebug = _reader_debugging ? 1 : 0;
+    // Set the debugging options if it has been specified
+    // if (istr.iword(__scanner_debug) == 1) {
+    //     yyxmlset_debug(1, ctx.scanner);
+    // }
+    // if (istr.iword(__parser_debug) == 1) {
+    //     yyxmldebug = 1;
+    // }
 
     /* Parse into a document */
     int result = yyxmlparse(&ctx);

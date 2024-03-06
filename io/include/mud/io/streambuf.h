@@ -1,10 +1,10 @@
 #ifndef _MUDLIB_IO_STREAMBUF_H_
 #define _MUDLIB_IO_STREAMBUF_H_
 
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #ifndef MUDLIB_SSIZE_T
         #define MUDLIB_SSIZE_T
-typedef long ssize_t;
+        typedef long ssize_t;
     #endif
 #endif
 #include <memory>

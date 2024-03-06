@@ -1,4 +1,4 @@
-#include "html_parser.h"
+#include "src/parser.hpp"
 #include "mud/html.h"
 #include <utility>
 
@@ -58,12 +58,12 @@ operator>>(std::istream& istr, mud::html::document& doc)
     yyhtml_scan_stream(istr, ctx.scanner);
 
     // Set the debugging options if it has been specified
-    if (istr.iword(__scanner_debug) == 1) {
-        yyhtmlset_debug(1, ctx.scanner);
-    }
-    if (istr.iword(__parser_debug) == 1) {
-        yyhtmldebug = 1;
-    }
+    // if (istr.iword(__scanner_debug) == 1) {
+    //     yyhtmlset_debug(1, ctx.scanner);
+    // }
+    // if (istr.iword(__parser_debug) == 1) {
+    //     yyhtmldebug = 1;
+    // }
 
     /* Parse into a document */
     int result = yyhtmlparse(&ctx);

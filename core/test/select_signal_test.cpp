@@ -3,7 +3,7 @@
 #include <future>
 #include <memory>
 #include <type_traits>
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #include <windows.h>
 #else
     #include <sys/select.h>

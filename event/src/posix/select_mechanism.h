@@ -9,7 +9,7 @@
 #include <mud/event/event_mechanism.h>
 #include <mud/event/ns.h>
 #include <thread>
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #include <windows.h>
 #else
     #include <sys/select.h>

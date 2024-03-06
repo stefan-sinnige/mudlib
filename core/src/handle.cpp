@@ -18,30 +18,18 @@ internal_handle<int>(const std::unique_ptr<handle>& handle)
     return *h;
 }
 
-#if defined(WINDOWS) && defined(NATIVE)
-template<>
-HANDLE
-internal_handle<HANDLE>(const std::unique_ptr<handle>& handle)
-{
-    if (handle->type() != handle::type_t::W32HANDLE) {
-        throw std::invalid_argument("Handle of incorrect type");
-    }
-    windows_handle* h = static_cast<windows_handle*>(handle.get());
-    return *h;
-}
-
-template<>
-HWND
-internal_handle<HWND>(const std::unique_ptr<handle>& handle)
-{
-    if (handle->type() != handle::type_t::W32WND) {
-        throw std::invalid_argument("Handle of incorrect type");
-    }
-    win32_handle* h = static_cast<win32_handle*>(handle.get());
-    return *h;
-}
-#endif
-
 END_MUDLIB_CORE_NS
+
+/*
+ * Include platform specific handle implementations.
+ */
+#if defined(_WIN32)
+  #include "win32/windows_handle.cpp"
+  #include "posix/select_socket.cpp"
+#else
+  // We can either use a pipe or a socket:
+  #include "posix/select_pipe.cpp"
+  // #include "posix/select_socket.cpp"
+#endif
 
 /* vi: set ai ts=4 expandtab: */

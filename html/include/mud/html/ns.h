@@ -1,7 +1,7 @@
 #ifndef _MUDLIB_HTML_NS_H_
 #define _MUDLIB_HTML_NS_H_
 
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     #if defined(MUDLIB_HTML_EXPORTS)
         #define MUDLIB_HTML_API __declspec(dllexport)
         #define MUDLIB_HTML_API_EXPORT __declspec(dllexport)

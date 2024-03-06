@@ -86,7 +86,7 @@ date::serialise(std::ostream& ostr) const
     struct tm tm;
     char buf[30];
 
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
     (void)gmtime_s(&tm, &utc);
 #else
     (void)gmtime_r(&utc, &tm);

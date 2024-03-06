@@ -1,4 +1,4 @@
-#if defined(WINDOWS) && defined(NATIVE)
+#if defined(_WIN32)
 typedef short sa_family_t;
     #define RECVFROM_CAST (char*)
     #define SENDTO_CAST (const char*)
