@@ -24,9 +24,13 @@ includemudui_HEADERS = \
     include/mud/ui/task.h
 
 libmudui_la_CPPFLAGS = \
+    -x objective-c++ \
     -I$(srcdir)/include \
     -I$(srcdir)/../core/include \
     -I$(srcdir)/../event/include
+
+libmudui_la_LDFLAGS = \
+    -framework Cocoa
 
 # CPPFLAGS TODO:
 #    APPLE:

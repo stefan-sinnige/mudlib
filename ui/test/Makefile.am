@@ -4,7 +4,6 @@ TESTS = $(check_PROGRAMS)
 mudui_test_SOURCES = \
     main.cpp \
     application_test.cpp \
-    pushbutton_test.cpp \
     window_test.cpp
 
 mudui_test_CPPFLAGS = \
@@ -16,7 +15,7 @@ mudui_test_CPPFLAGS = \
 mudui_test_LDADD = \
     ../libmudui.la \
     ../../core/libmudcore.la \
-    ../../core/libmudevent.la \
+    ../../event/libmudevent.la \
     ../../test/libmudtest.la
 
 # LDADD TODO:

@@ -14,11 +14,30 @@ AC_CHECK_PROGS(BISON, bison)
 # We only use C++17 (or above) features
 AX_CXX_COMPILE_STDCXX(17, , mandatory)
 
+# Documentation programs
+#    * Add a '--enable-manual' option to build the manual (PDF)
+AC_ARG_ENABLE([manual],
+  [AS_HELP_STRING([--enable-manual],
+                  [Enable generation of a manual. Default is disabled.])],
+  [enable_manual="yes"],
+  [enable_manual="no"])
+AS_IF([test "x$enable_manual" = "xyes"],[
+    AC_CHECK_PROG([PDFLATEX], [pdflatex], [pdflatex], [no])
+    AC_CHECK_PROG([BIBER], [biber], [biber], [no])
+    AS_IF([test "x$PDFLATEX" = "xno"], [
+        AC_MSG_WARN([Building of manual disabled as pdflatex is not found])
+        enable_manual="no"])
+    AS_IF([test "x$BIBER" = "xno"], [
+        AC_MSG_WARN([Building of manual disabled as biber is not found])
+        enable_manual="no"])])
+AM_CONDITIONAL([MANUAL], [test "x$enable_manual" = "xyes"])
+
 # Create the configuration files. Note that the UI related library and sample
 # is not included.
 AC_CONFIG_FILES([
     Makefile
     core/Makefile core/test/Makefile
+    doc/Makefile
     event/Makefile event/test/Makefile
     html/Makefile html/test/Makefile
     html/src/entities_scanner_generator/Makefile
