@@ -11,6 +11,7 @@ typedef short sa_family_t;
     #include <netinet/in.h>
     #include <sys/socket.h>
 #endif
+#include <string.h>
 #include "mud/io/exception.h"
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"

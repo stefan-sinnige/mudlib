@@ -1,5 +1,6 @@
 #include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
+#include <cstring>
 #include <iostream>
 #include <list>
 #include <string>

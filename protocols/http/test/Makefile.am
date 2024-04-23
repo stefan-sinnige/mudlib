@@ -12,14 +12,16 @@ mudhttp_test_CPPFLAGS = \
 	-I$(srcdir)/../../../io/include \
 	-I$(srcdir)/../../../event/include \
 	-I$(srcdir)/../../../core/include \
-	-I$(srcdir)/../../../test/include
+	-I$(srcdir)/../../../test/include \
+	$(PTHREAD_CFLAGS)
 
 mudhttp_test_LDADD = \
     ../libmudhttp.la \
     ../../../io/libmudio.la \
     ../../../event/libmudevent.la \
     ../../../core/libmudcore.la \
-    ../../../test/libmudtest.la
+    ../../../test/libmudtest.la \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 

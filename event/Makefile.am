@@ -19,7 +19,8 @@ includemudevent_HEADERS = \
 
 libmudevent_la_CPPFLAGS = \
     -I$(srcdir)/include \
-	-I$(srcdir)/../core/include
+	-I$(srcdir)/../core/include \
+	$(PTHREAD_CFLAGS)
 
 # TODO: For windows add
 # libmudevent_la_LIBADD = -lws2_32

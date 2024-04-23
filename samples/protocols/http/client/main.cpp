@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include <mud/event/event_loop.h>
 #include <mud/http/message.h>

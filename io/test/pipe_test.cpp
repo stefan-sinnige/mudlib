@@ -1,5 +1,6 @@
 #include "mud/io/pipe.h"
 #include "mud/test.h"
+#include <cstring>
 #include <string>
 #include <type_traits>
 

@@ -2,6 +2,7 @@
 #define _MUDLIB_CORE_POLY_VECTOR_H_
 
 #include <mud/core/ns.h>
+#include <memory>
 #include <vector>
 
 BEGIN_MUDLIB_CORE_NS

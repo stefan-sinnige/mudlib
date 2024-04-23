@@ -1,5 +1,5 @@
 %{
-/* Verified to work with Bison 2.7
+/* Verified to work with Bison 3.8
  *
  * In conjunction with xml.l, this implements the HTML standard:
  *    https://html.spec.whatwg.org/
@@ -7,6 +7,7 @@
  */
 
 /* Additional C++ statement */
+#include <cstring>
 #include <iostream>
 #include <mud/html.h>
 #include <string>

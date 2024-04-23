@@ -12,11 +12,13 @@ mudcore_test_SOURCES = \
 
 mudcore_test_CPPFLAGS = \
     -I$(srcdir)/../include \
-	-I$(srcdir)/../../test/include
+	-I$(srcdir)/../../test/include \
+	$(PTHREAD_CFLAGS)
 
 mudcore_test_LDADD = \
     ../libmudcore.la \
-    ../../test/libmudtest.la
+    ../../test/libmudtest.la \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 

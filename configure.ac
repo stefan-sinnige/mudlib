@@ -1,4 +1,4 @@
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 AC_INIT([mudlib],[1.0.0])
 AM_INIT_AUTOMAKE([subdir-objects])
 LT_INIT
@@ -6,13 +6,27 @@ LT_INIT
 AC_PROG_CXX
 AC_PROG_INSTALL
 
+# We only use C++17 (or above) features
+AX_CXX_COMPILE_STDCXX(17, , mandatory)
+
+# Check of pthread
+AX_PTHREAD()
+
 # Limit the lex/yacc only to flex and bison (not using AC_PROG_YACC/AC_PROG_LEX)
 # as we're using bison/flex specific directives.
 AC_CHECK_PROGS(FLEX, flex)
-AC_CHECK_PROGS(BISON, bison)
+AC_MSG_CHECKING([$BISON version])
+FLEX_VERSION=$("$FLEX" --version | head -1 | rev | cut -d ' ' -f 1 | rev)
+AX_COMPARE_VERSION([$FLEX_VERSION], [ge], [2.6],[],[
+    AC_MSG_ERROR([$FLEX_VERSION found, should be at least 2.6])])
+AC_MSG_RESULT($FLEX_VERSION)
 
-# We only use C++17 (or above) features
-AX_CXX_COMPILE_STDCXX(17, , mandatory)
+AC_CHECK_PROGS(BISON, bison)
+AC_MSG_CHECKING([$BISON version])
+BISON_VERSION=$("$BISON" --version | head -1 | rev | cut -d ' ' -f 1 | rev)
+AX_COMPARE_VERSION([$BISON_VERSION], [ge], [3.8],[],[
+    AC_MSG_ERROR([$BISON_VERSION found, should be at least 3.8])])
+AC_MSG_RESULT($BISON_VERSION)
 
 # Documentation programs
 #    * Add a '--enable-manual' option to build the manual (PDF)

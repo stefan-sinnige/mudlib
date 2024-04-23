@@ -6,12 +6,14 @@ sample_udp_client_SOURCES = \
 sample_udp_client_CPPFLAGS = \
     -I$(srcdir)/../../../../core/include \
     -I$(srcdir)/../../../../event/include \
-    -I$(srcdir)/../../../../io/include 
+    -I$(srcdir)/../../../../io/include \
+	$(PTHREAD_CFLAGS)
 
 sample_udp_client_LDADD = \
     $(srcdir)/../../../../core/libmudcore.la \
     $(srcdir)/../../../../event/libmudevent.la\
-    $(srcdir)/../../../../io/libmudio.la 
+    $(srcdir)/../../../../io/libmudio.la \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 
