@@ -2,6 +2,7 @@
 #define _MUDLIB_CORE_POLY_MAP_H_
 
 #include <map>
+#include <memory>
 #include <mud/core/ns.h>
 
 BEGIN_MUDLIB_CORE_NS

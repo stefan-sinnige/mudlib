@@ -3,11 +3,10 @@
 #include "mud/test.h"
 #include <atomic>
 #include <condition_variable>
+#include <cstring>
 #include <future>
 #include <memory>
 #include <type_traits>
-
-#include <iostream>
 
 /* clang-format off */
 

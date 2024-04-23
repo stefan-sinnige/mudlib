@@ -15,7 +15,8 @@ mudevent_test_CPPFLAGS = \
 mudevent_test_LDADD = \
     ../libmudevent.la \
     ../../core/libmudcore.la \
-    ../../test/libmudtest.la
+    ../../test/libmudtest.la \
+	$(PTHREAD_CFLAGS)
 
 # vi: set ts=4 noexpandtab:
 

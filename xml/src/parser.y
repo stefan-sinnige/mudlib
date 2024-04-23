@@ -1,5 +1,5 @@
 %{
-/* Verified to work with Bison 2.7
+/* Verified to work with Bison 3.8
  *
  * In conjunction with xml.l, this implements the following standard:
  *    Extensible Markup Language (XML) 1.0 (Fifth Edition)
@@ -7,6 +7,7 @@
  */
 
 /* Additional C++ statement */
+#include <cstring>
 #include <iostream>
 #include <mud/xml.h>
 #include <string>

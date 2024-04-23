@@ -8,7 +8,7 @@
 %option yylineno
 
 %{
-/* Verified with Flex 2.5 
+/* Verified with Flex 2.6 
  *
  * In conjunction with xml.y, this implements the following standard:
  *    Extensible Markup Language (XML) 1.0 (Fifth Edition)

@@ -1,5 +1,6 @@
 #include "mud/io/udp.h"
 #include "mud/test.h"
+#include <cstring>
 #include <memory>
 #include <type_traits>
 

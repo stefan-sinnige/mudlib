@@ -20,7 +20,8 @@ includemudcore_HEADERS = \
     include/mud/core/task.h
 
 libmudcore_la_CPPFLAGS = \
-    -I$(srcdir)/include
+    -I$(srcdir)/include \
+	$(PTHREAD_CFLAGS)
 
 # vi: set ts=4 noexpandtab:
 

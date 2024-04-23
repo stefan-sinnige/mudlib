@@ -26,134 +26,142 @@ struct WSAInitialiser
  * enumeration. A value of -1 means 'not supported'. */
 
 int g_domains[] = {
-    AF_UNIX,   AF_UNIX,          /** LOCAL */
-    AF_INET,   AF_INET6,     -1, /** AX25 */
-    AF_IPX,    AF_APPLETALK, -1, /** X25 */
-    AF_DECnet, -1,               /** KEY */
-    -1,                          /** NETLINK */
-    -1,                          /** PACKET */
-    -1,                          /** RDS */
-    -1,                          /** PPPOX */
-    -1,                          /** LLC */
-    -1,                          /** IB */
-    -1,                          /** MPLS */
-    -1,                          /** CAN */
-    -1,                          /** TIPC */
-    -1,                          /** BLUETOOTH */
-    -1,                          /** ALG */
-    -1,                          /** VSOCK */
-    -1,                          /** KCM */
-    -1                           /** _XDP */
+    AF_UNIX,
+    AF_UNIX, /** LOCAL */
+    AF_INET,
+    AF_INET6,
+    -1, /** AX25 */
+    AF_IPX,
+    AF_APPLETALK,
+    -1, /** X25 */
+    AF_DECnet,
+    -1, /** KEY */
+    -1, /** NETLINK */
+    -1, /** PACKET */
+    -1, /** RDS */
+    -1, /** PPPOX */
+    -1, /** LLC */
+    -1, /** IB */
+    -1, /** MPLS */
+    -1, /** CAN */
+    -1, /** TIPC */
+    -1, /** BLUETOOTH */
+    -1, /** ALG */
+    -1, /** VSOCK */
+    -1, /** KCM */
+    -1  /** _XDP */
 };
 
 int g_types[] = { SOCK_STREAM, SOCK_DGRAM, SOCK_SEQPACKET, SOCK_RAW, SOCK_RDM };
 
-int g_protocols[] = { IPPROTO_IP, /** INTRINSIC */
-                      IPPROTO_IP,
-                      IPPROTO_HOPOPTS,
-                      IPPROTO_ICMP,
-                      IPPROTO_IGMP,
-                      IPPROTO_GGP,
-                      IPPROTO_IPV4,
-                      -1, /** IPIP */
-                      IPPROTO_TCP,
-                      IPPROTO_ST,
-                      IPPROTO_EGP,
-                      -1, /** PIGP */
-                      -1, /** RCCMON */
-                      -1, /** NVPII */
-                      IPPROTO_PUP,
-                      -1, /** ARGUS */
-                      -1, /** EMCON */
-                      -1, /** XNET */
-                      -1, /** CHAOS */
-                      IPPROTO_UDP,
-                      -1, /** MUX */
-                      -1, /** MEAS */
-                      -1, /** HMP */
-                      -1, /** PRM */
-                      IPPROTO_IDP,
-                      -1, /** TRUNK1 */
-                      -1, /** TRUNK2 */
-                      -1, /** LEAF1 */
-                      -1, /** LEAF2 */
-                      IPPROTO_RDP,
-                      -1, /** IRTP */
-                      -1, /** TP */
-                      -1, /** BLT */
-                      -1, /** NSP */
-                      -1, /** INP */
-                      -1, /** SEP */
-                      -1, /** 3PC */
-                      -1, /** IDPR */
-                      -1, /** XTP */
-                      -1, /** DDP */
-                      -1, /** CMTP */
-                      -1, /** TPXX */
-                      -1, /** IL */
-                      IPPROTO_IPV6,
-                      IPPROTO_ROUTING,
-                      IPPROTO_FRAGMENT,
-                      -1, /** SDRP */
-                      -1, /** IDRP */
-                      -1, /** RSVP */
-                      -1, /** GRE */
-                      -1, /** MHRP */
-                      -1, /** BHA */
-                      IPPROTO_ESP,
-                      IPPROTO_AH,
-                      -1, /** INLSP */
-                      -1, /** SWIPE */
-                      -1, /** NHRP */
-                      IPPROTO_ICMPV6,
-                      IPPROTO_NONE,
-                      IPPROTO_DSTOPTS,
-                      -1, /** AHIP */
-                      -1, /** CFTP */
-                      -1, /** HELLO */
-                      -1, /** SATEXPAK */
-                      -1, /** KRYPTOLAN */
-                      -1, /** RVD */
-                      -1, /** IPPC */
-                      -1, /** ADFS */
-                      -1, /** SATMON */
-                      -1, /** VISA */
-                      -1, /** IPCV */
-                      -1, /** CPNX */
-                      -1, /** CPHB */
-                      -1, /** WSN */
-                      -1, /** PVP */
-                      -1, /** BRSATMON */
-                      IPPROTO_ND,
-                      -1, /** WBMON */
-                      -1, /** WBEXPAK */
-                      -1, /** EON */
-                      -1, /** VMTP */
-                      -1, /** SVMTP */
-                      -1, /** VINES */
-                      -1, /** TTP */
-                      IPPROTO_IGP,
-                      -1, /** DGP */
-                      -1, /** TCF */
-                      -1, /** IGRP */
-                      -1, /** OSPFIGP */
-                      -1, /** SRPC */
-                      -1, /** LARP */
-                      -1, /** MTP */
-                      -1, /** AX25 */
-                      -1, /** IPEIP */
-                      -1, /** MICP */
-                      -1, /** SCCSP */
-                      -1, /** ETHERIP */
-                      -1, /** ENCAP */
-                      -1, /** APES */
-                      -1, /** GMTP */
-                      IPPROTO_PIM,
-                      -1, /** IPCOMP */
-                      IPPROTO_PGM,
-                      IPPROTO_SCTP,
-                      -1, /** DIVERT */
-                      IPPROTO_RAW };
+int g_protocols[] = {
+    IPPROTO_IP, /** INTRINSIC */
+    IPPROTO_IP,
+    IPPROTO_HOPOPTS,
+    IPPROTO_ICMP,
+    IPPROTO_IGMP,
+    IPPROTO_GGP,
+    IPPROTO_IPV4,
+    -1, /** IPIP */
+    IPPROTO_TCP,
+    IPPROTO_ST,
+    IPPROTO_EGP,
+    -1, /** PIGP */
+    -1, /** RCCMON */
+    -1, /** NVPII */
+    IPPROTO_PUP,
+    -1, /** ARGUS */
+    -1, /** EMCON */
+    -1, /** XNET */
+    -1, /** CHAOS */
+    IPPROTO_UDP,
+    -1, /** MUX */
+    -1, /** MEAS */
+    -1, /** HMP */
+    -1, /** PRM */
+    IPPROTO_IDP,
+    -1, /** TRUNK1 */
+    -1, /** TRUNK2 */
+    -1, /** LEAF1 */
+    -1, /** LEAF2 */
+    IPPROTO_RDP,
+    -1, /** IRTP */
+    -1, /** TP */
+    -1, /** BLT */
+    -1, /** NSP */
+    -1, /** INP */
+    -1, /** SEP */
+    -1, /** 3PC */
+    -1, /** IDPR */
+    -1, /** XTP */
+    -1, /** DDP */
+    -1, /** CMTP */
+    -1, /** TPXX */
+    -1, /** IL */
+    IPPROTO_IPV6,
+    IPPROTO_ROUTING,
+    IPPROTO_FRAGMENT,
+    -1, /** SDRP */
+    -1, /** IDRP */
+    -1, /** RSVP */
+    -1, /** GRE */
+    -1, /** MHRP */
+    -1, /** BHA */
+    IPPROTO_ESP,
+    IPPROTO_AH,
+    -1, /** INLSP */
+    -1, /** SWIPE */
+    -1, /** NHRP */
+    IPPROTO_ICMPV6,
+    IPPROTO_NONE,
+    IPPROTO_DSTOPTS,
+    -1, /** AHIP */
+    -1, /** CFTP */
+    -1, /** HELLO */
+    -1, /** SATEXPAK */
+    -1, /** KRYPTOLAN */
+    -1, /** RVD */
+    -1, /** IPPC */
+    -1, /** ADFS */
+    -1, /** SATMON */
+    -1, /** VISA */
+    -1, /** IPCV */
+    -1, /** CPNX */
+    -1, /** CPHB */
+    -1, /** WSN */
+    -1, /** PVP */
+    -1, /** BRSATMON */
+    IPPROTO_ND,
+    -1, /** WBMON */
+    -1, /** WBEXPAK */
+    -1, /** EON */
+    -1, /** VMTP */
+    -1, /** SVMTP */
+    -1, /** VINES */
+    -1, /** TTP */
+    IPPROTO_IGP,
+    -1, /** DGP */
+    -1, /** TCF */
+    -1, /** IGRP */
+    -1, /** OSPFIGP */
+    -1, /** SRPC */
+    -1, /** LARP */
+    -1, /** MTP */
+    -1, /** AX25 */
+    -1, /** IPEIP */
+    -1, /** MICP */
+    -1, /** SCCSP */
+    -1, /** ETHERIP */
+    -1, /** ENCAP */
+    -1, /** APES */
+    -1, /** GMTP */
+    IPPROTO_PIM,
+    -1, /** IPCOMP */
+    IPPROTO_PGM,
+    IPPROTO_SCTP,
+    -1, /** DIVERT */
+    IPPROTO_RAW
+};
 
 basic_socket::basic_socket(basic_socket::domain_t domain,
                            basic_socket::type_t type,

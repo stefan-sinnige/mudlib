@@ -371,7 +371,7 @@ public:
     void dump(const char* prefix = "Given");
 
 private:
-    _feature<context_type>& _feature;
+    _feature<context_type>& _feat;
     std::string _id;
     function_type _func;
     _table _data;
@@ -381,20 +381,20 @@ private:
 template<typename Context>
 mud::test::_given<Context>::_given(::mud::test::_feature<context_type>& feature,
                                    const std::string& id)
-  : _feature(feature), _id(id), _func(nullptr), _chain(nullptr)
+  : _feat(feature), _id(id), _func(nullptr), _chain(nullptr)
 {}
 
 template<typename Context>
 mud::test::_given<Context>::_given(mud::test::_feature<context_type>& feature,
                                    const std::string& id, function_type func)
-  : _feature(feature), _id(id), _func(func), _chain(nullptr)
+  : _feat(feature), _id(id), _func(func), _chain(nullptr)
 {}
 
 template<typename Context>
 mud::test::_given<Context>&
 mud::test::_given<Context>::And(const std::string& id)
 {
-    _chain = _feature.construct_given(id);
+    _chain = _feat.construct_given(id);
     return *_chain;
 }
 
@@ -402,7 +402,7 @@ template<typename Context>
 mud::test::_given<Context>&
 mud::test::_given<Context>::And(const std::string& id, function_type func)
 {
-    _chain = new mud::test::_given<Context>(_feature, id, func);
+    _chain = new mud::test::_given<Context>(_feat, id, func);
     return *_chain;
 }
 
@@ -531,7 +531,7 @@ public:
     void dump(const char* prefix = "When");
 
 private:
-    _feature<context_type>& _feature;
+    _feature<context_type>& _feat;
     std::string _id;
     function_type _func;
     _table _data;
@@ -541,20 +541,20 @@ private:
 template<typename Context>
 mud::test::_when<Context>::_when(mud::test::_feature<Context>& feature,
                                  const std::string& id)
-  : _feature(feature), _id(id), _func(nullptr), _chain(nullptr)
+  : _feat(feature), _id(id), _func(nullptr), _chain(nullptr)
 {}
 
 template<typename Context>
 mud::test::_when<Context>::_when(mud::test::_feature<Context>& feature,
                                  const std::string& id, function_type func)
-  : _feature(feature), _id(id), _func(func), _chain(nullptr)
+  : _feat(feature), _id(id), _func(func), _chain(nullptr)
 {}
 
 template<typename Context>
 mud::test::_when<Context>&
 mud::test::_when<Context>::And(const std::string& id)
 {
-    _chain = _feature.construct_when(id);
+    _chain = _feat.construct_when(id);
     return *_chain;
 }
 
@@ -562,7 +562,7 @@ template<typename Context>
 mud::test::_when<Context>&
 mud::test::_when<Context>::And(const std::string& id, function_type func)
 {
-    _chain = new mud::test::_when<Context>(_feature, id, func);
+    _chain = new mud::test::_when<Context>(_feat, id, func);
     return *_chain;
 }
 
@@ -694,7 +694,7 @@ public:
     void dump(const char* prefix = "Then");
 
 private:
-    _feature<context_type>& _feature;
+    _feature<context_type>& _feat;
     std::string _id;
     function_type _func;
     _table _data;
@@ -704,20 +704,20 @@ private:
 template<typename Context>
 mud::test::_then<Context>::_then(mud::test::_feature<Context>& feature,
                                  const std::string& id)
-  : _feature(feature), _id(id), _func(nullptr), _chain(nullptr)
+  : _feat(feature), _id(id), _func(nullptr), _chain(nullptr)
 {}
 
 template<typename Context>
 mud::test::_then<Context>::_then(mud::test::_feature<Context>& feature,
                                  const std::string& id, function_type func)
-  : _feature(feature), _id(id), _func(func), _chain(nullptr)
+  : _feat(feature), _id(id), _func(func), _chain(nullptr)
 {}
 
 template<typename Context>
 mud::test::_then<Context>&
 mud::test::_then<Context>::And(const std::string& id)
 {
-    _chain = _feature.construct_then(id);
+    _chain = _feat.construct_then(id);
     return *_chain;
 }
 
@@ -725,7 +725,7 @@ template<typename Context>
 mud::test::_then<Context>&
 mud::test::_then<Context>::And(const std::string& id, function_type func)
 {
-    _chain = new mud::test::_then<Context>(_feature, id, func);
+    _chain = new mud::test::_then<Context>(_feat, id, func);
     return *_chain;
 }
 
@@ -884,7 +884,7 @@ private:
      */
     bool run(context_type& ctx);
 
-    _feature<context_type>& _feature;
+    _feature<context_type>& _feat;
     std::string _id;
     _table _samples;
     mud::test::_given<context_type>* _given;
@@ -895,14 +895,14 @@ private:
 template<typename Context>
 mud::test::_scenario<Context>::_scenario(mud::test::_feature<Context>& feature,
                                          const std::string& id)
-  : _feature(feature), _id(id)
+  : _feat(feature), _id(id)
 {}
 
 template<typename Context>
 mud::test::_given<Context>&
 mud::test::_scenario<Context>::Given(const std::string& id)
 {
-    _given = _feature.construct_given(id);
+    _given = _feat.construct_given(id);
     return *_given;
 }
 
@@ -910,7 +910,7 @@ template<typename Context>
 mud::test::_given<Context>&
 mud::test::_scenario<Context>::Given(const std::string& id, function_type func)
 {
-    _given = new mud::test::_given<Context>(_feature, id, func);
+    _given = new mud::test::_given<Context>(_feat, id, func);
     return *_given;
 }
 
@@ -918,7 +918,7 @@ template<typename Context>
 mud::test::_when<Context>&
 mud::test::_scenario<Context>::When(const std::string& id)
 {
-    _when = _feature.construct_when(id);
+    _when = _feat.construct_when(id);
     return *_when;
 }
 
@@ -926,7 +926,7 @@ template<typename Context>
 mud::test::_when<Context>&
 mud::test::_scenario<Context>::When(const std::string& id, function_type func)
 {
-    _when = new mud::test::_when<Context>(_feature, id, func);
+    _when = new mud::test::_when<Context>(_feat, id, func);
     return *_when;
 }
 
@@ -934,7 +934,7 @@ template<typename Context>
 mud::test::_then<Context>&
 mud::test::_scenario<Context>::Then(const std::string& id)
 {
-    _then = _feature.construct_then(id);
+    _then = _feat.construct_then(id);
     return *_then;
 }
 
@@ -942,7 +942,7 @@ template<typename Context>
 mud::test::_then<Context>&
 mud::test::_scenario<Context>::Then(const std::string& id, function_type func)
 {
-    _then = new mud::test::_then<Context>(_feature, id, func);
+    _then = new mud::test::_then<Context>(_feat, id, func);
     return *_then;
 }
 
@@ -1186,6 +1186,28 @@ Assert(const char* file, int line, T expected, Y result)
     if (result != expected) {
         std::stringstream sstr;
         sstr << "  Expected: " << expected << std::endl
+             << "  Result  : " << result;
+        AssertFailed(file, line, sstr.str());
+    }
+    return true;
+}
+
+/**
+ * @brief Template class that verifies if two values (result and expected) are
+ *        the same. If they are not the same, and assertion is thrown.
+ *        The check is based on the @c result inequality operation.
+ * @param file [in] The file name.
+ * @param line [in] The line number.
+ * @param expected [in] The expected outcome (nullptr).
+ * @param result [in] The resulting value to verify.
+ */
+template<typename Y>
+bool
+Assert(const char* file, int line, std::nullptr_t expected, Y result)
+{
+    if (result != expected) {
+        std::stringstream sstr;
+        sstr << "  Expected: nullptr" << std::endl
              << "  Result  : " << result;
         AssertFailed(file, line, sstr.str());
     }

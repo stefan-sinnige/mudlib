@@ -1,5 +1,6 @@
 #include <mud/test.h>
 #include <stdio.h>
+#include <string.h>
 
 void
 help(int retval)
