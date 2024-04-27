@@ -1,52 +1,43 @@
 #include "mud/http/message.h"
-#include <chrono>
-#include <ctime>
+#include "tokenise.h"
 #include <stdexcept>
 
 BEGIN_MUDLIB_HTTP_NS
 
-message::message() : _type(message::type_t::UNDETERMINED) {}
-
-message::message(const message& rhs)
-{
-    (void)operator=(rhs);
-}
-
-message&
-message::operator=(const message& rhs)
-{
-    if (&rhs != this) {
-        _type = rhs._type;
-        _fields = rhs._fields;
-    }
-    return *this;
-}
+message::message(enum message::type type) : _type(type) {}
 
 void
 message::clear()
 {
-    _type = message::type_t::UNDETERMINED;
     _fields.clear();
 }
 
 bool
 message::valid() const
 {
-    if (_type == message::type_t::UNDETERMINED)
-        return false;
     return true;
 }
 
-message::type_t
+enum message::type
 message::type() const
 {
     return _type;
 }
 
-void
-message::type(message::type_t value)
+const base_field&
+message::field_by_key(const std::string& key) const
 {
-    _type = value;
+    auto iter = find(key.c_str());
+    if (iter == _fields.end()) {
+        throw std::out_of_range("field not found");
+    }
+    return *iter;
+}
+
+bool
+message::exists(const std::string& key) const
+{
+    return find(key.c_str()) != _fields.end();
 }
 
 size_t
@@ -55,144 +46,121 @@ message::field_size() const
     return _fields.size();
 }
 
-/* ======================================================================
- * Version
- * ====================================================================== */
-
-const message::field_t version::field = message::field_t::VERSION;
-
-version&
-version::operator=(const version& rhs)
+std::ostream&
+operator<<(std::ostream& ostr, const message& msg)
 {
-    if (&rhs != this) {
-        _value = rhs._value;
+    if (!msg.valid()) {
+        throw std::runtime_error("Invalid HTTP message");
     }
-    return *this;
+
+    // The request or response line
+    if (msg.type() == message::type::REQUEST) {
+        const auto& req = dynamic_cast<const request&>(msg);
+        ostr << req.method() << SP << req.uri() << SP << req.version()
+             << CR << LF;
+    } else if (msg.type() == message::type::RESPONSE) {
+        const auto& resp = dynamic_cast<const response&>(msg);
+        ostr << resp.version() << SP << resp.status_code() << SP
+             << resp.reason_phrase() << CR << LF;
+    }
+
+    // Any header. At this stage there is no distinction made between a
+    // request or response specific header - all are exported.
+    for (const auto& field: msg.fields())
+    {
+        ostr << field.key() << CL << SP;
+        field.value(ostr);
+        ostr << CR << LF;
+    }
+
+    // Entity separator
+    ostr << CR << LF;
+
+    // Entity body
+    ostr << msg.entity_body();
+    return ostr;
 }
 
-/* ======================================================================
- * Method
- * ====================================================================== */
-
-const message::field_t method::field = message::field_t::METHOD;
-
-const std::string method::GET = "GET";
-const std::string method::HEAD = "HEAD";
-const std::string method::POST = "POST";
-
-method&
-method::operator=(const method& rhs)
+std::istream&
+operator>>(std::istream& istr, message& msg)
 {
-    if (&rhs != this) {
-        _value = rhs._value;
+    // Tokenisation manipulators
+    static const token_manip include_none = { 0, 0 };
+    static const token_manip include_space = { 1, 0 };
+    static const token_manip include_colon = { 0, 1 };
+    static const token_manip include_all = { 1, 1 };
+
+    // Ensure to start with a fresh message
+    msg.clear();
+
+    // Request or response line
+    if (msg.type() == message::type::REQUEST) {
+        // Request-Line = Method SP Request-URI SP HTTP-Version CRLF
+        auto& req = dynamic_cast<request&>(msg);
+        istr >> req.method(); expect(istr, SP);
+        istr >> req.uri(); expect(istr, SP);
+        istr >> req.version();
+        expect(istr, CR); expect(istr, LF);
     }
-    return *this;
-}
-
-/* ======================================================================
- * URI
- * ====================================================================== */
-
-const message::field_t uri::field = message::field_t::URI;
-
-uri&
-uri::operator=(const uri& rhs)
-{
-    if (&rhs != this) {
-        _value = rhs._value;
+    else {
+        // Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
+        auto& resp = dynamic_cast<response&>(msg);
+        istr >> resp.version(); expect(istr, SP);
+        istr >> resp.status_code(); expect(istr, SP);
+        istr >> resp.reason_phrase();
+        expect(istr, CR); expect(istr, LF);
     }
-    return *this;
-}
 
-/* ======================================================================
- * Date
- * ====================================================================== */
-
-const message::field_t date::field = message::field_t::DATE;
-
-date&
-date::operator=(const date& rhs)
-{
-    if (&rhs != this) {
-        _value = rhs._value;
+    // Any header. At this stage there is no distinction made between a
+    // request or response specific header - all are accepted.
+    while (istr.peek() != CR) {
+        std::string field_name = tokenise(istr, include_none);
+        expect(istr, CL); expect(istr, SP);
+        auto field = field_factory::instance().create(
+                field_name.c_str(), msg.fields());
+        if (field) {
+            // Known field inserted into the message's fields map.
+            (*field).value(istr);
+        }
+        else {
+            // Unknown field - add as a generic extension field.
+            field_ext ext(field_name);
+            ext.value(istr);
+            base_field::field id = (base_field::field)(((int)ext.type()) - msg.fields().size());
+            msg.fields().push_back(ext);
+        }
+        expect(istr, CR);
+        expect(istr, LF);
     }
-    return *this;
-}
 
-/* ======================================================================
- * Status Code
- * ====================================================================== */
+    // The entity separator
+    expect(istr, CR);
+    expect(istr, LF);
 
-const message::field_t status_code::field = message::field_t::STATUS_CODE;
-
-status_code&
-status_code::operator=(const status_code& rhs)
-{
-    if (&rhs != this) {
-        _value = rhs._value;
+    // The entity body (Transfer-Encoding schemes, like 'chunked' is not implemented)
+    if (msg.exists<http::content_length>()) {
+        // Read the exact size as indicated by the content-length.
+        int content_length = msg.field<http::content_length>().value();
+        std::string body;
+        body.resize(content_length);
+        istr.read(&body[0], content_length);
+        msg.entity_body(body);
     }
-    return *this;
-}
-
-/* ======================================================================
- * Reason Phrase
- * ====================================================================== */
-
-const message::field_t reason_phrase::field = message::field_t::REASON_PHRASE;
-
-const std::string reason_phrase::OK = "OK";
-const std::string reason_phrase::Created = "Created";
-const std::string reason_phrase::Accepted = "Accepted";
-const std::string reason_phrase::NoContent = "No Content";
-const std::string reason_phrase::MovedPermanently = "Moved Permanently";
-const std::string reason_phrase::MovedTemporarily = "Moved Temporarily";
-const std::string reason_phrase::NotModified = "Not Modified";
-const std::string reason_phrase::BadRequest = "Bad Request";
-const std::string reason_phrase::Unauthorized = "Unauthorized";
-const std::string reason_phrase::Forbidden = "Forbidden";
-const std::string reason_phrase::NotFound = "Not Found";
-const std::string reason_phrase::InternalServerError = "Internal Server Error";
-const std::string reason_phrase::NotImplemented = "Not Implemented";
-const std::string reason_phrase::BadGateway = "Bad Gateway";
-const std::string reason_phrase::ServiceUnavailable = "Service Unavailable";
-
-reason_phrase&
-reason_phrase::operator=(const reason_phrase& rhs)
-{
-    if (&rhs != this) {
-        _value = rhs._value;
+    else
+    if (msg.type() == message::type::RESPONSE) {
+        // Read until the end, but only for a Response Message (RFC 9110 - 8.6)
+        // and read it in blocks for best performance.
+        const size_t BLOCKSIZE = 1024;
+        static char buf[BLOCKSIZE];
+        std::string body;
+        do {
+            istr.read(buf, BLOCKSIZE);
+            body.append(buf, istr.gcount());
+        }
+        while (!istr.eof());
+        msg.entity_body(body);
     }
-    return *this;
-}
-
-/* ======================================================================
- * Content-Length
- * ====================================================================== */
-
-const message::field_t content_length::field = message::field_t::CONTENT_LENGTH;
-
-content_length&
-content_length::operator=(const content_length& rhs)
-{
-    if (&rhs != this) {
-        _value = rhs._value;
-    }
-    return *this;
-}
-
-/* ======================================================================
- * Entity Body
- * ====================================================================== */
-
-const message::field_t entity_body::field = message::field_t::ENTITY_BODY;
-
-entity_body&
-entity_body::operator=(const entity_body& rhs)
-{
-    if (&rhs != this) {
-        _value = rhs._value;
-    }
-    return *this;
+    return istr;
 }
 
 END_MUDLIB_HTTP_NS

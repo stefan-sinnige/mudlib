@@ -9,6 +9,7 @@ typedef short sa_family_t;
     #define RECV_CAST (void*)
     #define SEND_CAST (const void*)
     #include <netinet/in.h>
+    #include <sys/select.h>
     #include <sys/socket.h>
 #endif
 #include <string.h>
@@ -31,7 +32,7 @@ namespace _tcp {
     class streambuf : public mud::io::basic_streambuf
     {
     public:
-        /* Constructor for UDP specific stream-buffer.
+        /* Constructor for TCP specific stream-buffer.
          * @param [in] socket  The reference to the socket.
          * @param [in] handle  The handle to use.
          * @param [in] bufsize The initial buffer size.
@@ -41,7 +42,7 @@ namespace _tcp {
                   const std::unique_ptr<mud::core::handle>& handle,
                   size_t bufsize = 10, size_t putbacksize = 4);
 
-        /* UDP specific read and write functions. */
+        /* TCP specific read and write functions. */
         ssize_t read(void* buffer, size_t count) override;
         ssize_t write(const void* buffer, size_t count) override;
 
@@ -59,7 +60,29 @@ namespace _tcp {
     ssize_t streambuf::read(void* buf, size_t count)
     {
         int hndl = mud::core::internal_handle<int>(handle());
-        return ::recv(hndl, RECV_CAST buf, count, 0);
+        ssize_t nread;
+        int tries = 10;
+        while ((nread = ::recv(hndl, RECV_CAST buf, count, 0)) <= 0 && tries-- > 0) {
+            int error = errno;
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                fd_set rdfs;
+                FD_ZERO(&rdfs);
+                FD_SET(hndl, &rdfs);
+                struct timeval  tv;
+                tv.tv_sec = 0;
+                tv.tv_usec = 100 * 1000;
+                if (::select(hndl+1, &rdfs, nullptr, nullptr, &tv) <= 0) {
+                    return -1;
+                }
+                if (! FD_ISSET(hndl, &rdfs)) {
+                    return -1;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return nread;
     }
 
     ssize_t streambuf::write(const void* buf, size_t count)

@@ -15,6 +15,7 @@ includemudcore_HEADERS = \
     include/mud/core/ns.h \
     include/mud/core/exception.h \
     include/mud/core/handle.h \
+    include/mud/core/optional.h \
     include/mud/core/poly_map.h \
     include/mud/core/poly_vector.h \
     include/mud/core/task.h

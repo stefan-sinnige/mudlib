@@ -1,4 +1,6 @@
 #include "mud/http/message.h"
+#include "mud/http/request.h"
+#include "mud/http/response.h"
 #include "mud/test.h"
 #include <sstream>
 #include <string>
@@ -21,8 +23,14 @@ CONTEXT()
     /* Output string stream */
     std::ostringstream ostr;
 
-    /* The HTTP message */
-    mud::http::message msg;
+    /* The HTTP request message */
+    mud::http::request req;
+
+    /* The HTTP response message */
+    mud::http::response resp;
+
+    /* The reference to the message (either request or response) */
+    mud::http::message* msg;
 END_CONTEXT()
 
 FEATURE("HTTP/1.0 Message")
@@ -34,37 +42,42 @@ FEATURE("HTTP/1.0 Message")
   DEFINE_GIVEN("An HTTP Message", [](context&){ });
   DEFINE_WHEN ("The message is read",
       [](context& ctx) {
-          ctx.istr >> ctx.msg;
+          ctx.istr >> *ctx.msg;
       });
-  DEFINE_THEN ("The type is undetermined",
+  DEFINE_THEN ("The type is a request message",
       [](context& ctx) {
-          ASSERT(mud::http::message::type_t::UNDETERMINED, 
-                 ctx.msg.type());
+          ASSERT(mud::http::message::type::REQUEST, 
+                 ctx.msg->type());
+      })
+  DEFINE_THEN ("The type is a response message",
+      [](context& ctx) {
+          ASSERT(mud::http::message::type::RESPONSE, 
+                 ctx.msg->type());
       })
   DEFINE_THEN  ("The method is GET",
       [](context& ctx) {
-          ASSERT(mud::http::method::GET,
-                 ctx.msg.field<mud::http::method>().value());
+          ASSERT(mud::http::method_e::GET,
+                 ctx.req.method().value());
       });
   DEFINE_THEN  ("The URI is http://www.example.com/index.html",
       [](context& ctx) {
           ASSERT("http://www.example.com/index.html",
-                 ctx.msg.field<mud::http::uri>().value());
+                 ctx.req.uri().value());
       });
   DEFINE_THEN ("The version is HTTP/1.0",
       [](context& ctx) {
-          ASSERT(mud::http::version::Version::HTTP10, 
-                 ctx.msg.field<mud::http::version>().value());
+          ASSERT(mud::http::version_e::HTTP10, 
+                 ctx.msg->version().value());
       })
   DEFINE_THEN ("The Status Code is 200",
       [](context& ctx) {
-          ASSERT(mud::http::status_code::StatusCode::OK,
-                 ctx.msg.field<mud::http::status_code>().value());
+          ASSERT(mud::http::status_code_e::OK,
+                 ctx.resp.status_code().value());
       })
   DEFINE_THEN ("The Reason Phrase is OK",
       [](context& ctx) {
-          ASSERT(mud::http::reason_phrase::OK,
-                 ctx.msg.field<mud::http::reason_phrase>().value());
+          ASSERT(mud::http::reason_phrase_e::OK,
+                 ctx.resp.reason_phrase().value());
       });
   END_DEFINES()
 
@@ -92,19 +105,36 @@ FEATURE("HTTP/1.0 Message")
                   mud::http::message>::value);
         })
 
-  SCENARIO("Default message is undetermined")
-    GIVEN("A default HTTP message", [](context&){})
+  SCENARIO("Default request message")
+    GIVEN("A default HTTP request message",
+        [](context& ctx){
+            ctx.msg = &ctx.req;
+        })
     WHEN ("A message field is queried", [](context&){})
-    THEN ("The type is undetermined")
+    THEN ("The type is a request message")
     AND  ("An out-of-range exception is thrown for a version field",
         [](context& ctx) {
             ASSERT_THROW(std::out_of_range,
-                   ctx.msg.field<mud::http::version>());
+                   ctx.req.field<mud::http::version>());
+        })
+
+  SCENARIO("Default response message")
+    GIVEN("A default HTTP response message",
+        [](context& ctx){
+            ctx.msg = &ctx.resp;
+        })
+    WHEN ("A message field is queried", [](context&){})
+    THEN ("The type is a response message")
+    AND  ("An out-of-range exception is thrown for a version field",
+        [](context& ctx) {
+            ASSERT_THROW(std::out_of_range,
+                   ctx.req.field<mud::http::version>());
         })
 
   SCENARIO("Reading Minimal Request")
     GIVEN("A minimal HTTP request message",
         [](context& ctx) {
+            ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
                 "GET http://www.example.com/index.html HTTP/1.0\r\n"
                 "\r\n");
@@ -118,19 +148,14 @@ FEATURE("HTTP/1.0 Message")
     GIVEN("An HTTP Message")
     WHEN ("A minimal HTTP/1.0 request is written",
         [](context& ctx) {
-            ctx.msg.type(mud::http::message::type_t::REQUEST);
-            ctx.msg.field<mud::http::version>(
-                    mud::http::version::Version::HTTP10);
-            ctx.msg.field<mud::http::method>(
-                    mud::http::method::GET);
-            ctx.msg.field<mud::http::uri>(
-                    "http://www.example.com/index.html");
-            ctx.ostr << ctx.msg;
+            ctx.req.version(mud::http::version_e::HTTP10);
+            ctx.req.method(mud::http::method_e::GET);
+            ctx.req.uri(mud::http::uri("http://www.example.com/index.html"));
+            ctx.ostr << ctx.req;
         })
     THEN ("The message is formatted correctly",
         [](context& ctx) {
             std::string result = ctx.ostr.str();
-            ASSERT(50, result.size());
             ASSERT(std::string(
                        "GET http://www.example.com/index.html HTTP/1.0\r\n"
                        "\r\n"),
@@ -140,6 +165,7 @@ FEATURE("HTTP/1.0 Message")
   SCENARIO("Reading Minimal Response")
     GIVEN("A minimal successful HTTP response message",
         [](context& ctx) {
+            ctx.msg = &ctx.resp;
             ctx.istr = std::istringstream(
                 "HTTP/1.0 200 OK\r\n"
                 "\r\n");
@@ -153,19 +179,14 @@ FEATURE("HTTP/1.0 Message")
     GIVEN("An HTTP Message")
     WHEN ("A minimal HTTP/1.0 Response is written",
         [](context& ctx) {
-            ctx.msg.type(mud::http::message::type_t::RESPONSE);
-            ctx.msg.field<mud::http::version>(
-                    mud::http::version::Version::HTTP10);
-            ctx.msg.field<mud::http::status_code>(
-                    mud::http::status_code::StatusCode::OK);
-            ctx.msg.field<mud::http::reason_phrase>(
-                    mud::http::reason_phrase::OK);
-            ctx.ostr << ctx.msg;
+            ctx.resp.version(mud::http::version_e::HTTP10);
+            ctx.resp.status_code(mud::http::status_code_e::OK);
+            ctx.resp.reason_phrase(mud::http::reason_phrase_e::OK);
+            ctx.ostr << ctx.resp;
         })
     THEN ("The message is formatted correctly",
         [](context& ctx) {
             std::string result = ctx.ostr.str();
-            ASSERT(19, result.size());
             ASSERT(std::string(
                        "HTTP/1.0 200 OK\r\n"
                        "\r\n"),
@@ -175,6 +196,7 @@ FEATURE("HTTP/1.0 Message")
   SCENARIO("Reading Date field")
     GIVEN("An HTTP Message with a Date field",
         [](context& ctx) {
+            ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
                 "GET http://www.example.com/index.html HTTP/1.0\r\n"
                 "Date: Mon, 03 Jan 2022 09:07:50 GMT\r\n"
@@ -183,7 +205,7 @@ FEATURE("HTTP/1.0 Message")
     WHEN ("The message is read")
     THEN ("The Date value is available",
         [](context& ctx) {
-            mud::http::date::type_t value = ctx.msg.field<mud::http::date>();
+            mud::http::date::value_type value = ctx.req.field<mud::http::date>();
             time_t tm = std::chrono::system_clock::to_time_t(value);
             ASSERT(1641200870, tm);
         })
@@ -200,28 +222,23 @@ FEATURE("HTTP/1.0 Message")
     THEN ("An out-of-range exception is thrown for a version field",
         [](context& ctx) {
             ASSERT_THROW(std::out_of_range,
-                   ctx.istr >> ctx.msg);
+                   ctx.istr >> ctx.req);
         })
 
   SCENARIO("Writing Date field")
     GIVEN("An HTTP Message")
     WHEN ("A Date field is written",
         [](context& ctx) {
-            ctx.msg.type(mud::http::message::type_t::REQUEST);
-            ctx.msg.field<mud::http::method>(
-                    mud::http::method::GET);
-            ctx.msg.field<mud::http::uri>(
-                    "http://www.example.com/index.html");
-            ctx.msg.field<mud::http::version>(
-                    mud::http::version::Version::HTTP10);
-            ctx.msg.field<mud::http::date>(
+            ctx.req.method(mud::http::method_e::GET);
+            ctx.req.uri("http://www.example.com/index.html");
+            ctx.req.version(mud::http::version_e::HTTP10);
+            ctx.req.field<mud::http::date>(
                     std::chrono::system_clock::from_time_t(1641200870));
-            ctx.ostr << ctx.msg;
+            ctx.ostr << ctx.req;
         })
     THEN ("The message is formatted correctly",
         [](context& ctx) {
             std::string result = ctx.ostr.str();
-            ASSERT(87, result.size());
             ASSERT(std::string(
                        "GET http://www.example.com/index.html HTTP/1.0\r\n"
                        "Date: Mon, 03 Jan 2022 09:07:50 GMT\r\n"
@@ -229,9 +246,50 @@ FEATURE("HTTP/1.0 Message")
                    result);
         })
 
-  SCENARIO("Reading fields that are ignored")
-    GIVEN("An HTTP Message with fields that are ignored",
+  SCENARIO("Reading extension header field")
+    GIVEN("An HTTP Message with an extension header field",
         [](context& ctx) {
+            ctx.msg = &ctx.req;
+            ctx.istr = std::istringstream(
+                "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                "My-Custom-Field: Hello world\r\n"
+                "\r\n");
+        })
+    WHEN ("The message is read")
+    THEN ("The extension header field is available",
+        [](context& ctx) {
+            const mud::http::field_ext& fld =
+                dynamic_cast<const mud::http::field_ext&>(
+                    ctx.req.field_by_key("My-Custom-Field"));
+            ASSERT("Hello world", fld.value());
+        })
+
+  SCENARIO("Writing extension header field")
+    GIVEN("An HTTP Message")
+    WHEN ("An extension header field is written",
+        [](context& ctx) {
+            ctx.req.method(mud::http::method_e::GET);
+            ctx.req.uri("http://www.example.com/index.html");
+            ctx.req.version(mud::http::version_e::HTTP10);
+            mud::http::field_ext ext("My-Custom-Field");
+            ext.value("Hello World");
+            ctx.req.field(ext);
+            ctx.ostr << ctx.req;
+        })
+    THEN ("The message is formatted correctly",
+        [](context& ctx) {
+            std::string result = ctx.ostr.str();
+            ASSERT(std::string(
+                       "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                       "My-Custom-Field: Hello World\r\n"
+                       "\r\n"),
+                   result);
+        })
+
+  SCENARIO("Reading standard and extension header fields")
+    GIVEN("An HTTP Message with standard and extension fields",
+        [](context& ctx) {
+            ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
                 "GET http://www.example.com/index.html HTTP/1.0\r\n"
                 "Pragma: custom=value\r\n"
@@ -243,7 +301,7 @@ FEATURE("HTTP/1.0 Message")
                 "Location: http://www.example.com/index.html\r\n"
                 "Server: CERN/3.0 libwww/2.17\r\n"
                 "WWW-Authenticate: Basic realm=Access, charset=UTF-8\r\n"
-                "Allow: GET, POST\r\n"
+                "Allow: GET\r\n"
                 "Content-Encoding: gzip\r\n"
                 "Content-Type: text/html; charset=UTF-8\r\n"
                 "Expires: Mon, 03 Jan 2022 09:08:50 GMT\r\n"
@@ -251,14 +309,15 @@ FEATURE("HTTP/1.0 Message")
                 "\r\n");
         })
     WHEN ("The message is read")
-    THEN ("The number of fields indicates that these are ignored",
+    THEN ("The number of fields indicates all fields",
         [](context& ctx) {
-            ASSERT(3, ctx.msg.field_size());
+            ASSERT(14, ctx.req.field_size());
         })
 
-  SCENARIO("Reading Entity-Body")
+  SCENARIO("Reading Entity-Body with Content-Length")
     GIVEN("An HTTP Message with a Content-Length and Entity-Body field",
         [](context& ctx) {
+            ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
                 "GET http://www.example.com/index.html HTTP/1.0\r\n"
                 "Content-Length: 11\r\n"
@@ -268,35 +327,44 @@ FEATURE("HTTP/1.0 Message")
     WHEN ("The message is read")
     THEN ("The Entity-Body value is available",
         [](context& ctx) {
-            ASSERT("Hello World",
-                 ctx.msg.field<mud::http::entity_body>().value());
+            ASSERT("Hello World", ctx.req.entity_body().value());
+        })
+
+  SCENARIO("Reading Entity-Body without Content-Length")
+    GIVEN("An HTTP Message with a Content-Length and Entity-Body field",
+        [](context& ctx) {
+            ctx.msg = &ctx.resp;
+            ctx.istr = std::istringstream(
+                "HTTP/1.0 200 OK\r\n"
+                "\r\n"
+                "Hello World");
+        })
+    WHEN ("The message is read")
+    THEN ("The Entity-Body value is available",
+        [](context& ctx) {
+            ASSERT(11, ctx.resp.entity_body().value().size());
+            ASSERT("Hello World", ctx.resp.entity_body().value());
         })
 
   SCENARIO("Writing Entity-Body field")
     GIVEN("An HTTP Message")
     WHEN ("An Entity-Body is written",
         [](context& ctx) {
-            ctx.msg.type(mud::http::message::type_t::REQUEST);
-            ctx.msg.field<mud::http::method>(
-                    mud::http::method::GET);
-            ctx.msg.field<mud::http::uri>(
-                    "http://www.example.com/index.html");
-            ctx.msg.field<mud::http::version>(
-                    mud::http::version::Version::HTTP10);
-            ctx.msg.field<mud::http::content_length>(
+            ctx.req.method(mud::http::method_e::GET);
+            ctx.req.uri("http://www.example.com/index.html");
+            ctx.req.version(mud::http::version_e::HTTP10);
+            ctx.req.field<mud::http::content_length>(
                     11);
-            ctx.msg.field<mud::http::entity_body>(
-                    "Hello World");
-            ctx.ostr << ctx.msg;
+            ctx.req.entity_body("Hello World");
+            ctx.ostr << ctx.req;
         })
     THEN ("The Content-Length is available",
         [](context& ctx) {
-            ASSERT(11, ctx.msg.field<mud::http::content_length>());
+            ASSERT(11, ctx.req.field<mud::http::content_length>());
         })
     AND  ("The message is formatted correctly",
         [](context& ctx) {
             std::string result = ctx.ostr.str();
-            ASSERT(81, result.size());
             ASSERT(std::string(
                        "GET http://www.example.com/index.html HTTP/1.0\r\n"
                        "Content-Length: 11\r\n"
@@ -305,6 +373,68 @@ FEATURE("HTTP/1.0 Message")
                    result);
         })
 
+  SCENARIO("Reading duplicate header fields")
+    GIVEN("An HTTP Message with a duplicate header field",
+        [](context& ctx) {
+            ctx.msg = &ctx.resp;
+            ctx.istr = std::istringstream(
+                "HTTP/1.0 200 OK\r\n"
+                "Allow: GET\r\n"
+                "Allow: HEAD\r\n"
+                "\r\n");
+        })
+    WHEN ("The message is read")
+    THEN ("The duplicate fields are available",
+        [](context& ctx) {
+            ASSERT(2, ctx.msg->fields().size());
+            auto iter = ctx.msg->fields().begin();
+            iter = std::find_if(
+                iter, ctx.msg->fields().end(),
+                [](const mud::http::base_field& fld) {
+                    return fld.type() == mud::http::base_field::field::ALLOW;
+                });
+            ASSERT(true, iter != ctx.msg->fields().end());
+            ASSERT(mud::http::method_e::GET,
+                dynamic_cast<const mud::http::allow&>(*iter).value());
+            ++iter;
+            iter = std::find_if(
+                iter, ctx.msg->fields().end(),
+                [](const mud::http::base_field& fld) {
+                    return fld.type() == mud::http::base_field::field::ALLOW;
+                });
+            ASSERT(true, iter != ctx.msg->fields().end());
+            ASSERT(mud::http::method_e::HEAD,
+                dynamic_cast<const mud::http::allow&>(*iter).value());
+            ++iter;
+            iter = std::find_if(
+                iter, ctx.msg->fields().end(),
+                [](const mud::http::base_field& fld) {
+                    return fld.type() == mud::http::base_field::field::ALLOW;
+                });
+            ASSERT(true, iter == ctx.msg->fields().end());
+        })
+
+  SCENARIO("Writing duplicate header fields")
+    GIVEN("An HTTP Message")
+    WHEN ("Duplicate header fields are written",
+        [](context& ctx) {
+            ctx.resp.version(mud::http::version_e::HTTP10);
+            ctx.resp.status_code(mud::http::status_code_e::OK);
+            ctx.resp.reason_phrase(mud::http::reason_phrase_e::OK);
+            ctx.resp.field<mud::http::allow>(mud::http::method_e::GET);
+            ctx.resp.field<mud::http::allow>(mud::http::method_e::HEAD);
+            ctx.ostr << ctx.resp;
+        })
+    THEN ("The message is formatted correctly",
+        [](context& ctx) {
+            std::string result = ctx.ostr.str();
+            ASSERT(std::string(
+                       "HTTP/1.0 200 OK\r\n"
+                       "Allow: GET\r\n"
+                       "Allow: HEAD\r\n"
+                       "\r\n"),
+                   result);
+        })
 END_FEATURE()
 
 /* clang-format on */

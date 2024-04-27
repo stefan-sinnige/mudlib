@@ -656,6 +656,7 @@ public:
      * key already exists, the mapped element is destructed and overwritten.
      * @tparam[in] PolyType The type of the value.
      * @param[in] key The key to find the value.
+     * @param[in] value The value to insert.
      * @return The reference to the new value.
      * @throws std::bad_type_id Value is not of type @c PolyType
      */
@@ -678,6 +679,7 @@ public:
      * key already exists, the mapped element is destructed and overwritten.
      * @tparam[in] PolyType The type of the value.
      * @param[in] key The key to find the value.
+     * @param[in] value The value to insert.
      * @return The reference to the new value.
      * @throws std::bad_type_id Value is not of type @c PolyType
      */

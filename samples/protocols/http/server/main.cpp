@@ -1,7 +1,7 @@
-#include <cstring>
 #include <iostream>
 #include <mud/event/event_loop.h>
-#include <mud/http/message.h>
+#include <mud/http/request.h>
+#include <mud/http/response.h>
 #include <mud/http/server.h>
 
 // ===========================================================================
@@ -20,7 +20,7 @@ public:
 
 private:
     // The handler an HTTP request has been received
-    mud::http::message on_request(const mud::http::message& request);
+    mud::http::response on_request(const mud::http::request& request);
 
     // The acceptor.
     mud::http::server _server;
@@ -37,25 +37,25 @@ server::~server() {}
 void
 server::run(const std::string& host, uint16_t port)
 {
-    _server.start(host, port);
+    mud::io::tcp::endpoint endpoint(host, port);
+    _server.start(endpoint);
 }
 
-mud::http::message
-server::on_request(const mud::http::message& request)
+mud::http::response
+server::on_request(const mud::http::request& request)
 {
     std::cout << "Received request, replying wih response" << std::endl;
-    mud::http::message response;
-    response.type(mud::http::message::type_t::RESPONSE);
-    response.field<mud::http::version>(request.field<mud::http::version>());
-    response.field<mud::http::status_code>(mud::http::status_code::OK);
-    response.field<mud::http::reason_phrase>(mud::http::reason_phrase::OK);
+    mud::http::response response;
+    response.version(request.version());
+    response.status_code(mud::http::status_code_e::OK);
+    response.reason_phrase(mud::http::reason_phrase_e::OK);
     std::string reply = "<html>\r\n"
                         "<body>\r\n"
                         "  <h1>Hello</h1>\r\n"
                         "</body>\r\n"
                         "</html>\r\n";
     response.field<mud::http::content_length>(reply.size());
-    response.field<mud::http::entity_body>(reply);
+    response.entity_body(reply);
     return response;
 }
 

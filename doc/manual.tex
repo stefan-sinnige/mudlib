@@ -418,16 +418,28 @@ automatically register the enumerated value to the corresponding shape:
 
 \begin{lstlisting}[style=snippet]
 // Registrations into the factory
-ShapeFactory<shape_t::RECTANGLE, Rectangle> rectangle_registrar;
-ShapeFactory<shape_t::CIRCLE,    Circle>    circle_registrar;
-ShapeFactory<shape_t::TRIANGLE,  Triangle>  triangle_registrar;
+ShapeFactory::registrar<shape_t::RECTANGLE, Rectangle> rectangle_registrar;
+ShapeFactory::registrar<shape_t::CIRCLE,    Circle>    circle_registrar;
+ShapeFactory::registrar<shape_t::TRIANGLE,  Triangle>  triangle_registrar;
 \end{lstlisting} 
 
 When this has been set up, the factory can be used to create any shape through
 its enumerated value. The following example will create a new circle shape:
 \begin{lstlisting}[style=snippet]
-auto shape = ShapeFactory::create(shape_t::CIRCLE);
+auto shape = ShapeFactory::instance().create(shape_t::CIRCLE);
 \end{lstlisting} 
+
+The factory itself is a signleton object which need to be created at some point
+by definining the \texttt{instance} function. In our example, a \Cpp source file
+would need to define
+
+\begin{lstlisting}[style=snippet]
+template<>
+ShapeFactory& ShapeFactory::instance() {
+    static ShapeFactory _instance;
+    return _instance;
+}
+\end{lstlisting}
 
 \section{Factory by class type}
 \label{sct:factory-class}
@@ -3163,6 +3175,248 @@ use Standard I/O Stream classes, like \indextt{std::istream} and
 
 \chapter{HTTP}
 \label{chp:http}
+
+The \indexrm{Hypertext Transfer Protocol} (\indexrm{HTTP}) is a protocol used
+in transferring data between information systems and is widely used for the
+\indexrm{World Wide Web}. It is not only used to query for web pages and
+images, but also to invoke specific requests to be executed on a server.
+
+The protocol is a typical Request-Response mechanism where a client connects
+to a server and issues a request. The server will then respond by replying
+with a response message. The message format that is used in this protocol
+is a HTTP Message, both for the request as for the response message.
+
+\section{HTTP Message}
+
+The HTTP \indextt{message} is a base class for the \indextt{request} and the
+\indextt{response} message. Both types of messages are structured quite
+similar and extensible. The message is an abstract class and cannot be
+constructed directly.
+
+\begin{lstlisting}[style=definition]
+// namespace mud::http
+class message;
+\end{lstlisting}
+
+The HTTP message supports a number of pre-defined set of fields. These form
+the part of the message that define the \textit{meta-data}, describing various
+aspects of the message that may (or may not) be interpreted by the client and
+the server. Depending on the version of HTTP used, the protocol defines which
+fields are mandatory and which are optional, and also define the approved
+contents of the fields. Fields can be set and retrieved on the message using:
+
+\begin{lstlisting}[style=definition,numbers=left]
+template<typename Field> void field(const Field& value);
+template<typename Field> const Field& field() const;
+template<typename Field> bool exists() const;
+size_t field_size() const;
+void clear();
+\end{lstlisting}
+\begin{enumeratedef}
+  \item Set a field.
+  \item Get a field.
+  \item Verify if a field is defined.
+  \item Return the number of fields currently defined.
+  \item Remove all the fields.
+\end{enumeratedef}
+
+Other operations on the message are:
+
+\begin{lstlisting}[style=definition,numbers=left]
+type_t type() const;
+bool valid() const;
+\end{lstlisting}
+\begin{enumeratedef}
+  \item Return the type of the message (\texttt{request} or \texttt{response}).
+  \item Verify if the message conforms the specification.
+\end{enumeratedef}
+
+An HTTP message can be created by defining its fields. For example, a simple
+HTTP/1.0 GET request message can be constructed as follows:
+
+\begin{lstlisting}[style=snippet]
+request req;
+req.field<version>(version::Version::HTTP10);
+req.field<method>(method::GET);
+req.field<uri>("http://www.example.com");
+\end{lstlisting}
+
+\subsection{Fields}
+
+The configurable part of the HTTP message is the field. Each field that can be
+set an retrieved on an HTTP message is derived from a
+\indextt{message::base\_field} class. This class only defines an abstract
+\texttt{serialise} function that is used to output the field specification to
+a compliant HTTP message field.
+
+\begin{lstlisting}[style=definition,numbers=left]
+virtual void serialise(std::ostream& ostr) const = 0;
+\end{lstlisting}
+\begin{enumeratedef}
+  \item Serialise the field to the output stream.
+\end{enumeratedef}
+
+The following list defines all the HTTP fields supported by \MUDLib. Note that
+the HTTP specification defines its usage based on HTTP version and the message
+type.
+
+\begin{longtable}{l|p{0.75\textwidth}}
+  \textbf{Type} & \textbf{Description} \\
+  \hline
+  \texttt{version} & The HTTP version. The following
+    \texttt{version::Version} enumerated values are supported: \\
+      & \hskip 2em \texttt{HTTP10} \\
+  \texttt{method} & The method definition. The following methods are
+    supported: \\
+      & \hskip 2em \texttt{GET} \\
+      & \hskip 2em \texttt{HEAD} \\
+      & \hskip 2em \texttt{POST} \\
+  \texttt{uri} & The URI field.  \\
+  \texttt{status\_code} & The status code. The following
+    \texttt{status\_code::StatusCode} options are supported: \\
+      & \hskip 2em \texttt{OK} \\
+      & \hskip 2em \texttt{Created} \\
+      & \hskip 2em \texttt{Accepted} \\
+      & \hskip 2em \texttt{NoContent} \\
+      & \hskip 2em \texttt{MovedPermanently} \\
+      & \hskip 2em \texttt{NotModified} \\
+      & \hskip 2em \texttt{BadRequest} \\
+      & \hskip 2em \texttt{Unauthorized} \\
+      & \hskip 2em \texttt{Forbidden} \\
+      & \hskip 2em \texttt{NotFound} \\
+      & \hskip 2em \texttt{InternalServerError} \\
+      & \hskip 2em \texttt{NotImplemented} \\
+      & \hskip 2em \texttt{BadGateway} \\
+      & \hskip 2em \texttt{ServiceUnavailable} \\
+  \texttt{reason\_phrase} & The reason phrase. The following
+    reason phrases are supported: \\
+      & \hskip 2em \texttt{OK} \\
+      & \hskip 2em \texttt{Created} \\
+      & \hskip 2em \texttt{Accepted} \\
+      & \hskip 2em \texttt{NoContent} \\
+      & \hskip 2em \texttt{MovedPermanently} \\
+      & \hskip 2em \texttt{NotModified} \\
+      & \hskip 2em \texttt{BadRequest} \\
+      & \hskip 2em \texttt{Unauthorized} \\
+      & \hskip 2em \texttt{Forbidden} \\
+      & \hskip 2em \texttt{NotFound} \\
+      & \hskip 2em \texttt{InternalServerError} \\
+      & \hskip 2em \texttt{NotImplemented} \\
+      & \hskip 2em \texttt{BadGateway} \\
+      & \hskip 2em \texttt{ServiceUnavailable} \\
+  \texttt{date} & The date field. \\
+  \texttt{content\_length} & The content length. This does not need to be
+    set as it will be set automatically to the length of the entity body.  \\
+  \texttt{entity\_body} & The body of the HTTP message. \\
+  \caption{Supported HTTP message fields.}
+  \label{tbl:http_fields}
+\end{longtable}
+
+\section{HTTP Server}
+
+An HTTP server is a mechanism that creates a TCP listening socket and handles
+any incoming HTTP request and replies with a response. The HTTP server uses
+the TCP \indextt{acceptor} and \indextt{communicator} constructs and therefore
+uses the \indextt{event\_loop} for its communication as well.
+
+\begin{lstlisting}[style=definition]
+// namespace mud::http
+class server;
+\end{lstlisting}
+
+The \indextt{server} is constructed by supplying the \indextt{event\_loop}, or
+it uses the global event loop if none is explicitely defined. This does not
+yet start the server, but only construct it:
+
+\begin{lstlisting}[style=definition,numbers=left]
+server(event::even_loop& event_loop = event::event_loop::global());
+\end{lstlisting}
+
+The server can be started to listening on a certain \indextt{endpoint} or
+it can be stopped. A request handler is used to define the procedure for
+handling any incoming request and to return the appropriate response.
+
+\begin{lstlisting}[style=definition,numbers=left]
+typedef std::function<response(const request&)> on_request_func;
+void on_request(on_request_func func);
+void start(const mud::io::tcp::endpoint& endpoint);
+void stop();
+\end{lstlisting}
+\begin{enumeratedef}
+  \item The request handler function.
+  \item Define the handler for incoming HTTP requests. This needs to be defined
+        before the server is started.
+  \item Start the server. The function returns and the server uses the event
+        loop for any I/O communications.
+\end{enumeratedef}
+
+The following example constructs an HTTP server that always responds with
+an OK response:
+
+\begin{lstlisting}[style=snippet]
+server srv;
+srv.on_request([](const request& req) {
+    // Received a request, reply with the OK response
+    response resp;
+    resp.field<version>(req.field<version>());
+    resp.field<status_code>(status_code::OK);
+    resp.field<reason_phrase>(reason_phrase::OK);
+    return resp;
+});
+
+// Start the server
+srv.start(tcp::endpoint("127.0.0.1", 80));
+\end{lstlisting}
+
+\section{HTTP Client}
+
+An HTTP client is a mechanism that creates a TCP connecting socket and handles
+any outgoing HTTP request and incoming response. The HTTP client uses the TCP
+\indextt{connector} and \indextt{communicator} constructs and therefore uses
+the \indextt{event\_loop} for its communication as well.
+
+\begin{lstlisting}[style=definition]
+// namespace mud::http
+class client;
+\end{lstlisting}
+
+The \indextt{client} is constructed by supplying the \indextt{event\_loop}, or
+it uses the global event loop if none is explicitely defined. This does not
+yet start the client, but only construct it:
+
+\begin{lstlisting}[style=definition,numbers=left]
+client(event::even_loop& event_loop = event::event_loop::global());
+\end{lstlisting}
+
+The client sends a request to a certain endpoint and waits for a response. As
+the connection to the server and the waiting for a response are event based
+mechanisms, the function will return a future to a response. This allows the
+client to perform and additional actions while the request is being processed.
+
+\begin{lstlisting}[style=definition,numbers=left]
+std::future<response> request(const mud::io::tcp::endpoint& endpoint, const request& req);
+\end{lstlisting}
+\begin{enumeratedef}
+  \item Send a request and wait for the response.
+\end{enumeratedef}
+
+The following shows the creation of a client that sends a request and wait
+until it receives a response.
+
+\begin{lstlisting}[style=snippet]
+// Create a request
+request req;
+req.field<version>(version::HTTP10);
+req.field<method>(method::GET);
+req.field<uri>("http://www.example.com");
+
+// Connect to the server and communicate
+client clnt;
+std::future<response> resp = clnt.request(endpoint("www.example.com", 80), req);
+if (resp.wait() == std;:future_status::ready) {
+    response = resp.get();
+}
+\end{lstlisting}
 
 % ============================================================================
 % PART

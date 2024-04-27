@@ -1,7 +1,7 @@
-#include <cstring>
 #include <iostream>
 #include <mud/event/event_loop.h>
-#include <mud/http/message.h>
+#include <mud/http/request.h>
+#include <mud/http/response.h>
 #include <mud/io/tcp.h>
 
 // ===========================================================================
@@ -43,11 +43,11 @@ main(int argc, char** argv)
             // Send the request
             std::cout << "Sending request ... " << std::flush;
             communicator.open(std::move(socket));
-            mud::http::message request;
-            request.type(mud::http::message::type_t::REQUEST);
-            request.field<mud::http::version>(mud::http::version::HTTP10);
-            request.field<mud::http::method>(mud::http::method::GET);
-            request.field<mud::http::uri>("/");
+            mud::http::request request;
+            request.version(mud::http::version_e::HTTP10);
+            request.method(mud::http::method_e::GET);
+            request.field<mud::http::content_length>(0);
+            request.uri("/");
             communicator.ostr() << request << std::flush;
             std::cout << "ok" << std::endl;
         } catch (std::exception& ex) {
@@ -62,14 +62,10 @@ main(int argc, char** argv)
         try {
             // Receive the response and close
             std::cout << "Receiving response ... " << std::flush;
-            mud::http::message response;
+            mud::http::response response;
             communicator.istr() >> response;
             std::cout << "ok" << std::endl;
-
-            if (response.exists<mud::http::entity_body>()) {
-                std::cout << response.field<mud::http::entity_body>().value()
-                          << std::endl;
-            }
+            std::cout << response.entity_body() << std::endl;
         } catch (std::exception& ex) {
             std::cerr << "Exception: " << ex.what() << std::endl;
         } catch (...) {
