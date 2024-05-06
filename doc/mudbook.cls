@@ -39,7 +39,7 @@
 \def\fontfamilylicense{\LaTeX Project Public License}
 
 % Use the geometry package to control page layout easily
-\usepackage[headheight=15pt]{geometry}
+% \usepackage[headheight=15pt]{geometry}
 
 % Use the fancyhdr package to easily control headers and footers
 \usepackage{fancyhdr}

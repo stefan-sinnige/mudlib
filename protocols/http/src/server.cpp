@@ -24,7 +24,7 @@ public:
     /**
      * Start the server.
      */
-    void start(const std::string& host, uint16_t port);
+    void start(const mud::io::tcp::endpoint& endpoint);
 
     /**
      * Stop the server.
@@ -60,9 +60,9 @@ server::impl::impl(mud::event::event_loop& event_loop)
 server::impl::~impl() {}
 
 void
-server::impl::start(const std::string& host, uint16_t port)
+server::impl::start(const mud::io::tcp::endpoint& endpoint)
 {
-    _acceptor.open(io::tcp::endpoint(host, port));
+    _acceptor.open(endpoint);
 }
 
 void
@@ -81,26 +81,24 @@ void
 server::impl::on_accept(mud::io::tcp::socket&& socket)
 {
     auto comm = std::make_shared<io::tcp::communicator>(_event_loop);
-    comm->on_receive([comm, this]() mutable {
+    response resp;
+    comm->on_receive([comm, resp, this]() mutable {
         try {
-            message request;
-            comm->istr() >> request;
+            request req;
+            comm->istr() >> req;
             if (!comm->istr().fail()) {
                 if (_on_request_func != nullptr) {
-                    message response = _on_request_func(request);
-                    comm->ostr() << response << std::flush;
+                    resp = _on_request_func(req);
                 }
             }
         } catch (...) {
-            message response;
-            response.type(mud::http::message::type_t::RESPONSE);
-            response.field<mud::http::version>(mud::http::version::HTTP10);
-            response.field<mud::http::status_code>(
-                mud::http::status_code::BadRequest);
-            response.field<mud::http::reason_phrase>(
-                mud::http::reason_phrase::BadRequest);
-            comm->ostr() << response << std::flush;
+            resp.field<mud::http::version>(mud::http::version_e::HTTP10);
+            resp.field<mud::http::status_code>(
+                mud::http::status_code_e::BadRequest);
+            resp.field<mud::http::reason_phrase>(
+                mud::http::reason_phrase_e::BadRequest);
         }
+        comm->ostr() << resp << std::flush;
         comm->close();
         comm.reset();
     });
@@ -119,9 +117,9 @@ server::server(mud::event::event_loop& event_loop)
 }
 
 void
-server::start(const std::string& host, uint16_t port)
+server::start(const mud::io::tcp::endpoint& endpoint)
 {
-    _impl->start(host, port);
+    _impl->start(endpoint);
 }
 
 void

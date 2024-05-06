@@ -2,7 +2,8 @@
 #define _MUDLIB_HTTP_SERVER_H_
 
 #include <memory>
-#include <mud/http/message.h>
+#include <mud/http/request.h>
+#include <mud/http/response.h>
 #include <mud/http/ns.h>
 #include <mud/io/tcp.h>
 
@@ -19,7 +20,7 @@ class MUDLIB_HTTP_API server
 public:
     /** Function definition for the @c on_request handler. The request message
      * is passed in and the response is expected to be returned. */
-    typedef std::function<message(const message&)> on_request_func;
+    typedef std::function<mud::http::response(const mud::http::request&)> on_request_func;
 
     /**
      * @brief Constructor of an new HTTP server.
@@ -36,10 +37,9 @@ public:
     /**
      * @brief Start the server. Any incoming connection request is handled
      * asynchroneously.
-     * @param[in] host The host to bind to.
-     * @param[in] port The port to bind to.
+     * @param[in] endpoint The endpoint to bind to.
      */
-    void start(const std::string& host, uint16_t port);
+    void start(const mud::io::tcp::endpoint& endpoint);
 
     /**
      * @brief Stop the server.

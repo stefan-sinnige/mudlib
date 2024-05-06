@@ -49,17 +49,6 @@ basic_streambuf::underflow()
     /* Read new characters */
     int nread = read(_buffer + _putbacksize, _bufsize - _putbacksize);
     if (nread <= 0) {
-#if defined(_WIN32)
-        // This should not be here, it is socket specific
-        int error = GetLastError();
-        if (nread != 0 /* && error != WSAEAGAIN ? */) {
-            throw std::system_error(error, std::system_category(), "read");
-        }
-#else
-        if (nread != 0 && errno != EAGAIN) {
-            throw std::system_error(errno, std::system_category(), "read");
-        }
-#endif
         return traits_type::eof();
     }
 
