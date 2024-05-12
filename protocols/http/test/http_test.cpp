@@ -68,7 +68,6 @@ FEATURE("HTTP/1.0 Protocol")
               response.reason_phrase(mud::http::reason_phrase_e::OK);
               return response;
           });
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
       })
   DEFINE_WHEN ("A client sends a request",
       [](context& ctx) {
@@ -85,7 +84,7 @@ FEATURE("HTTP/1.0 Protocol")
   DEFINE_THEN("The client receives a response",
       [](context& ctx) {
           ASSERT(std::future_status::ready, 
-                 ctx.resp_future.wait_for(std::chrono::milliseconds(10)));
+                 ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
           mud::http::response resp = ctx.resp_future.get();
       })
 
@@ -115,7 +114,7 @@ FEATURE("HTTP/1.0 Protocol")
                   mud::http::server>::value);
         })
 
-    SCENARIO("HTTP server can process a request")
+    SCENARIO("HTTP server can process a request without connection field")
         GIVEN("An HTTP server is listening for inbound connections")
         WHEN ("A client sends a request")
         THEN ("The client receives a response")

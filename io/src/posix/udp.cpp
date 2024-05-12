@@ -405,10 +405,10 @@ udp::communicator::~communicator()
 void
 udp::communicator::open(udp::socket&& socket)
 {
+    _socket = std::move(socket);
     _event_loop.register_handler(mud::event::event(
         _socket.handle(), mud::event::event::signal_type::READING,
         std::bind(&communicator::on_ready_receive, this)));
-    _socket = std::move(socket);
 }
 
 void

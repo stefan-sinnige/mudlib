@@ -60,6 +60,7 @@ public:
 
 private:
     /** Implementation */
+    class communicator;
     class impl;
     struct impl_deleter
     {

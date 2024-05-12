@@ -10,7 +10,7 @@
 BEGIN_MUDLIB_HTTP_NS
 
 /**
- * @brief The clinet part of an HTTP connection pair. The client connects
+ * @brief The client part of an HTTP connection pair. The client connects
  * to a server, sends a request and waits for a response.
  * This conforms with
  *    RFC 1945: Section 4, 5 and 6
@@ -47,6 +47,7 @@ public:
 
 private:
     /** Implementation */
+    class communicator;
     class impl;
     struct impl_deleter
     {

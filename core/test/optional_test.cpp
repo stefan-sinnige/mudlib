@@ -34,32 +34,6 @@ FEATURE("Optional Reference")
                     mud::core::optional_ref<Sample>>::value);
         })
 
-/*
-int
-main(int argc, char** argv)
-{
-    std::cout << "Valid object\n";
-    optional_ref<A> o;
-    o = func_object();
-    print(o);
-
-    std::cout << "Copying a valid object\n";
-    optional_ref<A> copied = o;
-    print(copied);
-    print(o);
-
-    std::cout << "Moving a valid object\n";
-    optional_ref<A> moved = std::move(o);
-    print(moved);
-    print(o);
-
-    std::cout << "No object\n";
-    o = func_none();
-    print(o);
-    return 0;
-}
-*/
-
 END_FEATURE()
 
 /* clang-format on */

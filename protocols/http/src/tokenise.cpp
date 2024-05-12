@@ -23,7 +23,7 @@ tokenise(std::istream& istr, const token_manip& manip)
     char buf[128];
     int n = 0;
     std::string str;
-    while ((ch = istr.get()) != EOF) {
+    while ((ch = istr.get()) != std::char_traits<char>::eof()) {
         if ((ch > 0 && ch < 127 && table[ch] == 1) ||
             (manip.space && ch == SP) || (manip.colon && ch == CL)) {
             buf[n++] = ch;
