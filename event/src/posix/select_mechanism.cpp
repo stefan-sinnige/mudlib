@@ -1,6 +1,7 @@
 #include "src/posix/select_mechanism.h"
 #include <algorithm>
 #include <errno.h>
+#include <fcntl.h>
 #include <system_error>
 
 BEGIN_MUDLIB_EVENT_NS
@@ -82,8 +83,16 @@ select_mechanism::loop()
 
         multiplex(readfds, writefds, exceptfds, maxfd);
         if (::select(maxfd + 1, &readfds, &writefds, &exceptfds, nullptr) ==
-            -1) {
-            throw std::system_error(errno, std::system_category(), "select");
+            -1)
+        {
+            /* If we have an EBADF, remove the associated event. */
+            if (errno == EBADF) {
+                remove_badf();
+            }
+            else {
+                throw std::system_error(errno, std::system_category(), "select");
+            }
+            continue;
         }
         demultiplex(readfds, writefds, exceptfds);
     }
@@ -220,6 +229,30 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                 ++event_it;
             }
         } else {
+            ++event_it;
+        }
+    }
+}
+
+void
+select_mechanism::remove_badf()
+{
+    std::lock_guard<std::mutex> lock(_lock);
+
+    // Go through all events and remove those with a bad file descriptor.
+    for (auto event_it = _events.begin(); event_it != _events.end(); )
+    {
+        if (event_it->handle() != nullptr) {
+            int handle = mud::core::internal_handle<int>(event_it->handle());
+            int flags = fcntl(handle, F_GETFD);
+            if (flags == -1 && errno == EBADF) {
+                event_it = _events.erase(event_it);
+            }
+            else {
+                ++event_it;
+            }
+        }
+        else {
             ++event_it;
         }
     }

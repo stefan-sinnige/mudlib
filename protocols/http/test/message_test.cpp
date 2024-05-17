@@ -373,56 +373,46 @@ FEATURE("HTTP/1.0 Message")
                    result);
         })
 
-  SCENARIO("Reading duplicate header fields")
-    GIVEN("An HTTP Message with a duplicate header field",
+  SCENARIO("Reading multi-value header fields")
+    GIVEN("An HTTP Message with a multi-value header field",
         [](context& ctx) {
             ctx.msg = &ctx.resp;
             ctx.istr = std::istringstream(
                 "HTTP/1.0 200 OK\r\n"
                 "Allow: GET\r\n"
-                "Allow: HEAD\r\n"
+                "Allow: HEAD, POST\r\n"
                 "\r\n");
         })
     WHEN ("The message is read")
     THEN ("The duplicate fields are available",
         [](context& ctx) {
-            ASSERT(2, ctx.msg->fields().size());
-            auto iter = ctx.msg->fields().begin();
-            iter = std::find_if(
-                iter, ctx.msg->fields().end(),
-                [](const mud::http::base_field& fld) {
-                    return fld.type() == mud::http::base_field::field::ALLOW;
-                });
-            ASSERT(true, iter != ctx.msg->fields().end());
-            ASSERT(mud::http::method_e::GET,
-                dynamic_cast<const mud::http::allow&>(*iter).value());
+            ASSERT(1, ctx.msg->fields().size());
+            auto values = ctx.msg->field<mud::http::allow>().value();
+            auto iter = values.begin();
+            ASSERT(true, iter != values.end());
+            ASSERT(mud::http::method_e::GET, *iter);
             ++iter;
-            iter = std::find_if(
-                iter, ctx.msg->fields().end(),
-                [](const mud::http::base_field& fld) {
-                    return fld.type() == mud::http::base_field::field::ALLOW;
-                });
-            ASSERT(true, iter != ctx.msg->fields().end());
-            ASSERT(mud::http::method_e::HEAD,
-                dynamic_cast<const mud::http::allow&>(*iter).value());
+            ASSERT(true, iter != values.end());
+            ASSERT(mud::http::method_e::HEAD, *iter);
             ++iter;
-            iter = std::find_if(
-                iter, ctx.msg->fields().end(),
-                [](const mud::http::base_field& fld) {
-                    return fld.type() == mud::http::base_field::field::ALLOW;
-                });
-            ASSERT(true, iter == ctx.msg->fields().end());
+            ASSERT(true, iter != values.end());
+            ASSERT(mud::http::method_e::POST, *iter);
+            ++iter;
+            ASSERT(true, iter == values.end());
         })
 
-  SCENARIO("Writing duplicate header fields")
+  SCENARIO("Writing multi-value header fields")
     GIVEN("An HTTP Message")
     WHEN ("Duplicate header fields are written",
         [](context& ctx) {
             ctx.resp.version(mud::http::version_e::HTTP10);
             ctx.resp.status_code(mud::http::status_code_e::OK);
             ctx.resp.reason_phrase(mud::http::reason_phrase_e::OK);
-            ctx.resp.field<mud::http::allow>(mud::http::method_e::GET);
-            ctx.resp.field<mud::http::allow>(mud::http::method_e::HEAD);
+            std::list<mud::http::method_e> allowed = {
+                mud::http::method_e::GET,
+                mud::http::method_e::HEAD
+            };
+            ctx.resp.field<mud::http::allow>(allowed);
             ctx.ostr << ctx.resp;
         })
     THEN ("The message is formatted correctly",
@@ -430,11 +420,27 @@ FEATURE("HTTP/1.0 Message")
             std::string result = ctx.ostr.str();
             ASSERT(std::string(
                        "HTTP/1.0 200 OK\r\n"
-                       "Allow: GET\r\n"
-                       "Allow: HEAD\r\n"
+                       "Allow: GET, HEAD\r\n"
                        "\r\n"),
                    result);
         })
+
+  SCENARIO("Reading header field with non-standard camel casing")
+    GIVEN("An HTTP Message with a non-standard camel cased field",
+        [](context& ctx) {
+            ctx.msg = &ctx.req;
+            ctx.istr = std::istringstream(
+                "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                "cOnTeNt-lEnGtH: 0\r\n"
+                "\r\n");
+        })
+    WHEN ("The message is read")
+    THEN ("The field value is available",
+        [](context& ctx) {
+            int value = ctx.req.field<mud::http::content_length>();
+            ASSERT(0, value);
+        })
+
 END_FEATURE()
 
 /* clang-format on */

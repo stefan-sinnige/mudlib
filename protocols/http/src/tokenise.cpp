@@ -10,7 +10,7 @@ tokenise(std::istream& istr, const token_manip& manip)
     static uint8_t table[128] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NUL .. SI
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // DLE .. US
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //  SP .. /
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, //  SP .. /
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, //   0 .. ?
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //   @ .. O
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, //   P .. _
@@ -25,7 +25,9 @@ tokenise(std::istream& istr, const token_manip& manip)
     std::string str;
     while ((ch = istr.get()) != std::char_traits<char>::eof()) {
         if ((ch > 0 && ch < 127 && table[ch] == 1) ||
-            (manip.space && ch == SP) || (manip.colon && ch == CL)) {
+            (manip.space && ch == SP) || (manip.colon && ch == CL) ||
+            (manip.comma && ch == CM)) 
+        {
             buf[n++] = ch;
             if (n >= sizeof(buf)) {
                 str.append(buf, n);

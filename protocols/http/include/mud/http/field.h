@@ -1,8 +1,10 @@
 #ifndef _MUDLIB_HTTP_FIELD_H_
 #define _MUDLIB_HTTP_FIELD_H_
 
+#include <cctype>
 #include <chrono>
 #include <iostream>
+#include <list>
 #include <map>
 #include <mud/core/optional.h>
 #include <mud/core/poly_vector.h>
@@ -25,6 +27,7 @@ public:
     {
         ALLOW,          /**< The Allow field */
         DATE,           /**< The Date field */
+        CONNECTION,     /**< The Connection field */
         CONTENT_LENGTH, /**< The Content-Length field */
         EXTENSION = -1  /**< An extension field */
     };
@@ -58,7 +61,7 @@ public:
 };
 
 /**
- * @brief Template class for an HTTP field.
+ * @brief Template class for an single-value HTTP field.
  * @tparam The type of the field.
  */
 template<enum base_field::field Field, typename Type, const char* Key>
@@ -73,6 +76,10 @@ public:
 
     /** The type of the field value */
     typedef Type value_type;
+
+
+    /** The field is not a multi-valued type */
+    static constexpr bool multi_valued = false;
 
     /**
      * @brief Construct an HTTP field with an undefined value.
@@ -153,6 +160,120 @@ private:
 };
 
 /**
+ * @brief Template class for an multi-value HTTP field.
+ * @tparam The type of the field.
+ */
+template<enum base_field::field Field, typename Type, const char* Key>
+class field_list: public base_field
+{
+public:
+    /** The HTTP field key name. */
+    static constexpr char const* key_name = Key;
+
+    /** The HTTP field type enumerated value. */
+    static constexpr enum base_field::field field_type = Field;
+
+    /** The type of the field value */
+    typedef Type value_type;
+
+    /** The field is a multi-valued type */
+    static constexpr bool multi_valued = true;
+
+    /**
+     * @brief Construct an HTTP field with an undefined value.
+     */
+    field_list() = default;
+
+    /**
+     * @brief Construct an HTTP field of a particular value.
+     * @param[in] value The HTTP field value.
+     */
+    field_list(const std::list<value_type>& value) : _value(value) {}
+
+    /**
+     * @brief Copy an HTTP field.
+     * @param[in] rhs The HTTP field to copy the values from.
+     */
+    field_list(const field_list& rhs) = default;
+
+    /**
+     * @brief Assign the values of another HTTP field.
+     * @param[in] rhs The HTTP Vfield to copy the values from.
+     * @return Reference to this HTTP field.
+     */
+    field_list& operator=(const field_list& rhs) = default;
+
+    /**
+     * @brief Destructor
+     */
+    virtual ~field_list() = default;
+
+    /**
+     * The field type.
+     */
+    base_field::field type() const override { return field_type; }
+
+    /**
+     * The field name.
+     */
+    const char* key() const override { return key_name; }
+
+    /**
+     * @brief Return the HTTP field value.
+     */
+    const std::list<value_type>& value() const { return _value; }
+
+    /**
+     * @brief Return the HTTP field value.
+     */
+    std::list<value_type>& value() { return _value; }
+
+    /**
+     * @brief Set the HTTP field value.
+     * @param[in] value The HTTP field value.
+     */
+    void value(const std::list<value_type>& value) { _value = value; }
+
+    /**
+     * @brief Implicit conversion to the HTTP field type.
+     */
+    operator const std::list<value_type>&() const { return _value; }
+
+    /**
+     * Write the multi-value to an output stream in a comma-separated form.
+     * @param[in] ostr  The output stream to write to.
+     */
+    void value(std::ostream& ostr) const override {
+        auto iter = _value.cbegin();
+        while (iter != _value.cend()) {
+            if (iter != _value.cbegin()) {
+                ostr << ", ";
+            }
+            ostr << *(iter++);
+        }
+    }
+
+    /**
+     * Read the value from an input stream in a comma-separated form.
+     * @param[in] ostr  The output stream to read from.
+     */
+    void value(std::istream& istr) override {
+        bool skip_csv(std::istream&);
+        while (skip_csv(istr)) {
+            value_type single_value;
+            istr >> single_value;
+            _value.push_back(single_value);
+        }
+    }
+
+private:
+    /**
+     * The value of the field.
+     */
+    std::list<value_type> _value;
+};
+
+/**
  * Generic extension header field for unrecognised fields. These fields are
  * available by their name and provide thier value as a string.
  */
@@ -161,6 +282,9 @@ class field_ext: public base_field
 public:
     /** The HTTP field type enumerated value. */
     static constexpr enum base_field::field field_type = base_field::field::EXTENSION;
+
+    /** The field is not a multi-valued type */
+    static constexpr bool multi_valued = false;
 
     /**
      * @brief Construct an HTTP field with an undefined value.
@@ -271,6 +395,8 @@ extern const char _HTTP_METHOD[];
 typedef field<(base_field::field)-10001, method_e, _HTTP_METHOD> method;
 std::ostream& operator<<(std::ostream&, const method&);
 std::istream& operator>>(std::istream&, method&);
+std::ostream& operator<<(std::ostream&, const method_e&);
+std::istream& operator>>(std::istream&, method_e&);
 
 /**
  * The class describing an HTTP uri field.
@@ -341,6 +467,27 @@ std::ostream& operator<<(std::ostream&, const entity_body&);
 std::istream& operator>>(std::istream&, entity_body&);
 
 /**
+ * The class describing an HTTP Allow.
+ */
+extern const char _HTTP_ALLOW[];
+typedef field_list<base_field::field::ALLOW, method_e, _HTTP_ALLOW> allow;
+std::ostream& operator<<(std::ostream&, const allow&);
+std::istream& operator>>(std::istream&, allow&);
+
+/**
+ * The class describing an HTTP Connection field.
+ */
+enum class connection_e
+{
+    Close,
+    KeepAlive
+};
+extern const char _HTTP_CONNECTION[];
+typedef field<base_field::field::CONNECTION, connection_e, _HTTP_CONNECTION> connection;
+std::ostream& operator<<(std::ostream&, const connection&);
+std::istream& operator>>(std::istream&, connection&);
+
+/**
  * The class describing an HTTP Content-Length field.
  */
 extern const char _HTTP_CONTENT_LENGTH[];
@@ -355,14 +502,6 @@ extern const char _HTTP_DATE[];
 typedef field<base_field::field::DATE, std::chrono::time_point<std::chrono::system_clock>, _HTTP_DATE> date;
 std::ostream& operator<<(std::ostream&, const date&);
 std::istream& operator>>(std::istream&, date&);
-
-/**
- * The class describing an HTTP Allow.
- */
-extern const char _HTTP_ALLOW[];
-typedef field<base_field::field::ALLOW, method_e, _HTTP_ALLOW> allow;
-std::ostream& operator<<(std::ostream&, const allow&);
-std::istream& operator>>(std::istream&, allow&);
 
 /**
  * The factory of HTTP fields.
@@ -408,6 +547,17 @@ public:
          */
         static mud::core::optional_ref<base_field> creator(field_vector& fields)
         {
+            /* If the type is a multi-value list field, attempt to return a
+             * reference to an already existing field. */
+            if (ConcreteClass::multi_valued) {
+                auto found = std::find_if(fields.begin(), fields.end(),
+                    [](const auto& field) {
+                        return field.type() == ConcreteClass::field_type;
+                    });
+                if (found != fields.end()) {
+                    return mud::core::optional_ref<base_field>(*found);
+                }
+            }
             base_field& f = *(fields.insert(fields.end(), ConcreteClass()));
             return mud::core::optional_ref<base_field>(f);
         }
@@ -469,9 +619,7 @@ private:
      * The case insensitive lexicographical comparison.
      */
     struct less_case {
-        bool operator()(const char* a, const char* b) const {
-            return strcasecmp(a, b) < 0;
-        }
+        bool operator()(const char* a, const char* b) const;
     };
 
     /**

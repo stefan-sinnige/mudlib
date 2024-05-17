@@ -49,19 +49,19 @@ public:
     bool connected() const { return _connected; }
 
     /**
-     * Non-copyable.
-     */
-    communicator(const communicator&) = delete;
-    communicator& operator=(const communicator&) = delete;
-
-private:
-    /**
      * Check if there is anything available to read (as expected). Set the
      * @c connected state accordingly.
      * @return True if there is data available.
      */
     bool data_available();
 
+    /**
+     * Non-copyable.
+     */
+    communicator(const communicator&) = delete;
+    communicator& operator=(const communicator&) = delete;
+
+private:
     /**
      * Generic TCP receive handler.
      */
@@ -158,11 +158,16 @@ public:
     ~impl();
 
     /**
-     *  Supply a request and return a future to a response.
+     * Supply a request and return a future to a response.
      */
     std::future<mud::http::response> request(
             const mud::io::tcp::endpoint& endpoint,
             const mud::http::request& req);
+
+    /**
+     * Return true if the connection is closed.
+     */
+    bool closed();
 
 private:
     /** Callback function when a response has been received */
@@ -220,6 +225,12 @@ client::impl::on_response(const mud::http::response& resp)
     _response.set_value(resp);
 }
 
+bool
+client::impl::closed()
+{
+    return !_communicator.data_available();
+}
+
 void
 client::impl_deleter::operator()(client::impl* ptr) const
 {
@@ -236,6 +247,12 @@ client::request(const mud::io::tcp::endpoint& endpoint,
                 const mud::http::request& req)
 {
     return _impl->request(endpoint, req);
+}
+
+bool
+client::closed()
+{
+    return _impl->closed();
 }
 
 END_MUDLIB_HTTP_NS

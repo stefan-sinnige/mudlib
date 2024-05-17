@@ -40,6 +40,12 @@ public:
             const mud::http::request& req);
 
     /**
+     * @brief Check if the connection is closed.
+     * @return True if the connection is closed.
+     */
+    bool closed();
+
+    /**
      * Non-copyable.
      */
     client(const client&) = delete;

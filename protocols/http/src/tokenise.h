@@ -14,6 +14,7 @@ const char LF = 10;
 const char CL = 58;
 const char HT =  9;
 const char DQ = 34;
+const char CM = 44;
 
 /*
  * Token manipulation options. Extends the allowable characters when
@@ -23,11 +24,12 @@ struct token_manip
 {
     bool space; /* Include a space to be part of the token. */
     bool colon; /* Include a colon to be part of the token. */
+    bool comma; /* Include a comma to be part of the token. */
 };
-constexpr token_manip include_none = { 0, 0 };
-constexpr token_manip include_space = { 1, 0 };
-constexpr token_manip include_colon = { 0, 1 };
-constexpr token_manip include_all = { 1, 1 };
+constexpr token_manip include_none = { 0, 0, 0 };
+constexpr token_manip include_space = { 1, 0, 0 };
+constexpr token_manip include_colon = { 0, 1, 0 };
+constexpr token_manip include_all = { 1, 1, 1 };
 
 /*
  * Return the next HTTP message token. Additional token manipulation

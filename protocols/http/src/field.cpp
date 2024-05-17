@@ -5,6 +5,36 @@
 
 BEGIN_MUDLIB_HTTP_NS
 
+/*
+ * Case insensitive equalily on strings.
+ */
+bool
+equal_case(const std::string& a, const std::string& b)
+{
+    auto a_it = a.begin();
+    auto b_it = b.begin();
+    while (a_it != a.end() && std::tolower(*a_it) == std::tolower(*b_it)) {
+        ++a_it, ++b_it;    
+    }
+    return a_it == a.end() && b_it == b.end();
+}
+
+/*
+ * Skip input (space and commas) until we have the next CSV value. Returns
+ * true if there is a CSV value ready.
+ */
+bool
+skip_csv(std::istream& istr)
+{
+    int ch;
+    while ((ch = istr.peek()) &&
+          ((ch == SP) || (ch == SP) || (ch == HT) || (ch == CM)))
+    {
+        istr.get();
+    }
+    return istr.peek() != CR;
+}
+
 /* ======================================================================
  * EXTENSION
  * ====================================================================== */
@@ -79,7 +109,23 @@ const std::string POST = "POST";
 std::ostream&
 operator<<(std::ostream& ostr, const method& field)
 {
-    switch (field.value()) {
+    ostr << field.value();
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, method& field)
+{
+    method::value_type value;
+    istr >> value;
+    field.value(value);
+    return istr;
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const method_e& value)
+{
+    switch (value) {
         case method_e::GET:
             ostr << GET;
             break;
@@ -96,15 +142,15 @@ operator<<(std::ostream& ostr, const method& field)
 }
 
 std::istream&
-operator>>(std::istream& istr, method& field)
+operator>>(std::istream& istr, method_e& value)
 {
     std::string tok = tokenise(istr, include_none);
     if (tok == GET) {
-        field.value(method_e::GET);
+        value = method_e::GET;
     } else if (tok == HEAD) {
-        field.value(method_e::HEAD);
+        value = method_e::HEAD;
     } else if (tok == POST) {
-        field.value( method_e::POST);
+        value = method_e::POST;
     } else {
         throw std::out_of_range("Incorrectly formatted HTTP Method");
     }
@@ -237,35 +283,35 @@ std::istream&
 operator>>(std::istream& istr, reason_phrase& field)
 {
     std::string tok = tokenise(istr, include_all);
-    if (tok == OK) {
+    if (equal_case(tok ,OK)) {
         field.value(reason_phrase_e::OK);
-    } else if (tok == Created) {
+    } else if (equal_case(tok, Created)) {
         field.value(reason_phrase_e::Created);
-    } else if (tok == Accepted) {
+    } else if (equal_case(tok, Accepted)) {
         field.value(reason_phrase_e::Accepted);
-    } else if (tok == NoContent) {
+    } else if (equal_case(tok, NoContent)) {
         field.value(reason_phrase_e::NoContent);
-    } else if (tok == MovedPermanently) {
+    } else if (equal_case(tok, MovedPermanently)) {
         field.value(reason_phrase_e::MovedPermanently);
-    } else if (tok == MovedTemporarily) {
+    } else if (equal_case(tok, MovedTemporarily)) {
         field.value(reason_phrase_e::MovedTemporarily);
-    } else if (tok == NotModified) {
+    } else if (equal_case(tok, NotModified)) {
         field.value(reason_phrase_e::NotModified);
-    } else if (tok == BadRequest) {
+    } else if (equal_case(tok, BadRequest)) {
         field.value(reason_phrase_e::BadRequest);
-    } else if (tok == Unauthorized) {
+    } else if (equal_case(tok, Unauthorized)) {
         field.value(reason_phrase_e::Unauthorized);
-    } else if (tok == Forbidden) {
+    } else if (equal_case(tok, Forbidden)) {
         field.value(reason_phrase_e::Forbidden);
-    } else if (tok == NotFound) {
+    } else if (equal_case(tok, NotFound)) {
         field.value(reason_phrase_e::NotFound);
-    } else if (tok == InternalServerError) {
+    } else if (equal_case(tok, InternalServerError)) {
         field.value(reason_phrase_e::InternalServerError);
-    } else if (tok == NotImplemented) {
+    } else if (equal_case(tok, NotImplemented)) {
         field.value(reason_phrase_e::NotImplemented);
-    } else if (tok == BadGateway) {
+    } else if (equal_case(tok, BadGateway)) {
         field.value(reason_phrase_e::BadGateway);
-    } else if (tok == ServiceUnavailable) {
+    } else if (equal_case(tok, ServiceUnavailable)) {
         field.value(reason_phrase_e::ServiceUnavailable);
     } else {
         throw std::out_of_range("Incorrectly formatted HTTP Version");
@@ -299,18 +345,26 @@ operator>>(std::istream& istr, entity_body& field)
 
 const char _HTTP_ALLOW[] = "Allow";
 
+field_factory::registrar<_HTTP_ALLOW, allow> allow_registrar;
+
+/* ======================================================================
+ * Connection
+ * ====================================================================== */
+
+const char _HTTP_CONNECTION[] = "Connection";
+
+const std::string Close = "close";
+const std::string KeepAlive = "keep-alive";
+
 std::ostream&
-operator<<(std::ostream& ostr, const allow& field)
+operator<<(std::ostream& ostr, const connection& field)
 {
     switch (field.value()) {
-        case method_e::GET:
-            ostr << GET;
+        case connection_e::Close:
+            ostr << Close;
             break;
-        case method_e::HEAD:
-            ostr << HEAD;
-            break;
-        case method_e::POST:
-            ostr << POST;
+        case connection_e::KeepAlive:
+            ostr << KeepAlive;
             break;
         default:
             break;
@@ -319,22 +373,20 @@ operator<<(std::ostream& ostr, const allow& field)
 }
 
 std::istream&
-operator>>(std::istream& istr, allow& field)
+operator>>(std::istream& istr, connection& field)
 {
-    std::string tok = tokenise(istr, include_none);
-    if (tok == GET) {
-        field.value(method_e::GET);
-    } else if (tok == HEAD) {
-        field.value(method_e::HEAD);
-    } else if (tok == POST) {
-        field.value( method_e::POST);
+    std::string tok = tokenise(istr, include_all);
+    if (equal_case(tok, Close)) {
+        field.value(connection_e::Close);
+    } else if (equal_case(tok, KeepAlive)) {
+        field.value(connection_e::KeepAlive);
     } else {
-        throw std::out_of_range("Incorrectly formatted HTTP Allow field");
+        throw std::out_of_range("Incorrectly formatted HTTP Connection");
     }
     return istr;
 }
 
-field_factory::registrar<_HTTP_ALLOW, allow> allow_registrar;
+field_factory::registrar<_HTTP_CONNECTION, connection> connection_registrar;
 
 /* ======================================================================
  * Content-Length
@@ -411,6 +463,15 @@ field_factory::registrar<_HTTP_DATE, date> date_registrar;
 /* ======================================================================
  * Field Factory
  * ====================================================================== */
+
+bool
+field_factory::less_case::operator() (const char* a, const char* b) const
+{
+    while (*a != 0 && std::tolower(*a) == std::tolower(*b)) {
+        ++a, ++b;
+    }
+    return std::tolower(*a) < std::tolower(*b);
+}
 
 field_factory&
 field_factory::instance()
