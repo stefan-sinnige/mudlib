@@ -2,9 +2,9 @@
 #define _MUDLIB_HTTP_CLIENT_H_
 
 #include <future>
+#include <mud/http/ns.h>
 #include <mud/http/request.h>
 #include <mud/http/response.h>
-#include <mud/http/ns.h>
 #include <mud/io/tcp.h>
 
 BEGIN_MUDLIB_HTTP_NS
@@ -22,7 +22,8 @@ public:
      * @brief Constructor of an new HTTP client.
      * @param[in] event_loop The event-loop to register the TCP socket to.
      */
-    client(mud::event::event_loop& event_loop = mud::event::event_loop::global());
+    client(
+        mud::event::event_loop& event_loop = mud::event::event_loop::global());
 
     /**
      * @brief Destructor.
@@ -36,14 +37,7 @@ public:
      * @return A future to the reponse message.
      */
     std::future<mud::http::response> request(
-            const mud::io::tcp::endpoint& endpoint,
-            const mud::http::request& req);
-
-    /**
-     * @brief Check if the connection is closed.
-     * @return True if the connection is closed.
-     */
-    bool closed();
+        const mud::io::tcp::endpoint& endpoint, const mud::http::request& req);
 
     /**
      * Non-copyable.

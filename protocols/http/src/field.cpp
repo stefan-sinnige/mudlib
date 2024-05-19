@@ -14,7 +14,7 @@ equal_case(const std::string& a, const std::string& b)
     auto a_it = a.begin();
     auto b_it = b.begin();
     while (a_it != a.end() && std::tolower(*a_it) == std::tolower(*b_it)) {
-        ++a_it, ++b_it;    
+        ++a_it, ++b_it;
     }
     return a_it == a.end() && b_it == b.end();
 }
@@ -28,8 +28,7 @@ skip_csv(std::istream& istr)
 {
     int ch;
     while ((ch = istr.peek()) &&
-          ((ch == SP) || (ch == SP) || (ch == HT) || (ch == CM)))
-    {
+           ((ch == SP) || (ch == SP) || (ch == HT) || (ch == CM))) {
         istr.get();
     }
     return istr.peek() != CR;
@@ -78,6 +77,9 @@ operator<<(std::ostream& ostr, const version& field)
         case version_e::HTTP10:
             ostr << "HTTP/1.0";
             break;
+        case version_e::HTTP11:
+            ostr << "HTTP/1.1";
+            break;
         default:
             break;
     }
@@ -90,6 +92,8 @@ operator>>(std::istream& istr, version& field)
     std::string tok = tokenise(istr, include_none);
     if (tok == "HTTP/1.0") {
         field.value(version_e::HTTP10);
+    } else if (tok == "HTTP/1.1") {
+        field.value(version_e::HTTP11);
     } else {
         throw std::out_of_range("Incorrectly formatted HTTP Version");
     }
@@ -283,7 +287,7 @@ std::istream&
 operator>>(std::istream& istr, reason_phrase& field)
 {
     std::string tok = tokenise(istr, include_all);
-    if (equal_case(tok ,OK)) {
+    if (equal_case(tok, OK)) {
         field.value(reason_phrase_e::OK);
     } else if (equal_case(tok, Created)) {
         field.value(reason_phrase_e::Created);
@@ -407,13 +411,15 @@ operator>>(std::istream& istr, content_length& field)
     std::string tok = tokenise(istr, include_none);
     int value = std::stoi(tok);
     if (value < 0) {
-        throw std::out_of_range("Incorrectly formatted HTTP Content-Length field");
+        throw std::out_of_range(
+            "Incorrectly formatted HTTP Content-Length field");
     }
     field.value(value);
     return istr;
 }
 
-field_factory::registrar<_HTTP_CONTENT_LENGTH, content_length> content_length_registrar;
+field_factory::registrar<_HTTP_CONTENT_LENGTH, content_length>
+    content_length_registrar;
 
 /* ======================================================================
  * Date
@@ -461,11 +467,68 @@ operator>>(std::istream& istr, date& field)
 field_factory::registrar<_HTTP_DATE, date> date_registrar;
 
 /* ======================================================================
+ * Transfer-Encoding
+ * ====================================================================== */
+
+const char _HTTP_TRANSFER_ENCODING[] = "Transfer-Encoding";
+
+const std::string Chunked = "chunked";
+const std::string Compress = "compress";
+const std::string Deflate = "deflate";
+const std::string Gzip = "gzip";
+const std::string X_Gzip = "x-gzip";
+
+std::ostream&
+operator<<(std::ostream& ostr, const transfer_coding_e& value)
+{
+    switch (value) {
+        case transfer_coding_e::CHUNKED:
+            ostr << Chunked;
+            break;
+        case transfer_coding_e::COMPRESS:
+            ostr << Compress;
+            break;
+        case transfer_coding_e::DEFLATE:
+            ostr << Deflate;
+            break;
+        case transfer_coding_e::GZIP:
+            ostr << Gzip;
+            break;
+        default:
+            break;
+    }
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, transfer_coding_e& value)
+{
+    std::string tok = tokenise(istr, include_none);
+    if (equal_case(tok, Chunked)) {
+        value = transfer_coding_e::CHUNKED;
+    } else if (equal_case(tok, Compress)) {
+        value = transfer_coding_e::COMPRESS;
+    } else if (equal_case(tok, Deflate)) {
+        value = transfer_coding_e::DEFLATE;
+    } else if (equal_case(tok, Gzip)) {
+        value = transfer_coding_e::GZIP;
+    } else if (equal_case(tok, X_Gzip)) {
+        value = transfer_coding_e::GZIP;
+    } else {
+        throw std::out_of_range("Incorrectly formatted HTTP Transfer-Encoding");
+    }
+    return istr;
+}
+
+field_factory::registrar<_HTTP_TRANSFER_ENCODING, transfer_encoding>
+    transfer_encoding_registrar;
+
+/* ======================================================================
  * Field Factory
  * ====================================================================== */
 
 bool
-field_factory::less_case::operator() (const char* a, const char* b) const
+field_factory::less_case::operator()(const char* a, const char* b) const
 {
     while (*a != 0 && std::tolower(*a) == std::tolower(*b)) {
         ++a, ++b;

@@ -5,7 +5,7 @@
 
 BEGIN_MUDLIB_HTTP_NS
 
-class client::communicator: public mud::io::tcp::communicator
+class client::communicator : public mud::io::tcp::communicator
 {
 public:
     /** Function definition for the @c on_respone handler. The response message
@@ -16,10 +16,8 @@ public:
      * @brief Constructor.
      * @param[in] event_loop  The event-loop to register the socket to.
      */
-    communicator(
-            on_response_func func,
-            mud::event::event_loop& event_loop =
-                mud::event::event_loop::global());
+    communicator(on_response_func func, mud::event::event_loop& event_loop =
+                                            mud::event::event_loop::global());
 
     /**
      * @brief Move constructor.
@@ -78,15 +76,13 @@ private:
     bool _connected;
 };
 
-client::communicator::communicator(
-        on_response_func func,
-        mud::event::event_loop& event_loop)
-    : mud::io::tcp::communicator(event_loop),
-      _on_response_func(func),
-      _connected(true)
+client::communicator::communicator(on_response_func func,
+                                   mud::event::event_loop& event_loop)
+  : mud::io::tcp::communicator(event_loop), _on_response_func(func),
+    _connected(true)
 {
     mud::io::tcp::communicator::on_receive(
-            std::bind(&client::communicator::on_receive, this));
+        std::bind(&client::communicator::on_receive, this));
 }
 
 bool
@@ -101,8 +97,7 @@ client::communicator::data_available()
     if (istr().get() == std::char_traits<char>::eof()) {
         close();
         _connected = false;
-    }
-    else {
+    } else {
         istr().unget();
     }
     return _connected;
@@ -117,13 +112,15 @@ client::communicator::request(const mud::http::request& req)
 void
 client::communicator::on_receive()
 {
-    // Check if there is something available.
+    // Check if there is something available. If there is nothing available,
+    // the connection can be closed.
     if (!data_available()) {
+        close();
         return;
     }
 
     // Expect an HTTP message.
-    bool need_close = false;
+    bool force_close = false;
     response resp;
     try {
         istr() >> resp;
@@ -133,9 +130,26 @@ client::communicator::on_receive()
             }
         }
     } catch (...) {
-        need_close = true;
+        force_close = true;
     }
-    if (need_close) {
+
+    // Examine any Connection flag to see if we need to stay open
+    //   * Not for HTTP 1.0
+    //     * Connection always closed after receiving the response
+    //   * Use the setting from the response
+    //   * Use keep-alive if none is defined in the response
+    if (resp.version() == mud::http::version_e::HTTP10) {
+        force_close = true;
+    }
+    else {
+        if (resp.exists<mud::http::connection>()) {
+            auto conn = resp.field<mud::http::connection>();
+            force_close = (conn == mud::http::connection_e::Close);
+        }
+    }
+
+    // Close the connection if we need to
+    if (force_close) {
         close();
         _connected = false;
     }
@@ -161,13 +175,7 @@ public:
      * Supply a request and return a future to a response.
      */
     std::future<mud::http::response> request(
-            const mud::io::tcp::endpoint& endpoint,
-            const mud::http::request& req);
-
-    /**
-     * Return true if the connection is closed.
-     */
-    bool closed();
+        const mud::io::tcp::endpoint& endpoint, const mud::http::request& req);
 
 private:
     /** Callback function when a response has been received */
@@ -193,9 +201,10 @@ private:
 };
 
 client::impl::impl(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop),
-    _connector(_event_loop),
-    _communicator(std::bind(&client::impl::on_response, this, std::placeholders::_1), _event_loop)
+  : _event_loop(event_loop), _connector(_event_loop),
+    _communicator(
+        std::bind(&client::impl::on_response, this, std::placeholders::_1),
+        _event_loop)
 {
     _connector.on_connect(
         std::bind(&client::impl::on_connect, this, std::placeholders::_1));
@@ -225,12 +234,6 @@ client::impl::on_response(const mud::http::response& resp)
     _response.set_value(resp);
 }
 
-bool
-client::impl::closed()
-{
-    return !_communicator.data_available();
-}
-
 void
 client::impl_deleter::operator()(client::impl* ptr) const
 {
@@ -247,12 +250,6 @@ client::request(const mud::io::tcp::endpoint& endpoint,
                 const mud::http::request& req)
 {
     return _impl->request(endpoint, req);
-}
-
-bool
-client::closed()
-{
-    return _impl->closed();
 }
 
 END_MUDLIB_HTTP_NS

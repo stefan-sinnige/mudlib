@@ -3,6 +3,7 @@ SUBDIRS = . test
 lib_LTLIBRARIES = libmudhttp.la
 
 libmudhttp_la_SOURCES = \
+    src/chunk.cpp \
     src/client.cpp \
     src/field.cpp \
     src/message.cpp \
@@ -17,6 +18,7 @@ includemud_HEADERS = \
 
 includemudhttpdir = $(includedir)/mud/http
 includemudhttp_HEADERS = \
+    include/mud/http/chunk.h \
     include/mud/http/client.h \
     include/mud/http/field.h \
     include/mud/http/message.h \

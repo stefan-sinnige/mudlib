@@ -1,4 +1,3 @@
-#include "mud/core/exception.h"
 #include "mud/event/event_loop.h"
 #include "mud/http/client.h"
 #include "mud/http/server.h"
@@ -53,7 +52,7 @@ CONTEXT()
     std::future<mud::http::response> resp_future;
 END_CONTEXT()
 
-FEATURE("HTTP/1.0 Protocol")
+FEATURE("HTTP/1.1 Protocol")
 
   /*
    * The predefined Gherkin steps.
@@ -67,13 +66,14 @@ FEATURE("HTTP/1.0 Protocol")
               response.version(request.version());
               response.status_code(mud::http::status_code_e::OK);
               response.reason_phrase(mud::http::reason_phrase_e::OK);
+              response.field<mud::http::content_length>(0);
               return response;
           });
       })
   DEFINE_WHEN ("A client sends a request",
       [](context& ctx) {
           mud::http::request req;
-          req.version(mud::http::version_e::HTTP10);
+          req.version(mud::http::version_e::HTTP11);
           req.method(mud::http::method_e::GET);
           req.uri("http://www.example.com/index.html");
           ctx.resp_future = ctx.client.request(ctx.endpoint, req);
@@ -86,12 +86,12 @@ FEATURE("HTTP/1.0 Protocol")
       [](context& ctx) {
           ASSERT(std::future_status::ready, 
                  ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
-          mud::http::response resp = ctx.resp_future.get();
+          ctx.resp = ctx.resp_future.get();
       })
-  DEFINE_THEN("The connection is closed",
+  DEFINE_THEN("The connection is kept alive",
       [](context& ctx) {
-          mud::http::request req;
-          ASSERT_THROW(mud::core::not_owner, ctx.resp_future = ctx.client.request(ctx.endpoint, req));
+        ASSERT(mud::http::connection_e::KeepAlive,
+               ctx.resp.field<mud::http::connection>());
       })
 
   END_DEFINES()
@@ -100,11 +100,11 @@ FEATURE("HTTP/1.0 Protocol")
    * The scenarios.
    */
 
-    SCENARIO("HTTP server closes a connection when no Connection field is present")
+    SCENARIO("HTTP server retains a connection when no Connection field is present")
         GIVEN("An HTTP server is listening for inbound connections")
         WHEN ("A client sends a request")
         THEN ("The client receives a response")
-         AND ("The connection is closed")
+         AND ("The connection is kept alive")
 
 END_FEATURE()
 

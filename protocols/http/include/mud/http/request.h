@@ -10,7 +10,7 @@ BEGIN_MUDLIB_HTTP_NS
  * @brief The definition of an HTTP request message. This conforms with
  *    RFC 1945: Section 4, 5 and 6
  */
-class MUDLIB_HTTP_API request: public message
+class MUDLIB_HTTP_API request : public message
 {
 public:
     /**

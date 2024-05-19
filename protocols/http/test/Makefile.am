@@ -4,7 +4,11 @@ TESTS = $(check_PROGRAMS)
 mudhttp_test_SOURCES = \
     main.cpp \
     message_test.cpp \
-    http_10_test.cpp
+    message_10_test.cpp \
+    message_11_test.cpp \
+    http_test.cpp \
+    http_10_test.cpp \
+    http_11_test.cpp
 
 mudhttp_test_CPPFLAGS = \
     -UVERSION \
