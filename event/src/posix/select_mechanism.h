@@ -118,6 +118,11 @@ private:
     );
 
     /**
+     * Remove any event with a bad file descriptor.
+     */
+    void remove_badf();
+
+    /**
      * Handle commands send to the event-loop from the self-event.
      */
     void command_handler();

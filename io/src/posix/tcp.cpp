@@ -319,7 +319,7 @@ tcp::socket::destination_endpoint(const tcp::endpoint& endpoint)
 /** The acceptor */
 
 tcp::acceptor::acceptor(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop), _on_accept_func(nullptr)
+  : _connected(false), _event_loop(event_loop), _on_accept_func(nullptr)
 {
     /* Set-up socket options to
      *   - reuse address to eliminate TIME_WAIT conditions.
@@ -332,6 +332,8 @@ tcp::acceptor&
 tcp::acceptor::operator=(acceptor&& rhs)
 {
     if (&rhs != this) {
+        _connected = rhs._connected;
+        rhs._connected = false;
         _listen = std::move(rhs._listen);
         _on_accept_func = rhs._on_accept_func;
     }
@@ -346,7 +348,6 @@ tcp::acceptor::~acceptor()
 void
 tcp::acceptor::open(const endpoint& endpoint)
 {
-
     /* Bind the socket to the endpoint. */
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
@@ -373,6 +374,7 @@ tcp::acceptor::open(const endpoint& endpoint)
         throw std::system_error(_listen.error(), std::system_category(),
                                 "listening for TCP connections");
     }
+    _connected = true;
 
     /* Register the event handler to be invoked when a client connects */
     _event_loop.register_handler(mud::event::event(
@@ -383,11 +385,18 @@ tcp::acceptor::open(const endpoint& endpoint)
 void
 tcp::acceptor::close()
 {
+    _connected = false;
     if (_listen.handle() != nullptr) {
         /* Deregister the listening socket from the event-loop */
         _event_loop.deregister_handler(mud::event::event(_listen.handle()));
         _listen.close();
     }
+}
+
+bool
+tcp::acceptor::connected() const
+{
+    return _connected;
 }
 
 void
@@ -541,13 +550,15 @@ tcp::connector::on_ready_connect()
 /** The communicator */
 
 tcp::communicator::communicator(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop), _on_receive_func(nullptr)
+  : _connected(false), _event_loop(event_loop), _on_receive_func(nullptr)
 {}
 
 tcp::communicator&
 tcp::communicator::operator=(communicator&& rhs)
 {
     if (&rhs != this) {
+        _connected = rhs._connected;
+        rhs._connected = false;
         _socket = std::move(rhs._socket);
         _on_receive_func = rhs._on_receive_func;
     }
@@ -562,19 +573,27 @@ tcp::communicator::~communicator()
 void
 tcp::communicator::open(tcp::socket&& socket)
 {
+    _connected = true;
+    _socket = std::move(socket);
     _event_loop.register_handler(mud::event::event(
         _socket.handle(), mud::event::event::signal_type::READING,
         std::bind(&communicator::on_ready_receive, this)));
-    _socket = std::move(socket);
 }
 
 void
 tcp::communicator::close()
 {
+    _connected = false;
     if (_socket.handle() != nullptr) {
         _event_loop.deregister_handler(mud::event::event(_socket.handle()));
         _socket.close();
     }
+}
+
+bool
+tcp::communicator::connected() const
+{
+    return _connected;
 }
 
 std::ostream&

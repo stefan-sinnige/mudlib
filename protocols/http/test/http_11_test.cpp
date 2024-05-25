@@ -1,0 +1,185 @@
+#include "mud/event/event_loop.h"
+#include "mud/http/client.h"
+#include "mud/http/server.h"
+#include "mud/io/tcp.h"
+#include "mud/test.h"
+#include <condition_variable>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
+/* clang-format off */
+
+CONTEXT()
+    /* Constructor initialised for each scenario run */
+    context()
+        : endpoint(std::string("127.0.0.1"), 52618)
+    {
+        thr = std::thread([]() {
+            mud::event::event_loop::global().loop();
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    /* Destructor after each scenario */
+    ~context() {
+        mud::event::event_loop::global().terminate();
+        if (thr.joinable())
+        {
+            thr.join();
+        }
+    }
+
+    /** Thread to run the ecebt loop */
+    std::thread thr;
+
+    /* The endpoint */
+    mud::io::tcp::endpoint endpoint;
+
+    /* The HTTP server */
+    mud::http::server server;
+
+    /* An HTTP client */
+    mud::http::client client;
+
+    /* The request */
+    mud::http::request req;
+
+    /* The response */
+    mud::http::response resp;
+
+    /* The response future */
+    std::future<mud::http::response> resp_future;
+END_CONTEXT()
+
+FEATURE("HTTP/1.1 Protocol")
+
+  /*
+   * The predefined Gherkin steps.
+   */
+
+  DEFINE_GIVEN("An HTTP server is listening for inbound connections",
+      [](context& ctx) {
+          ctx.server.start(ctx.endpoint);
+          ctx.server.on_request([](const mud::http::request& request) {
+              mud::http::response response;
+              response.version(request.version());
+              response.status_code(mud::http::status_code_e::OK);
+              response.reason_phrase(mud::http::reason_phrase_e::OK);
+              response.field<mud::http::content_length>(0);
+              return response;
+          });
+      })
+  DEFINE_WHEN ("A client sends a request",
+      [](context& ctx) {
+          mud::http::request req;
+          req.version(mud::http::version_e::HTTP11);
+          req.method(mud::http::method_e::GET);
+          req.uri("http://www.example.com/index.html");
+          ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+      })
+  DEFINE_WHEN ("The server is stopped",
+      [](context& ctx) {
+          ctx.server.stop();
+      })
+  DEFINE_THEN("The client receives a response",
+      [](context& ctx) {
+          ASSERT(std::future_status::ready, 
+                 ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
+          ctx.resp = ctx.resp_future.get();
+      })
+  DEFINE_THEN("The connection is kept alive",
+      [](context& ctx) {
+        ASSERT(mud::http::connection_e::KeepAlive,
+               ctx.resp.field<mud::http::connection>());
+      })
+  DEFINE_THEN("The connection is closed",
+      [](context& ctx) {
+        ASSERT(mud::http::connection_e::Close,
+               ctx.resp.field<mud::http::connection>());
+      })
+
+  END_DEFINES()
+
+  /*
+   * The scenarios.
+   */
+
+    SCENARIO("HTTP server retains a connection when no Connection field is present")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends a request without a Connection field",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+            })
+        THEN ("The client receives a response")
+         AND ("The connection is kept alive")
+
+    SCENARIO("HTTP server retains a connection when a keep-alive Connection field is present")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends a request with a keep-alive Connection field",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::KeepAlive);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+            })
+        THEN ("The client receives a response")
+         AND ("The connection is kept alive")
+
+    SCENARIO("HTTP server closes a connection when a close Connection field is present")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends a request with a close Connection field",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::Close);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+            })
+        THEN ("The client receives a response")
+         AND ("The connection is closed")
+
+    SCENARIO("HTTP server can handle multiple requests on the same connection")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends and receives one request",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::KeepAlive);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+                ASSERT(std::future_status::ready, 
+                     ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
+                ctx.resp = ctx.resp_future.get();
+            })
+          AND("A client sends another request on the same connection",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::KeepAlive);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+                ASSERT(std::future_status::ready, 
+                     ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
+                ctx.resp = ctx.resp_future.get();
+            })
+        THEN ("The connection is kept alive")
+
+END_FEATURE()
+
+/* clang-format on */
+
+/* vi: set ai ts=4 expandtab: */

@@ -65,14 +65,26 @@ public:
     message::type type() const;
 
     /**
+     * Insert a new HTTP field in place.
+     * @tparam Field  The field type to set.
+     * @param[in] arg  The field value construction parameter.
+     * @param[in] args  Additional construction parameters. 
+     */
+    template<typename Field, typename FieldValue, class... Args>
+    void field(const FieldValue& arg, Args... args)
+    {
+        Field fld(arg, std::forward<Args>(args)...);
+        _fields.insert(_fields.end(), fld);
+    }
+
+    /**
      * Insert an HTTP field.
      * @tparam Field  The field type to set.
-     * @param[in] value  The field value to set.
+     * @param[in] fld  The field to set.
      */
     template<typename Field>
-    void field(const Field& value)
-    {
-        _fields.insert(_fields.end(), value);
+    void field(const Field& fld) {
+        _fields.insert(_fields.end(), fld);
     }
 
     /**
@@ -107,12 +119,12 @@ public:
     template<typename Field>
     bool exists() const
     {
-        return std::find_if(_fields.begin(), _fields.end(), 
-            [](const base_field& fld) {
-                return Field::field_type == fld.type();
-            }) != _fields.end();
+        return std::find_if(_fields.begin(), _fields.end(),
+                            [](const base_field& fld) {
+                                return Field::field_type == fld.type();
+                            }) != _fields.end();
     }
-     
+
     /**
      * Check if an HTTP field has been defined, both standard and extension
      * fields.
@@ -124,15 +136,9 @@ public:
     /**
      * Get all the header fields.
      */
-    const fields_type& fields() const
-    {
-        return _fields;
-    }
-    fields_type& fields()
-    {
-        return _fields;
-    }
-    
+    const fields_type& fields() const { return _fields; }
+    fields_type& fields() { return _fields; }
+
     /**
      * @brief Return the total number of fields defined
      */
@@ -155,7 +161,8 @@ public:
      * @param[in] value  The entity body value to set.
      */
     void entity_body(const http::entity_body& value) { _entity_body = value; }
-    void entity_body(const std::string& value) {
+    void entity_body(const std::string& value)
+    {
         _entity_body = http::entity_body(value);
     }
 
@@ -180,10 +187,9 @@ private:
      */
     fields_type::iterator find(base_field::field type)
     {
-        return std::find_if(_fields.begin(), _fields.end(), 
-            [type](const base_field& fld) {
-                return type == fld.type();
-            });
+        return std::find_if(
+            _fields.begin(), _fields.end(),
+            [type](const base_field& fld) { return type == fld.type(); });
     }
 
     /**
@@ -194,10 +200,9 @@ private:
      */
     fields_type::const_iterator find(base_field::field type) const
     {
-        return std::find_if(_fields.begin(), _fields.end(), 
-            [type](const base_field& fld) {
-                return type == fld.type();
-            });
+        return std::find_if(
+            _fields.begin(), _fields.end(),
+            [type](const base_field& fld) { return type == fld.type(); });
     }
 
     /**
@@ -208,10 +213,10 @@ private:
      */
     fields_type::const_iterator find(const char* key) const
     {
-        return std::find_if(_fields.begin(), _fields.end(), 
-            [key](const base_field& fld) {
-                return strcasecmp(key, fld.key()) == 0;
-            });
+        return std::find_if(_fields.begin(), _fields.end(),
+                            [key](const base_field& fld) {
+                                return strcasecmp(key, fld.key()) == 0;
+                            });
     }
 
     /**
@@ -222,10 +227,10 @@ private:
      */
     fields_type::iterator find(const char* key)
     {
-        return std::find_if(_fields.begin(), _fields.end(), 
-            [key](const base_field& fld) {
-                return strcasecmp(key, fld.key()) == 0;
-            });
+        return std::find_if(_fields.begin(), _fields.end(),
+                            [key](const base_field& fld) {
+                                return strcasecmp(key, fld.key()) == 0;
+                            });
     }
 
     /**

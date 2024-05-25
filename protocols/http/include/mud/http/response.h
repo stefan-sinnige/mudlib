@@ -10,7 +10,7 @@ BEGIN_MUDLIB_HTTP_NS
  * @brief The definition of an HTTP response message. This conforms with
  *    RFC 1945: Section 4, 5 and 6
  */
-class MUDLIB_HTTP_API response: public message
+class MUDLIB_HTTP_API response : public message
 {
 public:
     /**
@@ -39,7 +39,8 @@ public:
      * Set the reson phrase.
      * @param[in] value  The reason phrase value to set.
      */
-    void reason_phrase(const http::reason_phrase& value) {
+    void reason_phrase(const http::reason_phrase& value)
+    {
         _reason_phrase = value;
     }
 

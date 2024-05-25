@@ -44,8 +44,10 @@ main(int argc, char** argv)
             std::cout << "Sending request ... " << std::flush;
             communicator.open(std::move(socket));
             mud::http::request request;
-            request.version(mud::http::version_e::HTTP10);
+            request.version(mud::http::version_e::HTTP11);
             request.method(mud::http::method_e::GET);
+            request.field<mud::http::connection>(
+                mud::http::connection_e::Close);
             request.field<mud::http::content_length>(0);
             request.uri("/");
             communicator.ostr() << request << std::flush;

@@ -52,42 +52,11 @@ CONTEXT()
     std::future<mud::http::response> resp_future;
 END_CONTEXT()
 
-FEATURE("HTTP/1.0 Protocol")
+FEATURE("HTTP Protocol")
 
   /*
    * The predefined Gherkin steps.
    */
-
-  DEFINE_GIVEN("An HTTP server is listening for inbound connections",
-      [](context& ctx) {
-          ctx.server.start(ctx.endpoint);
-          ctx.server.on_request([](const mud::http::request& request) {
-              mud::http::response response;
-              response.version(request.version());
-              response.status_code(mud::http::status_code_e::OK);
-              response.reason_phrase(mud::http::reason_phrase_e::OK);
-              return response;
-          });
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      })
-  DEFINE_WHEN ("A client sends a request",
-      [](context& ctx) {
-          mud::http::request req;
-          req.version(mud::http::version_e::HTTP10);
-          req.method(mud::http::method_e::GET);
-          req.uri("http://www.example.com/index.html");
-          ctx.resp_future = ctx.client.request(ctx.endpoint, req);
-      })
-  DEFINE_WHEN ("The server is stopped",
-      [](context& ctx) {
-          ctx.server.stop();
-      })
-  DEFINE_THEN("The client receives a response",
-      [](context& ctx) {
-          ASSERT(std::future_status::ready, 
-                 ctx.resp_future.wait_for(std::chrono::milliseconds(10)));
-          mud::http::response resp = ctx.resp_future.get();
-      })
 
   END_DEFINES()
 
@@ -114,57 +83,6 @@ FEATURE("HTTP/1.0 Protocol")
                   mud::http::server,
                   mud::http::server>::value);
         })
-
-    SCENARIO("HTTP server can process a request")
-        GIVEN("An HTTP server is listening for inbound connections")
-        WHEN ("A client sends a request")
-        THEN ("The client receives a response")
-
-/*
-    SCENARIO("HTTP server ignores a disconnected client")
-        GIVEN("An HTTP server is listening for inbound connections")
-        WHEN ("A client closes before sending a response",
-            [](context& ctx) {
-                // Connect to the server
-                mud::io::tcp::socket client;
-
-                mud::io::tcp::connector connector;
-                struct cv_t {
-                    std::mutex connected_lock;
-                    std::condition_variable connected_cv;
-                    bool connected;
-                } cv;
-                connector.on_connect([&client, &cv](
-                        mud::io::tcp::socket&& socket) {
-                    client = std::move(socket);
-                    client.option<bool, mud::io::ip::nonblocking>(false);
-                    {
-                        std::lock_guard<std::mutex> lock(cv.connected_lock);
-                        cv.connected = true;
-                    }
-                    cv.connected_cv.notify_all();
-                });
-                connector.open(ctx.endpoint);
-                std::unique_lock<std::mutex> lock(cv.connected_lock);
-                cv.connected_cv.wait_for(lock, std::chrono::milliseconds(10),
-                    [&cv]{ return cv.connected; });
-                ASSERT(true, cv.connected);
-
-                // Send a request
-                mud::http::request req;
-                req.version(mud::http::version_e::HTTP10);
-                req.method(mud::http::method_e::GET);
-                req.uri("http://www.example.com/index.html");
-                client.ostr() << req << std::flush;
-
-                // Disconnect
-                // TBD: This client socket should *not* be using the global
-                // event loop as it may result in EBADF when trying to close
-                // it in random runs.
-                //client.close();
-            })
-        THEN ("No exception is thrown", [](context& ctx) {})
-*/
 
 END_FEATURE()
 
