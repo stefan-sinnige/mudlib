@@ -34,11 +34,6 @@ public:
     virtual ~communicator() = default;
 
     /**
-     * @brief Return the connected state.
-     */
-    bool connected() const { return _connected; }
-
-    /**
      * Non-copyable.
      */
     communicator(const communicator&) = delete;
@@ -46,8 +41,7 @@ public:
 
 private:
     /**
-     * Check if there is anything available to read (as expected). Set the
-     * @c connected state accordingly.
+     * Check if there is anything available to read (as expected).
      * @return True if there is data available.
      */
     bool data_available();
@@ -61,17 +55,11 @@ private:
      * The handler for HTTP requests.
      */
     server::on_request_func _on_request_func;
-
-    /**
-     * The connected state.
-     */
-    bool _connected;
 };
 
 server::communicator::communicator(server::on_request_func func,
                                    mud::event::event_loop& event_loop)
-  : mud::io::tcp::communicator(event_loop), _on_request_func(func),
-    _connected(true)
+  : mud::io::tcp::communicator(event_loop), _on_request_func(func)
 {
     mud::io::tcp::communicator::on_receive(
         std::bind(&server::communicator::on_receive, this));
@@ -81,18 +69,18 @@ bool
 server::communicator::data_available()
 {
     // If not connected, return.
-    if (!_connected) {
+    if (!connected()) {
         return false;
     }
 
     // Attempt to read one character.
     if (istr().get() == std::char_traits<char>::eof()) {
         close();
-        _connected = false;
+        return false;
     } else {
         istr().unget();
+        return true;
     }
-    return _connected;
 }
 
 void
@@ -173,7 +161,6 @@ server::communicator::on_receive()
     if (force_close)
     {
         close();
-        _connected = false;
     }
 }
 

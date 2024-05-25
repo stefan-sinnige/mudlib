@@ -384,13 +384,15 @@ udp::socket::ostr(const endpoint& endpoint)
 /** The communicator */
 
 udp::communicator::communicator(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop), _on_receive_func(nullptr)
+  : _connected(false), _event_loop(event_loop), _on_receive_func(nullptr)
 {}
 
 udp::communicator&
 udp::communicator::operator=(communicator&& rhs)
 {
     if (&rhs != this) {
+        _connected = rhs._connected;
+        rhs._connected = false;
         _socket = std::move(rhs._socket);
         _on_receive_func = rhs._on_receive_func;
     }
@@ -405,6 +407,7 @@ udp::communicator::~communicator()
 void
 udp::communicator::open(udp::socket&& socket)
 {
+    _connected = true;
     _socket = std::move(socket);
     _event_loop.register_handler(mud::event::event(
         _socket.handle(), mud::event::event::signal_type::READING,
@@ -414,8 +417,15 @@ udp::communicator::open(udp::socket&& socket)
 void
 udp::communicator::close()
 {
+    _connected = false;
     _event_loop.deregister_handler(mud::event::event(_socket.handle()));
     _socket.close();
+}
+
+bool
+udp::communicator::connected() const
+{
+    return _connected;
 }
 
 std::ostream&

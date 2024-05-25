@@ -3184,7 +3184,12 @@ images, but also to invoke specific requests to be executed on a server.
 The protocol is a typical Request-Response mechanism where a client connects
 to a server and issues a request. The server will then respond by replying
 with a response message. The message format that is used in this protocol
-is a HTTP Message, both for the request as for the response message.
+is an HTTP Message, both for the request as for the response message.
+
+Several revisions are currently in wide support, predominantly HTTP version
+1.0 \cite{HTTP10} and 1.1 (with various revisions over time). Both 1.0 and 1.1
+are supported. Most of the difference are related to field definitions and the
+handling of connection persistency.
 
 \section{HTTP Message}
 
@@ -3198,26 +3203,51 @@ constructed directly.
 class message;
 \end{lstlisting}
 
-The HTTP message supports a number of pre-defined set of fields. These form
-the part of the message that define the \textit{meta-data}, describing various
+The HTTP base message supports the general structure that is compatible between
+the 1.0 and 1.1 revisions. This includes the common fields of a \texttt{version}
+and \texttt{entity-body}, as well as header fields. These form the part of the
+message that define the \textit{meta-data}, describing various
 aspects of the message that may (or may not) be interpreted by the client and
 the server. Depending on the version of HTTP used, the protocol defines which
 fields are mandatory and which are optional, and also define the approved
-contents of the fields. Fields can be set and retrieved on the message using:
+contents of the fields.
+
+\begin{lstlisting}[style=definition,numbers=left]
+void version(const http::version& value);
+const http::version& version() const;
+http::version& version();
+void entity_body(const http::entity_body& value);
+void entity_body(const std::string& value);
+const http::entity_body& entity_body() const;
+http::entity_body& version();
+\end{lstlisting}
+\begin{enumeratedef}
+  \item Set the version.
+  \item Get the version.
+  \item Get the version.
+  \item Set the entity-body.
+  \item Set the entity-body from a string.
+  \item Get the entity-body.
+  \item Get the entity-body.
+\end{enumeratedef}
+
+Fields can be set and retrieved on the message using:
 
 \begin{lstlisting}[style=definition,numbers=left]
 template<typename Field> void field(const Field& value);
+template<typename Field, typename FieldValye, class... Args> void field(const FieldValue& arg, Args... args);
 template<typename Field> const Field& field() const;
 template<typename Field> bool exists() const;
-size_t field_size() const;
-void clear();
+const fields_type& fields() const;
+fields_type& fields();
 \end{lstlisting}
 \begin{enumeratedef}
-  \item Set a field.
-  \item Get a field.
+  \item Insert a field.
+  \item Insert a field in-place.
+  \item Return the first field of the type.
   \item Verify if a field is defined.
-  \item Return the number of fields currently defined.
-  \item Remove all the fields.
+  \item Return all the fields.
+  \item Return all the fields.
 \end{enumeratedef}
 
 Other operations on the message are:
@@ -3236,24 +3266,30 @@ HTTP/1.0 GET request message can be constructed as follows:
 
 \begin{lstlisting}[style=snippet]
 request req;
-req.field<version>(version::Version::HTTP10);
-req.field<method>(method::GET);
-req.field<uri>("http://www.example.com");
+req.version(version::Version::HTTP10);
+req.method(method::GET);
+req.uri("http://www.example.com");
 \end{lstlisting}
 
 \subsection{Fields}
 
 The configurable part of the HTTP message is the field. Each field that can be
 set an retrieved on an HTTP message is derived from a
-\indextt{message::base\_field} class. This class only defines an abstract
-\texttt{serialise} function that is used to output the field specification to
-a compliant HTTP message field.
+\indextt{message::base\_field} class. This class only defines some abstract
+functions that define the basics of a field and need to supplied by the actual
+implementations of a field:
 
 \begin{lstlisting}[style=definition,numbers=left]
-virtual void serialise(std::ostream& ostr) const = 0;
+virtual base_field::field type() const;
+virtual const char* key() const;
+virtual void value(std::ostream& ostr) const = 0;
+virtual void value(std::istream& istr) = 0;
 \end{lstlisting}
 \begin{enumeratedef}
+  \item The field enumeration value.
+  \item The name of the field.
   \item Serialise the field to the output stream.
+  \item De-serialise the field from the input stream.
 \end{enumeratedef}
 
 The following list defines all the HTTP fields supported by \MUDLib. Note that
@@ -3266,6 +3302,7 @@ type.
   \texttt{version} & The HTTP version. The following
     \texttt{version::Version} enumerated values are supported: \\
       & \hskip 2em \texttt{HTTP10} \\
+      & \hskip 2em \texttt{HTTP11} \\
   \texttt{method} & The method definition. The following methods are
     supported: \\
       & \hskip 2em \texttt{GET} \\

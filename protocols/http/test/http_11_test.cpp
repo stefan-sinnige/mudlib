@@ -93,6 +93,11 @@ FEATURE("HTTP/1.1 Protocol")
         ASSERT(mud::http::connection_e::KeepAlive,
                ctx.resp.field<mud::http::connection>());
       })
+  DEFINE_THEN("The connection is closed",
+      [](context& ctx) {
+        ASSERT(mud::http::connection_e::Close,
+               ctx.resp.field<mud::http::connection>());
+      })
 
   END_DEFINES()
 
@@ -102,9 +107,76 @@ FEATURE("HTTP/1.1 Protocol")
 
     SCENARIO("HTTP server retains a connection when no Connection field is present")
         GIVEN("An HTTP server is listening for inbound connections")
-        WHEN ("A client sends a request")
+        WHEN ("A client sends a request without a Connection field",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+            })
         THEN ("The client receives a response")
          AND ("The connection is kept alive")
+
+    SCENARIO("HTTP server retains a connection when a keep-alive Connection field is present")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends a request with a keep-alive Connection field",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::KeepAlive);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+            })
+        THEN ("The client receives a response")
+         AND ("The connection is kept alive")
+
+    SCENARIO("HTTP server closes a connection when a close Connection field is present")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends a request with a close Connection field",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::Close);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+            })
+        THEN ("The client receives a response")
+         AND ("The connection is closed")
+
+    SCENARIO("HTTP server can handle multiple requests on the same connection")
+        GIVEN("An HTTP server is listening for inbound connections")
+        WHEN ("A client sends and receives one request",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::KeepAlive);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+                ASSERT(std::future_status::ready, 
+                     ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
+                ctx.resp = ctx.resp_future.get();
+            })
+          AND("A client sends another request on the same connection",
+            [](context& ctx) {
+                mud::http::request req;
+                req.version(mud::http::version_e::HTTP11);
+                req.method(mud::http::method_e::GET);
+                req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    mud::http::connection_e::KeepAlive);
+                ctx.resp_future = ctx.client.request(ctx.endpoint, req);
+                ASSERT(std::future_status::ready, 
+                     ctx.resp_future.wait_for(std::chrono::milliseconds(1000)));
+                ctx.resp = ctx.resp_future.get();
+            })
+        THEN ("The connection is kept alive")
 
 END_FEATURE()
 

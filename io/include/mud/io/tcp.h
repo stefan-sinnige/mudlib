@@ -254,6 +254,11 @@ namespace tcp {
         void close();
 
         /**
+         * @brief Return the connected state.
+         */
+        bool connected() const;
+
+        /**
          * @brief Register a handler when a connection has been accepted.
          * @param func [in] The handler function.
          */
@@ -268,6 +273,9 @@ namespace tcp {
     private:
         /** Event handler when a peer is connected. */
         mud::event::event::return_type on_ready_accept();
+
+        /** The connected state */
+        bool _connected;
 
         /** The socket used for listening for incoming connections. */
         tcp::socket _listen;
@@ -397,6 +405,11 @@ namespace tcp {
         void close();
 
         /**
+         * @brief Return the connected state.
+         */
+        bool connected() const;
+
+        /**
          * @brief Get the stream object to read from the socket.
          * @return The stream object.
          */
@@ -423,6 +436,9 @@ namespace tcp {
     private:
         /** Event handler when there is data available. */
         mud::event::event::return_type on_ready_receive();
+
+        /** The connected state */
+        bool _connected;
 
         /** The socket used for communications. */
         tcp::socket _socket;

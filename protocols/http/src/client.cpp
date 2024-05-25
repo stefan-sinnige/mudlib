@@ -42,13 +42,7 @@ public:
     void request(const mud::http::request& req);
 
     /**
-     * @brief Return the connected state.
-     */
-    bool connected() const { return _connected; }
-
-    /**
-     * Check if there is anything available to read (as expected). Set the
-     * @c connected state accordingly.
+     * Check if there is anything available to read (as expected).
      * @return True if there is data available.
      */
     bool data_available();
@@ -69,17 +63,11 @@ private:
      * The handler for HTTP requests.
      */
     on_response_func _on_response_func;
-
-    /**
-     * The connected state.
-     */
-    bool _connected;
 };
 
 client::communicator::communicator(on_response_func func,
                                    mud::event::event_loop& event_loop)
-  : mud::io::tcp::communicator(event_loop), _on_response_func(func),
-    _connected(true)
+  : mud::io::tcp::communicator(event_loop), _on_response_func(func)
 {
     mud::io::tcp::communicator::on_receive(
         std::bind(&client::communicator::on_receive, this));
@@ -89,18 +77,18 @@ bool
 client::communicator::data_available()
 {
     // If not connected, return.
-    if (!_connected) {
+    if (!connected()) {
         return false;
     }
 
     // Attempt to read one character.
     if (istr().get() == std::char_traits<char>::eof()) {
         close();
-        _connected = false;
+        return false;
     } else {
         istr().unget();
+        return true;
     }
-    return _connected;
 }
 
 void
@@ -151,7 +139,6 @@ client::communicator::on_receive()
     // Close the connection if we need to
     if (force_close) {
         close();
-        _connected = false;
     }
 }
 
@@ -224,7 +211,15 @@ client::impl::request(const mud::io::tcp::endpoint& endpoint,
                       const mud::http::request& req)
 {
     _request = req;
-    _connector.open(endpoint);
+    _response = std::promise<mud::http::response>();
+    if (!_communicator.connected()) {
+      // No connection established yet.
+      _connector.open(endpoint);
+    }
+    else {
+      // Use existing connection.
+      _communicator.request(_request);
+    }
     return _response.get_future();
 }
 
