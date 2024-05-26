@@ -22,6 +22,13 @@ using namespace std::placeholders;
 BEGIN_MUDLIB_IO_NS
 
 /**
+ * Converstion structures defined in the socket.cpp
+ */
+extern int g_domains[];
+extern int g_types[];
+extern int g_protocols[];
+
+/**
  * Define the stream buffer to use with sockets. The read and write operations
  * to be used are the POSIX 'sendto' and 'recvfrom'.
  */
@@ -94,7 +101,8 @@ namespace _udp {
         // Initialise the socket address to send to.
         struct sockaddr_in addr;
         ::memset(&addr, 0, sizeof(sockaddr_in));
-        addr.sin_family = static_cast<sa_family_t>(_socket.domain());
+        addr.sin_family = static_cast<sa_family_t>(
+            g_domains[static_cast<int>(_socket.domain())]);
         addr.sin_port = htons(_destination_endpoint.port());
         addr.sin_addr.s_addr = _destination_endpoint.address();
 
@@ -220,7 +228,8 @@ udp::socket::impl::bind(const endpoint& endpoint)
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
-    addr.sin_family = static_cast<sa_family_t>(_socket.domain());
+    addr.sin_family = static_cast<sa_family_t>(
+        g_domains[static_cast<int>(_socket.domain())]);
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
     int sckt = mud::core::internal_handle<int>(_socket.handle());

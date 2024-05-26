@@ -68,6 +68,18 @@ FEATURE("IP Address")
          SAMPLE(0xC0A8FFFE, "192.168.255.254")
      END_SAMPLES()
 
+  SCENARIO("Conversion from node name to network-order address")
+    GIVEN ("A <node-name>", [](context& ctx) {
+            std::string node = ctx.sample().entry<std::string>("node-name");
+            ctx.addr = mud::io::ip::address(node); })
+     WHEN ("Converted to an IP address", [](context&){})
+     THEN ("The value is converted to an <address>", [](context& ctx) {
+            uint32_t expected = mud::io::ip::to_network_order(ctx.sample().entry<uint32_t>("address"));
+            ASSERT((uint32_t)ctx.addr , expected); })
+     SAMPLES("node-name", "address")
+         SAMPLE("example.com", 0x5DB8D70E)
+     END_SAMPLES()
+
 END_FEATURE()
 
 /* clang-format on */

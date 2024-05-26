@@ -12,6 +12,11 @@ BEGIN_MUDLIB_IO_NS
  * enumeration. A value of -1 means 'not supported'. */
 
 int g_domains[] = {
+#ifdef AF_UNSPEC
+    AF_UNSPEC,
+#else
+    0, /** UNSPEC */
+#endif
 #ifdef AF_UNIX
     AF_UNIX,
 #else
@@ -131,13 +136,20 @@ int g_domains[] = {
 };
 
 int g_types[] = {
+    0,
     SOCK_STREAM,
     SOCK_DGRAM,
     SOCK_SEQPACKET,
     SOCK_RAW,
-    SOCK_RDM };
+    SOCK_RDM
+};
 
 int g_protocols[]{
+#ifdef IPPROTO_IP
+    IPPROTO_IP, /* UNSPEC */
+#else
+    0, /* UNSPEC */
+#endif
 #ifdef IPPROTO_IP
     IPPROTO_IP, /* INTRINSIC */
 #else

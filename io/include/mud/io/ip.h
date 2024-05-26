@@ -52,6 +52,15 @@ namespace ip {
     {
     public:
         /**
+         * Structure t specify hints when performing a host name lookup.
+         */
+        struct hints {
+            mud::io::basic_socket::domain_t domain;
+            mud::io::basic_socket::type_t type;
+            mud::io::basic_socket::protocol_t protocol;
+        };
+
+        /**
          * @brief Construct an any-address (0.0.0.0)
          */
         address();
@@ -63,10 +72,17 @@ namespace ip {
         address(uint32_t addr);
 
         /**
-         * @brief Address specified by the dotted-decimal notation.
-         * @param addr [in] The address as a dotted-decimal.
+         * @brief Address specified by the dotted-decimal notation or host name.
+         * @param node [in] The address as a dotted-decimal or a host name.
+         * @param criteria [in] Any hints to specify the criteria to lookup host
+         * names.
+         * If the address is passed as a host-name, a host dependent lookup
+         * (e.g. DNS) will occur. The first matched entry will be used.
          */
-        address(const std::string& str);
+        address(const std::string& node, const hints& criteria  = {
+            mud::io::basic_socket::domain_t::UNSPEC,
+            mud::io::basic_socket::type_t::UNSPEC,
+            mud::io::basic_socket::protocol_t::UNSPEC});
 
         /**
          * @brief Copy constructor

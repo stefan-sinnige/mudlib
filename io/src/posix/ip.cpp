@@ -5,6 +5,7 @@
     #define GETSOCKOPT_CAST (char*)
 #else
     #include <arpa/inet.h>
+    #include <netdb.h>
     #include <sys/ioctl.h>
     #include <sys/socket.h>
     #include <unistd.h>
@@ -20,6 +21,13 @@
 
 BEGIN_MUDLIB_IO_NS
 
+/**
+ * Converstion structures defined in the socket.cpp
+ */
+extern int g_domains[];
+extern int g_types[];
+extern int g_protocols[];
+
 /* ==========================================================================
  * mud::ip::address
  * ========================================================================== */
@@ -28,9 +36,52 @@ ip::address::address() : m_address(INADDR_ANY) {}
 
 ip::address::address(uint32_t nr) : m_address(nr) {}
 
-ip::address::address(const std::string& str) : m_address(INADDR_NONE)
+ip::address::address(const std::string& node, const hints& criteria)
+    : m_address(INADDR_NONE)
 {
-    m_address = ::inet_addr(str.c_str());
+    // Verify if the node is in a dotted decimal format
+    bool dotted = true;
+    for (const char& ch : node)
+    {
+        if ((ch < '0' || ch > '9') && ch != '.') {
+            dotted = false;
+            break;
+        }
+    }
+
+    // If dotted decimal format, convert it as-is, otherwise do a look-up.
+    if (dotted) {
+        m_address = ::inet_addr(node.c_str());
+    }
+    else {
+        struct addrinfo* infos;
+        struct addrinfo hint;
+
+        // Define any hints
+        memset(&hint, 0, sizeof(struct addrinfo));
+        if (criteria.domain != basic_socket::domain_t::UNSPEC)
+            hint.ai_family = g_domains[static_cast<int>(criteria.domain)];
+        if (criteria.type != basic_socket::type_t::UNSPEC)
+            hint.ai_socktype = g_types[static_cast<int>(criteria.type)];
+        if (criteria.protocol != basic_socket::protocol_t::UNSPEC)
+            hint.ai_protocol = g_protocols[static_cast<int>(criteria.protocol)];
+
+        // Perform a lookup (this is likely to be expensive)
+        int result = getaddrinfo(node.c_str(), nullptr, &hint, &infos);
+        if (result != 0) {
+            throw exception("looking up IP address");
+        }
+        struct addrinfo* info;
+        for (info = infos; info != nullptr; info = info->ai_next)
+        {
+            // Use the first match
+            m_address = ((struct sockaddr_in*)info->ai_addr)->sin_addr.s_addr;
+            break;
+        }
+        freeaddrinfo(infos);
+    }
+
+    // Raise an exception on an error.
     if (m_address == INADDR_NONE) {
         throw exception("converting IP address to IPv4");
     }

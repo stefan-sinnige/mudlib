@@ -23,6 +23,13 @@ using namespace std::placeholders;
 BEGIN_MUDLIB_IO_NS
 
 /**
+ * Converstion structures defined in the socket.cpp
+ */
+extern int g_domains[];
+extern int g_types[];
+extern int g_protocols[];
+
+/**
  * Define the stream buffer to use with sockets. The read and write operations
  * to be used are the POSIX 'recv' and 'recv'.
  */
@@ -352,7 +359,8 @@ tcp::acceptor::open(const endpoint& endpoint)
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
-    addr.sin_family = static_cast<sa_family_t>(_listen.domain());
+    addr.sin_family = static_cast<sa_family_t>(
+        g_domains[static_cast<int>(_listen.domain())]);
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
     int lstn = mud::core::internal_handle<int>(_listen.handle());
@@ -483,7 +491,8 @@ tcp::connector::open(const endpoint& endpoint)
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
-    addr.sin_family = static_cast<sa_family_t>(_socket.domain());
+    addr.sin_family = static_cast<sa_family_t>(
+        g_domains[static_cast<int>(_socket.domain())]);
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
     int sckt = mud::core::internal_handle<int>(_socket.handle());
