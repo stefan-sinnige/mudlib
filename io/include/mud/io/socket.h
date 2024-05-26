@@ -23,6 +23,7 @@ public:
      */
     enum class domain_t
     {
+        UNSPEC,    /**< Unspecified */
         UNIX,      /**< Local communication */
         LOCAL,     /**< Synonym for UNIX */
         INET,      /**< IPv4 */
@@ -54,6 +55,7 @@ public:
      */
     enum class type_t
     {
+        UNSPEC,    /**< Unspecified */
         STREAM,    /**< Sequenced, reliable, two-way connection based byte
                         streams */
         DGRAM,     /**< Connectionless, unreliable datagrams of fixed
@@ -69,6 +71,7 @@ public:
      */
     enum class protocol_t
     {
+        UNSPEC,    /**< Unspecified */
         INTRINSIC, /**< Native to the socket type. */
         IP,        /**< dummy for IP */
         HOPOPTS,   /**< IP6 hop-by-hop options */

@@ -2155,13 +2155,14 @@ class adress;
 address();
 address(uint32_t addr);
 address(const std::string& addr);
-address(const address& rhs);
+address(const address& rhs, const hints& criteria = {unsepcified});
 address& operator=(const address& rhs);
 \end{lstlisting}
 \begin{enumeratedef}
   \item Specify the 0.0.0.0 IP address.
   \item Specify the IP address as a 32-bit value in network order.
-  \item Specify the IP address by dotted-decimal format.
+  \item Specify the IP address by dotted-decimal format or as a node name with
+        optional lookup hints.
   \item Copy constructor, copying the address from another instance.
   \item Assignment operator, copying the address from another instance.
 \end{enumeratedef}

@@ -26,6 +26,7 @@ struct WSAInitialiser
  * enumeration. A value of -1 means 'not supported'. */
 
 int g_domains[] = {
+    AF_UNSPEC,
     AF_UNIX,
     AF_UNIX, /** LOCAL */
     AF_INET,
@@ -52,9 +53,17 @@ int g_domains[] = {
     -1  /** _XDP */
 };
 
-int g_types[] = { SOCK_STREAM, SOCK_DGRAM, SOCK_SEQPACKET, SOCK_RAW, SOCK_RDM };
+int g_types[] = {
+    0,
+    SOCK_STREAM,
+    SOCK_DGRAM,
+    SOCK_SEQPACKET,
+    SOCK_RAW,
+    SOCK_RDM
+};
 
 int g_protocols[] = {
+    IPPROTO_IP, /** UNSPEC */
     IPPROTO_IP, /** INTRINSIC */
     IPPROTO_IP,
     IPPROTO_HOPOPTS,
