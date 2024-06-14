@@ -39,14 +39,20 @@ public:
      * Set the URI.
      * @param[in] value  The URI value to set.
      */
-    void uri(const http::uri& value) { _uri = value; }
-    void uri(const std::string& value) { _uri = http::uri(value); }
+    void uri(const mud::core::uri& value);
+    void uri(const std::string& value);
 
     /**
      * Get the URI.
      */
     const http::uri& uri() const { return _uri; }
     http::uri& uri() { return _uri; }
+
+    /**
+     * Normalise the message, conforming to teh standard. Based upon the HTTP
+     * version, certain fields are required or have restrictions.
+     */
+    void normalise() override;
 
 private:
     /**

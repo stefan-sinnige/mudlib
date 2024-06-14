@@ -67,33 +67,39 @@ int
 main(int argc, char** argv)
 {
     // Command line processing
-    std::string host = "127.0.0.1";
-    uint16_t port = 80;
+    mud::core::uri uri("http://127.0.0.1");
     while (--argc > 0 && *(++argv)[0] == '-') {
-        if (strcmp(*argv, "--host") == 0) {
+        if (strcmp(*argv, "--uri") == 0) {
             --argc, ++argv;
-            if (argc <= 0) {
-                std::cerr << "Error: Option --host requires an argument."
+            if (argc <= 0) { 
+                std::cerr << "Error: Option --uri requires an argument."
                           << std::endl;
                 return 1;
             }
-            host = *argv;
+            try {
+                uri = mud::core::uri(*argv);
+            }   
+            catch (std::exception& ex) {
+                std::cerr << ex.what() << std::endl;
+                return 1;
+            }
         }
-        if (strcmp(*argv, "--port") == 0) {
-            --argc, ++argv;
-            if (argc <= 0) {
-                std::cerr << "Error: Option --port requires an argument."
-                          << std::endl;
-                return 1;
-            }
-            port = atoi(*argv);
+        else
+        if (strcmp(*argv, "--help") == 0) {
+            std::cout << "Option:" << std::endl
+                      << "    --uri URI" << std::endl;
+            return 0;
+        }
+        else {
+            std::cerr << "Unknown option '" << *argv << "'" << std::endl;
+            return 1;
         }
     }
 
     // Create the server
     server server;
     try {
-        server.run(host, port);
+        server.run(uri.host(), uri.port());
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;

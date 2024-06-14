@@ -59,10 +59,9 @@ FEATURE("HTTP Message")
           ASSERT(mud::http::method_e::GET,
                  ctx.req.method().value());
       });
-  DEFINE_THEN  ("The URI is http://www.example.com/index.html",
+  DEFINE_THEN  ("The URI is /index.html",
       [](context& ctx) {
-          ASSERT("http://www.example.com/index.html",
-                 ctx.req.uri().value());
+          ASSERT("/index.html", ctx.req.uri().value().path());
       });
   DEFINE_THEN ("The version is HTTP/1.0",
       [](context& ctx) {
@@ -169,7 +168,7 @@ FEATURE("HTTP Message")
     WHEN ("A Date field is written",
         [](context& ctx) {
             ctx.req.method(mud::http::method_e::GET);
-            ctx.req.uri("http://www.example.com/index.html");
+            ctx.req.uri("/index.html");
             ctx.req.version(mud::http::version_e::HTTP10);
             ctx.req.field<mud::http::date>(
                     std::chrono::system_clock::from_time_t(1641200870));
@@ -179,7 +178,7 @@ FEATURE("HTTP Message")
         [](context& ctx) {
             std::string result = ctx.ostr.str();
             ASSERT(std::string(
-                       "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                       "GET /index.html HTTP/1.0\r\n"
                        "Date: Mon, 03 Jan 2022 09:07:50 GMT\r\n"
                        "\r\n"),
                    result);
@@ -190,7 +189,7 @@ FEATURE("HTTP Message")
         [](context& ctx) {
             ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
-                "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                "GET /index.html HTTP/1.0\r\n"
                 "My-Custom-Field: Hello world\r\n"
                 "\r\n");
         })
@@ -208,7 +207,7 @@ FEATURE("HTTP Message")
     WHEN ("An extension header field is written",
         [](context& ctx) {
             ctx.req.method(mud::http::method_e::GET);
-            ctx.req.uri("http://www.example.com/index.html");
+            ctx.req.uri("/index.html");
             ctx.req.version(mud::http::version_e::HTTP10);
             mud::http::field_ext ext("My-Custom-Field");
             ext.value("Hello World");
@@ -219,7 +218,7 @@ FEATURE("HTTP Message")
         [](context& ctx) {
             std::string result = ctx.ostr.str();
             ASSERT(std::string(
-                       "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                       "GET /index.html HTTP/1.0\r\n"
                        "My-Custom-Field: Hello World\r\n"
                        "\r\n"),
                    result);
@@ -280,7 +279,7 @@ FEATURE("HTTP Message")
         [](context& ctx) {
             ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
-                "GET http://www.example.com/index.html HTTP/1.0\r\n"
+                "GET /index.html HTTP/1.0\r\n"
                 "cOnTeNt-lEnGtH: 0\r\n"
                 "\r\n");
         })

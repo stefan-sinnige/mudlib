@@ -9,7 +9,8 @@ mudcore_test_SOURCES = \
     poly_map_test.cpp \
     poly_vector_test.cpp \
     select_signal_test.cpp \
-    task_test.cpp
+    task_test.cpp \
+    uri_test.cpp
 
 mudcore_test_CPPFLAGS = \
     -I$(srcdir)/../include \

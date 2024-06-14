@@ -8,6 +8,7 @@
 #include <map>
 #include <mud/core/optional.h>
 #include <mud/core/poly_vector.h>
+#include <mud/core/uri.h>
 #include <mud/http/ns.h>
 #include <stdexcept>
 #include <string>
@@ -43,10 +44,11 @@ public:
         USER_AGENT,        /**< The User-Agent field */
         WWW_AUTHENTICATE,  /**< The WWW-Auh=thenticate field */
         /* HTTP 1.1 */
-        CONNECTION, /**< The Connection field */
-        TRANSFER_ENCODING,
+        CONNECTION,        /**< The Connection field */
+        HOST,              /**< The Host field */
+        TRANSFER_ENCODING, /**< The Transfer-Encoding field */
         /* HTTP Extensions for unrecognised fields */
-        EXTENSION = -1 /**< An extension field */
+        EXTENSION = -1     /**< An extension field */
     };
 
     /**
@@ -436,10 +438,10 @@ std::istream&
 operator>>(std::istream&, method&);
 
 /**
- * The class describing an HTTP uri field.
+ * The class describing a relative HTTP uri field.
  */
 extern const char _HTTP_URI[];
-typedef field<(base_field::field)-10002, std::string, _HTTP_URI> uri;
+typedef field<(base_field::field)-10002, mud::core::uri, _HTTP_URI> uri;
 std::ostream&
 operator<<(std::ostream&, const uri&);
 std::istream&
@@ -562,6 +564,17 @@ std::ostream&
 operator<<(std::ostream&, const date&);
 std::istream&
 operator>>(std::istream&, date&);
+
+/**
+ * The class describing an HTTP Host field.
+ */
+extern const char _HTTP_HOST[];
+typedef field<base_field::field::HOST, std::string, _HTTP_HOST>
+    host;
+std::ostream&
+operator<<(std::ostream&, const host&);
+std::istream&
+operator>>(std::istream&, host&);
 
 /**
  * The class describing an HTTP Transfer-Encoding field.

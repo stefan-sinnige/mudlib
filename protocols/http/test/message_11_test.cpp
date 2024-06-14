@@ -60,15 +60,19 @@ FEATURE("HTTP/1.1 Message")
           ASSERT(mud::http::method_e::GET,
                  ctx.req.method().value());
       });
-  DEFINE_THEN  ("The URI is http://www.example.com/index.html",
+  DEFINE_THEN  ("The URI is /index.html",
       [](context& ctx) {
-          ASSERT("http://www.example.com/index.html",
-                 ctx.req.uri().value());
+          ASSERT("/index.html", ctx.req.uri().value().path());
       });
   DEFINE_THEN ("The version is HTTP/1.1",
       [](context& ctx) {
           ASSERT(mud::http::version_e::HTTP11, 
                  ctx.msg->version().value());
+      })
+  DEFINE_THEN ("The Host field is 127.0.0.1",
+      [](context& ctx) {
+          ASSERT("127.0.0.1",
+                 ctx.msg->field<mud::http::host>().value());
       })
   DEFINE_THEN ("The Status Code is 200",
       [](context& ctx) {
@@ -91,13 +95,15 @@ FEATURE("HTTP/1.1 Message")
         [](context& ctx) {
             ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
-                "GET http://www.example.com/index.html HTTP/1.1\r\n"
+                "GET /index.html HTTP/1.1\r\n"
+                "Host: 127.0.0.1\r\n"
                 "\r\n");
         })
     WHEN ("The message is read")
     THEN ("The method is GET")
-     AND ("The URI is http://www.example.com/index.html")
+     AND ("The URI is /index.html")
      AND ("The version is HTTP/1.1")
+     AND ("The Host field is 127.0.0.1")
 
   SCENARIO("Writing Minimal Request")
     GIVEN("An HTTP Message")
@@ -105,14 +111,16 @@ FEATURE("HTTP/1.1 Message")
         [](context& ctx) {
             ctx.req.version(mud::http::version_e::HTTP11);
             ctx.req.method(mud::http::method_e::GET);
-            ctx.req.uri(mud::http::uri("http://www.example.com/index.html"));
+            ctx.req.uri("/index.html");
+            ctx.req.field<mud::http::host>("127.0.0.1");
             ctx.ostr << ctx.req;
         })
     THEN ("The message is formatted correctly",
         [](context& ctx) {
             std::string result = ctx.ostr.str();
             ASSERT(std::string(
-                       "GET http://www.example.com/index.html HTTP/1.1\r\n"
+                       "GET /index.html HTTP/1.1\r\n"
+                       "Host: 127.0.0.1\r\n"
                        "\r\n"),
                    result);
         })
@@ -156,7 +164,7 @@ FEATURE("HTTP/1.1 Message")
         [](context& ctx) {
             ctx.msg = &ctx.req;
             ctx.istr = std::istringstream(
-                "GET http://www.example.com/index.html HTTP/1.1\r\n"
+                "GET /index.html HTTP/1.1\r\n"
                 "Content-Length: 11\r\n"
                 "\r\n"
                 "Hello World");
@@ -187,7 +195,7 @@ FEATURE("HTTP/1.1 Message")
     WHEN ("An Entity-Body is written",
         [](context& ctx) {
             ctx.req.method(mud::http::method_e::GET);
-            ctx.req.uri("http://www.example.com/index.html");
+            ctx.req.uri("/index.html");
             ctx.req.version(mud::http::version_e::HTTP11);
             ctx.req.field<mud::http::content_length>(11);
             ctx.req.entity_body("Hello World");
@@ -201,7 +209,7 @@ FEATURE("HTTP/1.1 Message")
         [](context& ctx) {
             std::string result = ctx.ostr.str();
             ASSERT(std::string(
-                       "GET http://www.example.com/index.html HTTP/1.1\r\n"
+                       "GET /index.html HTTP/1.1\r\n"
                        "Content-Length: 11\r\n"
                        "\r\n"
                        "Hello World"),

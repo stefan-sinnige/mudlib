@@ -4,7 +4,8 @@ lib_LTLIBRARIES = libmudcore.la
 
 libmudcore_la_SOURCES = \
     src/endian.cpp \
-    src/handle.cpp
+    src/handle.cpp \
+    src/uri.cpp
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
@@ -18,7 +19,8 @@ includemudcore_HEADERS = \
     include/mud/core/optional.h \
     include/mud/core/poly_map.h \
     include/mud/core/poly_vector.h \
-    include/mud/core/task.h
+    include/mud/core/task.h \
+    include/mud/core/uri.h
 
 libmudcore_la_CPPFLAGS = \
     -I$(srcdir)/include \
