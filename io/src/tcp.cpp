@@ -17,6 +17,7 @@ typedef short sa_family_t;
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"
 #include "mud/io/tcp.h"
+#include "mud/event/event_loop.h"
 
 using namespace std::placeholders;
 
@@ -270,9 +271,11 @@ tcp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
-tcp::socket::socket(socket&& rhs) : ip::socket(std::move(rhs)), _impl(nullptr)
+tcp::socket::socket(socket&& rhs) : ip::socket(std::move(rhs))
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
+    _impl->source_endpoint() = rhs._impl->source_endpoint();
+    _impl->destination_endpoint() = rhs._impl->destination_endpoint();
 }
 
 tcp::socket&
@@ -281,6 +284,8 @@ tcp::socket::operator=(tcp::socket&& rhs)
     if (this != &rhs) {
         ip::socket::operator=(std::move(rhs));
         _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
+        _impl->source_endpoint() = rhs._impl->source_endpoint();
+        _impl->destination_endpoint() = rhs._impl->destination_endpoint();
     }
     return *this;
 }
@@ -325,9 +330,12 @@ tcp::socket::destination_endpoint(const tcp::endpoint& endpoint)
 
 /** The acceptor */
 
-tcp::acceptor::acceptor(mud::event::event_loop& event_loop)
-  : _connected(false), _event_loop(event_loop), _on_accept_func(nullptr)
+tcp::acceptor::acceptor()
+  : _connected(false)
 {
+    _accept_impulse = std::make_shared<
+        mud::core::impulse<mud::io::tcp::socket&>>();
+
     /* Set-up socket options to
      *   - reuse address to eliminate TIME_WAIT conditions.
      *   - enable non-blocking socket I/O */
@@ -342,7 +350,7 @@ tcp::acceptor::operator=(acceptor&& rhs)
         _connected = rhs._connected;
         rhs._connected = false;
         _listen = std::move(rhs._listen);
-        _on_accept_func = rhs._on_accept_func;
+        _accept_impulse = rhs._accept_impulse;
     }
     return *this;
 }
@@ -384,10 +392,8 @@ tcp::acceptor::open(const endpoint& endpoint)
     }
     _connected = true;
 
-    /* Register the event handler to be invoked when a client connects */
-    _event_loop.register_handler(mud::event::event(
-        _listen.handle(), mud::event::event::signal_type::READING,
-        std::bind(&acceptor::on_ready_accept, this)));
+    /* Register the acceptor to the event loop */
+    mud::event::event_loop::global().register_handler(event());
 }
 
 void
@@ -395,8 +401,8 @@ tcp::acceptor::close()
 {
     _connected = false;
     if (_listen.handle() != nullptr) {
-        /* Deregister the listening socket from the event-loop */
-        _event_loop.deregister_handler(mud::event::event(_listen.handle()));
+        /* Deregister the acceptor from the event-loop */
+        mud::event::event_loop::global().deregister_handler(event());
         _listen.close();
     }
 }
@@ -407,10 +413,18 @@ tcp::acceptor::connected() const
     return _connected;
 }
 
-void
-tcp::acceptor::on_accept(on_accept_func func)
+mud::event::event
+tcp::acceptor::event()
 {
-    _on_accept_func = func;
+    return mud::event::event(
+        _listen.handle(), mud::event::event::signal_type::READING,
+        std::bind(&acceptor::on_ready_accept, this));
+}
+
+tcp::acceptor::accept_impulse_type
+tcp::acceptor::accept_impulse()
+{
+    return _accept_impulse;
 }
 
 mud::event::event::return_type
@@ -450,10 +464,9 @@ tcp::acceptor::on_ready_accept()
     tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
     client.destination_endpoint(remote_endpoint);
 
-    // Call the registered function handler.
-    if (_on_accept_func != nullptr) {
-        _on_accept_func(std::move(client));
-    }
+    // Call the impulse (one of the callers may take owenership with a
+    // std::move).
+    _accept_impulse->pulse(client);
 
     // Keep on accepting new connections. while the socket is still open
     if (_listen.handle() != nullptr) {
@@ -465,9 +478,11 @@ tcp::acceptor::on_ready_accept()
 
 /** The connector */
 
-tcp::connector::connector(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop), _on_connect_func(nullptr)
+tcp::connector::connector()
 {
+    _connect_impulse = std::make_shared<
+        mud::core::impulse<mud::io::tcp::socket&>>();
+
     /* Set-up socket option to enable non-blocking I/O */
     _socket.option<bool, mud::io::ip::nonblocking>(true);
 }
@@ -477,7 +492,7 @@ tcp::connector::operator=(connector&& rhs)
 {
     if (&rhs != this) {
         _socket = std::move(rhs._socket);
-        _on_connect_func = rhs._on_connect_func;
+        _connect_impulse = rhs._connect_impulse;
     }
     return *this;
 }
@@ -510,24 +525,29 @@ tcp::connector::open(const endpoint& endpoint)
 #endif
     }
 
-    /* Register the event handler to be invoked when a connection has been
-     * established. */
-    _event_loop.register_handler(mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::WRITING,
-        std::bind(&connector::on_ready_connect, this)));
+    /* Register the connector to the event loop */
+    mud::event::event_loop::global().register_handler(event());
 }
 
-void
-tcp::connector::on_connect(on_connect_func func)
+mud::event::event
+tcp::connector::event()
 {
-    _on_connect_func = func;
+    return mud::event::event(
+        _socket.handle(), mud::event::event::signal_type::WRITING,
+        std::bind(&connector::on_ready_connect, this));
+}
+
+tcp::connector::connect_impulse_type
+tcp::connector::connect_impulse()
+{
+    return _connect_impulse;
 }
 
 mud::event::event::return_type
 tcp::connector::on_ready_connect()
 {
-    /* Deregister the connecting socket from the event-loop */
-    _event_loop.deregister_handler(mud::event::event(_socket.handle()));
+    /* Deregister the connector from the event-loop */
+    mud::event::event_loop::global().deregister_handler(event());
 
     // Establish the source and destination endpoint details
     struct sockaddr_in addr;
@@ -547,10 +567,9 @@ tcp::connector::on_ready_connect()
     tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
     _socket.destination_endpoint(remote_endpoint);
 
-    // Call the registered function handler.
-    if (_on_connect_func != nullptr) {
-        _on_connect_func(std::move(_socket));
-    }
+    // Call the impulse (one of the callers may take owenership with a
+    // std::move).
+    _connect_impulse->pulse(_socket);
 
     // Done
     return mud::event::event::return_type::REMOVE;
@@ -558,20 +577,14 @@ tcp::connector::on_ready_connect()
 
 /** The communicator */
 
-tcp::communicator::communicator(mud::event::event_loop& event_loop)
-  : _connected(false), _event_loop(event_loop), _on_receive_func(nullptr)
+tcp::communicator::communicator()
+  : _connected(false)
 {}
 
-tcp::communicator&
-tcp::communicator::operator=(communicator&& rhs)
+tcp::communicator::communicator(communicator&& other)
+    : _connected(other._connected)
+    , _socket(std::move(other._socket))
 {
-    if (&rhs != this) {
-        _connected = rhs._connected;
-        rhs._connected = false;
-        _socket = std::move(rhs._socket);
-        _on_receive_func = rhs._on_receive_func;
-    }
-    return *this;
 }
 
 tcp::communicator::~communicator()
@@ -579,14 +592,25 @@ tcp::communicator::~communicator()
     close();
 }
 
+tcp::communicator&
+tcp::communicator::operator=(communicator&& other)
+{
+    _connected = other._connected;
+    _socket = std::move(other._socket);
+    return *this;
+}
+
 void
 tcp::communicator::open(tcp::socket&& socket)
 {
     _connected = true;
     _socket = std::move(socket);
-    _event_loop.register_handler(mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::READING,
-        std::bind(&communicator::on_ready_receive, this)));
+
+    /* Call the impulse */
+    connect_impulse()->pulse(_socket);
+
+    /* Register the communicator to the event loop */
+    mud::event::event_loop::global().register_handler(event());
 }
 
 void
@@ -594,8 +618,12 @@ tcp::communicator::close()
 {
     _connected = false;
     if (_socket.handle() != nullptr) {
-        _event_loop.deregister_handler(mud::event::event(_socket.handle()));
+        /* Deregister the communicator to the event loop */
+        mud::event::event_loop::global().deregister_handler(event());
         _socket.close();
+
+        /* Call the impulse */
+        disconnect_impulse()->pulse(_socket);
     }
 }
 
@@ -617,19 +645,34 @@ tcp::communicator::istr()
     return _socket.istr();
 }
 
-void
-tcp::communicator::on_receive(on_receive_func func)
+tcp::socket&
+tcp::communicator::device()
 {
-    _on_receive_func = func;
+    return _socket;
+}
+
+mud::event::event
+tcp::communicator::event()
+{
+    return mud::event::event(
+        _socket.handle(), mud::event::event::signal_type::READING,
+        std::bind(&communicator::on_ready_receive, this));
 }
 
 mud::event::event::return_type
 tcp::communicator::on_ready_receive()
 {
-    // Call the registered function handler.
-    if (_on_receive_func != nullptr) {
-        _on_receive_func();
+    // If no data present, assume that the connection is closed.
+    if (istr().get() == std::char_traits<char>::eof()) {
+        close();
+        return mud::event::event::return_type::REMOVE;
     }
+    else {
+        istr().unget();
+    }
+
+    // Call the impulse.
+    receive_impulse()->pulse(_socket);
 
     // Continue receiving while the socket is still open
     if (_socket.handle() != nullptr) {

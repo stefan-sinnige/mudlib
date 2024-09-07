@@ -1271,6 +1271,12 @@ public:
     {                                                                        \
     public:
 
+#define CONTEXT_1(BASE)                                                      \
+    namespace /* unnamed */ {                                                \
+    class context : public mud::test::_base_context, public BASE             \
+    {                                                                        \
+    public:
+
 #define END_CONTEXT()                                                        \
     };
 

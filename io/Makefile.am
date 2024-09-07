@@ -7,9 +7,9 @@ libmudio_la_SOURCES = \
     src/pipe.cpp \
     src/streambuf.cpp \
     src/socket.cpp \
-    src/posix/ip.cpp \
-    src/posix/tcp.cpp \
-    src/posix/udp.cpp
+    src/ip.cpp \
+    src/tcp.cpp \
+    src/udp.cpp
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
@@ -28,7 +28,8 @@ includemudio_HEADERS = \
 libmudio_la_CPPFLAGS = \
     -I$(srcdir)/include \
 	-I$(srcdir)/../event/include \
-	-I$(srcdir)/../core/include
+	-I$(srcdir)/../core/include \
+	-I$(srcdir)/../protocols/include
 
 # TODO: For windows add
 # libmudio_la_LIBADD = -lws2_32

@@ -3,9 +3,12 @@
 
 #include <istream>
 #include <memory>
-#include <mud/event/event_loop.h>
 #include <mud/io/ip.h>
 #include <mud/io/ns.h>
+#include <mud/core/object.h>
+#include <mud/core/impulse.h>
+#include <mud/event/event.h>
+#include <mud/protocols/communicator.h>
 #include <ostream>
 #include <string>
 
@@ -35,8 +38,8 @@ namespace tcp {
 
         /**
          * @brief Constructor.
-         * @param address [in] The address of the endpoint.
-         * @param port [in] The TCP port.
+         * @param address The address of the endpoint.
+         * @param port The TCP port.
          */
         endpoint(const mud::io::ip::address& address, uint16_t port);
 
@@ -86,9 +89,9 @@ namespace tcp {
 
         /**
          * @brief Construct a specialised socket.
-         * @param domain [in] The communication domain.
-         * @param type [in] The socket type.
-         * @param protocol [in] The protocol type.
+         * @param domain The communication domain.
+         * @param type The socket type.
+         * @param protocol The protocol type.
          */
         socket(mud::io::basic_socket::domain_t domain,
                mud::io::basic_socket::type_t type,
@@ -212,19 +215,20 @@ namespace tcp {
      * while passing the client socket ownership. Continues listening to
      * other incoming connection requests until destructed.
      */
-
-    class MUDLIB_IO_API acceptor
+    class MUDLIB_IO_API acceptor : public mud::core::object
     {
     public:
-        /** Function definition for the @c on_accept handler. */
-        typedef std::function<void(socket&&)> on_accept_func;
+        /**
+         * @brief The type of the @c impulse when an new connection has been
+         * accepted.
+         */
+        typedef std::shared_ptr<mud::core::impulse<mud::io::tcp::socket&>>
+                accept_impulse_type;
 
         /**
          * Constructor.
-         * @param event_loop [in] the event-loop to register the socket to.
          */
-        acceptor(mud::event::event_loop& event_loop =
-                     mud::event::event_loop::global());
+        acceptor();
 
         /**
          * @brief Move constructor.
@@ -243,7 +247,7 @@ namespace tcp {
 
         /**
          * @brief Open the socket connection to start listening.
-         * @param endpoint [in] The end-point to listen on.
+         * @param endpoint The end-point to listen on.
          * @throw std::system_error
          */
         void open(const endpoint& endpoint);
@@ -259,10 +263,23 @@ namespace tcp {
         bool connected() const;
 
         /**
-         * @brief Register a handler when a connection has been accepted.
-         * @param func [in] The handler function.
+         * @brief Return the event that should be actioned when the @c Device is
+         * being signalled for an accepted connection.
+         *
+         * @details
+         * The event that is returned is to be used by an @c event_loop. The
+         * @c acceptor will invoke the @c accept_impulse when handling the
+         * event and to notify any attached object of the accepted connection.
+         *
+         * @return The event.
          */
-        void on_accept(on_accept_func func);
+        mud::event::event event();
+
+        /**
+         * @brief The @c impulse when a new connection has been accepted.
+         * @return The impulse.
+         */
+        accept_impulse_type accept_impulse();
 
         /**
          * Non-copyable.
@@ -280,11 +297,8 @@ namespace tcp {
         /** The socket used for listening for incoming connections. */
         tcp::socket _listen;
 
-        /** The event-loop. */
-        mud::event::event_loop& _event_loop;
-
-        /** The on_accept handler. */
-        on_accept_func _on_accept_func;
+        /** The accept impulse. */
+        accept_impulse_type _accept_impulse;
     };
 
     /**
@@ -295,19 +309,20 @@ namespace tcp {
      * event-loop invokes the @c on_connect handler, while passing the
      * ownership.
      */
-
-    class MUDLIB_IO_API connector
+    class MUDLIB_IO_API connector: public mud::core::object
     {
     public:
-        /** Function definition for the @c on_connect handler. */
-        typedef std::function<void(socket&&)> on_connect_func;
+        /**
+         * @brief The type of the @c impulse when an connection has been
+         * established.
+         */
+        typedef std::shared_ptr<mud::core::impulse<mud::io::tcp::socket&>>
+                connect_impulse_type;
 
         /**
          * Constructor.
-         * @param event_loop [in] the event-loop to register the socket to.
          */
-        connector(mud::event::event_loop& event_loop =
-                      mud::event::event_loop::global());
+        connector();
 
         /**
          * @brief Move constructor.
@@ -326,16 +341,30 @@ namespace tcp {
 
         /**
          * @brief Open the socket connection to initiate a connection request.
-         * @param endpoint [in] The end-point to connect to.
+         * @param endpoint The end-point to connect to.
          * @throw std::system_error
          */
         void open(const endpoint& endpoint);
 
         /**
-         * @brief Register a handler when a connection has been made.
-         * @param func [in] The handler function.
+         * @brief Return the event that should be actioned when the @c Device is
+         * being signalled that a connection has been established.
+         *
+         * @details
+         * The event that is returned is to be used by an @c event_loop. The
+         * @c connector will invoke the @c connect_impulse when handling the
+         * event and to notify any attached object of the established
+         * connection.
+         *
+         * @return The event.
          */
-        void on_connect(on_connect_func func);
+        mud::event::event event();
+
+        /**
+         * @brief The @c impulse when a new connection has been connected.
+         * @return The impulse.
+         */
+        connect_impulse_type connect_impulse();
 
         /**
          * Non-copyable.
@@ -350,59 +379,69 @@ namespace tcp {
         /** The socket to use for accepting connections. */
         tcp::socket _socket;
 
-        /** The event-loop. */
-        mud::event::event_loop& _event_loop;
-
-        /** The on_connect handler. */
-        on_connect_func _on_connect_func;
+        /** The connect impulse. */
+        connect_impulse_type _connect_impulse;
     };
 
     /**
      * @brief Controller for communicating TCP connections.
      *
-     * The event controller class for communicating with a connected socket. It
-     * uses the event-loop to be notified of any incoming messages.
+     * @details
+     * After a TCP connection has been established (either on the server side
+     * through the @c acceptor or or the client side through the @c connector
+     * controllers), the communication can be set-up using the communication
+     * controller class. This allows the TCP socket to trigger the communication
+     * layer whenever it detects that it has received a message from the peer
+     * connection.
+     *
+     * This @c end_communicator does not perform any protocol specific flow
+     * control  semantics, but that can be implemented through the protocol
+     * communication layering.
+     *
+     * @see The @c protocols library.
      */
-
-    class MUDLIB_IO_API communicator
+    class MUDLIB_IO_API communicator:
+        public mud::protocols::end_communicator<socket>
     {
     public:
-        /** Function definition for the @c on_receive handler. */
-        typedef std::function<void()> on_receive_func;
-
         /**
-         * Constructor.
-         * @param event_loop [in] The event-loop to register the socket to.
+         * @brief Constructor.
          */
-        communicator(mud::event::event_loop& event_loop =
-                         mud::event::event_loop::global());
+        communicator();
 
         /**
-         * @brief Move constructor.
+         * @brief Construct a communicator while moving the contents from
+         * another instance.
+         *
+         * @param other The communicator to move from.
          */
-        communicator(communicator&& rhs) = default;
+        communicator(communicator&&);
 
         /**
-         * @brief Move assignment.
+         * @brief Initialise a communicator while moving the contents from
+         * another instance.
+         *
+         * @param other The communicator to move from.
+         * @return Reference to itself.
          */
         communicator& operator=(communicator&&);
 
         /**
-         * Destructor. Closes the communication.
+         * @brief Destructor. Closes the communication.
          */
         virtual ~communicator();
 
         /**
          * @brief Open the socket connection to start communication..
-         * @param socket [in] The socket to use in communications.
+         * @param socket The socket to usen communications.
          * @throw std::system_error
          */
-        void open(socket&& socket);
+        void open(socket&& socket) override;
 
         /**
          * @brief Close the communication channel.
          */
-        void close();
+        void close() override;
 
         /**
          * @brief Return the connected state.
@@ -413,25 +452,38 @@ namespace tcp {
          * @brief Get the stream object to read from the socket.
          * @return The stream object.
          */
-        std::istream& istr();
+        std::istream& istr() override;
 
         /**
          * @brief Get the stream object to write to the socket.
          * @return The stream object.
          */
-        std::ostream& ostr();
+        std::ostream& ostr() override;
 
         /**
-         * @brief Register a handler when a message has been receiveed.
-         * @param func [in] The handler function.
+         * @brief Return the associated socket device.
+         *
+         * @details
+         * Return the associated socket device, but this is only relevant after
+         * the communicator has been opened.
+         *
+         * @return Return the socket device.
          */
-        void on_receive(on_receive_func func);
+        socket& device() override;
 
         /**
-         * Non-copyable.
+         * @brief Return the event that should be actioned when the @c Device is
+         * being signalled.
+         *
+         * @details
+         * The event that is returned is to be used by an @c event_loop to
+         * invoke the @c receive_impulse trigger on the communicator. Any
+         * layered communicator on a higher protocol layer will then be
+         * invoked as necessary, based on the message being received.
+         *
+         * @return The event.
          */
-        communicator(const communicator&) = delete;
-        communicator& operator=(const communicator&) = delete;
+        virtual mud::event::event event() override;
 
     private:
         /** Event handler when there is data available. */
@@ -442,12 +494,6 @@ namespace tcp {
 
         /** The socket used for communications. */
         tcp::socket _socket;
-
-        /** The event-loop. */
-        mud::event::event_loop& _event_loop;
-
-        /** The on_receive handler. */
-        on_receive_func _on_receive_func;
     };
 
 } // namespace tcp

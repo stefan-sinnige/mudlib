@@ -7,13 +7,14 @@ sample_tcp_server_CPPFLAGS = \
     -I$(srcdir)/../../../../core/include \
     -I$(srcdir)/../../../../event/include \
     -I$(srcdir)/../../../../io/include \
-	$(PTHREAD_CFLAGS)
+    -I$(srcdir)/../../../../protocols/include \
+    $(PTHREAD_CFLAGS)
 
 sample_tcp_server_LDADD = \
     $(srcdir)/../../../../core/libmudcore.la \
-    $(srcdir)/../../../../event/libmudevent.la\
+    $(srcdir)/../../../../event/libmudevent.la \
     $(srcdir)/../../../../io/libmudio.la \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+    $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 

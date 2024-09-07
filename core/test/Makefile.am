@@ -5,6 +5,7 @@ mudcore_test_SOURCES = \
     main.cpp \
     endian_test.cpp \
     handle_test.cpp \
+    notification_test.cpp \
     optional_test.cpp \
     poly_map_test.cpp \
     poly_vector_test.cpp \

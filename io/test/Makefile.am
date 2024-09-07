@@ -12,6 +12,7 @@ mudio_test_CPPFLAGS = \
 	-I$(srcdir)/../include \
 	-I$(srcdir)/../../event/include \
 	-I$(srcdir)/../../core/include \
+	-I$(srcdir)/../../protocols/include \
 	-I$(srcdir)/../../test/include \
 	$(PTHREAD_CFLAGS)
 

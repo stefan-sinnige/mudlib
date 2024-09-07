@@ -8,15 +8,16 @@ sample_http_server_CPPFLAGS = \
     -I$(srcdir)/../../../../core/include \
     -I$(srcdir)/../../../../event/include \
     -I$(srcdir)/../../../../io/include \
+    -I$(srcdir)/../../../../protocols/include \
     -I$(srcdir)/../../../../protocols/http/include \
-	$(PTHREAD_CFLAGS)
+    $(PTHREAD_CFLAGS)
 
 sample_http_server_LDADD = \
     $(srcdir)/../../../../core/libmudcore.la \
-    $(srcdir)/../../../../event/libmudevent.la\
+    $(srcdir)/../../../../event/libmudevent.la \
     $(srcdir)/../../../../io/libmudio.la \
     $(srcdir)/../../../../protocols/http/libmudhttp.la \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+    $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 

@@ -11,7 +11,7 @@ uint16_t port = 12345;
 // The client class
 // ===========================================================================
 
-class client
+class client: public mud::core::object
 {
 public:
     // Construction.
@@ -23,10 +23,10 @@ public:
 
 private:
     // The handler when connecting
-    void on_connect(mud::io::tcp::socket&&);
+    void on_connect(mud::io::tcp::socket&);
 
     // The handler when receiving
-    void on_receive();
+    void on_receive(mud::io::tcp::socket&);
 
     // The client socket
     mud::io::tcp::connector _connector;
@@ -35,9 +35,8 @@ private:
 
 client::client()
 {
-    _connector.on_connect(
-        std::bind(&client::on_connect, this, std::placeholders::_1));
-    _communicator.on_receive(std::bind(&client::on_receive, this));
+    _connector.connect_impulse()->attach(this, &client::on_connect);
+    _communicator.receive_impulse()->attach(this, &client::on_receive);
 }
 
 client::~client() {}
@@ -52,7 +51,7 @@ client::run(const std::string& host, uint16_t port)
 }
 
 void
-client::on_connect(mud::io::tcp::socket&& socket)
+client::on_connect(mud::io::tcp::socket& socket)
 {
     std::cout << "Connected ["
               << "local: " << socket.source_endpoint().address().str() << ":"
@@ -71,7 +70,7 @@ client::on_connect(mud::io::tcp::socket&& socket)
 }
 
 void
-client::on_receive()
+client::on_receive(mud::io::tcp::socket& /* unused */)
 {
     // Receive
     std::string msg;

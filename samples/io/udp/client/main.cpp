@@ -11,7 +11,7 @@ uint16_t port = 12345;
 // The client class
 // ===========================================================================
 
-class client
+class client : public mud::core::object
 {
 public:
     // Construction.
@@ -23,7 +23,7 @@ public:
 
 private:
     // The handler when receiving
-    void on_receive();
+    void on_receive(mud::io::udp::socket&);
 
     // The communication channel
     mud::io::udp::communicator _communicator;
@@ -32,7 +32,7 @@ private:
 client::client()
 {
     // Open the communication channel
-    _communicator.on_receive(std::bind(&client::on_receive, this));
+    _communicator.receive_impulse()->attach(this, &client::on_receive);
 }
 
 client::~client() {}
@@ -52,7 +52,7 @@ client::run(const std::string& host, uint16_t port)
 }
 
 void
-client::on_receive()
+client::on_receive(mud::io::udp::socket& /* unused */)
 {
     // Receive
     std::string msg;

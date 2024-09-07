@@ -3,9 +3,10 @@
 
 #include <istream>
 #include <memory>
-#include <mud/event/event_loop.h>
 #include <mud/io/ip.h>
 #include <mud/io/ns.h>
+#include <mud/event/event.h>
+#include <mud/protocols/communicator.h>
 #include <ostream>
 #include <string>
 
@@ -30,8 +31,8 @@ namespace udp {
 
         /**
          * @brief Constructor.
-         * @param address [in] The address of the endpoint.
-         * @param port [in] The UDP port.
+         * @param address The address of the endpoint.
+         * @param port The UDP port.
          */
         endpoint(const mud::io::ip::address& address, uint16_t port);
 
@@ -81,9 +82,9 @@ namespace udp {
 
         /**
          * @brief Construct a specialised socket.
-         * @param domain [in] The communication domain.
-         * @param type [in] The socket type.
-         * @param protocol [in] The protocol type.
+         * @param domain The communication domain.
+         * @param type The socket type.
+         * @param protocol The protocol type.
          */
         socket(mud::io::basic_socket::domain_t domain,
                mud::io::basic_socket::type_t type,
@@ -106,7 +107,7 @@ namespace udp {
 
         /**
          * @brief Bind the socket connection to a source (local) endpoint.
-         * @param endpoint [in] The source endpoint.
+         * @param endpoint The source endpoint.
          * @throw std::system_error
          */
         void bind(const endpoint& endpoint);
@@ -127,7 +128,7 @@ namespace udp {
 
         /**
          * @brief Get the stream object to write to the socket.
-         * @param endpont [in] The endpoint to write to.
+         * @param endpont The endpoint to write to.
          * @return The stream object.
          */
         std::ostream& ostr(const endpoint& endpoint);
@@ -194,30 +195,43 @@ namespace udp {
     /**
      * @brief Controller for communicating UDP connections.
      *
+     * @details
+     * After a UDP connection has been established, the communication can be
+     * set-up using the communication controller class. This allows the UDP
+     * socket to trigger the communication layer whenever it detects that it
+     * has received a message from the peer connection.
+     *
+     * This @c end_communicator does not perform any protocol specific flow
+     * control  semantics, but that can be implemented through the protocol
+     * communication layering.
+     *
+     * @see The @c protocols library.
      * The event controller class for communicating with a connected socket. It
      * used the event-loop to be notified of any incoming messages.
      */
-
-    class MUDLIB_IO_API communicator
+    class MUDLIB_IO_API communicator:
+        public mud::protocols::end_communicator<socket>
     {
     public:
-        /** Function definition for the @c on_receive handler. */
-        typedef std::function<void()> on_receive_func;
-
         /**
          * Constructor.
-         * @param event_loop [in] The event-loop to register the socket to.
          */
-        communicator(mud::event::event_loop& event_loop =
-                         mud::event::event_loop::global());
+        communicator();
 
         /**
-         * @brief Move constructor.
+         * @brief Construct a communicator while moving the contents from
+         * another instance.
+         *
+         * @param other The communicator to move from.
          */
-        communicator(communicator&& rhs) = default;
+        communicator(communicator&&);
 
         /**
-         * @brief Move assignment.
+         * @brief Initialise a communicator while moving the contents from
+         * another instance.
+         *
+         * @param other The communicator to move from.
+         * @return Reference to itself.
          */
         communicator& operator=(communicator&&);
 
@@ -228,15 +242,15 @@ namespace udp {
 
         /**
          * @brief Open the socket connection to start communication..
-         * @param socket [in] The socket to use in communications.
+         * @param socket The socket to use in communications.
          * @throw std::system_error
          */
-        void open(socket&& socket);
+        void open(socket&& socket) override;
 
         /**
          * @brief Close the communication channel.
          */
-        void close();
+        void close() override;
 
         /**
          * @brief Return the connected state.
@@ -247,7 +261,7 @@ namespace udp {
          * @brief Get the stream object to read from the socket.
          * @return The stream object.
          */
-        std::istream& istr();
+        std::istream& istr() override;
 
         /**
          * @brief Get the stream object to write to the socket. The socket has
@@ -255,14 +269,39 @@ namespace udp {
          * destination address matches that peer.
          * @return The stream object.
          */
-        std::ostream& ostr();
+        std::ostream& ostr() override;
 
         /**
          * @brief Get the stream object to write to the socket.
-         * @param endpont [in] The endpoint to write to.
+         * @param endpont The endpoint to write to.
          * @return The stream object.
          */
         std::ostream& ostr(const endpoint& endpoint);
+
+        /**
+         * @brief Return the associated socket device.
+         *
+         * @details
+         * Return the associated socket device, but this is only relevant after
+         * the communicator has been opened.
+         *
+         * @return Return the socket device.
+         */
+        socket& device() override;
+
+        /**
+         * @brief Return the event that should be actioned when the @c Device is
+         * being signalled.
+         *
+         * @details
+         * The event that is returned is to be used by an @c event_loop to
+         * invoke the @c receive_impulse trigger on the communicator. Any
+         * layered communicator on a higher protocol layer will then be
+         * invoked as necessary, based on the message being received.
+         *
+         * @return The event.
+         */
+        virtual mud::event::event event() override;
 
         /**
          * @brief Get the source endpoint of the socket connection.
@@ -277,18 +316,6 @@ namespace udp {
          */
         const endpoint& destination_endpoint() const;
 
-        /**
-         * @brief Register a handler when a message has been receiveed.
-         * @param func [in] The handler function.
-         */
-        void on_receive(on_receive_func func);
-
-        /**
-         * Non-copyable.
-         */
-        communicator(const communicator&) = delete;
-        communicator& operator=(const communicator&) = delete;
-
     private:
         /** Event handler when there is data available. */
         mud::event::event::return_type on_ready_receive();
@@ -298,12 +325,6 @@ namespace udp {
 
         /** The socket used for communications. */
         udp::socket _socket;
-
-        /** The event-loop. */
-        mud::event::event_loop& _event_loop;
-
-        /** The on_receive handler. */
-        on_receive_func _on_receive_func;
     };
 
 } // namespace udp

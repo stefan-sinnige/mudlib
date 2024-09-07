@@ -3,6 +3,7 @@
 #include "mud/http/server.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
+#include "mock.h"
 #include <condition_variable>
 #include <sstream>
 #include <string>
@@ -37,10 +38,10 @@ CONTEXT()
     mud::io::tcp::endpoint endpoint;
 
     /* The HTTP server */
-    mud::http::server server;
+    mock::server server;
 
     /* An HTTP client */
-    mud::http::client client;
+    mock::client client;
 
     /* The request */
     mud::http::request req;

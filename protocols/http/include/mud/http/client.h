@@ -20,10 +20,8 @@ class MUDLIB_HTTP_API client
 public:
     /**
      * @brief Constructor of an new HTTP client.
-     * @param[in] event_loop The event-loop to register the TCP socket to.
      */
-    client(
-        mud::event::event_loop& event_loop = mud::event::event_loop::global());
+    client();
 
     /**
      * @brief Destructor.
@@ -47,7 +45,6 @@ public:
 
 private:
     /** Implementation */
-    class communicator;
     class impl;
     struct impl_deleter
     {

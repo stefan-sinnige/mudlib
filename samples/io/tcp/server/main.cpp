@@ -16,7 +16,7 @@ std::list<client*> clients;
 // The client class
 // ===========================================================================
 
-class client
+class client : public mud::core::object
 {
 public:
     // Construction
@@ -29,7 +29,7 @@ public:
 
 private:
     // The handler when receiving data
-    void on_receive();
+    void on_receive(mud::io::tcp::socket&);
 
     // The client communication channel
     mud::io::tcp::communicator _communicator;
@@ -41,14 +41,14 @@ private:
 client::client(mud::io::tcp::socket&& socket) : _connected(true)
 {
     // Open the communication channel
-    _communicator.on_receive(std::bind(&client::on_receive, this));
+    _communicator.receive_impulse()->attach(this, &client::on_receive);
     _communicator.open(std::move(socket));
 }
 
 client::~client() {}
 
 void
-client::on_receive()
+client::on_receive(mud::io::tcp::socket& /* unused */)
 {
     // Receive
     std::string msg;
@@ -72,7 +72,7 @@ client::on_receive()
 // The server class
 // ===========================================================================
 
-class server
+class server: public mud::core::object
 {
 public:
     // Construction.
@@ -84,7 +84,7 @@ public:
 
 private:
     // The handler when accepting a new connection.
-    void on_accept(mud::io::tcp::socket&&);
+    void on_accept(mud::io::tcp::socket&);
 
     // The acceptor.
     mud::io::tcp::acceptor _acceptor;
@@ -92,8 +92,7 @@ private:
 
 server::server()
 {
-    _acceptor.on_accept(
-        std::bind(&server::on_accept, this, std::placeholders::_1));
+    _acceptor.accept_impulse()->attach(this, &server::on_accept);
 }
 
 server::~server() {}
@@ -108,7 +107,7 @@ server::run(const std::string& host, uint16_t port)
 }
 
 void
-server::on_accept(mud::io::tcp::socket&& socket)
+server::on_accept(mud::io::tcp::socket& socket)
 {
     // Accepting the client that is currently waiting.
     std::cout << "Connected ["

@@ -12,7 +12,7 @@ class server;
 // The server class
 // ===========================================================================
 
-class server
+class server : public mud::core::object
 {
 public:
     // Construction.
@@ -24,7 +24,7 @@ public:
 
 private:
     // The handler when data is ready to be received.
-    void on_receive();
+    void on_receive(mud::io::udp::socket&);
 
     // The communicator
     mud::io::udp::communicator _communicator;
@@ -33,7 +33,7 @@ private:
 server::server()
 {
     // Open the communication channel
-    _communicator.on_receive(std::bind(&server::on_receive, this));
+    _communicator.receive_impulse()->attach(this, &server::on_receive);
 }
 
 server::~server() {}
@@ -51,7 +51,7 @@ server::run(const std::string& host, uint16_t port)
 }
 
 void
-server::on_receive()
+server::on_receive(mud::io::udp::socket& /* unused */)
 {
     // Receive
     std::string msg;

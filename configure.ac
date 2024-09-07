@@ -56,8 +56,9 @@ AC_CONFIG_FILES([
     html/Makefile html/test/Makefile
     html/src/entities_scanner_generator/Makefile
     io/Makefile io/test/Makefile
-    protocols/Makefile
+    protocols/Makefile protocols/test/Makefile
     protocols/http/Makefile protocols/http/test/Makefile
+    protocols/tls/Makefile protocols/tls/test/Makefile
     samples/Makefile
     samples/io/Makefile
     samples/io/tcp/Makefile

@@ -8,11 +8,13 @@ mudhttp_test_SOURCES = \
     message_11_test.cpp \
     http_test.cpp \
     http_10_test.cpp \
-    http_11_test.cpp
+    http_11_test.cpp \
+	mock.cpp
 
 mudhttp_test_CPPFLAGS = \
     -UVERSION \
 	-I$(srcdir)/../include \
+	-I$(srcdir)/../../include \
 	-I$(srcdir)/../../../io/include \
 	-I$(srcdir)/../../../event/include \
 	-I$(srcdir)/../../../core/include \

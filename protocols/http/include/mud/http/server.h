@@ -5,6 +5,7 @@
 #include <mud/http/ns.h>
 #include <mud/http/request.h>
 #include <mud/http/response.h>
+#include <mud/core/object.h>
 #include <mud/io/tcp.h>
 
 BEGIN_MUDLIB_HTTP_NS
@@ -15,20 +16,13 @@ BEGIN_MUDLIB_HTTP_NS
  * This conforms with
  *    RFC 1945: Section 4, 5 and 6
  */
-class MUDLIB_HTTP_API server
+class MUDLIB_HTTP_API server : public mud::core::object
 {
 public:
-    /** Function definition for the @c on_request handler. The request message
-     * is passed in and the response is expected to be returned. */
-    typedef std::function<mud::http::response(const mud::http::request&)>
-        on_request_func;
-
     /**
      * @brief Constructor of an new HTTP server.
-     * @param[in] event_loop The event-loop to register the listening socket to.
      */
-    server(
-        mud::event::event_loop& event_loop = mud::event::event_loop::global());
+    server();
 
     /**
      * @brief Destructor.
@@ -48,10 +42,23 @@ public:
     void stop();
 
     /**
-     * @brief Register a handler when a request has been received.
-     * @param[in] func The handler function
+     * @brief Process an incoming request.
+     *
+     * @details
+     * When one of the attached clients have received an HTTP request, the
+     * server will need to response with an appropriate response. The client
+     * will invoke this function and wait for a response to be returned that
+     * can then be passed back to the connected peer.
+     *
+     * This function should adhere to a thread-safe execution model as it can
+     * be invoked by multiple connected clients simultaneously.
+     *
+     * @param req The HTTP request message as received by a client.
+     * @param resp The HTTP response to be manipulated to return to the client.
      */
-    void on_request(on_request_func func);
+    virtual void on_request(
+            const mud::http::request& req,
+            mud::http::response& resp) = 0;
 
     /**
      * Non-copyable.
@@ -61,7 +68,6 @@ public:
 
 private:
     /** Implementation */
-    class communicator;
     class impl;
     struct impl_deleter
     {

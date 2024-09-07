@@ -4,6 +4,7 @@
 #include "mud/http/server.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
+#include "mock.h"
 #include <condition_variable>
 #include <sstream>
 #include <string>
@@ -38,10 +39,10 @@ CONTEXT()
     mud::io::tcp::endpoint endpoint;
 
     /* The HTTP server */
-    mud::http::server server;
+    mock::server server;
 
     /* An HTTP client */
-    mud::http::client client;
+    mock::client client;
 
     /* The request */
     mud::http::request req;
@@ -61,14 +62,12 @@ FEATURE("HTTP/1.0 Protocol")
 
   DEFINE_GIVEN("An HTTP server is listening for inbound connections",
       [](context& ctx) {
+          mud::http::response response;
+          response.version(mud::http::version_e::HTTP10);
+          response.status_code(mud::http::status_code_e::OK);
+          response.reason_phrase(mud::http::reason_phrase_e::OK);
+          ctx.server.response(response);
           ctx.server.start(ctx.endpoint);
-          ctx.server.on_request([](const mud::http::request& request) {
-              mud::http::response response;
-              response.version(request.version());
-              response.status_code(mud::http::status_code_e::OK);
-              response.reason_phrase(mud::http::reason_phrase_e::OK);
-              return response;
-          });
       })
   DEFINE_WHEN ("A client sends a request",
       [](context& ctx) {

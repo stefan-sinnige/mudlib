@@ -16,6 +16,7 @@ typedef short sa_family_t;
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"
 #include "mud/io/udp.h"
+#include "mud/event/event_loop.h"
 
 using namespace std::placeholders;
 
@@ -153,12 +154,12 @@ public:
     /**
      * The source endpoint.
      */
-    const endpoint& source_endpoint() const;
+    endpoint& source_endpoint();
 
     /**
      * The destination endpoint.
      */
-    const endpoint& destination_endpoint() const;
+    endpoint& destination_endpoint();
 
     /**
      * The stream for reading.
@@ -247,14 +248,14 @@ udp::socket::impl::bind(const endpoint& endpoint)
     _source_endpoint = local_endpoint;
 }
 
-const udp::endpoint&
-udp::socket::impl::source_endpoint() const
+udp::endpoint&
+udp::socket::impl::source_endpoint()
 {
     return _source_endpoint;
 }
 
-const udp::endpoint&
-udp::socket::impl::destination_endpoint() const
+udp::endpoint&
+udp::socket::impl::destination_endpoint()
 {
     return _destination_endpoint;
 }
@@ -340,6 +341,8 @@ udp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
 udp::socket::socket(socket&& rhs) : ip::socket(std::move(rhs))
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
+    _impl->source_endpoint() = rhs._impl->source_endpoint();
+    _impl->destination_endpoint() = rhs._impl->destination_endpoint();
 }
 
 udp::socket&
@@ -348,6 +351,8 @@ udp::socket::operator=(udp::socket&& rhs)
     if (this != &rhs) {
         ip::socket::operator=(std::move(rhs));
         _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
+        _impl->source_endpoint() = rhs._impl->source_endpoint();
+        _impl->destination_endpoint() = rhs._impl->destination_endpoint();
     }
     return *this;
 }
@@ -392,20 +397,14 @@ udp::socket::ostr(const endpoint& endpoint)
 
 /** The communicator */
 
-udp::communicator::communicator(mud::event::event_loop& event_loop)
-  : _connected(false), _event_loop(event_loop), _on_receive_func(nullptr)
+udp::communicator::communicator()
+  : _connected(false)
 {}
 
-udp::communicator&
-udp::communicator::operator=(communicator&& rhs)
+udp::communicator::communicator(communicator&& other)
+    : _connected(other._connected)
+    , _socket(std::move(other._socket))
 {
-    if (&rhs != this) {
-        _connected = rhs._connected;
-        rhs._connected = false;
-        _socket = std::move(rhs._socket);
-        _on_receive_func = rhs._on_receive_func;
-    }
-    return *this;
 }
 
 udp::communicator::~communicator()
@@ -413,21 +412,31 @@ udp::communicator::~communicator()
     close();
 }
 
+udp::communicator&
+udp::communicator::operator=(communicator&& other)
+{
+    _connected = other._connected;
+    _socket = std::move(other._socket);
+    return *this;
+}
+
 void
 udp::communicator::open(udp::socket&& socket)
 {
     _connected = true;
     _socket = std::move(socket);
-    _event_loop.register_handler(mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::READING,
-        std::bind(&communicator::on_ready_receive, this)));
+
+    /* Call the impulse */
+    connect_impulse()->pulse(_socket);
+
+    /* Register the communicator to the event loop */
+    mud::event::event_loop::global().register_handler(event());
 }
 
 void
 udp::communicator::close()
 {
     _connected = false;
-    _event_loop.deregister_handler(mud::event::event(_socket.handle()));
     _socket.close();
 }
 
@@ -455,6 +464,20 @@ udp::communicator::istr()
     return _socket.istr();
 }
 
+udp::socket&
+udp::communicator::device()
+{
+    return _socket;
+}
+
+mud::event::event
+udp::communicator::event()
+{
+    return mud::event::event(
+        _socket.handle(), mud::event::event::signal_type::READING,
+        std::bind(&communicator::on_ready_receive, this));
+}
+
 const udp::endpoint&
 udp::communicator::source_endpoint() const
 {
@@ -467,19 +490,11 @@ udp::communicator::destination_endpoint() const
     return _socket.destination_endpoint();
 }
 
-void
-udp::communicator::on_receive(on_receive_func func)
-{
-    _on_receive_func = func;
-}
-
 mud::event::event::return_type
 udp::communicator::on_ready_receive()
 {
-    // Call the registered function handler.
-    if (_on_receive_func != nullptr) {
-        _on_receive_func();
-    }
+    // Call the impulse.
+    receive_impulse()->pulse(_socket);
 
     // Continue receiving. while the socket is still open
     if (_socket.handle() != nullptr) {

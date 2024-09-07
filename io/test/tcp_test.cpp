@@ -1,6 +1,6 @@
-#include "mud/event/event_loop.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
+#include <mud/event/event_loop.h>
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
@@ -10,7 +10,7 @@
 
 /* clang-format off */
 
-CONTEXT()
+CONTEXT_1(mud::core::object)
     // Constructor, executed before each scenario run
     context()
         : accepted(false), connected(false)
@@ -29,6 +29,27 @@ CONTEXT()
             thr.join();
         }
 
+    }
+
+    // The effector when a connection is accepted (server)
+    void on_accept(mud::io::tcp::socket& socket) {
+        server = std::move(socket);
+        {
+            std::lock_guard<std::mutex> lock(accepted_lock);
+            accepted = true;
+        }
+        accepted_cv.notify_all();
+    }
+
+    // The effector when a connection is established (client)
+    void on_connect(mud::io::tcp::socket& socket) {
+        client = std::move(socket);
+        client.option<bool, mud::io::ip::nonblocking>(false);
+        {
+                std::lock_guard<std::mutex> lock(connected_lock);
+                connected = true;
+        }
+        connected_cv.notify_all();
     }
 
     /* Thread to run the event-loop */
@@ -53,37 +74,30 @@ CONTEXT()
     bool connected;
 END_CONTEXT()
 
+void
+static_sample(mud::io::tcp::socket& socket)
+{
+}
+
 FEATURE("TCP sockets")
 
   // Pre-defined steps
   DEFINE_GIVEN("A TCP server is listening for inbound connection",
     [](context& ctx){
         std::string localhost("127.0.0.1");
-        ctx.acceptor.on_accept([&ctx](mud::io::tcp::socket&& socket) {
-            ctx.server = std::move(socket);
-            {
-                std::lock_guard<std::mutex> lock(ctx.accepted_lock);
-                ctx.accepted = true;
-            }
-            ctx.accepted_cv.notify_all();
-        });
+        ctx.acceptor.accept_impulse()->attach(&ctx, &context::on_accept);
         ctx.acceptor.open(mud::io::tcp::endpoint(localhost, 52618));
+        mud::event::event_loop::global().register_handler(ctx.acceptor.event());
+
     })
   DEFINE_GIVEN("There is no TCP server listening for inbound connections",
         [](context&){})
   DEFINE_WHEN("The TCP client connects",
     [](context& ctx){
         std::string localhost("127.0.0.1");
-        ctx.connector.on_connect([&ctx](mud::io::tcp::socket&& socket) {
-            ctx.client = std::move(socket);
-            ctx.client.option<bool, mud::io::ip::nonblocking>(false);
-            {
-                std::lock_guard<std::mutex> lock(ctx.connected_lock);
-                ctx.connected = true;
-            }
-            ctx.connected_cv.notify_all();
-        });
+        ctx.connector.connect_impulse()->attach(&ctx, &context::on_connect);
         ctx.connector.open(mud::io::tcp::endpoint(localhost, 52618));
+        mud::event::event_loop::global().register_handler(ctx.connector.event());
     })
   DEFINE_WHEN("The TCP server accepts the connection",
     [](context& ctx){
