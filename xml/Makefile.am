@@ -32,6 +32,7 @@ includemudxml_HEADERS = \
     include/mud/xml/declaration.h \
     include/mud/xml/document.h \
     include/mud/xml/element.h \
+    include/mud/xml/exception.h \
     include/mud/xml/ns.h \
     include/mud/xml/node.h \
     include/mud/xml/processing_instruction.h \

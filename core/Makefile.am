@@ -17,7 +17,9 @@ includemud_HEADERS = \
 includemudcoredir = $(includedir)/mud/core
 includemudcore_HEADERS = \
     include/mud/core/ns.h \
+    include/mud/core/endian.h \
     include/mud/core/exception.h \
+    include/mud/core/factory.h \
     include/mud/core/handle.h \
     include/mud/core/impulse.h \
     include/mud/core/notifier.h \

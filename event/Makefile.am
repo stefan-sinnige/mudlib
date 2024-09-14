@@ -15,7 +15,9 @@ includemud_HEADERS = \
 includemudeventdir = $(includedir)/mud/event
 includemudevent_HEADERS = \
     include/mud/event/ns.h \
-    include/mud/event/event_loop.h
+    include/mud/event/event.h \
+    include/mud/event/event_loop.h \
+    include/mud/event/event_mechanism.h
 
 libmudevent_la_CPPFLAGS = \
     -I$(srcdir)/include \

@@ -21,6 +21,7 @@ includemudio_HEADERS = \
     include/mud/io/ip.h \
     include/mud/io/ns.h \
     include/mud/io/pipe.h \
+    include/mud/io/socket.h \
     include/mud/io/streambuf.h \
     include/mud/io/tcp.h \
     include/mud/io/udp.h

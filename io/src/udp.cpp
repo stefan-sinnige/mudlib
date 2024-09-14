@@ -2,12 +2,16 @@
 typedef short sa_family_t;
     #define RECVFROM_CAST (char*)
     #define SENDTO_CAST (const char*)
+    #define SETSOCKOPT_CAST (const char*)
+    #define GETSOCKOPT_CAST (char*)
     #include <io.h>
     #include <winsock2.h>
     #include <ws2tcpip.h>
 #else
     #define RECVFROM_CAST (void*)
     #define SENDTO_CAST (const void*)
+    #define SETSOCKOPT_CAST (const void*)
+    #define GETSOCKOPT_CAST (void*)
     #include <netinet/in.h>
     #include <sys/socket.h>
 #endif
@@ -502,6 +506,87 @@ udp::communicator::on_ready_receive()
     } else {
         return mud::event::event::return_type::REMOVE;
     }
+}
+
+void
+udp::igmp_add::operator()(
+        mud::io::udp::socket& socket,
+        const std::pair<mud::io::ip::address, mud::io::ip::address>& value)
+{
+    // Convert to the socket option structure
+    struct ip_mreq optval = {
+        .imr_multiaddr.s_addr = value.first,
+        .imr_interface.s_addr = value.second
+    };
+
+    // Apply the option
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::setsockopt(handle, IPPROTO_IP, IP_ADD_MEMBERSHIP, &optval,
+                     sizeof(struct ip_mreq)) < 0) {
+        throw std::system_error(errno, std::system_category(),
+                            "setting socket option");
+    }
+}
+
+std::pair<mud::io::ip::address, mud::io::ip::address>
+udp::igmp_add::operator()(mud::io::udp::socket& socket)
+{
+    throw std::system_error(errno, std::system_category(),
+                            "socket option not available");
+}
+
+void
+udp::igmp_drop::operator()(
+        mud::io::udp::socket& socket,
+        const std::pair<mud::io::ip::address, mud::io::ip::address>& value)
+{
+    // Convert to the socket option structure
+    struct ip_mreq optval = {
+        .imr_multiaddr.s_addr = value.first,
+        .imr_interface.s_addr = value.second
+    };
+
+    // Apply the option
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::setsockopt(handle, IPPROTO_IP, IP_DROP_MEMBERSHIP, &optval,
+                     sizeof(struct ip_mreq)) < 0) {
+        throw std::system_error(errno, std::system_category(),
+                            "setting socket option");
+    }
+}
+
+std::pair<mud::io::ip::address, mud::io::ip::address>
+udp::igmp_drop::operator()(mud::io::udp::socket& socket)
+{
+    throw std::system_error(errno, std::system_category(),
+                            "socket option not available");
+}
+
+void
+udp::igmp_loopback::operator()(mud::io::udp::socket& socket, bool value)
+{
+    // Apply the option
+    int optval = (value ? 1 : 0);
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::setsockopt(handle, IPPROTO_IP, IP_MULTICAST_LOOP, &optval,
+                     sizeof(optval)) < 0) {
+        throw std::system_error(errno, std::system_category(),
+                            "setting socket option");
+    }
+}
+
+bool
+udp::igmp_loopback::operator()(mud::io::udp::socket& socket)
+{
+    int enable = false;
+    socklen_t len = sizeof(int);
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::getsockopt(handle, SOL_SOCKET, IP_MULTICAST_LOOP,
+                    GETSOCKOPT_CAST & enable, &len) < 0) {
+        throw std::system_error(errno, std::system_category(),
+                                "retrieving socket option");
+    }
+    return (enable != 0);
 }
 
 END_MUDLIB_IO_NS

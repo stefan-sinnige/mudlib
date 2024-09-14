@@ -327,6 +327,71 @@ namespace udp {
         udp::socket _socket;
     };
 
+    /**
+     * @brief Add the socket to a multicast address group.
+     */
+    class MUDLIB_IO_API igmp_add
+    {
+    public:
+        // The value type
+        typedef std::pair<mud::io::ip::address, mud::io::ip::address> Value;
+
+        /**
+        * @brief Set the multicast membership details.
+        */
+        void operator()(mud::io::udp::socket& socket, const Value& value);
+
+        /**
+        * @brief Retrieve the multicast membership details.
+        */
+        Value operator()(mud::io::udp::socket& socket);
+    };
+
+    /**
+     * @brief Drop the socket from a multicast address group.
+     */
+    class MUDLIB_IO_API igmp_drop
+    {
+    public:
+        // The value type
+        typedef std::pair<mud::io::ip::address, mud::io::ip::address> Value;
+
+        /**
+        * @brief Set the multicast membership details.
+        */
+        void operator()(mud::io::udp::socket& socket, const Value& value);
+
+        /**
+        * @brief Retrieve the multicast membership details.
+        */
+        Value operator()(mud::io::udp::socket& socket);
+    };
+
+    /**
+     * @brief Socket option to allow the socket to send the data looped back
+     * to your own host.
+     * @details
+     * Data that is send over the multicast socket can be looped back to the
+     * host such tha tthe host can receive its own data.
+     */
+    class MUDLIB_IO_API igmp_loopback
+    {
+    public:
+        // The value type.
+        typedef bool Value;
+
+        /**
+        * @brief Set the multicast membership details.
+        */
+        void operator()(mud::io::udp::socket& socket, bool value);
+
+        /**
+        * @brief Retrieve the multicast membership details.
+        */
+        Value operator()(mud::io::udp::socket& socket);
+    };
+
+
 } // namespace udp
 
 END_MUDLIB_IO_NS

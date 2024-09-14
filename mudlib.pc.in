@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: mudlib
+Description: MUD library collection
+Version: @VERSION@
+
+Requires:
+Libs: -L${libdir} -lmudcore -lmudevent -lmudio -lmudhttp -lmudhtml -lmudxml
+Cflags: -I${includedir}

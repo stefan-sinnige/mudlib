@@ -5,6 +5,7 @@ LT_INIT
 
 AC_PROG_CXX
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
 
 # We only use C++17 (or above) features
 AX_CXX_COMPILE_STDCXX(17, , mandatory)
@@ -56,6 +57,7 @@ AC_CONFIG_FILES([
     html/Makefile html/test/Makefile
     html/src/entities_scanner_generator/Makefile
     io/Makefile io/test/Makefile
+    mudlib.pc
     protocols/Makefile protocols/test/Makefile
     protocols/http/Makefile protocols/http/test/Makefile
     protocols/tls/Makefile protocols/tls/test/Makefile

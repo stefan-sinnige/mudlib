@@ -24,6 +24,7 @@ includemudhttp_HEADERS = \
     include/mud/http/communicator.h \
     include/mud/http/field.h \
     include/mud/http/message.h \
+    include/mud/http/ns.h \
     include/mud/http/request.h \
     include/mud/http/response.h \
     include/mud/http/server.h

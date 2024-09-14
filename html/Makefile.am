@@ -37,6 +37,7 @@ includemudhtml_HEADERS = \
     include/mud/html/declaration.h \
     include/mud/html/document.h \
     include/mud/html/element.h \
+    include/mud/html/exception.h \
     include/mud/html/node.h \
     include/mud/html/ns.h \
     include/mud/html/processing_instruction.h \
