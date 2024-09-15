@@ -577,6 +577,17 @@ std::istream&
 operator>>(std::istream&, host&);
 
 /**
+ * The class describing an HTTP Location field.
+ */
+extern const char _HTTP_LOCATION[];
+typedef field<base_field::field::LOCATION, mud::core::uri, _HTTP_LOCATION>
+    location;
+std::ostream&
+operator<<(std::ostream&, const location&);
+std::istream&
+operator>>(std::istream&, location&);
+
+/**
  * The class describing an HTTP Transfer-Encoding field.
  */
 enum class transfer_coding_e

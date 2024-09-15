@@ -489,6 +489,28 @@ operator>>(std::istream& istr, host& field)
 field_factory::registrar<_HTTP_HOST, host> host_registrar;
 
 /* ======================================================================
+ * Location
+ * ====================================================================== */
+
+const char _HTTP_LOCATION[] = "Location";
+
+std::ostream&
+operator<<(std::ostream& ostr, const location& field)
+{
+    ostr << field.value();
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, location& field)
+{
+    field.value(tokenise(istr, include_all));
+    return istr;
+}
+
+field_factory::registrar<_HTTP_LOCATION, location> location_registrar;
+
+/* ======================================================================
  * Transfer-Encoding
  * ====================================================================== */
 

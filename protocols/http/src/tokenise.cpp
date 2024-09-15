@@ -57,6 +57,25 @@ expect(std::istream& istr, int expected)
     return istr;
 }
 
+/*
+ * Skip whitespace according to its type.
+ */
+std::istream&
+whitespace(std::istream& istr, ws_t type)
+{
+    bool found = false; 
+    char ch = istr.peek();
+    while (ch == ' ' || ch == '\t') {
+        found = true;
+        istr.get();
+        ch = istr.peek();
+    }
+    if (type == RWS && !found) {
+        throw std::runtime_error("Malformed HTTP message");
+    }
+    return istr;
+}
+
 END_MUDLIB_HTTP_NS
 
 /* vi: set ai ts=4 expandtab: */

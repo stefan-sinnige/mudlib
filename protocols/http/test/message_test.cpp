@@ -224,6 +224,46 @@ FEATURE("HTTP Message")
                    result);
         })
 
+  SCENARIO("Reading extension header field with an empty value")
+    GIVEN("An HTTP Message with an empty valued header field",
+        [](context& ctx) {
+            ctx.msg = &ctx.req;
+            ctx.istr = std::istringstream(
+                "GET /index.html HTTP/1.0\r\n"
+                "EXT:\r\n"
+                "\r\n");
+        })
+    WHEN ("The message is read")
+    THEN ("The field value is available",
+        [](context& ctx) {
+            const mud::http::field_ext& fld =
+                dynamic_cast<const mud::http::field_ext&>(
+                    ctx.req.field_by_key("EXT"));
+            ASSERT("", fld.value());
+        })
+
+  SCENARIO("Writing extension header field with an empty value")
+    GIVEN("An HTTP Message")
+    WHEN ("An header field is written with an empty value",
+        [](context& ctx) {
+            ctx.req.method(mud::http::method_e::GET);
+            ctx.req.uri("/index.html");
+            ctx.req.version(mud::http::version_e::HTTP10);
+            mud::http::field_ext ext("EXT");
+            ext.value("");
+            ctx.req.field(ext);
+            ctx.ostr << ctx.req;
+        })
+    THEN ("The message is formatted correctly",
+        [](context& ctx) {
+            std::string result = ctx.ostr.str();
+            ASSERT(std::string(
+                       "GET /index.html HTTP/1.0\r\n"
+                       "EXT: \r\n"
+                       "\r\n"),
+                   result);
+        })
+
   SCENARIO("Reading multi-value header fields")
     GIVEN("An HTTP Message with a multi-value header field",
         [](context& ctx) {

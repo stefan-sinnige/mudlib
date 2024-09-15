@@ -45,6 +45,22 @@ tokenise(std::istream& istr, const token_manip& manip);
 std::istream&
 expect(std::istream& istr, int expected);
 
+/*
+ * The witespace options.
+ */
+typedef char ws_t;
+constexpr ws_t OWS = 0;   /* Optional whitespace. */
+constexpr ws_t RWS = 1;   /* Required whitespace. */
+constexpr ws_t BWS = OWS; /* Bad whitespace (allowed for historical reasons). */
+
+/*
+ * Skip any whitespace. Throws a 'malformed HTTP message' error if the white
+ * space is not conform the specifications. The whitespace will not be part of
+ * any token or value.
+ */
+std::istream&
+whitespace(std::istream& istr, ws_t type);
+
 END_MUDLIB_HTTP_NS
 
 /* vi: set ai ts=4 expandtab: */

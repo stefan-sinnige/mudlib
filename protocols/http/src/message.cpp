@@ -124,7 +124,7 @@ operator>>(std::istream& istr, message& msg)
     while (istr.peek() != CR) {
         std::string field_name = tokenise(istr, include_none);
         expect(istr, CL);
-        expect(istr, SP);
+        whitespace(istr, OWS);
         auto field =
             field_factory::instance().create(field_name.c_str(), msg.fields());
         if (field) {
