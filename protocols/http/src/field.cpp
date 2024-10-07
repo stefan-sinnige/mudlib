@@ -109,6 +109,98 @@ const char _HTTP_METHOD[] = "__Method";
 const std::string GET = "GET";
 const std::string HEAD = "HEAD";
 const std::string POST = "POST";
+const std::string PUT = "PUT";
+const std::string DELETE = "DELETE";
+const std::string CONNECT = "CONNECT";
+const std::string OPTIONS = "OPTIONS";
+const std::string TRACE = "TRACE";
+
+request_method::request_method()
+    : _type(method_e::UNKNOWN)
+{
+}
+
+request_method::request_method(method_e type)
+    : _type(type)
+{
+}
+
+request_method::request_method(const std::string& ext)
+{
+    if (ext == GET) {
+        _type = method_e::GET;
+    } else if (ext == HEAD) {
+        _type = method_e::HEAD;
+    } else if (ext == POST) {
+        _type = method_e::POST;
+    } else if (ext == PUT) {
+        _type = method_e::PUT;
+    } else if (ext == DELETE) {
+        _type = method_e::DELETE;
+    } else if (ext == CONNECT) {
+        _type = method_e::CONNECT;
+    } else if (ext == OPTIONS) {
+        _type = method_e::OPTIONS;
+    } else if (ext == TRACE) {
+        _type = method_e::TRACE;
+    } else {
+        _type = method_e::EXT;
+        _ext = ext;
+    }
+}
+
+method_e
+request_method::type() const
+{
+    return _type;
+}
+
+request_method::operator method_e() const
+{
+    return _type;
+}
+
+const std::string&
+request_method::str() const
+{
+    switch (_type) {
+        case method_e::GET:
+            return GET;
+        case method_e::HEAD:
+            return HEAD;
+        case method_e::POST:
+            return POST;
+        case method_e::PUT:
+            return PUT;
+        case method_e::DELETE:
+            return DELETE;
+        case method_e::CONNECT:
+            return CONNECT;
+        case method_e::OPTIONS:
+            return OPTIONS;
+        case method_e::TRACE:
+            return TRACE;
+        case method_e::EXT:
+            return _ext;
+        default:
+            return GET;
+    }
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const request_method& value)
+{
+    ostr << value.str();
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, request_method& value)
+{
+    std::string tok = tokenise(istr, include_none);
+    value = request_method(tok);
+    return istr;
+}
 
 std::ostream&
 operator<<(std::ostream& ostr, const method& field)
@@ -120,44 +212,9 @@ operator<<(std::ostream& ostr, const method& field)
 std::istream&
 operator>>(std::istream& istr, method& field)
 {
-    method::value_type value;
+    request_method value;
     istr >> value;
-    field.value(value);
-    return istr;
-}
-
-std::ostream&
-operator<<(std::ostream& ostr, const method_e& value)
-{
-    switch (value) {
-        case method_e::GET:
-            ostr << GET;
-            break;
-        case method_e::HEAD:
-            ostr << HEAD;
-            break;
-        case method_e::POST:
-            ostr << POST;
-            break;
-        default:
-            break;
-    }
-    return ostr;
-}
-
-std::istream&
-operator>>(std::istream& istr, method_e& value)
-{
-    std::string tok = tokenise(istr, include_none);
-    if (tok == GET) {
-        value = method_e::GET;
-    } else if (tok == HEAD) {
-        value = method_e::HEAD;
-    } else if (tok == POST) {
-        value = method_e::POST;
-    } else {
-        throw std::out_of_range("Incorrectly formatted HTTP Method");
-    }
+    field = method(value);
     return istr;
 }
 
@@ -170,7 +227,9 @@ const char _HTTP_URI[] = "__URI";
 std::ostream&
 operator<<(std::ostream& ostr, const uri& field)
 {
-    ostr << field.value();
+    mud::core::uri abspath = field.value();
+    abspath.scheme("");
+    ostr << abspath;
     return ostr;
 }
 

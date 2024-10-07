@@ -3,36 +3,21 @@
 
 BEGIN_MUDLIB_XML_NS
 
+/* static */ processing_instruction::ptr
+processing_instruction::create()
+{
+    return std::shared_ptr<xml::processing_instruction>(
+            new processing_instruction());
+}
+
 processing_instruction::processing_instruction() : node(node::type_t::PI) {}
 
-processing_instruction::processing_instruction(const std::string& target,
-                                               const std::string& data)
-  : node(node::type_t::PI), _target(target), _data(data)
-{}
-
 processing_instruction::~processing_instruction() {}
-
-processing_instruction::processing_instruction(
-    const processing_instruction& rhs)
-  : node(node::type_t::PI)
-{
-    (void)operator=(rhs);
-}
 
 processing_instruction::processing_instruction(processing_instruction&& rhs)
   : node(node::type_t::PI)
 {
     *this = std::move(rhs);
-}
-
-processing_instruction&
-processing_instruction::operator=(const processing_instruction& rhs)
-{
-    if (&rhs != this) {
-        _target = rhs._target;
-        _data = rhs._data;
-    }
-    return *this;
 }
 
 processing_instruction&

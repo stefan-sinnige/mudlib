@@ -3,31 +3,21 @@
 
 BEGIN_MUDLIB_XML_NS
 
+/* static */ declaration::ptr
+declaration::create()
+{
+    return std::shared_ptr<xml::declaration>(new declaration());
+}
+
 declaration::declaration()
   : node(node::type_t::DECL), _version("1.0"), _standalone(false)
 {}
 
 declaration::~declaration() {}
 
-declaration::declaration(const declaration& rhs) : node(node::type_t::DECL)
-{
-    (void)operator=(rhs);
-}
-
 declaration::declaration(declaration&& rhs) : node(node::type_t::DECL)
 {
     *this = std::move(rhs);
-}
-
-declaration&
-declaration::operator=(const declaration& rhs)
-{
-    if (&rhs != this) {
-        _version = rhs._version;
-        _encoding = rhs._encoding;
-        _standalone = rhs._standalone;
-    }
-    return *this;
 }
 
 declaration&

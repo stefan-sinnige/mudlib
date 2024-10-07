@@ -11,6 +11,7 @@ mudxml_test_SOURCES = \
     element_test.cpp \
     main.cpp \
     processing_instruction_test.cpp \
+    query_test.cpp \
     reader_test.cpp \
     writer_test.cpp
 

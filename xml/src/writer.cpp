@@ -63,13 +63,13 @@ operator<<(std::ostream& ostr, const mud::xml::element& element)
     // That should be controlled by an output manipulator
     //     std::cout << mud:;xml::indent << doc;
     ostr << "<" << element.name();
-    for (auto& attr : element.attributes()) {
-        ostr << " " << attr.name() << "=\"" << attr.value() << "\"";
+    for (auto attr : element.attributes()) {
+        ostr << " " << attr->name() << "=\"" << attr->value() << "\"";
     }
-    if (element.nodes().size() > 0) {
+    if (element.children().size() > 0) {
         ostr << ">";
-        for (auto& node : element.nodes()) {
-            ostr << node;
+        for (auto node : element.children()) {
+            ostr << *node;
         }
         ostr << "</" << element.name() << ">";
     } else {
@@ -115,10 +115,12 @@ operator<<(std::ostream& ostr, const mud::xml::node& node)
 }
 
 std::ostream&
-operator<<(std::ostream& ostr, const mud::xml::document& doc)
+operator<<(std::ostream& ostr, const mud::xml::document::ptr& doc)
 {
-    for (auto& node : doc.nodes()) {
-        ostr << node;
+    if (doc) {
+        for (auto node : doc->children()) {
+            ostr << *node;
+        }
     }
     return ostr;
 }

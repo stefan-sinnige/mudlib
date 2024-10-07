@@ -1,8 +1,6 @@
 #ifndef _MUDLIB_XML_CDATASECTION_H_
 #define _MUDLIB_XML_CDATASECTION_H_
 
-#include <mud/core/poly_vector.h>
-#include <mud/xml/attribute.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
 #include <string>
@@ -17,28 +15,14 @@ class MUDLIB_XML_API cdata_section : public node
 {
 public:
     /**
-     * @brief Create an empty CDATA section.
+     * @brief Type definition of a @c cdata_section pointer.
      */
-    cdata_section();
+    typedef std::shared_ptr<mud::xml::cdata_section> ptr;
 
     /**
-     * @brief Create an CDATA section.
-     * @param[in] data The character data.
+     * @brief Create a new @c cdata_section instance.
      */
-    cdata_section(const std::string& data);
-
-    /**
-     * @brief Copy a CDATA section.
-     * @param[in] rhs The CDATA section to copy from.
-     */
-    cdata_section(const cdata_section& rhs);
-
-    /**
-     * @brief Copy a CDATA section through assignment.
-     * @param[in] rhs The CDATA section to copy from.
-     * @return A reference to this CDATA section.
-     */
-    cdata_section& operator=(const cdata_section& rhs);
+    static ptr create();
 
     /**
      * @brief Move a CDATA section.
@@ -73,6 +57,11 @@ public:
     void text(std::string&& value);
 
 private:
+    /**
+     * @brief Create an empty CDATA section.
+     */
+    cdata_section();
+
     /** The CDATA section contents */
     std::string _text;
 };

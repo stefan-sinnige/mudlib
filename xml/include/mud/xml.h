@@ -7,11 +7,13 @@
 #include <mud/xml/comment.h>
 #include <mud/xml/declaration.h>
 #include <mud/xml/document.h>
+#include <mud/xml/dom.h>
 #include <mud/xml/element.h>
 #include <mud/xml/exception.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
 #include <mud/xml/processing_instruction.h>
+#include <mud/xml/query.h>
 #include <mud/xml/reader.h>
 #include <mud/xml/writer.h>
 

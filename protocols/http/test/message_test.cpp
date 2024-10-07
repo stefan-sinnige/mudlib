@@ -330,6 +330,39 @@ FEATURE("HTTP Message")
             ASSERT(0, value);
         })
 
+  SCENARIO("Writing message with a custom method")
+    GIVEN("An HTTP Message")
+    WHEN ("A custom method is written",
+        [](context& ctx) {
+            ctx.req.method("M-SEARCH");
+            ctx.req.uri("*");
+            ctx.req.version(mud::http::version_e::HTTP10);
+            ctx.ostr << ctx.req;
+        })
+    THEN ("The message is formatted correctly",
+        [](context& ctx) {
+            std::string result = ctx.ostr.str();
+            ASSERT(std::string(
+                       "M-SEARCH * HTTP/1.0\r\n"
+                       "\r\n"),
+                   result);
+        })
+  SCENARIO("Reading message with a custom method")
+    GIVEN("An HTTP Message with a custom method",
+        [](context& ctx) {
+            ctx.msg = &ctx.req;
+            ctx.istr = std::istringstream(
+                "M-SEARCH * HTTP/1.0\r\n"
+                "\r\n");
+        })
+    WHEN ("The message is read")
+    THEN ("The method value is available",
+        [](context& ctx) {
+            ASSERT(mud::http::method_e::EXT, ctx.req.method().value());
+            ASSERT("M-SEARCH", ctx.req.method().value().str());
+            //ASSERT("*", ctx.req.uri().value());
+            ASSERT(mud::http::version_e::HTTP10, ctx.msg->version().value());
+        })
 END_FEATURE()
 
 /* clang-format on */

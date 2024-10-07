@@ -27,6 +27,8 @@ public:
      * Set the method.
      * @param[in] value  The method value to set.
      */
+    void method(http::method_e value) { _method = http::method(value); }
+    void method(const std::string& value) { _method = http::method(value); }
     void method(const http::method& value) { _method = value; }
 
     /**

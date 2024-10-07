@@ -5,25 +5,17 @@
 
 BEGIN_MUDLIB_XML_NS
 
-document::document() {}
+/* static */ document::ptr
+document::create()
+{
+    return std::shared_ptr<xml::document>(new document());
+}
+document::document() : node(node::type_t::DOCUMENT)
+{}
 
 document::~document() {}
 
-document::document(const document& rhs)
-{
-    (void)operator=(rhs);
-}
-
-document&
-document::operator=(const document& rhs)
-{
-    if (&rhs != this) {
-        _nodes = rhs._nodes;
-    }
-    return *this;
-}
-
-document::document(document&& rhs)
+document::document(document&& rhs) : node(node::type_t::DOCUMENT)
 {
     *this = std::move(rhs);
 }
@@ -31,60 +23,46 @@ document::document(document&& rhs)
 document&
 document::operator=(document&& rhs)
 {
-    _nodes = std::move(rhs._nodes);
+    _children = std::move(rhs._children);
     return *this;
 }
 
-element&
-document::root()
-{
-    auto found =
-        std::find_if(_nodes.begin(), _nodes.end(), [](const node& node) {
-            return node.type() == node::type_t::ELEMENT;
-        });
-    if (found != _nodes.end()) {
-        return dynamic_cast<element&>(*found);
-    } else {
-        throw not_found("document has no root element");
-    }
-}
-
-const element&
+std::shared_ptr<mud::xml::element>
 document::root() const
 {
-    auto found =
-        std::find_if(_nodes.cbegin(), _nodes.cend(), [](const node& node) {
-            return node.type() == node::type_t::ELEMENT;
+    auto found = std::find_if(_children.cbegin(), _children.cend(),
+        [](const std::shared_ptr<mud::xml::node>& node) {
+            return node->type() == node::type_t::ELEMENT;
         });
-    if (found != _nodes.cend()) {
-        return dynamic_cast<const element&>(*found);
+    if (found != _children.cend()) {
+        return std::static_pointer_cast<mud::xml::element>(*found);
     } else {
         throw not_found("document has no root element");
     }
 }
 
-const mud::core::poly_vector<mud::xml::node>&
-document::nodes() const
+const mud::xml::node_seq&
+document::children() const
 {
-    return _nodes;
-}
-
-mud::core::poly_vector<mud::xml::node>&
-document::nodes()
-{
-    return _nodes;
+    return _children;
 }
 
 void
-document::nodes(const mud::core::poly_vector<mud::xml::node>& value)
+document::children(const mud::xml::node_seq& value)
 {
-    _nodes = value;
+    _children = value;
 }
 
 void
-document::nodes(mud::core::poly_vector<mud::xml::node>&& value)
+document::children(mud::xml::node_seq&& value)
 {
-    _nodes = std::move(value);
+    _children = std::move(value);
+}
+
+void
+document::child(const mud::xml::node::ptr& node)
+{
+    _children.push_back(node);
 }
 
 END_MUDLIB_XML_NS

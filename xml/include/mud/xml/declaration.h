@@ -1,8 +1,6 @@
 #ifndef _MUDLIB_XML_DECLARATION_H_
 #define _MUDLIB_XML_DECLARATION_H_
 
-#include <mud/core/poly_vector.h>
-#include <mud/xml/attribute.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
 #include <string>
@@ -17,22 +15,14 @@ class MUDLIB_XML_API declaration : public node
 {
 public:
     /**
-     * @brief Create an empty declaration..
+     * @brief Type definition of a @c declaration pointer.
      */
-    declaration();
+    typedef std::shared_ptr<mud::xml::declaration> ptr;
 
     /**
-     * @brief Copy a declaration.
-     * @param[in] rhs The declaration to copy from.
+     * @brief Create a new @c declaration instance.
      */
-    declaration(const declaration& rhs);
-
-    /**
-     * @brief Copy a declaration through assignment.
-     * @param[in] rhs The declaration to copy from.
-     * @return A reference to this declaration.
-     */
-    declaration& operator=(const declaration& rhs);
+    static ptr create();
 
     /**
      * @brief Move a declaration.
@@ -90,6 +80,11 @@ public:
     void standalone(bool value);
 
 private:
+    /**
+     * @brief Create an empty declaration..
+     */
+    declaration();
+
     /** The declaration version */
     std::string _version;
 

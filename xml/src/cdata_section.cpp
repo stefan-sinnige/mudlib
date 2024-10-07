@@ -3,33 +3,20 @@
 
 BEGIN_MUDLIB_XML_NS
 
+/* static */ cdata_section::ptr
+cdata_section::create()
+{
+    return std::shared_ptr<xml::cdata_section>(new cdata_section());
+}
+
 cdata_section::cdata_section() : node(node::type_t::CDATA_SECTION) {}
 
-cdata_section::cdata_section(const std::string& data)
-  : node(node::type_t::CDATA_SECTION), _text(data)
-{}
-
 cdata_section::~cdata_section() {}
-
-cdata_section::cdata_section(const cdata_section& rhs)
-  : node(node::type_t::CDATA_SECTION)
-{
-    (void)operator=(rhs);
-}
 
 cdata_section::cdata_section(cdata_section&& rhs)
   : node(node::type_t::CDATA_SECTION)
 {
     *this = std::move(rhs);
-}
-
-cdata_section&
-cdata_section::operator=(const cdata_section& rhs)
-{
-    if (&rhs != this) {
-        _text = rhs._text;
-    }
-    return *this;
 }
 
 cdata_section&

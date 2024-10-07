@@ -3,30 +3,18 @@
 
 BEGIN_MUDLIB_XML_NS
 
-attribute::attribute() {}
+/* static */ attribute::ptr
+attribute::create()
+{
+    return std::shared_ptr<xml::attribute>(new attribute());
+}
 
-attribute::attribute(const std::string& name, const std::string& value)
-  : _name(name), _value(value)
-{}
+attribute::attribute(): node(node::type_t::ATTRIBUTE) {}
 
 attribute::~attribute() {}
 
-attribute::attribute(const attribute& rhs)
-{
-    (void)operator=(rhs);
-}
-
-attribute&
-attribute::operator=(const attribute& rhs)
-{
-    if (&rhs != this) {
-        _name = rhs._name;
-        _value = rhs._value;
-    }
-    return *this;
-}
-
 attribute::attribute(attribute&& rhs)
+  : node(node::type_t::ATTRIBUTE)
 {
     *this = std::move(rhs);
 }
@@ -73,6 +61,39 @@ void
 attribute::value(std::string&& value)
 {
     _value = std::move(value);
+}
+
+std::size_t
+attribute_hash::operator()(
+    const mud::xml::attribute::ptr& key) const
+{
+    if (!key) {
+        // Non-existent attribute.
+        return 0;
+    }
+    else {
+        // Hash to the attribute name.
+        return std::hash<std::string>()(key->name());
+    }
+}
+ 
+std::size_t
+attribute_equal_to::operator()(
+    const mud::xml::attribute::ptr& key1,
+    const mud::xml::attribute::ptr& key2) const
+{
+    if (key1 == key2) {
+        // Same underlying attribute object.
+        return true;
+    }
+    else {
+        if (!key2 || !key2) {
+            // One of the object is non-existent.
+            return false;
+        }
+        // Equality on the attribute name
+        return std::equal_to<std::string>()(key1->name(), key2->name());
+    }
 }
 
 END_MUDLIB_XML_NS

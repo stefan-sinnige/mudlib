@@ -16,6 +16,6 @@ END_MUDLIB_XML_NS
  * @param[in,out] doc The XML document to output.
  */
 std::ostream&
-operator<<(std::ostream& istr, const mud::xml::document& doc);
+operator<<(std::ostream& istr, const mud::xml::document::ptr& doc);
 
 #endif /*  _MUDLIB_XML_WRITER_H_ */

@@ -33,14 +33,16 @@ main(int argc, char** argv)
     }
 
     // Extract an XML document from te input stream
-    mud::xml::document doc;
+    mud::xml::document::ptr doc;
     *istr >> doc;
 
     // Output the XML document to standard-out.
     std::cout << doc;
 
     // Cleanup
-    delete istr;
+    if (istr != &std::cin) {
+        delete istr;
+    }
 
     return 0;
 }

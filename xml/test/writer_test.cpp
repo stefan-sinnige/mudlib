@@ -6,6 +6,7 @@
 #include "mud/xml/element.h"
 #include "mud/xml/processing_instruction.h"
 #include "mud/xml/writer.h"
+#include "mud/xml/dom.h"
 #include <memory>
 #include <sstream>
 #include <type_traits>
@@ -25,7 +26,7 @@ CONTEXT()
     std::stringstream text;
 
     /* The document */
-    mud::xml::document doc;
+    mud::xml::document::ptr doc;
 
 END_CONTEXT()
 
@@ -43,8 +44,9 @@ FEATURE("Writer")
   SCENARIO("Writing XML declaration")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::declaration decl;
-            ctx.doc.nodes().push_back(decl);
+            ctx.doc = mud::xml::dom::create_document();
+            auto decl = mud::xml::dom::create_declaration();
+            ctx.doc->child(decl);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
@@ -55,8 +57,10 @@ FEATURE("Writer")
   SCENARIO("Writing empty root element")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
@@ -67,10 +71,16 @@ FEATURE("Writer")
   SCENARIO("Writing XML element hierarchy")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            root.nodes().push_back(mud::xml::element("child-1"));
-            root.nodes().push_back(mud::xml::element("child-2"));
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            auto child1 = mud::xml::dom::create_element();
+            child1->name("child-1");
+            auto child2 = mud::xml::dom::create_element();
+            child2->name("child-2");
+            root->child(child1);
+            root->child(child2);
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
@@ -82,27 +92,41 @@ FEATURE("Writer")
   SCENARIO("Writing XML element with attributes")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            root.attributes().push_back(
-                    mud::xml::attribute("attr-1", "value-1"));
-            root.attributes().push_back(
-                    mud::xml::attribute("attr-2", "value-2"));
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            auto attr1 = mud::xml::dom::create_attribute();
+            attr1->name("attr-1");
+            attr1->value("value-1");
+            auto attr2 = mud::xml::dom::create_attribute();
+            attr2->name("attr-2");
+            attr2->value("value-2");
+            root->attribute(attr1);
+            root->attribute(attr2);
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
-            ASSERT(R"XML(<root attr-1="value-1" attr-2="value-2"/>)XML",
-                   ctx.text.str());
+            // Attributes are unordered
+            const std::string option1 = 
+                R"XML(<root attr-1="value-1" attr-2="value-2"/>)XML";
+            const std::string option2 = 
+                R"XML(<root attr-2="value-2" attr-1="value-1"/>)XML";
+            std::string result = ctx.text.str();
+            ASSERT(true, result == option1 || result == option2);
         })
 
   SCENARIO("Writing XML element with character data")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            root.nodes().push_back(
-                    mud::xml::char_data("Lorus ipsum"));
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            auto char_data = mud::xml::dom::create_char_data();
+            char_data->text("Lorus ipsum");
+            root->child(char_data);
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
@@ -113,10 +137,13 @@ FEATURE("Writer")
   SCENARIO("Writing XML element with CDATA section")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            root.nodes().push_back(
-                    mud::xml::cdata_section("Lorus ipsum"));
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            auto cdata_section = mud::xml::dom::create_cdata_section();
+            cdata_section->text("Lorus ipsum");
+            root->child(cdata_section);
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
@@ -128,10 +155,13 @@ FEATURE("Writer")
   SCENARIO("Writing XML element with comment")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            root.nodes().push_back(
-                    mud::xml::comment("Lorus ipsum"));
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            auto comment = mud::xml::dom::create_comment();
+            comment->text("Lorus ipsum");
+            root->child(comment);
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",
@@ -142,10 +172,14 @@ FEATURE("Writer")
   SCENARIO("Writing XML element with processing instruction")
     GIVEN("An XML document",
         [](context& ctx) {
-            mud::xml::element root("root");
-            root.nodes().push_back(
-                    mud::xml::processing_instruction("php", "phpinfo();"));
-            ctx.doc.nodes().push_back(root);
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element();
+            root->name("root");
+            auto pi = mud::xml::dom::create_processing_instruction();
+            pi->target("php");
+            pi->data("phpinfo();");
+            root->child(pi);
+            ctx.doc->child(root);
         })
     WHEN ("The text is written")
     THEN ("The text represents the document contents",

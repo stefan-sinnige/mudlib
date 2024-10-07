@@ -1,7 +1,6 @@
 #ifndef _MUDLIB_XML_ELEMENT_H_
 #define _MUDLIB_XML_ELEMENT_H_
 
-#include <mud/core/poly_vector.h>
 #include <mud/xml/attribute.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
@@ -12,33 +11,27 @@ BEGIN_MUDLIB_XML_NS
 
 /**
  * @brief Representation of an XML element.
+ *
+ * @details
+ * As defined in the XML Information Set (Second Edition), an XML element has
+ * the following properties:
+ *  * An unordered set of attributes
+ *  * An ordered sequence of children (an XML node other than an attribute)
+ *  * A parent. If the parent is an XML document node, then the element is
+ *    also known as the @em root element.
  */
 class MUDLIB_XML_API element : public node
 {
 public:
     /**
-     * @brief Create an empty element without a name.
+     * @brief Type definition of an @c element pointer.
      */
-    element();
+    typedef std::shared_ptr<mud::xml::element> ptr;
 
     /**
-     * @brief Create an empty element.
-     * @param[in] name The tag name of the element.
+     * @brief Create a new @c element instance.
      */
-    element(const std::string& name);
-
-    /**
-     * @brief Copy a element.
-     * @param[in] rhs The element to copy from.
-     */
-    element(const element& rhs);
-
-    /**
-     * @brief Copy a element through assignment.
-     * @param[in] rhs The element to copy from.
-     * @return A reference to this element.
-     */
-    element& operator=(const element& rhs);
+    static ptr create();
 
     /**
      * @brief Move a element.
@@ -75,38 +68,65 @@ public:
     /**
      * @brief Return the attributes of the element.
      */
-    const std::vector<mud::xml::attribute>& attributes() const;
-    std::vector<mud::xml::attribute>& attributes();
+    const mud::xml::attribute_set& attributes() const;
 
     /**
      * @brief Set the attributes of the element.
      * @param[in] value The attributes to set.
      */
-    void attributes(const std::vector<mud::xml::attribute>& value);
-    void attributes(std::vector<mud::xml::attribute>&& value);
+    void attributes(const mud::xml::attribute_set& value);
+    void attributes(mud::xml::attribute_set&& value);
 
     /**
-     * @brief Return the direct nodes of the element.
+     * @brief Add an attribute to the element.
+     * @param[in] value The attribute to add.
      */
-    const mud::core::poly_vector<mud::xml::node>& nodes() const;
-    mud::core::poly_vector<mud::xml::node>& nodes();
+    void attribute(const mud::xml::attribute::ptr& value);
 
     /**
-     * @brief Set the direct nodes of the element.
-     * @param[in] value The direct nodes to set.
+     * @brief Return the children of the element.
      */
-    void nodes(const mud::core::poly_vector<mud::xml::node>& value);
-    void nodes(mud::core::poly_vector<mud::xml::node>&& value);
+    virtual const mud::xml::node_seq& children() const override;
+
+    /**
+     * @brief Set the children of the element.
+     * @param[in] value The children to set.
+     */
+    void children(const mud::xml::node_seq& value);
+    void children(mud::xml::node_seq&& value);
+
+    /**
+     * @brief Add a child to the element.
+     * @param[in] value The node to add.
+     */
+    void child(const mud::xml::node::ptr& value);
+
+    /**
+     * @brief Return the parent of the element.
+     *
+     * @details
+     * The parent of the element is either another @c element, or a @c document
+     * if the parent is the @em root element.
+     */
+    mud::xml::node::ptr parent() const;
 
 private:
+    /**
+     * @brief Create an empty element without a name.
+     */
+    element();
+
     /** The name */
     std::string _name;
 
     /** The attributes */
-    std::vector<mud::xml::attribute> _attributes;
+    mud::xml::attribute_set _attributes;
 
     /** The direct nodes */
-    mud::core::poly_vector<mud::xml::node> _nodes;
+    mud::xml::node_seq _children;
+
+    /** The parent. */
+    mud::xml::node::ptr _parent;
 };
 
 END_MUDLIB_XML_NS

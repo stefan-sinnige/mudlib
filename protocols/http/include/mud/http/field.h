@@ -416,22 +416,78 @@ operator<<(std::ostream&, const version&);
 std::istream&
 operator>>(std::istream&, version&);
 
-/**
- * The class describing an HTTP method field.
- */
+/** Predefined HTTP methods */
 enum class method_e
 {
-    GET,  /**< HTTP GET method */
-    HEAD, /**< HTTP HEAD method */
-    POST  /**< HTTP POST method */
+    UNKNOWN, /**< Unknown HTTP method */
+    GET,     /**< HTTP GET method */
+    HEAD,    /**< HTTP HEAD method */
+    POST,    /**< HTTP POST method */
+    PUT,     /**< HTTP PUT method */
+    DELETE,  /**< HTTP DELETE method */
+    CONNECT, /**< HTTP CONNECT method */
+    OPTIONS, /**< HTTP OPTIONS method */
+    TRACE,   /**< HTTP TRACE method */
+    EXT = -1 /**< HTTP extension method */
+};
+
+/**
+ * @brief The class describing an HTTP method field.
+ *
+ * @details
+ * The HTTP request method defines the intended purpose of the message. The
+ * standard HTTP methods are supported by their enumerated value, while non
+ * standard methods can be described by their name as a string.
+ */
+class request_method
+{
+public:
+    /** Define an unsepcified HTTP method. */
+    request_method();
+
+    /** Define a known HTTP method. */
+    request_method(method_e type);
+
+    /** Define a HTTP extension method. */
+    request_method(const std::string& ext);
+
+    /**
+     * @brief Get the method type.
+     *
+     * @details
+     * Return the HTTP method type. If the type is @c method_e::EXT then the
+     * method name is defined by the @c extension function.
+     */
+    method_e type() const;
+
+    /**
+     * @brief Implicit conversion to the method type enumeration.
+     *
+     * @details
+     * Return the HTTP method type. If the type is @c method_e::EXT then the
+     * method name is defined by the @c extension function.
+     */
+    operator method_e() const;
+
+    /**
+     * @brief Get the method type as a string.
+     */
+    const std::string& str() const;
+
+private:
+    /* The method type */
+    method_e _type;
+
+    /* The extension method (type is EXT) */
+    std::string _ext;
 };
 std::ostream&
-operator<<(std::ostream&, const method_e&);
+operator<<(std::ostream&, const request_method&);
 std::istream&
-operator>>(std::istream&, method_e&);
+operator>>(std::istream&, request_method&);
 
 extern const char _HTTP_METHOD[];
-typedef field<(base_field::field)-10001, method_e, _HTTP_METHOD> method;
+typedef field<(base_field::field)-10001, request_method, _HTTP_METHOD> method;
 std::ostream&
 operator<<(std::ostream&, const method&);
 std::istream&
@@ -520,7 +576,7 @@ operator>>(std::istream&, entity_body&);
  * The class describing an HTTP Allow.
  */
 extern const char _HTTP_ALLOW[];
-typedef field_list<base_field::field::ALLOW, method_e, _HTTP_ALLOW> allow;
+typedef field_list<base_field::field::ALLOW, request_method, _HTTP_ALLOW> allow;
 std::ostream&
 operator<<(std::ostream&, const allow&);
 std::istream&

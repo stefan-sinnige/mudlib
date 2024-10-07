@@ -45,7 +45,7 @@ parser_debug(std::ios_base& istr)
 END_MUDLIB_XML_NS
 
 std::istream&
-operator>>(std::istream& istr, mud::xml::document& doc)
+operator>>(std::istream& istr, mud::xml::document::ptr& doc)
 {
     /* Set-up scanning from an input-stream */
     xml_ctx_t ctx;
@@ -70,8 +70,7 @@ operator>>(std::istream& istr, mud::xml::document& doc)
     }
 
     /* Return the parsed document using move semantics */
-    std::unique_ptr<mud::xml::document> doc_ptr(ctx.document);
-    doc = std::move(*doc_ptr);
+    doc = ctx.document;
     return istr;
 }
 

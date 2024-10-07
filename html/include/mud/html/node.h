@@ -20,6 +20,7 @@ public:
      */
     enum class type_t
     {
+        DOCUMENT,
         CDATA_SECTION,
         CHAR_DATA,
         RAW_DATA,

@@ -13,10 +13,6 @@ CONTEXT()
     /* Destructor after each scenario */
     ~context() {
     }
-
-    /* The processing_instruction */
-    mud::xml::processing_instruction doc;
-
 END_CONTEXT()
 
 FEATURE("Processing Instruction")
@@ -32,19 +28,19 @@ FEATURE("Processing Instruction")
   SCENARIO("Processing Instruction type traits")
     GIVEN("A processing_instruction type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
-    THEN ("The type is default constructible",
+    THEN ("The type is not default constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_default_constructible<
+            ASSERT(false, std::is_default_constructible<
                   mud::xml::processing_instruction>::value);
         })
-    AND  ("The type is copy-constructible",
+    AND  ("The type is not copy-constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_copy_constructible<
+            ASSERT(false, std::is_copy_constructible<
                   mud::xml::processing_instruction>::value);
         })
-    AND  ("The type is copy-assignable",
+    AND  ("The type is not copy-assignable",
         [](context& ctx) {
-            ASSERT(true, std::is_copy_assignable<
+            ASSERT(false, std::is_copy_assignable<
                   mud::xml::processing_instruction>::value);
         })
     AND  ("The type is move-constructible",

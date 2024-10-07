@@ -223,11 +223,13 @@ uri::percent_encoding_normalisation()
 void
 uri::path_segment_normalisation()
 {
-    // Paths are lexcially normalised when set.
+    // Paths are already lexcially normalised when set.
 
-    // When absolute, the path is either absolute or empty.
-    if (!_path.empty()) {
-        _path = std::filesystem::path("/") / _path;
+    // Absolute URI's always have a path starting with '/'
+    if (absolute()) {
+        if (_path.empty() || _path.native()[0] != '/') {
+            _path = std::filesystem::path("/") / _path;
+        }
     }
 }
 
@@ -252,37 +254,35 @@ std::istream&
 operator>>(std::istream& istr, uri& value)
 {
     char ch;
+    std::string buffer;
 
     // Empty the value
     value.clear();
 
-    // If the first character is a '/', assume we have a relative URI.
-    if (istr.peek() != '/') {
-        std::string scheme;
-        while((ch = istr.get()) != std::char_traits<char>::eof()) {
-            if (ch < 0 || ch > 127) {
-                // Out of character range
-                throw std::runtime_error("Malformed URI");
-            }
-            uint8_t mask = table[ch];
-            if ((mask & alpha) || (mask & digit) | (ch == '+') || (ch == '-') ||
-                (ch == '.'))
-        {
-                scheme.push_back(ch);
-            }
-            else {
-                break;
-            }
-        }
-        if (ch != ':') {
+    // Scheme
+    while((ch = istr.get()) != std::char_traits<char>::eof()) {
+        if (ch < 0 || ch > 127) {
+            // Out of character range
             throw std::runtime_error("Malformed URI");
         }
-        value.scheme(decode(scheme));
+        uint8_t mask = table[ch];
+        if ((mask & alpha) || (mask & digit) | (ch == '+') || (ch == '-') ||
+            (ch == '.'))
+        {
+            buffer.push_back(ch);
+        }
+        else {
+            break;
+        }
+    }
+    if (ch == ':') {
+        value.scheme(decode(buffer));
+        buffer.clear();
+        ch = istr.get();
     }
 
-    // Authority (user-info, host and port) is only possible after two slashes)
-    ch = istr.get();
-    if ((ch == '/') && istr.peek() == '/') {
+    // Authority (user-info, host and port) - is only possible after two slashes
+    if (buffer.empty() && (ch == '/') && istr.peek() == '/') {
         (void) istr.get();
 
         std::string authority;
@@ -300,7 +300,7 @@ operator>>(std::istream& istr, uri& value)
             }
         }
 
-        // user-info
+        // User-info
         auto first = authority.find_first_of('@');
         if (first != std::string::npos) {
             if (first != authority.find_last_of('@')) {
@@ -311,7 +311,7 @@ operator>>(std::istream& istr, uri& value)
             authority.erase(0, first+1);
         }
 
-        // host
+        // Host
         first = authority.find_first_of(':');
         if (first != std::string::npos) {
             if (first != authority.find_last_of(':')) {
@@ -326,7 +326,7 @@ operator>>(std::istream& istr, uri& value)
             authority.clear();
         }
 
-        // port
+        // Port
         if (!authority.empty()) {
             uint16_t port = 0;
             for (auto ch: authority) {
@@ -342,20 +342,20 @@ operator>>(std::istream& istr, uri& value)
         }
     }
 
-    // path
-    std::string path;
-    while((ch = istr.get()) != std::char_traits<char>::eof()) {
+    // Path
+    while (ch != std::char_traits<char>::eof()) {
         uint8_t mask = table[ch];
         if ((mask & unreserved) || (mask & pct_encoded) || (mask & sub_delims)
             || (ch == '/') || (ch == ':') || (ch == '@'))
         {
-            path.push_back(ch);
+            buffer.push_back(ch);
+            ch = istr.get();
         }
         else {
             break;
         }
     }
-    value.path(decode(path));
+    value.path(decode(buffer));
 
     // query
     if (ch == '?') {
@@ -432,9 +432,9 @@ operator<<(std::ostream& ostr, const uri& _value)
         if (value.host().size()) {
             ostr << "//";
             if (value.user_info().size()) {
-                ostr << value.user_info() << "@";
+                ostr << encode(value.user_info()) << "@";
             }
-            ostr << value.host();
+            ostr << encode(value.host());
             auto norm_port = normalised_ports.find(value.scheme());
             if ((norm_port != normalised_ports.end()) &&
                 (value.port() != norm_port->second) &&
@@ -448,8 +448,8 @@ operator<<(std::ostream& ostr, const uri& _value)
     // The path (either absolute or relative)
     ostr << value.path().native();
 
-    // The optioanl query parameters: "?" query
-    //   Where queru is either query parameters: key "=" value "&"
+    // The optional query parameters: "?" query
+    //   Where query is either query parameters: key "=" value "&"
     //   Or the single query string
     // This allows for query parameters to be properly encoded while their
     // separators ("=" and "&" are iutput as-is).

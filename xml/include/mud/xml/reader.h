@@ -31,6 +31,6 @@ END_MUDLIB_XML_NS
  * @param[in,out] doc The object to hold the XML document.
  */
 std::istream&
-operator>>(std::istream& istr, mud::xml::document& doc);
+operator>>(std::istream& istr, mud::xml::document::ptr& doc);
 
 #endif /*  _MUDLIB_XML_READER_H_ */

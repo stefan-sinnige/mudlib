@@ -5,11 +5,11 @@
 
 BEGIN_MUDLIB_HTML_NS
 
-document::document() {}
+document::document() : node(node::type_t::DOCUMENT) {}
 
 document::~document() {}
 
-document::document(const document& rhs)
+document::document(const document& rhs) : node(node::type_t::DOCUMENT)
 {
     (void)operator=(rhs);
 }
@@ -23,7 +23,7 @@ document::operator=(const document& rhs)
     return *this;
 }
 
-document::document(document&& rhs)
+document::document(document&& rhs) : node(node::type_t::DOCUMENT)
 {
     *this = std::move(rhs);
 }

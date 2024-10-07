@@ -12,7 +12,6 @@
 #include <mud/xml.h>
 #include <string>
 #include <utility>
-#include <vector>
 
 %}
 
@@ -25,24 +24,34 @@
 %parse-param { xml_ctx_t* ctx }
 %locations
 
+/* The union of rule result types. Note that we may have pointer to a shared_ptr
+ * object, as we're stuck with POD types. This is 'safe' as we do not actually
+ * use the shared_ptr object, until we are actually using it, other than a
+ * result of a rule (ie when embedding the shared_ptr into another object).
+ * In future, we may be able to use a C++ parser/scanner with a variant like
+ *    %define language "c++"
+ *    %define api.prefix {yyxml}
+ *    %define api.token.constructor
+ *    %define parse.assert
+ *    %define api.value.type variant
+ * which should then be safe to use a st::shared_ptr and other non-POD types
+ * directly. But that requires extensive migration changes in both the scanner
+ * and the parser. */
 %union {
-    std::string*                            str;
-    mud::xml::document*                     document;
-    mud::xml::element*                      element;
-    mud::xml::attribute*                    attribute;
-    std::vector<mud::xml::attribute>*       attributes;
-    mud::xml::node*                         node;
-    mud::core::poly_vector<mud::xml::node>* nodes;
+    std::string*             str;
+    mud::xml::node::ptr*     node;
+    mud::xml::node_seq*      nodes;
+    mud::xml::attribute_set* attributes;
 }
 
 %code requires {
     /* The reentrant parser uses the following context. */
     typedef void* yyscan_t;
     typedef struct xml_ctx_t {
-      yyscan_t scanner;             /* The lexical scanner */
-      xml_ctx_t* parent;            /* Reference to the parent. */
-      int errors;                   /* The number of errors detected. */
-      mud::xml::document* document; /* The resulting XML document. */
+      yyscan_t scanner;                 /* The lexical scanner */
+      xml_ctx_t* parent;                /* Reference to the parent. */
+      int errors;                       /* The number of errors detected. */
+      mud::xml::document::ptr document; /* The resulting XML document. */
     } xml_ctx_t;
 }
 
@@ -93,140 +102,6 @@
        }
        return 1;
     }
-
-    /* Push a 'node' to the end of a vector using correct type for
-     * move-semantice */
-    template<class NodeType>
-    void push_back(NodeType* node,
-                   mud::core::poly_vector<mud::xml::node>* nodes)
-    {
-        nodes->push_back(std::move(*node));
-    }
-
-    void push_back(mud::xml::node* node,
-                   mud::core::poly_vector<mud::xml::node>* nodes)
-    {
-        switch (node->type())
-        {
-            case mud::xml::node::type_t::CDATA_SECTION:
-                push_back<mud::xml::cdata_section>(
-                    static_cast<mud::xml::cdata_section*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::CHAR_DATA:
-                push_back<mud::xml::char_data>(
-                    static_cast<mud::xml::char_data*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::COMMENT:
-                push_back<mud::xml::comment>(
-                    static_cast<mud::xml::comment*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::DECL:
-                push_back<mud::xml::declaration>(
-                    static_cast<mud::xml::declaration*>(node),
-                    nodes);
-                break;
-            case mud::xml::node::type_t::ELEMENT:
-                push_back<mud::xml::element>(
-                    static_cast<mud::xml::element*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::PI:
-                push_back<mud::xml::processing_instruction>(
-                    static_cast<mud::xml::processing_instruction*>(node),
-                    nodes);
-                break;
-            default:
-                break;
-        }
-    }
-
-    /* Push a 'node' to the beginning of a vector using correct type for
-     * move-semantice */
-    template<class NodeType>
-    void push_front(NodeType* node,
-                   mud::core::poly_vector<mud::xml::node>* nodes)
-    {
-        nodes->insert(nodes->begin(), std::move(*node));
-    }
-
-    void push_front(mud::xml::node* node,
-                   mud::core::poly_vector<mud::xml::node>* nodes)
-    {
-        switch (node->type())
-        {
-            case mud::xml::node::type_t::CDATA_SECTION:
-                push_front<mud::xml::cdata_section>(
-                    static_cast<mud::xml::cdata_section*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::CHAR_DATA:
-                push_front<mud::xml::char_data>(
-                    static_cast<mud::xml::char_data*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::COMMENT:
-                push_front<mud::xml::comment>(
-                    static_cast<mud::xml::comment*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::DECL:
-                push_front<mud::xml::declaration>(
-                    static_cast<mud::xml::declaration*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::ELEMENT:
-                push_front<mud::xml::element>(
-                    static_cast<mud::xml::element*>(node), nodes);
-                break;
-            case mud::xml::node::type_t::PI:
-                push_front<mud::xml::processing_instruction>(
-                    static_cast<mud::xml::processing_instruction*>(node),
-                    nodes);
-            default:
-                break;
-        }
-    }
-
-    /* Push all nodes from the other vector to the end using move-semantics */
-    template<class NodeType>
-    void push_back(NodeType& node,
-                   mud::core::poly_vector<mud::xml::node>* nodes)
-    {
-        nodes->insert(nodes->end(), std::move(node));
-    }
-
-    void push_back(mud::core::poly_vector<mud::xml::node>* other,
-                   mud::core::poly_vector<mud::xml::node>* nodes)
-    {
-        for (auto& node: *other)
-        {
-            switch (node.type())
-            {
-                case mud::xml::node::type_t::CDATA_SECTION:
-                    push_back<mud::xml::cdata_section>(
-                        static_cast<mud::xml::cdata_section&>(node), nodes);
-                    break;
-                case mud::xml::node::type_t::CHAR_DATA:
-                    push_back<mud::xml::char_data>(
-                        static_cast<mud::xml::char_data&>(node), nodes);
-                    break;
-                case mud::xml::node::type_t::COMMENT:
-                    push_back<mud::xml::comment>(
-                        static_cast<mud::xml::comment&>(node), nodes);
-                    break;
-                case mud::xml::node::type_t::DECL:
-                    push_back<mud::xml::declaration>(
-                        static_cast<mud::xml::declaration&>(node), nodes);
-                    break;
-                case mud::xml::node::type_t::ELEMENT:
-                    push_back<mud::xml::element>(
-                        static_cast<mud::xml::element&>(node), nodes);
-                    break;
-                case mud::xml::node::type_t::PI:
-                    push_back<mud::xml::processing_instruction>(
-                        static_cast<mud::xml::processing_instruction&>(node),
-                        nodes);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
 }
 
 %token VERSION VERSIONNUM 
@@ -253,13 +128,11 @@
 document
   : prolog element Misc_seq_opt
     {
-      std::unique_ptr<mud::core::poly_vector<mud::xml::node>> prolog($<nodes>1);
-      std::unique_ptr<mud::core::poly_vector<mud::xml::node>> misc($<nodes>3);
-      std::unique_ptr<mud::xml::element> element($<element>2);
-      push_back(element.get(), prolog.get());
-      push_back(misc.get(), prolog.get());
-      ctx->document = new mud::xml::document;
-      ctx->document->nodes(std::move(*prolog));
+      std::unique_ptr<mud::xml::node_seq> children($<nodes>1);
+      children->push_back(*$<node>2);
+      children->insert(children->end(), $<nodes>3->begin(), $<nodes>3->end());
+      ctx->document = mud::xml::dom::create_document();
+      ctx->document->children(std::move(*children));
     }
  ;
 
@@ -318,10 +191,10 @@ AttValue
 CharData_opt
   : CHARDATA
     {
-      auto char_data = new mud::xml::char_data;
+      auto char_data = mud::xml::dom::create_char_data();
       std::unique_ptr<std::string> text($<str>1);
       char_data->text(std::move(*text));
-      $<node>$ = char_data;
+      $<node>$ = new mud::xml::node::ptr(char_data);
     }
   | /* empty */
     {
@@ -336,10 +209,10 @@ CharData_opt
 Comment
   : COMMENTOPEN COMMENT COMMENTCLOSE
     {
-      auto comment = new mud::xml::comment;
+      auto comment = mud::xml::dom::create_comment();
       std::unique_ptr<std::string> text($<str>2);
       comment->text(std::move(*text));
-      $<node>$ = comment;
+      $<node>$ = new mud::xml::node::ptr(comment);
     }
   | COMMENTOPEN COMMENTCLOSE
     {
@@ -355,12 +228,12 @@ Comment
 PI
   : PIOPEN PITARGET PIDATA PICLOSE
     {
-      auto pi = new mud::xml::processing_instruction;
+      auto pi = mud::xml::dom::create_processing_instruction();
       std::unique_ptr<std::string> target($<str>2);
       std::unique_ptr<std::string> data($<str>3);
       pi->target(std::move(*target));
       pi->data(std::move(*data));
-      $<node>$ = pi;
+      $<node>$ = new mud::xml::node::ptr(pi);
     }
  ;
 
@@ -371,10 +244,10 @@ PI
 CDSect
   : CDSTART CDATA CDEND
     {
-      auto cdata_section = new mud::xml::cdata_section;
+      auto cdata_section = mud::xml::dom::create_cdata_section();
       std::unique_ptr<std::string> text($<str>2);
       cdata_section->text(std::move(*text));
-      $<node>$ = cdata_section;
+      $<node>$ = new mud::xml::node::ptr(cdata_section);
     }
  ;
 
@@ -388,8 +261,7 @@ prolog
       auto nodes = $<nodes>2;
       if ($<node>1 != nullptr)
       {
-          std::unique_ptr<mud::xml::node> decl($<node>1);
-          push_front(decl.get(), nodes);
+          nodes->insert(nodes->begin(), *$<node>1);
       }
       $<nodes>$ = nodes;
     }
@@ -398,11 +270,9 @@ prolog
       auto nodes = $<nodes>2;
       if ($<node>1 != nullptr)
       {
-          std::unique_ptr<mud::xml::node> decl($<node>1);
-          push_front(decl.get(), nodes);
+          nodes->insert(nodes->begin(), *$<node>1);
       }
-      std::unique_ptr<mud::core::poly_vector<mud::xml::node>> other($<nodes>4);
-      push_back(other.get(), nodes);
+      nodes->insert(nodes->end(), $<nodes>4->begin(), $<nodes>4->end());
       $<nodes>$ = nodes;
     }
  ;
@@ -414,7 +284,7 @@ prolog
 XMLDecl_opt
   : XMLPIOPEN VersionInfo EncodingDecl_opt SDDecl_opt PICLOSE
     {
-      auto decl = new mud::xml::declaration;
+      auto decl = mud::xml::dom::create_declaration();
       std::unique_ptr<std::string> versioninfo($<str>2);
       decl->version(std::move(*versioninfo));
       if ($<str>3 != nullptr)
@@ -427,7 +297,7 @@ XMLDecl_opt
           std::unique_ptr<std::string> standalone($<str>4);
           decl->standalone(*standalone == "yes");
       }
-      $<node>$ = decl;
+      $<node>$ = new mud::xml::node::ptr(decl);
     }
   | /* empty */
     {
@@ -468,14 +338,13 @@ Misc_seq_opt
       auto nodes = $<nodes>1;
       if ($<node>2 != nullptr)
       {
-          std::unique_ptr<mud::xml::node> misc($<node>2);
-          push_back(misc.get(), nodes);
+          nodes->push_back(*$<node>2);
       }
       $<nodes>$ = nodes;
     }
   | /* empty */
     {
-      auto nodes = new mud::core::poly_vector<mud::xml::node>();
+      auto nodes = new mud::xml::node_seq();
       $<nodes>$ = nodes;
     }
  ;
@@ -577,15 +446,15 @@ SDDecl_opt
 element
   : EmptyElemTag
     {
-      $<element>$ = $<element>1;
+      $<node>$ = $<node>1;
     }
   | STag content ETag
     {
-      auto element = $<element>1;
+      auto element = ((*$<node>1)->get_shared<mud::xml::element>());
       std::unique_ptr<std::string> etag($<str>3);
-      std::unique_ptr<mud::core::poly_vector<mud::xml::node>> nodes($<nodes>2);
-      element->nodes(std::move(*nodes));
-      $<element>$ = element;
+      std::unique_ptr<mud::xml::node_seq> nodes($<nodes>2);
+      element->children(std::move(*nodes));
+      $<node>$ = $<node>1;
     }
  ;
 
@@ -596,12 +465,12 @@ element
 STag 
   : OPENTAG NAME S_opt Attribute_seq_opt CLOSETAG
     {
-      auto element = new mud::xml::element;
+      auto element = mud::xml::dom::create_element();
       std::unique_ptr<std::string> name($<str>2);
-      std::unique_ptr<std::vector<mud::xml::attribute>> attrs($<attributes>4);
+      std::unique_ptr<mud::xml::attribute_set> attrs($<attributes>4);
       element->name(std::move(*name));
       element->attributes(std::move(*attrs));
-      $<element>$ = element;
+      $<node>$ = new mud::xml::node::ptr(element);
     }
  ;
 
@@ -616,7 +485,7 @@ Attribute_seq_opt
     }
   | /* empty */
     {
-      auto attrs = new std::vector<mud::xml::attribute>();
+      auto attrs = new mud::xml::attribute_set();
       $<attributes>$ = attrs;
     }
  ;
@@ -625,15 +494,13 @@ Attribute_seq
   : Attribute_seq S Attribute
     {
       auto attrs = $<attributes>1;
-      std::unique_ptr<mud::xml::attribute> attr($<attribute>3);
-      attrs->push_back(std::move(*attr));
+      attrs->insert((*$<node>3)->get_shared<mud::xml::attribute>());
       $<attributes>$ = attrs;
     }
   | Attribute
     {
-      auto attrs = new std::vector<mud::xml::attribute>();
-      std::unique_ptr<mud::xml::attribute> attr($<attribute>1);
-      attrs->push_back(std::move(*attr));
+      auto attrs = new mud::xml::attribute_set();
+      attrs->insert((*$<node>1)->get_shared<mud::xml::attribute>());
       $<attributes>$ = attrs;
     }
  ;
@@ -643,10 +510,10 @@ Attribute
     {
       std::unique_ptr<std::string> name($<str>1);
       std::unique_ptr<std::string> value($<str>3);
-      auto attr = new mud::xml::attribute();
+      auto attr = mud::xml::dom::create_attribute();
       attr->name(std::move(*name));
       attr->value(std::move(*value));
-      $<attribute>$ = attr;
+      $<node>$ = new mud::xml::node::ptr(attr);
     }
  ;
 
@@ -670,8 +537,7 @@ content
     {
       auto nodes = $<nodes>2;
       if ($<node>1 != nullptr) {
-          std::unique_ptr<mud::xml::node> char_data($<node>1);
-          push_front(char_data.get(), nodes);
+          nodes->insert(nodes->begin(), *$<node>1);
       }
       $<nodes>$ = nodes;
     }
@@ -684,7 +550,7 @@ contents_seq_opt
     }
   | /* empty */
     {
-      auto nodes = new mud::core::poly_vector<mud::xml::node>();
+      auto nodes = new mud::xml::node_seq();
       $<nodes>$ = nodes;
     }
  ;
@@ -693,22 +559,18 @@ contents_seq
   : contents_seq contents_choice CharData_opt
     {
       auto nodes = $<nodes>1;
-      std::unique_ptr<mud::xml::node> contents($<node>2);
-      push_back(contents.get(), nodes);
+      nodes->push_back(*$<node>2);
       if ($<node>3 != nullptr) {
-          std::unique_ptr<mud::xml::node> char_data($<node>3);
-          push_back(char_data.get(), nodes);
+          nodes->push_back(*$<node>3);
       }
       $<nodes>$ = nodes;
     }
   | contents_choice CharData_opt
     {
-      auto nodes = new mud::core::poly_vector<mud::xml::node>();
-      std::unique_ptr<mud::xml::node> contents($<node>1);
-      push_back(contents.get(), nodes);
+      auto nodes = new mud::xml::node_seq();
+      nodes->push_back(*$<node>1);
       if ($<node>2 != nullptr) {
-          std::unique_ptr<mud::xml::node> char_data($<node>2);
-          push_back(char_data.get(), nodes);
+          nodes->push_back(*$<node>2);
       }
       $<nodes>$ = nodes;
     }
@@ -717,7 +579,7 @@ contents_seq
 contents_choice
   : element
     {
-      $<node>$ = $<element>1;
+      $<node>$ = $<node>1;
     }
   | CDSect
     {
@@ -740,12 +602,12 @@ contents_choice
 EmptyElemTag 
   : OPENTAG NAME S_opt Attribute_seq_opt EMPTYCLOSETAG
     {
-      auto element = new mud::xml::element;
+      auto element = mud::xml::dom::create_element();
       std::unique_ptr<std::string> name($<str>2);
-      std::unique_ptr<std::vector<mud::xml::attribute>> attrs($<attributes>4);
+      auto attrs = $<attributes>4;;
       element->name(std::move(*name));
       element->attributes(std::move(*attrs));
-      $<element>$ = element;
+      $<node>$ = new mud::xml::node::ptr(element);
     }
  ;
 

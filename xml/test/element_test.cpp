@@ -1,5 +1,6 @@
 #include "mud/test.h"
 #include "mud/xml/element.h"
+#include "mud/xml/dom.h"
 #include <memory>
 #include <type_traits>
 
@@ -15,15 +16,16 @@ CONTEXT()
     }
 
     /* An element */
-    mud::xml::element element;
+    mud::xml::element::ptr element;
 
     /* Another element */
-    mud::xml::element other;
+    mud::xml::element::ptr other;
 END_CONTEXT()
 
 FEATURE("Element")
       DEFINE_GIVEN("An empty element",
         [](context& ctx) {
+            ctx.element = mud::xml::dom::create_element();
         })
   END_DEFINES()
 
@@ -34,19 +36,19 @@ FEATURE("Element")
   SCENARIO("Element type traits")
     GIVEN("A element type", [](context&){})
     WHEN ("The type traits are examined", [](context&){})
-    THEN ("The type is default constructible",
+    THEN ("The type is not default constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_default_constructible<
+            ASSERT(false, std::is_default_constructible<
                   mud::xml::element>::value);
         })
-    AND  ("The type is copy-constructible",
+    AND  ("The type is not copy-constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_copy_constructible<
+            ASSERT(false, std::is_copy_constructible<
                   mud::xml::element>::value);
         })
-    AND  ("The type is copy-assignable",
+    AND  ("The type is not copy-assignable",
         [](context& ctx) {
-            ASSERT(true, std::is_copy_assignable<
+            ASSERT(false, std::is_copy_assignable<
                   mud::xml::element>::value);
         })
     AND  ("The type is move-constructible",
@@ -63,23 +65,24 @@ FEATURE("Element")
   SCENARIO("Moving a complex element")
     GIVEN("A complex element",
         [](context& ctx) {
-            ctx.element.name("book");
+            ctx.element = mud::xml::dom::create_element();
+            ctx.element->name("book");
             {
-                mud::xml::attribute attr;
-                attr.name("isbn");
-                attr.value("1-56619-909-3");
-                ctx.element.attributes().push_back(attr);
+                auto attr = mud::xml::dom::create_attribute();
+                attr->name("isbn");
+                attr->value("1-56619-909-3");
+                ctx.element->attribute(attr);
             }
             {
-                mud::xml::element child;
-                child.name("title");
+                auto child = mud::xml::dom::create_element();
+                child->name("title");
                 {
-                    mud::xml::attribute attr;
-                    attr.name("name");
-                    attr.value("The Encyclopedia of Ships");
-                    child.attributes().push_back(attr);
+                    auto attr = mud::xml::dom::create_attribute();
+                    attr->name("name");
+                    attr->value("The Encyclopedia of Ships");
+                    child->attribute(attr);
                 }
-                ctx.element.nodes().push_back(child);
+                ctx.element->child(child);
             }
         })
     WHEN ("The element is moved to another one",
@@ -88,29 +91,27 @@ FEATURE("Element")
         })
     THEN ("The contents have been moved",
         [](context& ctx) {
-            ASSERT("book", ctx.other.name());
-            ASSERT(1, ctx.other.attributes().size());
+            ASSERT("book", ctx.other->name());
+            ASSERT(1, ctx.other->attributes().size());
             {
-                auto& attr = *ctx.other.attributes().begin();
-                ASSERT("isbn", attr.name());
-                ASSERT("1-56619-909-3", attr.value());
+                auto attr = *ctx.other->attributes().begin();
+                ASSERT("isbn", attr->name());
+                ASSERT("1-56619-909-3", attr->value());
             }
-            ASSERT(1, ctx.other.nodes().size());
+            ASSERT(1, ctx.other->children().size());
             {
-                auto& child = dynamic_cast<mud::xml::element&>(
-                        *ctx.other.nodes().begin());
+                auto child = std::dynamic_pointer_cast<mud::xml::element>(
+                        *ctx.other->children().begin());
                 {
-                    auto& attr = *child.attributes().begin();
-                    ASSERT("name", attr.name());
-                    ASSERT("The Encyclopedia of Ships", attr.value());
+                    auto attr = *child->attributes().begin();
+                    ASSERT("name", attr->name());
+                    ASSERT("The Encyclopedia of Ships", attr->value());
                 }
             }
         })
     AND  ("The original element is empty",
         [](context& ctx) {
-            ASSERT("", ctx.element.name());
-            ASSERT(0, ctx.element.attributes().size());
-            ASSERT(0, ctx.element.nodes().size());
+            ASSERT(nullptr, ctx.element.get());
         })
 END_FEATURE()
 

@@ -17,29 +17,14 @@ class MUDLIB_XML_API processing_instruction : public node
 {
 public:
     /**
-     * @brief Create an empty processing instruction..
+     * @brief Type definition of a @c processing_instruction pointer.
      */
-    processing_instruction();
+    typedef std::shared_ptr<mud::xml::processing_instruction> ptr;
 
     /**
-     * @brief Create an empty processing instruction..
-     * @param[in] target The target.
-     * @param[in] data The data for the target.
+     * @brief Create a new @c processing_instruction instance.
      */
-    processing_instruction(const std::string& target, const std::string& data);
-
-    /**
-     * @brief Copy a processing instruction.
-     * @param[in] rhs The processing instruction to copy from.
-     */
-    processing_instruction(const processing_instruction& rhs);
-
-    /**
-     * @brief Copy a processing instruction through assignment.
-     * @param[in] rhs The processing instruction to copy from.
-     * @return A reference to this processing instruction.
-     */
-    processing_instruction& operator=(const processing_instruction& rhs);
+    static ptr create();
 
     /**
      * @brief Move a processing instruction.
@@ -86,6 +71,11 @@ public:
     void data(std::string&& value);
 
 private:
+    /**
+     * @brief Create an empty processing instruction..
+     */
+    processing_instruction();
+
     /** The processing instruction target */
     std::string _target;
 

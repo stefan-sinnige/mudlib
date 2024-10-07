@@ -11,7 +11,7 @@ BEGIN_MUDLIB_HTML_NS
 /**
  * @brief Representation of an HTML document.
  */
-class MUDLIB_HTML_API document
+class MUDLIB_HTML_API document: public node
 {
 public:
     /**

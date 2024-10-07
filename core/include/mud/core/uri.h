@@ -12,6 +12,10 @@ BEGIN_MUDLIB_CORE_NS
 
 /**
  * @brief A Unified Resource Identifier.
+ *
+ * @details
+ * A Unified Resource Identifier (URI) defines a specification to identiy a
+ * generic reource. The URI is defined to be conforming RFC 3986.
  */
 class MUDLIB_CORE_API uri
 {

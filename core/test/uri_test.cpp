@@ -14,6 +14,9 @@ CONTEXT()
 
     /* The uri */
     mud::core::uri uri;
+
+    /* A string */
+    std::string str;
 END_CONTEXT()
 
 FEATURE("URI")
@@ -285,8 +288,73 @@ FEATURE("URI")
     THEN ("The components are normalised per HTTP specification",
         [](context& ctx) {
           ASSERT(80, ctx.uri.port());
-          ASSERT("", ctx.uri.path());
+          ASSERT("/", ctx.uri.path());
         })
+
+  SCENARIO("Various URI formats can be parsed")
+    GIVEN("A '<uri>' URI as a string", [](context& ctx) {
+          ctx.str = ctx.sample().entry<std::string>("uri");
+        })
+    WHEN ("The URI is parsed", [](context& ctx) {
+          ctx.uri = mud::core::uri(ctx.str);
+        })
+    THEN ("The URI is correctly formed", [](context& ctx) {
+          ASSERT(ctx.sample().entry<std::string>("scheme"),
+                 ctx.uri.scheme());
+          ASSERT(ctx.sample().entry<std::string>("userinfo"),
+                 ctx.uri.user_info());
+          ASSERT(ctx.sample().entry<std::string>("host"),
+                 ctx.uri.host());
+          ASSERT(ctx.sample().entry<uint16_t>("port"),
+                 ctx.uri.port());
+          ASSERT(ctx.sample().entry<std::string>("path"),
+                 ctx.uri.path());
+          ASSERT(ctx.sample().entry<std::string>("query"),
+                 ctx.uri.query());
+          ASSERT(ctx.sample().entry<std::string>("fragment"),
+                 ctx.uri.fragment());
+        })
+    SAMPLES(   "uri",                                                              "scheme", "userinfo", "host",            "port", "path",             "query",                  "fragment")
+        SAMPLE("http://www.example.com/index.html",                                "http",   "",         "www.example.com", 80,     "/index.html",      "",                       "")
+        SAMPLE("http://www.example.com/index.html?id=10",                          "http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                  "")
+        SAMPLE("http://www.example.com/index.html?id=10#top",                      "http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                  "top")
+        SAMPLE("https://www.example.com:8080/index.html?id=10&name=Hello%20World", "https",  "",         "www.example.com", 8080,   "/index.html",      "id=10&name=Hello World", "")
+        SAMPLE("ftp://www.example.com/dir/a.out",                                  "ftp",    "",         "www.example.com", 21,     "/dir/a.out",       "",                       "")
+        SAMPLE("/etc/sample.conf",                                                 "",       "",         "",                0,      "/etc/sample.conf", "",                       "")
+        SAMPLE("sample.conf",                                                      "",       "",         "",                0,      "sample.conf",      "",                       "")
+        SAMPLE("./sample.conf",                                                    "",       "",         "",                0,      "sample.conf",      "",                       "")
+        SAMPLE("../sample.conf",                                                   "",       "",         "",                0,      "../sample.conf",   "",                       "")
+        SAMPLE("*",                                                                "",       "",         "",                0,      "*",                "",                       "")
+    END_SAMPLES()
+
+  SCENARIO("Various URI formats can be created")
+    GIVEN("An empty URI")
+    WHEN ("The URI is configured", [](context& ctx) {
+          ctx.uri.scheme(ctx.sample().entry<std::string>("scheme"));
+          ctx.uri.user_info(ctx.sample().entry<std::string>("userinfo"));
+          ctx.uri.host(ctx.sample().entry<std::string>("host"));
+          ctx.uri.port(ctx.sample().entry<uint16_t>("port"));
+          ctx.uri.path(ctx.sample().entry<std::string>("path"));
+          ctx.uri.query(ctx.sample().entry<std::string>("query"));
+          ctx.uri.fragment(ctx.sample().entry<std::string>("fragment"));
+        })
+    THEN ("The URI is correctly formed", [](context& ctx) {
+          std::stringstream sstr;
+          sstr << ctx.uri;
+          ASSERT(ctx.sample().entry<std::string>("uri"), sstr.str());
+        })
+    SAMPLES(   "scheme", "userinfo", "host",            "port", "path",             "query",                    "fragment", "uri")
+        SAMPLE("http",   "",         "www.example.com", 80,     "/index.html",      "",                         "",         "http://www.example.com/index.html")
+        SAMPLE("http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                    "",         "http://www.example.com/index.html?id=10")
+        SAMPLE("http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                    "top",      "http://www.example.com/index.html?id=10#top")
+        SAMPLE("https",  "",         "www.example.com", 8080,   "/index.html",      "id=10&name=Hello%20World", "",         "https://www.example.com:8080/index.html?id=10&name=Hello%20World")
+        SAMPLE("ftp",    "",         "www.example.com", 21,     "/dir/a.out",       "",                         "",         "ftp://www.example.com/dir/a.out")
+        SAMPLE("",       "",         "",                0,      "/etc/sample.conf", "",                         "",         "/etc/sample.conf")
+        SAMPLE("",       "",         "",                0,      "sample.conf",      "",                         "",         "sample.conf")
+        SAMPLE("",       "",         "",                0,      "./sample.conf",    "",                         "",         "sample.conf")
+        SAMPLE("",       "",         "",                0,      "../sample.conf",   "",                         "",         "../sample.conf")
+        SAMPLE("",       "",         "",                0,      "*",                "",                         "",         "*")
+    END_SAMPLES()
 
 END_FEATURE()
 

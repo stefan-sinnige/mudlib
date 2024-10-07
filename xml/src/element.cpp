@@ -3,18 +3,15 @@
 
 BEGIN_MUDLIB_XML_NS
 
+/* static */ element::ptr
+element::create()
+{
+    return std::shared_ptr<xml::element>(new element());
+}
+
 element::element() : node(node::type_t::ELEMENT) {}
 
-element::element(const std::string& name)
-  : node(node::type_t::ELEMENT), _name(name)
-{}
-
 element::~element() {}
-
-element::element(const element& rhs) : node(node::type_t::ELEMENT)
-{
-    (void)operator=(rhs);
-}
 
 element::element(element&& rhs) : node(node::type_t::ELEMENT)
 {
@@ -22,22 +19,12 @@ element::element(element&& rhs) : node(node::type_t::ELEMENT)
 }
 
 element&
-element::operator=(const element& rhs)
-{
-    if (&rhs != this) {
-        _name = rhs._name;
-        _attributes = rhs._attributes;
-        _nodes = rhs._nodes;
-    }
-    return *this;
-}
-
-element&
 element::operator=(element&& rhs)
 {
     _name = std::move(rhs._name);
     _attributes = std::move(rhs._attributes);
-    _nodes = std::move(rhs._nodes);
+    _children = std::move(rhs._children);
+    _parent = std::move(rhs._parent);
     return *this;
 }
 
@@ -59,52 +46,58 @@ element::name(std::string&& value)
     _name = std::move(value);
 }
 
-const std::vector<mud::xml::attribute>&
+const mud::xml::attribute_set&
 element::attributes() const
 {
     return _attributes;
 }
 
-std::vector<mud::xml::attribute>&
-element::attributes()
-{
-    return _attributes;
-}
-
 void
-element::attributes(const std::vector<mud::xml::attribute>& value)
+element::attributes(const mud::xml::attribute_set& value)
 {
     _attributes = value;
 }
 
 void
-element::attributes(std::vector<mud::xml::attribute>&& value)
+element::attributes(mud::xml::attribute_set&& value)
 {
     _attributes = std::move(value);
 }
 
-const mud::core::poly_vector<mud::xml::node>&
-element::nodes() const
+void
+element::attribute(const mud::xml::attribute::ptr& attr)
 {
-    return _nodes;
+    _attributes.insert(attr);
 }
 
-mud::core::poly_vector<mud::xml::node>&
-element::nodes()
+const mud::xml::node_seq&
+element::children() const
 {
-    return _nodes;
+    return _children;
 }
 
 void
-element::nodes(const mud::core::poly_vector<mud::xml::node>& value)
+element::children(const mud::xml::node_seq& value)
 {
-    _nodes = value;
+    _children = value;
 }
 
 void
-element::nodes(mud::core::poly_vector<mud::xml::node>&& value)
+element::children(mud::xml::node_seq&& value)
 {
-    _nodes = std::move(value);
+    _children = std::move(value);
+}
+
+void
+element::child(const mud::xml::node::ptr& child)
+{
+    _children.push_back(child);
+}
+
+std::shared_ptr<mud::xml::node>
+element::parent() const
+{
+    return _parent;
 }
 
 END_MUDLIB_XML_NS

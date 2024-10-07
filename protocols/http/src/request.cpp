@@ -7,10 +7,7 @@ request::request() : message(message::type::REQUEST) {}
 void
 request::uri(const mud::core::uri& value)
 {
-    // Ensure to create a URI with a relative path
-    mud::core::uri relative_uri = value;
-    relative_uri.path(std::filesystem::path("/") / value.path());
-    _uri = http::uri(relative_uri);
+    _uri = http::uri(value);
 }
 
 void

@@ -1,8 +1,6 @@
 #ifndef _MUDLIB_XML_CHARDATA_H_
 #define _MUDLIB_XML_CHARDATA_H_
 
-#include <mud/core/poly_vector.h>
-#include <mud/xml/attribute.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
 #include <string>
@@ -17,28 +15,14 @@ class MUDLIB_XML_API char_data : public node
 {
 public:
     /**
-     * @brief Create an empty character data..
+     * @brief Type definition of a @c char_data pointer.
      */
-    char_data();
+    typedef std::shared_ptr<mud::xml::char_data> ptr;
 
     /**
-     * @brief Create character data..
-     * @param[in] data The character data.
+     * @brief Create a new @c char_data instance.
      */
-    char_data(const std::string& data);
-
-    /**
-     * @brief Copy a character data.
-     * @param[in] rhs The character data to copy from.
-     */
-    char_data(const char_data& rhs);
-
-    /**
-     * @brief Copy a character data through assignment.
-     * @param[in] rhs The character data to copy from.
-     * @return A reference to this character data.
-     */
-    char_data& operator=(const char_data& rhs);
+    static ptr create();
 
     /**
      * @brief Move a character data.
@@ -73,6 +57,11 @@ public:
     void text(std::string&& value);
 
 private:
+    /**
+     * @brief Create an empty character data..
+     */
+    char_data();
+
     /** The character data contents */
     std::string _text;
 };

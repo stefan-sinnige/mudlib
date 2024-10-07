@@ -3,31 +3,19 @@
 
 BEGIN_MUDLIB_XML_NS
 
+/* static */ char_data::ptr
+char_data::create()
+{
+    return std::shared_ptr<xml::char_data>(new char_data());
+}
+
 char_data::char_data() : node(node::type_t::CHAR_DATA) {}
 
-char_data::char_data(const std::string& data)
-  : node(node::type_t::CHAR_DATA), _text(data)
-{}
-
 char_data::~char_data() {}
-
-char_data::char_data(const char_data& rhs) : node(node::type_t::CHAR_DATA)
-{
-    (void)operator=(rhs);
-}
 
 char_data::char_data(char_data&& rhs) : node(node::type_t::CHAR_DATA)
 {
     *this = std::move(rhs);
-}
-
-char_data&
-char_data::operator=(const char_data& rhs)
-{
-    if (&rhs != this) {
-        _text = rhs._text;
-    }
-    return *this;
 }
 
 char_data&

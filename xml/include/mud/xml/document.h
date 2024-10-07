@@ -1,7 +1,6 @@
 #ifndef _MUDLIB_XML_DOCUMENT_H_
 #define _MUDLIB_XML_DOCUMENT_H_
 
-#include <mud/core/poly_vector.h>
 #include <mud/xml/element.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
@@ -10,27 +9,26 @@ BEGIN_MUDLIB_XML_NS
 
 /**
  * @brief Representation of an XML document.
+ *
+ * @details
+ * As defined in the XML Information Set (Second Edition), an XML document has
+ * the following properties:
+ *   * A single child element, the @em root element.
+ *   * An ordered sequence of children. This can be different XML node types,
+ *     however, it contains only a single element type (the @em root element).
  */
-class MUDLIB_XML_API document
+class MUDLIB_XML_API document : public node
 {
 public:
     /**
-     * @brief Create an empty document.
+     * @brief Type definition of a @c document pointer.
      */
-    document();
+    typedef std::shared_ptr<mud::xml::document> ptr;
 
     /**
-     * @brief Copy a document.
-     * @param[in] rhs The document to copy from.
+     * @brief Create a new @c document instance.
      */
-    document(const document& rhs);
-
-    /**
-     * @brief Copy a document through assignment.
-     * @param[in] rhs The document to copy from.
-     * @return A reference to this document.
-     */
-    document& operator=(const document& rhs);
+    static ptr create();
 
     /**
      * @brief Move a document.
@@ -54,27 +52,42 @@ public:
 
     /**
      * @brief Return the root element.
-     @ @throws mud::xml::not_found when there is no root element defined.
+     *
+     * @details
+     * Return the root element of the document. This is the first (and only)
+     * element child node of the document at the top level.
+     *
+     * @throws mud::xml::not_found when there is no root element defined.
      */
-    element& root();
-    const element& root() const;
+    mud::xml::element::ptr root() const;
 
     /**
-     * @brief Return the direct nodes of the element.
+     * @brief Return the children of the document.
      */
-    const mud::core::poly_vector<mud::xml::node>& nodes() const;
-    mud::core::poly_vector<mud::xml::node>& nodes();
+    virtual const mud::xml::node_seq& children() const override;
 
     /**
-     * @brief Set the direct nodes of the element.
-     * @param[in] value The direct nodes to set.
+     * @brief Set the children of the document.
+     * @param[in] value The children of the document. There should only be
+     * a singe node of the element type (the @em root element).
      */
-    void nodes(const mud::core::poly_vector<mud::xml::node>& value);
-    void nodes(mud::core::poly_vector<mud::xml::node>&& value);
+    void children(const mud::xml::node_seq& value);
+    void children(mud::xml::node_seq&& value);
+
+    /**
+     * @brief Add a child to the element.
+     * @param[in] value The node to add.
+     */
+    void child(const mud::xml::node::ptr& value);
 
 private:
+    /**
+     * @brief Create an empty document.
+     */
+    document();
+
     /** The direct nodes (one of them should be the 'root' element. */
-    mud::core::poly_vector<mud::xml::node> _nodes;
+    mud::xml::node_seq _children;
 };
 
 END_MUDLIB_XML_NS

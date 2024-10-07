@@ -1,8 +1,6 @@
 #ifndef _MUDLIB_XML_COMMENT_H_
 #define _MUDLIB_XML_COMMENT_H_
 
-#include <mud/core/poly_vector.h>
-#include <mud/xml/attribute.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
 #include <string>
@@ -17,28 +15,14 @@ class MUDLIB_XML_API comment : public node
 {
 public:
     /**
-     * @brief Create an empty comment.
+     * @brief Type definition of a @c comment pointer.
      */
-    comment();
+    typedef std::shared_ptr<mud::xml::comment> ptr;
 
     /**
-     * @brief Create an comment.
-     * @param[in] data The comment.
+     * @brief Create a new @c comment instance.
      */
-    comment(const std::string& data);
-
-    /**
-     * @brief Copy a comment.
-     * @param[in] rhs The comment to copy from.
-     */
-    comment(const comment& rhs);
-
-    /**
-     * @brief Copy a comment through assignment.
-     * @param[in] rhs The comment to copy from.
-     * @return A reference to this comment.
-     */
-    comment& operator=(const comment& rhs);
+    static ptr create();
 
     /**
      * @brief Move a comment.
@@ -73,6 +57,11 @@ public:
     void text(std::string&& value);
 
 private:
+    /**
+     * @brief Create an empty comment.
+     */
+    comment();
+
     /** The comment contents */
     std::string _text;
 };

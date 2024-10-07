@@ -3,31 +3,20 @@
 
 BEGIN_MUDLIB_XML_NS
 
-comment::comment() : node(node::type_t::COMMENT) {}
+/* static */ comment::ptr
+comment::create()
+{
+    return std::shared_ptr<xml::comment>(new comment());
+}
 
-comment::comment(const std::string& data)
-  : node(node::type_t::COMMENT), _text(data)
-{}
+comment::comment() : node(node::type_t::COMMENT) {}
 
 comment::~comment() {}
 
-comment::comment(const comment& rhs) : node(node::type_t::COMMENT)
-{
-    (void)operator=(rhs);
-}
 
 comment::comment(comment&& rhs) : node(node::type_t::COMMENT)
 {
     *this = std::move(rhs);
-}
-
-comment&
-comment::operator=(const comment& rhs)
-{
-    if (&rhs != this) {
-        _text = rhs._text;
-    }
-    return *this;
 }
 
 comment&
