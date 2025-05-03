@@ -10,6 +10,8 @@ Required dependencies include
 * autoconf-archive
 * automake
 * libtool
+* flex
+* bison
 
 The full build, test and install steps would usually be
 ```

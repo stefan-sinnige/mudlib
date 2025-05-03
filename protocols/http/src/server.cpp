@@ -124,6 +124,11 @@ public:
     void stop();
 
     /**
+     * @brief Retun the listening end-point.
+     */
+    const mud::io::tcp::endpoint& endpoint() const;
+
+    /**
      * @brief The impulse when a request message has been received.
      */
     request_impulse_type request_impulse() {
@@ -136,6 +141,9 @@ private:
 
     /** The handler when an request has been received. */
     void on_request(const mud::http::request& req, mud::http::response& resp);
+
+    /** The listening endpoint */
+    mud::io::tcp::endpoint _endpoint;
 
     /** The TCP acceptor to listen for incoming connections */
     mud::io::tcp::acceptor _acceptor;
@@ -162,7 +170,8 @@ server::impl::~impl()
 void
 server::impl::start(const mud::io::tcp::endpoint& endpoint)
 {
-    _acceptor.open(endpoint);
+    _endpoint = endpoint;
+    _acceptor.open(_endpoint);
 }
 
 void
@@ -170,6 +179,12 @@ server::impl::stop()
 {
     _acceptor.close();
     _communicators.clear();
+}
+
+const mud::io::tcp::endpoint& 
+server::impl::endpoint() const
+{
+    return _endpoint;
 }
 
 void
@@ -211,6 +226,12 @@ void
 server::stop()
 {
     _impl->stop();
+}
+
+const mud::io::tcp::endpoint&
+server::endpoint() const
+{
+    return _impl->endpoint();
 }
 
 END_MUDLIB_HTTP_NS

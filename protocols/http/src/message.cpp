@@ -156,7 +156,7 @@ operator>>(std::istream& istr, message& msg)
     //      * Read till the designated length
     //    * No Content-Length or Transfer-Encoding
     //      * If the message is a request, assume it does not contain a body
-    //      * Read till connection is closed (HTTP 1.0 only)
+    //      * Read till connection is closed
     if (msg.exists<http::transfer_encoding>()) {
         // Only support chunked encoding
         const auto& encodings = msg.field<http::transfer_encoding>().value();
@@ -185,8 +185,7 @@ operator>>(std::istream& istr, message& msg)
         body.resize(content_length);
         istr.read(&body[0], content_length);
         msg.entity_body(body);
-    } else if (msg.type() == message::type::RESPONSE &&
-               msg.version() == version_e::HTTP10) {
+    } else if (msg.type() == message::type::RESPONSE) {
         // Read until the end, but only for a Response Message (RFC 9110 - 8.6)
         // and read it in blocks for best performance.
         const size_t BLOCKSIZE = 1024;

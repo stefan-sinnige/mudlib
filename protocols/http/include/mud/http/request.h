@@ -1,6 +1,7 @@
 #ifndef _MUDLIB_HTTP_REQUEST_H_
 #define _MUDLIB_HTTP_REQUEST_H_
 
+#include <strings.h>
 #include <mud/http/message.h>
 #include <mud/http/ns.h>
 

@@ -60,6 +60,7 @@ AC_CONFIG_FILES([
     mudlib.pc
     protocols/Makefile protocols/test/Makefile
     protocols/http/Makefile protocols/http/test/Makefile
+    protocols/soap/Makefile protocols/soap/test/Makefile
     protocols/tls/Makefile protocols/tls/test/Makefile
     samples/Makefile
     samples/io/Makefile

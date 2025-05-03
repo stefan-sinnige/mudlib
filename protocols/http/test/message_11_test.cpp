@@ -176,7 +176,7 @@ FEATURE("HTTP/1.1 Message")
         })
 
   SCENARIO("Reading Entity-Body without Content-Length")
-    GIVEN("An HTTP Message with a Content-Length and Entity-Body field",
+    GIVEN("An HTTP Message with Entity body and without a Content-Length field",
         [](context& ctx) {
             ctx.msg = &ctx.resp;
             ctx.istr = std::istringstream(
@@ -184,10 +184,11 @@ FEATURE("HTTP/1.1 Message")
                 "\r\n"
                 "Hello World");
         })
-    WHEN ("The message is read", [](context& ctx){})
-    THEN ("The message throws an exception",
+    WHEN ("The message is read")
+    THEN ("The Entity-Body value is available",
         [](context& ctx) {
-            ASSERT_THROW(std::out_of_range, ctx.istr >> *ctx.msg);
+            ASSERT(11, ctx.resp.entity_body().value().size());
+            ASSERT("Hello World", ctx.resp.entity_body().value());
         })
 
   SCENARIO("Writing Entity-Body field")

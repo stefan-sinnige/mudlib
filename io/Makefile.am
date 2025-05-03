@@ -4,6 +4,8 @@ lib_LTLIBRARIES = libmudio.la
 
 libmudio_la_SOURCES = \
     src/exception.cpp \
+    src/host.cpp \
+    src/interface.cpp \
     src/pipe.cpp \
     src/streambuf.cpp \
     src/socket.cpp \
@@ -18,6 +20,8 @@ includemud_HEADERS = \
 includemudiodir = $(includedir)/mud/io
 includemudio_HEADERS = \
     include/mud/io/exception.h \
+    include/mud/io/host.h \
+    include/mud/io/interface.h \
     include/mud/io/ip.h \
     include/mud/io/ns.h \
     include/mud/io/pipe.h \

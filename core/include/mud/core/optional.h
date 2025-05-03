@@ -56,7 +56,7 @@ public:
      */
     optional_ref& operator=(optional_ref&& rhs) {
         _object = rhs._object;
-        rhs.object = nullptr;
+        rhs._object = nullptr;
         return *this;
     }
 

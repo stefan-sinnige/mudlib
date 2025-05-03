@@ -35,28 +35,24 @@ BEGIN_MUDLIB_XML_NS
  *    xml::document::ptr doc = xml::dom::create_document();
  *    xml::element::ptr catalog = xml::dom::create_element();
  *    {
- *        xml::element::ptr book = xml::dom::create_element();
- *        xml::element::ptr author = xml::dom::create_element();
- *        xml::char_data::ptr author_text = xml::dom::create_char_data();
- *        author_text->("Homer");
+ *        auto book = xml::dom::create_element("book");
+ *        auto author = xml::dom::create_element("author");
+ *        auto author_text = xml::dom::create_char_data("Homer");
  *        author->add(author_text);
- *        xml::element::ptr title = xml::dom::create_element();
- *        xml::char_data::ptr title_text = xml::dom::create_char_data();
- *        title_text->("Illiad");
+ *        auto title = xml::dom::create_element("title");
+ *        auto title_text = xml::dom::create_char_data("Illiad");
  *        author->add(title_text);
  *        book->add(author);
  *        book->add(title);
  *        catalog->add(book);
  *    }
  *    {
- *        xml::element::ptr book = xml::dom::create_element();
- *        xml::element::ptr author = xml::dom::create_element();
- *        xml::char_data::ptr author_text = xml::dom::create_char_data();
- *        author_text->("Erasmus");
+ *        auto book = xml::dom::create_element("book");
+ *        auto author = xml::dom::create_element("author");
+ *        auto author_text = xml::dom::create_char_data("Erasmus");
  *        author->add(author_text);
- *        xml::element::ptr title = xml::dom::create_element();
- *        xml::char_data::ptr title_text = xml::dom::create_char_data();
- *        title_text->("On Free Will");
+ *        auto title = xml::dom::create_element("title");
+ *        auto title_text = xml::dom::create_char_data("In Praise of Folly");
  *        author->add(title_text);
  *        book->add(author);
  *        book->add(title);
@@ -71,24 +67,59 @@ class MUDLIB_XML_API dom
 {
 public:
     /**
-     * @brief Create an empty XML attribute node.
+     * @brief Create an XML attribute node with a qualified name.
+     *
+     * @details
+     * A qualified name is a name of the form
+     * @verbatim
+     *    [ prefix ':' ]local-name
+     * @endverbatim
+     * If the @c prefix is omitted, the @c local-name is said to be part of the
+     * default namespace. Otherwise, the @c prefix references the namespace
+     * prefix that the attribute is defined in.
+     *
+     * A special namespace definition attribute can be defined through this
+     * method by specifying the name as
+     * @verbatim
+     *    'xmlns' [ ':' prefix ]
+     * @endverbatim
+     * This defines a resolved namespace whose URI is provided by the attribute
+     * value. If the prefix is omitted, then the attribute defines a default
+     * namespace.
+     *
+     * @param qname The qualified name.
      */
-    static xml::attribute::ptr create_attribute();
+    static xml::attribute::ptr create_attribute(const std::string& qname);
 
     /**
-     * @brief Create an empty XML CDATA section node.
+     * @brief Create an XML attribute node with a local-name that is part of
+     * a defined namespace. The local-name should @c em not contain a prefix
+     * specification as that is provided by the resolved namespace definition.
+     *
+     * @param local_name The local-name.
+     * @param uri The namespace URI.
      */
-    static xml::cdata_section::ptr create_cdata_section();
+    static xml::attribute::ptr create_attribute(const std::string& local_name,
+            const mud::core::uri& uri);
 
     /**
-     * @brief Create an empty XML character data node.
+     * @brief Create an XML CDATA section node with text data..
+     * @param text The text to set.
      */
-    static xml::char_data::ptr create_char_data();
+    static xml::cdata_section::ptr create_cdata_section(
+            const std::string& text);
 
     /**
-     * @brief Create an empty XML comment node.
+     * @brief Create an XML character data node with text data.
+     * @param text The text to set.
      */
-    static xml::comment::ptr create_comment();
+    static xml::char_data::ptr create_char_data(const std::string& text);
+
+    /**
+     * @brief Create an XML comment node with text data.
+     * @param text The text to set.
+     */
+    static xml::comment::ptr create_comment(const std::string& text);
 
     /**
      * @brief Create an empty XML declaration node.
@@ -105,14 +136,37 @@ public:
     static xml::document::ptr create_document();
 
     /**
-     * @brief Create an empty XML element node.
+     * @brief Create a new @c element instance with a qualified name.
+     *
+     * @details
+     * A qualified name is a name of the form
+     * @verbatim
+     *    [ prefix ':' ] local-name
+     * @endverbatim
+     * If the @c prefix is omitted, the @c local-name is said to be part of the
+     * default namespace. Otherwise, the @c prefix references the namespace
+     * prefix that the element is defined in.
      */
-    static xml::element::ptr create_element();
+    static xml::element::ptr create_element(const std::string& qname);
+
+    /**
+     * @brief Create an XML element node with a local-name that is part of
+     * a defined namespace. The local-name should @c em not contain a prefix
+     * specification as that is provided by the resolved namespace definition.
+     *
+     * @param local_name The local-name.
+     * @param uri The namespace URI.
+     */
+    static xml::element::ptr create_element(const std::string& local_name,
+            const mud::core::uri& uri);
 
     /**
      * @brief Create an empty XML processing instruction node.
+     * @param text The target to set.
+     * @param text The data to set.
      */
-    static xml::processing_instruction::ptr create_processing_instruction();
+    static xml::processing_instruction::ptr create_processing_instruction(
+            const std::string& target, const std::string& data);
 };
 
 END_MUDLIB_XML_NS

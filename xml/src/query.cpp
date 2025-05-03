@@ -2,6 +2,7 @@
 #include "mud/xml/exception.h"
 #include "src/operation_tree.h"
 #include <iostream>
+#include <stack>
 #include <string>
 
 BEGIN_MUDLIB_XML_NS
@@ -42,7 +43,8 @@ public:
     const xpath::operation_tree& compile(const std::string& xpath_query);
 
 private:
-    /* The token from the lexical scanner */
+    /* The token from the lexical scanner. The copying semantics uses a
+     * copy of the values which may not be truly efficient. */
     struct token {
         /* The token type */
         enum class type_t {
@@ -55,6 +57,7 @@ private:
             OPEN_BRACKET,       /**< Open parenthesis "[" */
             CLOSE_BRACKET,      /**< Close parenthesis "]" */
             DOUBLE_COLON,       /**< Double colon "::" */
+            AT,                 /**< At symbol "@" */
             STRING              /**< Generic string, ie element name */
         };
    
@@ -69,12 +72,17 @@ private:
             value.string = new std::string(v);
         }
         token(const token& other) {
-            // Not efficient as it is copying strings - use move semantics
-            // or rudimentary reference counter structure.
+            this->operator=(other);
+        }
+        token& operator=(const token& other) {
+            if (this == &other) {
+                return *this;
+            }
             type = other.type;
             if (type == type_t::STRING) {
                 value.string = new std::string(*other.value.string);
             }
+            return *this;
         }
 
         /* Destructor */
@@ -249,7 +257,7 @@ query_parser::reduce_step_expr()
     // Accepts the following rule
     //    [38] StepExpr ::= PostfixExpr | AxisStep
 
-    // Expecting a STRING
+    // Expecting a STRING or an AT
     token tok = lex();
     switch (tok.type) {
         case token::type_t::ERROR:
@@ -258,6 +266,8 @@ query_parser::reduce_step_expr()
         case token::type_t::EOQ:
             return nullptr;
         case token::type_t::STRING:
+            break;
+        case token::type_t::AT:
             break;
         default:
             throw mud::xml::exception("XPath syntax error");
@@ -275,7 +285,13 @@ query_parser::reduce_step_expr()
         case token::type_t::DOUBLE_SEPARATOR:
         case token::type_t::DOUBLE_COLON:
         case token::type_t::OPEN_BRACKET: 
+        case token::type_t::STRING: 
         {
+            if (tok.type == token::type_t::AT &&
+                lookahead.type != token::type_t::STRING)
+            {
+                throw mud::xml::exception("XPath syntax error");
+            }
             return reduce_axis_step();
         }
         case token::type_t::OPEN_PARENTHESIS:
@@ -316,6 +332,9 @@ query_parser::reduce_axis_step()
     //    [46] NodeTest          ::= NameTest
     //    [47] NameTest          ::= EQName 
     //                             | Wildcard
+    //   [112] EQName            ::= QName
+    //   [122] QName             ::= Prefix ':' LocalPart
+    //                             | Localpart
 
     auto expr = std::make_shared<xpath::axis_step>();
 
@@ -329,6 +348,13 @@ query_parser::reduce_axis_step()
             return nullptr;
         case token::type_t::STRING:
             break;
+        case token::type_t::AT:
+            expr->axis() = xpath::axis_step::axis_t::ATTRIBUTE;
+            tok = lex();
+            if (tok.type != token::type_t::STRING) {
+                throw mud::xml::exception("XPath syntax error");
+            }
+            break;
         default:
             throw mud::xml::exception("XPath syntax error");
     }
@@ -341,6 +367,10 @@ query_parser::reduce_axis_step()
             throw mud::xml::exception(*tok.value.string);
             break;
         case token::type_t::DOUBLE_COLON:
+            if (*tok.value.string == "attribute") {
+                expr->axis() = xpath::axis_step::axis_t::ATTRIBUTE;
+            }
+            else
             if (*tok.value.string == "child") {
                 expr->axis() = xpath::axis_step::axis_t::CHILD;
             }
@@ -438,10 +468,10 @@ query_parser::lex()
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // DLE .. ETB
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // CAN .. US
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //  SP .. '
-        0x02, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //   ( .. /
+        0x02, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, //   ( .. /
         0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, //   0 .. 7
         0x01, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, //   8 .. ?
-        0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, //   @ .. G
+        0x02, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, //   @ .. G
         0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, //   H .. O
         0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, //   P .. W
         0x01, 0x01, 0x01, 0x02, 0x00, 0x02, 0x00, 0x00, //   X .. _
@@ -504,6 +534,11 @@ query_parser::lex()
     auto start = _pos;
     char ch = at();
 
+    // Check if we're at the end
+    if (ch == EOF) {
+        return token(token::type_t::EOQ);
+    }
+
     // Process any special characters
     if (table[ch] & special) {
         advance();
@@ -516,6 +551,8 @@ query_parser::lex()
                 return token(token::type_t::OPEN_BRACKET);
             case ']':
                 return token(token::type_t::CLOSE_BRACKET);
+            case '@':
+                return token(token::type_t::AT);
             case ':':
                 ch = advance();
                 if (ch != ':') {
@@ -696,12 +733,18 @@ query::impl::impl(const std::string& xpath_query)
 query_result 
 query::impl::evaluate(const xml::document::ptr& doc)
 {
+    if (doc == nullptr) {
+        return query_result();
+    }
     return evaluate(*_op_tree.expr(), doc);
 }
 
 query_result 
 query::impl::evaluate(const xml::node::ptr& node)
 {
+    if (node == nullptr) {
+        return query_result();
+    }
     return evaluate(*_op_tree.expr(), node);
 }
 
@@ -787,18 +830,31 @@ query::impl::evaluate(
         const xpath::axis_step& expr,
         const xml::node_seq& context_nodes)
 {
-    // Evaluate over all context nodes and combine the results
+    // Evaluate over all context nodes and combine the results. At this moment,
+    // only support a 'QName ::= LocalPart' as a name-test (namespaces prefixes
+    // are currently not supported).
     query_result result;
     for (auto context_node: context_nodes)
     {
         switch (expr.axis())
         {
+            case xpath::axis_step::axis_t::ATTRIBUTE:
+                if (context_node->type() == xml::node::type_t::ELEMENT)
+                {
+                    auto element = std::static_pointer_cast<xml::element>(context_node);
+                    for (auto attr: element->attributes()) {
+                        if (attr->local_name() == expr.name_test()) {
+                            result.append(attr);
+                        }
+                    }
+                }
+                break;
             case xpath::axis_step::axis_t::CHILD:
                 for (auto node: context_node->children()) {
                     if (node->type() == xml::node::type_t::ELEMENT)
                     {
                         auto element = std::static_pointer_cast<xml::element>(node);
-                        if (element->name() == expr.name_test()) {
+                        if (element->local_name() == expr.name_test()) {
                             result.append(node);
                         }
                     }

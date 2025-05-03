@@ -1,8 +1,10 @@
 #ifndef _MUDLIB_HTTP_FIELD_H_
 #define _MUDLIB_HTTP_FIELD_H_
 
-#include <cctype>
+#include <ctype.h>
+#include <algorithm>
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <list>
 #include <map>
@@ -508,21 +510,42 @@ operator>>(std::istream&, uri&);
  */
 enum class status_code_e : unsigned
 {
+    Continue = 100,
+    SwitchingProtocols = 101,
     OK = 200,
     Created = 201,
     Accepted = 202,
     NoContent = 204,
+    ResetContent = 205,
+    PartialContent = 206,
+    MultipleChoice = 300,
     MovedPermanently = 301,
     MovedTemporarily = 302,
     NotModified = 304,
+    UseProxy = 305,
+    TemporaryRedirect = 307,
     BadRequest = 400,
     Unauthorized = 401,
     Forbidden = 403,
     NotFound = 404,
     InternalServerError = 405,
+    NotAcceptable = 406,
+    ProxyAuthenticationRequired = 407,
+    RequestTimeout = 408,
+    Conflict = 409,
+    Gone = 410,
+    LengthRequired = 411,
+    PreconditionFailed = 412,
+    RequestEntityTooLarge = 413,
+    RequestURITooLarge = 414,
+    UnsupportedMediaType = 415,
+    RequestRangeNotSatifiable = 416,
+    ExpectationFailed = 417,
     NotImplemented = 501,
     BadGateway = 502,
-    ServiceUnavailable = 503
+    ServiceUnavailable = 503,
+    GatewayTimeout = 504,
+    HTTPVersionNotSupported = 505
 };
 extern const char _HTTP_STATUS_CODE[];
 typedef field<(base_field::field)-10003, status_code_e, _HTTP_STATUS_CODE>
@@ -537,21 +560,43 @@ operator>>(std::istream&, status_code&);
  */
 enum class reason_phrase_e
 {
+    Continue,
+    SwitchingProtocols,
     OK,
     Created,
     Accepted,
     NoContent,
+    ResetContent,
+    PartialContent,
+    MultipleChoice,
     MovedPermanently,
     MovedTemporarily,
     NotModified,
+    UseProxy,
+    TemporaryRedirect,
     BadRequest,
     Unauthorized,
     Forbidden,
     NotFound,
     InternalServerError,
+    NotAcceptable,
+    ProxyAuthenticationRequired,
+    RequestTimeout,
+    Conflict,
+    Gone,
+    LengthRequired,
+    PreconditionFailed,
+    RequestEntityTooLarge,
+    RequestURITooLarge,
+    UnsupportedMediaType,
+    RequestRangeNotSatifiable,
+    ExpectationFailed,
     NotImplemented,
     BadGateway,
-    ServiceUnavailable
+    ServiceUnavailable,
+    GatewayTimeout,
+    HTTPVersionNotSupported,
+    ExtensionCode
 };
 extern const char _HTTP_REASON_PHRASE[];
 typedef field<(base_field::field)-10004, reason_phrase_e, _HTTP_REASON_PHRASE>

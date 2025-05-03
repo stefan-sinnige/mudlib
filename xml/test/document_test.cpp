@@ -28,8 +28,7 @@ FEATURE("Document")
     DEFINE_GIVEN("A well-formed document",
       [](context& ctx) {
         ctx.doc = mud::xml::dom::create_document();
-        mud::xml::element::ptr root = mud::xml::dom::create_element();
-        root->name("root");
+        mud::xml::element::ptr root = mud::xml::dom::create_element("root");
         ctx.doc->child(root);
       })
     DEFINE_WHEN ("The document is examined",

@@ -4,26 +4,15 @@
 BEGIN_MUDLIB_XML_NS
 
 /* static */ cdata_section::ptr
-cdata_section::create()
+cdata_section::create(const std::string& text)
 {
-    return std::shared_ptr<xml::cdata_section>(new cdata_section());
+    return std::shared_ptr<xml::cdata_section>(new cdata_section(text));
 }
 
-cdata_section::cdata_section() : node(node::type_t::CDATA_SECTION) {}
-
-cdata_section::~cdata_section() {}
-
-cdata_section::cdata_section(cdata_section&& rhs)
-  : node(node::type_t::CDATA_SECTION)
+cdata_section::cdata_section(const std::string& text)
+    : node(node::type_t::CDATA_SECTION)
+    , _text(text)
 {
-    *this = std::move(rhs);
-}
-
-cdata_section&
-cdata_section::operator=(cdata_section&& rhs)
-{
-    _text = std::move(rhs._text);
-    return *this;
 }
 
 const std::string&
@@ -43,6 +32,7 @@ cdata_section::text(std::string&& value)
 {
     _text = std::move(value);
 }
+
 END_MUDLIB_XML_NS
 
 /* vi: set ai ts=4 expandtab: */

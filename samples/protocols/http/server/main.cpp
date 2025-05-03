@@ -3,6 +3,7 @@
 #include <mud/http/request.h>
 #include <mud/http/response.h>
 #include <mud/http/server.h>
+#include <string.h>
 
 // ===========================================================================
 // Server

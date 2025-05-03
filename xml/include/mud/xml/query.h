@@ -99,7 +99,7 @@ private:
  * query on a document and return the information queried for.
  *
  * @note
- * The implementation only able to perform a limited subset of the XPath
+ * The implementation only able to perform a limited subset of the XPath 3.0
  * syntax. The queries are limited to:
  *    * Non-Abbreviated Absolute Location Path
  *    * Only Literal Primary Expressions

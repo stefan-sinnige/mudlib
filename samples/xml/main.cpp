@@ -32,7 +32,7 @@ main(int argc, char** argv)
         istr = &std::cin;
     }
 
-    // Extract an XML document from te input stream
+    // Extract an XML document from the input stream
     mud::xml::document::ptr doc;
     *istr >> doc;
 

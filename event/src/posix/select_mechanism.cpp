@@ -1,5 +1,7 @@
-#include "src/posix/select_mechanism.h"
+#include "posix/select_mechanism.h"
+#include "timer_dispatcher.h"
 #include <algorithm>
+#include <chrono>
 #include <errno.h>
 #include <fcntl.h>
 #include <system_error>
@@ -12,8 +14,9 @@ event_mechanism_factory::registrar<mud::core::handle::type_t::SELECT,
     _registrar;
 
 select_mechanism::select_mechanism(
-    const std::shared_ptr<mud::core::simple_task_queue>& queue)
-  : mud::event::event_mechanism(queue), _running(false)
+    const std::shared_ptr<mud::core::simple_task_queue>& queue,
+    const std::shared_ptr<mud::event::timer_dispatcher>& timers)
+  : mud::event::event_mechanism(queue, timers), _running(false)
 {
     /* Always register the self-event to receive the trigger */
     event ev(_self.handle(), event::signal_type::READING, [&]() {
@@ -21,6 +24,10 @@ select_mechanism::select_mechanism(
         return mud::event::event::return_type::CONTINUE;
     });
     _events.push_back(ev);
+
+    /* Register the timer change event */
+    mud::event::event timers_ev = timers->event();
+    _events.push_back(timers_ev);
 }
 
 select_mechanism::~select_mechanism()
@@ -81,11 +88,28 @@ select_mechanism::loop()
         fd_set readfds, writefds, exceptfds;
         int maxfd;
 
+        // Create the structure of all the file descriptors to wait for
         multiplex(readfds, writefds, exceptfds, maxfd);
-        if (::select(maxfd + 1, &readfds, &writefds, &exceptfds, nullptr) ==
-            -1)
+
+        // Create the wait time, based on the event timers
+        struct timeval tv, *timeout;
+        auto now = std::chrono::system_clock::now();
+        std::chrono::milliseconds duration = timers()->wait_duration(now);
+        if (duration == std::chrono::milliseconds::max()) {
+            timeout = nullptr;
+        }
+        else {
+            tv.tv_sec = std::chrono::duration_cast<std::chrono::seconds>(
+                    duration).count();
+            tv.tv_usec = (duration.count() % 1000) * 1000;
+            timeout = &tv;
+        }
+
+        // Wait for the file-descriptors, or timeout.
+        int ret = ::select(maxfd + 1, &readfds, &writefds, &exceptfds, timeout);
+        if (ret < 0)
         {
-            /* If we have an EBADF, remove the associated event. */
+            // If we have an EBADF, remove the associated event.
             if (errno == EBADF) {
                 remove_badf();
             }
@@ -94,6 +118,29 @@ select_mechanism::loop()
             }
             continue;
         }
+        else
+        if (ret == 0) {
+            // Timeout, meaning that one of the timers has expired. We may be
+            // able to schedule a task to handle timers like so
+            // 
+            //    mud::core::simple_task task([this]() {
+            //        auto now = std::chrono::system_clock::now();
+            //        this->timers()->dispatch(now);
+            //    });
+            //    queue()->push(std::move(task));
+            //
+            // But that would keep on triggering the select call with zero
+            // timeouts until the task is processed and all the expired timers
+            // have been processed. This would then have updated their expiry
+            // to the next time point. This means we would have a number of
+            // duplicate tasks in the queue. Until we have a reliable
+            // mechanism to deal with this, we block the event-loop until those
+            // timers are triggered by executing the dispatch straight away.
+            auto now = std::chrono::system_clock::now();
+            timers()->dispatch(now);
+        }
+
+        // Handle all the file-descriptions that have been signaled.
         demultiplex(readfds, writefds, exceptfds);
     }
 

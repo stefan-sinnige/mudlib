@@ -142,7 +142,7 @@ client::on_receive(mud::io::tcp::socket& /* unused */ socket)
         if (!istr().bad()) {
             _response_impulse->pulse(resp);
         }
-    } catch (...) {
+    } catch (std::exception& ex) {
         force_close = true;
     }
 

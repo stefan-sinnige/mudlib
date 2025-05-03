@@ -4,28 +4,41 @@
 BEGIN_MUDLIB_XML_NS
 
 /* static */ element::ptr
-element::create()
+element::create(const std::string& qname)
 {
-    return std::shared_ptr<xml::element>(new element());
+    return std::shared_ptr<xml::element>(new element(qname));
 }
 
-element::element() : node(node::type_t::ELEMENT) {}
-
-element::~element() {}
-
-element::element(element&& rhs) : node(node::type_t::ELEMENT)
+/* static */ element::ptr
+element::create(const std::string& local_name, const mud::core::uri& uri)
 {
-    *this = std::move(rhs);
+    return std::shared_ptr<xml::element>(new element(local_name, uri));
 }
 
-element&
-element::operator=(element&& rhs)
+element::element(const std::string& qname)
+    : node(node::type_t::ELEMENT)
+    , _name(qname)
+    , _ns(mud::xml::ns::create())
 {
-    _name = std::move(rhs._name);
-    _attributes = std::move(rhs._attributes);
-    _children = std::move(rhs._children);
-    _parent = std::move(rhs._parent);
-    return *this;
+    // Split the qualified name into a prefix and local-name
+    auto pos = _name.find_first_of(':');
+    if (pos == std::string::npos) {
+        _local_name = qname;
+    }
+    else {
+        _ns->prefix(qname.substr(0, pos));
+        _local_name = qname.substr(pos+1);
+    }
+
+}
+
+element::element(const std::string& local_name, const mud::core::uri& uri)
+    : node(node::type_t::ELEMENT)
+    , _local_name(local_name)
+    , _name(local_name)
+    , _ns(mud::xml::ns::create())
+{
+    _ns->uri(uri);
 }
 
 const std::string&
@@ -34,16 +47,16 @@ element::name() const
     return _name;
 }
 
-void
-element::name(const std::string& value)
+const std::string&
+element::prefix() const
 {
-    _name = value;
+    return _ns->prefix();
 }
 
-void
-element::name(std::string&& value)
+const std::string&
+element::local_name() const
 {
-    _name = std::move(value);
+    return _local_name;
 }
 
 const mud::xml::attribute_set&
@@ -56,18 +69,36 @@ void
 element::attributes(const mud::xml::attribute_set& value)
 {
     _attributes = value;
+    for (auto& attr: _attributes) {
+        attr->parent(get_shared());
+    }
 }
 
 void
 element::attributes(mud::xml::attribute_set&& value)
 {
     _attributes = std::move(value);
+    for (auto& attr: _attributes) {
+        attr->parent(get_shared());
+    }
 }
 
 void
 element::attribute(const mud::xml::attribute::ptr& attr)
 {
+    attr->parent(get_shared());
     _attributes.insert(attr);
+}
+
+mud::xml::attribute::ptr
+element::attribute(const std::string& local_name) const
+{
+    for (auto& attr: _attributes) {
+        if (attr->local_name() == local_name) {
+            return attr;
+        }
+    }
+    return nullptr;
 }
 
 const mud::xml::node_seq&
@@ -80,24 +111,75 @@ void
 element::children(const mud::xml::node_seq& value)
 {
     _children = value;
+    for (auto& child: _children) {
+        child->parent(get_shared());
+    }
 }
 
 void
 element::children(mud::xml::node_seq&& value)
 {
     _children = std::move(value);
+    for (auto& child: _children) {
+        child->parent(get_shared());
+    }
+}
+
+mud::xml::node_seq
+element::elements(const std::string& local_name) const
+{
+    mud::xml::node_seq seq;
+    for (auto& child: _children) {
+        if (child->type() == mud::xml::node::type_t::ELEMENT) {
+            auto element = std::static_pointer_cast<mud::xml::element>(child);
+            if (element->local_name() == local_name) {
+                seq.push_back(child);
+            }
+
+        }
+    }
+    return seq;
 }
 
 void
 element::child(const mud::xml::node::ptr& child)
 {
+    child->parent(get_shared());
     _children.push_back(child);
 }
 
-std::shared_ptr<mud::xml::node>
-element::parent() const
+const mud::xml::ns::ptr&
+element::ns() const
 {
-    return _parent;
+    return _ns;
+}
+
+mud::xml::ns::ptr
+element::resolved_ns() const
+{
+    return resolved_ns(_ns->uri());
+}
+
+mud::xml::ns::ptr
+element::resolved_ns(const mud::core::uri& uri) const
+{
+    // Check the attribute of this node for a matching namespace definition with
+    // the same URI.
+    for (auto& attr: _attributes) {
+        if (attr->ns()->resolved() && attr->ns()->uri() == uri) {
+            return attr->ns();
+        }
+    }
+
+    // If there is no parent (ie we're at the document element, we have
+    // exhausted all ancestors and no match is found.
+    auto ancestor = _parent.lock();
+    if (!ancestor ) {
+        return nullptr;
+    }
+
+    // Check the ancestor until we find the closest match.
+    return ancestor->get_shared<mud::xml::element>()->resolved_ns(uri);
 }
 
 END_MUDLIB_XML_NS

@@ -33,19 +33,19 @@ public:
 
     /**
      * Create a URI from a string.
-     * @param[in] str  The string representation of the URI.
+     * @param str  The string representation of the URI.
      */
     uri(const std::string& str);
 
     /**
      * Copy constructor.
-     * @param[in] rhs  The uri to copy from.
+     * @param rhs  The uri to copy from.
      */
     uri(const uri& rhs) = default;
 
     /**
      * Move constructor.
-     * @param[in] rhs  The uri to move from.
+     * @param rhs  The uri to move from.
      */
     uri(uri&& rhs) = default;
 
@@ -56,15 +56,29 @@ public:
 
     /**
      * Copy assignment.
-     * @param[in] rhs  The uri to copy from.
+     * @param rhs  The uri to copy from.
      */
     uri& operator=(const uri& rhs) = default;
 
     /**
      * Move assignment.
-     * @param[in] rhs  The uri to move from.
+     * @param rhs  The uri to move from.
      */
     uri& operator=(uri&& rhs) = default;
+
+    /**
+     * Equality operator.
+     * @param other The uri to test against.
+     * @return True if the @c other URI is the same. 
+     */
+    bool operator==(const uri& other) const;
+
+    /**
+     * In-equality operator.
+     * @param other The uri to test against.
+     * @return True if the @c other URI is not the same. 
+     */
+    bool operator!=(const uri& other) const;
 
     /**
      * @brief Return true if the URI is absolute.
@@ -174,6 +188,11 @@ public:
     void clear();
 
     /**
+     * @brief Return true if the URI is empty.
+     */
+    bool empty() const;
+
+    /**
      * Normalise the URI. This will perform
      *   Syntax-based normalisation
      *   Percent encoding normalisation
@@ -214,7 +233,7 @@ private:
      */
     void protocol_normalisation();
 
-    /**
+   /**
      * The scheme.
      */
     std::string _scheme;

@@ -449,7 +449,7 @@ atomic_handle<Type, AtomicType>::atomic_handle(AtomicType h)
 template<handle::type_t Type, typename AtomicType>
 atomic_handle<Type, AtomicType>::atomic_handle(atomic_handle&& rhs)
 {
-    atomic_type value = rhs.load();
+    atomic_type value = rhs._handle.load();
     _handle.store(value);
     _valid = rhs._valid;
     rhs._valid = false;

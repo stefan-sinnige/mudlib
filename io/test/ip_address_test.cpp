@@ -74,10 +74,12 @@ FEATURE("IP Address")
             ctx.addr = mud::io::ip::address(node); })
      WHEN ("Converted to an IP address", [](context&){})
      THEN ("The value is converted to an <address>", [](context& ctx) {
-            uint32_t expected = mud::io::ip::to_network_order(ctx.sample().entry<uint32_t>("address"));
-            ASSERT((uint32_t)ctx.addr , expected); })
-     SAMPLES("node-name", "address")
-         SAMPLE("example.com", 0x5DB8D70E)
+            std::string exp = ctx.sample().entry<std::string>("dotted-decimal");
+            ASSERT(ctx.addr.str(), exp); })
+     SAMPLES("node-name", "dotted-decimal")
+         /* These should be single public static IP addresses for the tests to
+          * have longevity. Note that these will pass through a DNS lookup. */
+         SAMPLE("time-a-g.nist.gov", "129.6.15.28")
      END_SAMPLES()
 
 END_FEATURE()

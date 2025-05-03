@@ -514,10 +514,9 @@ udp::igmp_add::operator()(
         const std::pair<mud::io::ip::address, mud::io::ip::address>& value)
 {
     // Convert to the socket option structure
-    struct ip_mreq optval = {
-        .imr_multiaddr.s_addr = value.first,
-        .imr_interface.s_addr = value.second
-    };
+    struct ip_mreq optval;
+    optval.imr_multiaddr.s_addr = value.first;
+    optval.imr_interface.s_addr = value.second;
 
     // Apply the option
     int handle = mud::core::internal_handle<int>(socket.handle());
@@ -541,10 +540,9 @@ udp::igmp_drop::operator()(
         const std::pair<mud::io::ip::address, mud::io::ip::address>& value)
 {
     // Convert to the socket option structure
-    struct ip_mreq optval = {
-        .imr_multiaddr.s_addr = value.first,
-        .imr_interface.s_addr = value.second
-    };
+    struct ip_mreq optval;
+    optval.imr_multiaddr.s_addr = value.first;
+    optval.imr_interface.s_addr = value.second;
 
     // Apply the option
     int handle = mud::core::internal_handle<int>(socket.handle());

@@ -61,7 +61,7 @@ namespace ip {
         };
 
         /**
-         * @brief Construct an any-address (0.0.0.0)
+         * @brief Construct an 'any' address (@c 0.0.0.0)
          */
         address();
 
@@ -98,6 +98,15 @@ namespace ip {
          * @brief Assignment operator
          */
         address& operator=(const address& rhs);
+
+        /**
+         * @brief Return true if the address is an 'any' address.
+         *
+         * @details
+         * An 'any' address is the @c 0.0.0.0 address and denotes an address
+         * that is assigned to all network interfaces.
+         */
+        bool any() const { return m_address == 0; }
 
         /**
          * @brief Type conversion to a network-order address.

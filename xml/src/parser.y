@@ -191,9 +191,9 @@ AttValue
 CharData_opt
   : CHARDATA
     {
-      auto char_data = mud::xml::dom::create_char_data();
       std::unique_ptr<std::string> text($<str>1);
-      char_data->text(std::move(*text));
+      std::string unescaped = mud::xml::char_reference::unescape(*text);
+      auto char_data = mud::xml::dom::create_char_data(unescaped);
       $<node>$ = new mud::xml::node::ptr(char_data);
     }
   | /* empty */
@@ -209,9 +209,8 @@ CharData_opt
 Comment
   : COMMENTOPEN COMMENT COMMENTCLOSE
     {
-      auto comment = mud::xml::dom::create_comment();
       std::unique_ptr<std::string> text($<str>2);
-      comment->text(std::move(*text));
+      auto comment = mud::xml::dom::create_comment(*text);
       $<node>$ = new mud::xml::node::ptr(comment);
     }
   | COMMENTOPEN COMMENTCLOSE
@@ -228,11 +227,9 @@ Comment
 PI
   : PIOPEN PITARGET PIDATA PICLOSE
     {
-      auto pi = mud::xml::dom::create_processing_instruction();
       std::unique_ptr<std::string> target($<str>2);
       std::unique_ptr<std::string> data($<str>3);
-      pi->target(std::move(*target));
-      pi->data(std::move(*data));
+      auto pi = mud::xml::dom::create_processing_instruction(*target, *data);
       $<node>$ = new mud::xml::node::ptr(pi);
     }
  ;
@@ -244,9 +241,8 @@ PI
 CDSect
   : CDSTART CDATA CDEND
     {
-      auto cdata_section = mud::xml::dom::create_cdata_section();
       std::unique_ptr<std::string> text($<str>2);
-      cdata_section->text(std::move(*text));
+      auto cdata_section = mud::xml::dom::create_cdata_section(*text);
       $<node>$ = new mud::xml::node::ptr(cdata_section);
     }
  ;
@@ -465,10 +461,9 @@ element
 STag 
   : OPENTAG NAME S_opt Attribute_seq_opt CLOSETAG
     {
-      auto element = mud::xml::dom::create_element();
       std::unique_ptr<std::string> name($<str>2);
       std::unique_ptr<mud::xml::attribute_set> attrs($<attributes>4);
-      element->name(std::move(*name));
+      auto element = mud::xml::dom::create_element(*name);
       element->attributes(std::move(*attrs));
       $<node>$ = new mud::xml::node::ptr(element);
     }
@@ -510,9 +505,9 @@ Attribute
     {
       std::unique_ptr<std::string> name($<str>1);
       std::unique_ptr<std::string> value($<str>3);
-      auto attr = mud::xml::dom::create_attribute();
-      attr->name(std::move(*name));
-      attr->value(std::move(*value));
+      auto attr = mud::xml::dom::create_attribute(*name);
+      std::string unescaped = mud::xml::char_reference::unescape(*value);
+      attr->value(unescaped);
       $<node>$ = new mud::xml::node::ptr(attr);
     }
  ;
@@ -602,10 +597,9 @@ contents_choice
 EmptyElemTag 
   : OPENTAG NAME S_opt Attribute_seq_opt EMPTYCLOSETAG
     {
-      auto element = mud::xml::dom::create_element();
       std::unique_ptr<std::string> name($<str>2);
+      auto element = mud::xml::dom::create_element(*name);
       auto attrs = $<attributes>4;;
-      element->name(std::move(*name));
       element->attributes(std::move(*attrs));
       $<node>$ = new mud::xml::node::ptr(element);
     }

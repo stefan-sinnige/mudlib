@@ -127,6 +127,29 @@ uri::uri(const std::string& str)
     sstr >> *this;
 }
 
+bool
+uri::operator==(const mud::core::uri& rhs) const
+{
+    auto normalised_lhs = *this;
+    auto normalised_rhs = rhs;
+    normalised_lhs.normalise();
+    normalised_rhs.normalise();
+    return normalised_lhs._scheme == normalised_rhs._scheme
+        && normalised_lhs._user_info == normalised_rhs._user_info
+        && normalised_lhs._host == normalised_rhs._host
+        && normalised_lhs._port == normalised_rhs._port
+        && normalised_lhs._path == normalised_rhs._path
+        && normalised_lhs._query == normalised_rhs._query
+        && normalised_lhs._query_params == normalised_rhs._query_params
+        && normalised_lhs._fragment == normalised_rhs._fragment;
+}
+
+bool
+uri::operator!=(const mud::core::uri& rhs) const
+{
+    return ! (*this == rhs);
+}
+
 void
 uri::scheme(const std::string& value)
 {
@@ -189,6 +212,19 @@ uri::clear()
     _query.clear();
     _query_params.clear();
     _fragment.clear();
+}
+
+bool
+uri::empty() const
+{
+    return _scheme.empty() &&
+           _user_info.empty() &&
+           _host.empty() &&
+           _port == 0 &&
+           _path.empty() &&
+           _query.empty() &&
+           _query_params.empty() &&
+           _fragment.empty();
 }
 
 void

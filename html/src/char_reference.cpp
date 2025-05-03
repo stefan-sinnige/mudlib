@@ -1,7 +1,7 @@
 #include "mud/html/char_reference.h"
 #include "entities.h"
 #include "mud/html/exception.h"
-
+#include <stdint.h>
 #include <iostream>
 
 BEGIN_MUDLIB_HTML_NS

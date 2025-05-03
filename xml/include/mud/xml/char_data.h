@@ -20,16 +20,17 @@ public:
     typedef std::shared_ptr<mud::xml::char_data> ptr;
 
     /**
-     * @brief Create a new @c char_data instance.
+     * @brief Create a @c char_data instance with text.
+     * @param text The text to set.
      */
-    static ptr create();
+    static ptr create(const std::string& text);
 
     /**
      * @brief Move a character data.
      * @param[in] rhs The character data to move from. After moving, it will
      * resemble an empty character data.
      */
-    char_data(char_data&& rhs);
+    char_data(char_data&& rhs) = default;
 
     /**
      * @brief Move a character data through assignment.
@@ -37,12 +38,12 @@ public:
      * resemble an empty character data.
      * @return A reference to this character data.
      */
-    char_data& operator=(char_data&& rhs);
+    char_data& operator=(char_data&& rhs) = default;
 
     /**
      * @brief Destructor.
      */
-    virtual ~char_data();
+    virtual ~char_data() = default;
 
     /**
      * @brief Return the contents of the character data.
@@ -58,9 +59,9 @@ public:
 
 private:
     /**
-     * @brief Create an empty character data..
+     * @brief Create a character data with text.
      */
-    char_data();
+    char_data(const std::string& text);
 
     /** The character data contents */
     std::string _text;

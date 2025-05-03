@@ -2,6 +2,7 @@
 #define _MUDLIB_XML_NODE_H_
 
 #include <mud/xml/ns.h>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -141,6 +142,11 @@ private:
      * of a parent in its children list, would create a circular destruction
      * dependency and the object would not be deleted. */
     std::weak_ptr<xml::node> _parent;
+
+    /** Attributes and elements can set the parent when they are added and
+     * require access to the protecetd @c parent function. */
+    friend class attribute;
+    friend class element;
 };
 
 /**
@@ -154,7 +160,6 @@ private:
 class MUDLIB_XML_API node_seq: public  std::vector<mud::xml::node::ptr>
 {
 };
-
 
 END_MUDLIB_XML_NS
 

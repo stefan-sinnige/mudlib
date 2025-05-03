@@ -1,6 +1,7 @@
 #ifndef _MUDLIB_HTTP_MESSAGE_H_
 #define _MUDLIB_HTTP_MESSAGE_H_
 
+#include <strings.h>
 #include <algorithm>
 #include <iostream>
 #include <mud/core/poly_vector.h>

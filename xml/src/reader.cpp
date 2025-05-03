@@ -71,6 +71,7 @@ operator>>(std::istream& istr, mud::xml::document::ptr& doc)
 
     /* Return the parsed document using move semantics */
     doc = ctx.document;
+    doc->resolve();
     return istr;
 }
 

@@ -3,9 +3,9 @@
 #include "mud/xml/char_data.h"
 #include "mud/xml/comment.h"
 #include "mud/xml/declaration.h"
+#include "mud/xml/document.h"
 #include "mud/xml/element.h"
 #include "mud/xml/processing_instruction.h"
-#include "mud/xml/reader.h"
 #include <memory>
 #include <sstream>
 #include <type_traits>
@@ -128,7 +128,7 @@ FEATURE("Reader")
     GIVEN("A document text",
         [](context& ctx){
             ctx.text << R"XML(
-                <root xmlns="http://www.w3.org/TR/html4/"
+                <root id="3"
                       class="toplevel">
                 </root>)XML";
         })
@@ -138,9 +138,9 @@ FEATURE("Reader")
             // Attributes are unordered
             ASSERT(2, ctx.doc->root()->attributes().size());
             for (auto attr: ctx.doc->root()->attributes()) {
-                if (attr->name() == "xmlns") {
-                    ASSERT("xmlns", attr->name());
-                    ASSERT("http://www.w3.org/TR/html4/", attr->value());
+                if (attr->name().empty()) {
+                    ASSERT("id", attr->prefix());
+                    ASSERT("3", attr->value());
                 }
                 else
                 if (attr->name() == "class") {
@@ -178,7 +178,7 @@ FEATURE("Reader")
     GIVEN("A document text",
         [](context& ctx){
             ctx.text << R"XML(
-                <root xmlns="">
+                <root id="">
                 </root>)XML";
         })
     WHEN("The text is read")
@@ -186,7 +186,7 @@ FEATURE("Reader")
         [](context& ctx){
             ASSERT(1, ctx.doc->root()->attributes().size());
             auto iter = ctx.doc->root()->attributes().begin();
-            ASSERT("xmlns", (*iter)->name());
+            ASSERT("id", (*iter)->name());
             ASSERT("", (*iter)->value());
         })
 
@@ -249,6 +249,30 @@ FEATURE("Reader")
             auto pi = std::dynamic_pointer_cast<mud::xml::processing_instruction>(node);
             ASSERT("target", pi->target());
             ASSERT(" The instruction data", pi->data());
+        })
+
+  SCENARIO("Reading XML document with escaped characters")
+    GIVEN("A document text",
+        [](context& ctx){
+            ctx.text << R"XML(
+                <root att="Read &amp; weep">one &lt; three &gt; two</root>)XML";
+        })
+    WHEN("The text is read")
+    THEN("The attribute is unescaped",
+        [](context& ctx){
+            auto root = ctx.doc->root();
+            ASSERT(1, root->attributes().size());
+            auto att = *(root->attributes().begin());
+            ASSERT("Read & weep", att->value());
+        })
+    AND ("The text is unescaped",
+        [](context& ctx){
+            auto root = ctx.doc->root();
+            ASSERT(1, root->children().size());
+            auto text = root->children().at(0);
+            ASSERT(mud::xml::node::type_t::CHAR_DATA, text->type());
+            auto char_data = std::dynamic_pointer_cast<mud::xml::char_data>(text);
+            ASSERT("one < three > two", char_data->text());
         })
 
 END_FEATURE()

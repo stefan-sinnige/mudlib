@@ -11,6 +11,11 @@
 BEGIN_MUDLIB_EVENT_NS
 
 /**
+ * Forward declarations.
+ */
+class timer_dispatcher;
+
+/**
  * @brief An abstract base class representing an event-loop mechanism.
  */
 class MUDLIB_EVENT_API event_mechanism
@@ -18,10 +23,18 @@ class MUDLIB_EVENT_API event_mechanism
 public:
     /**
      * @brief Constructor.
+     *
+     * @details
+     * Construct an event loop mechanism that implements the event-loop using
+     * a specific technology. The task queue and the timer dispatcher are
+     * always an integral part of any mechanism.
+     *
+     * @parm queue The task queue to use.
+     * @parm timers The timer dispatcher to use.
      */
-    event_mechanism(const std::shared_ptr<mud::core::simple_task_queue>& queue)
-      : _queue(queue)
-    {}
+    event_mechanism(
+            const std::shared_ptr<mud::core::simple_task_queue>& queue,
+            const std::shared_ptr<mud::event::timer_dispatcher>& timers);
 
     /**
      * @brief Virtual destructor.
@@ -98,9 +111,20 @@ protected:
         return _queue;
     }
 
+    /**
+     * The timer dispatcher for timer events.
+     */
+    const std::shared_ptr<mud::event::timer_dispatcher>& timers() const
+    {
+        return _timers;
+    }
+
 private:
     /** The queue for signaled events. */
     std::shared_ptr<mud::core::simple_task_queue> _queue;
+
+    /** The timer dispatcher for timer. */
+    std::shared_ptr<mud::event::timer_dispatcher> _timers;
 };
 
 /**
@@ -108,7 +132,8 @@ private:
  */
 typedef mud::core::factory<mud::core::handle::type_t,
                            mud::event::event_mechanism,
-                           const std::shared_ptr<mud::core::simple_task_queue>&>
+                           const std::shared_ptr<mud::core::simple_task_queue>&,
+                           const std::shared_ptr<mud::event::timer_dispatcher>&>
     event_mechanism_factory;
 
 END_MUDLIB_EVENT_NS

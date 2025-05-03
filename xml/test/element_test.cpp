@@ -20,12 +20,36 @@ CONTEXT()
 
     /* Another element */
     mud::xml::element::ptr other;
+
+    /* A list of nodes */
+    mud::xml::node_seq nodes;
+
+    /* An attribute */
+    mud::xml::attribute::ptr attribute;
+
+    /* An namespace uri */
+    mud::core::uri uri;
 END_CONTEXT()
 
 FEATURE("Element")
-      DEFINE_GIVEN("An empty element",
+      DEFINE_WHEN("The element is examined",
         [](context& ctx) {
-            ctx.element = mud::xml::dom::create_element();
+        })
+      DEFINE_THEN("The prefix is empty",
+        [](context& ctx) {
+            ASSERT("", ctx.element->prefix());
+        })
+      DEFINE_THEN("The local-name is the same as the qname",
+        [](context& ctx) {
+            ASSERT(ctx.element->local_name(), ctx.element->name());
+        })
+      DEFINE_THEN("The namespace is not set",
+        [](context& ctx) {
+            ASSERT(true, ctx.element->ns()->uri().empty());
+        })
+      DEFINE_THEN("The namespace is set",
+        [](context& ctx) {
+            ASSERT(ctx.uri, ctx.element->ns()->uri());
         })
   END_DEFINES()
 
@@ -65,20 +89,16 @@ FEATURE("Element")
   SCENARIO("Moving a complex element")
     GIVEN("A complex element",
         [](context& ctx) {
-            ctx.element = mud::xml::dom::create_element();
-            ctx.element->name("book");
+            ctx.element = mud::xml::dom::create_element("book");
             {
-                auto attr = mud::xml::dom::create_attribute();
-                attr->name("isbn");
+                auto attr = mud::xml::dom::create_attribute("isbn");
                 attr->value("1-56619-909-3");
                 ctx.element->attribute(attr);
             }
             {
-                auto child = mud::xml::dom::create_element();
-                child->name("title");
+                auto child = mud::xml::dom::create_element("title");
                 {
-                    auto attr = mud::xml::dom::create_attribute();
-                    attr->name("name");
+                    auto attr = mud::xml::dom::create_attribute("name");
                     attr->value("The Encyclopedia of Ships");
                     child->attribute(attr);
                 }
@@ -113,6 +133,81 @@ FEATURE("Element")
         [](context& ctx) {
             ASSERT(nullptr, ctx.element.get());
         })
+
+  SCENARIO("Querying an element's child element")
+    GIVEN("An element with various children",
+        [](context& ctx) {
+            ctx.element = mud::xml::dom::create_element("catalog");
+            for (int i = 0; i < 10; ++i) {
+                if (i % 2 == 0) {
+                    auto book = mud::xml::dom::create_element("book");
+                    ctx.element->child(book);
+                }
+                else {
+                    auto cd = mud::xml::dom::create_element("cd");
+                    ctx.element->child(cd);
+                }
+            }
+        })
+    WHEN ("The a list of elements is queried by name",
+        [](context& ctx) {
+            ctx.nodes = ctx.element->elements("book");
+        })
+    THEN ("The correct number of elements is returned",
+        [](context& ctx) {
+            ASSERT(5, ctx.nodes.size());
+        })
+     AND ("The elements have the signature",
+        [](context& ctx) {
+            for (auto& child: ctx.nodes) {
+                ASSERT(mud::xml::node::type_t::ELEMENT, child->type());
+                auto elem = std::static_pointer_cast<mud::xml::element>(child);
+                ASSERT("book", elem->local_name());
+            }
+        })
+
+  SCENARIO("Querying an element's attribute")
+    GIVEN("An element with attributes",
+        [](context& ctx) {
+            ctx.element = mud::xml::dom::create_element("catalog");
+            auto attr_1 = mud::xml::dom::create_attribute("attr-1");
+            ctx.element->attribute(attr_1);
+            auto attr_2 = mud::xml::dom::create_attribute("attr-2");
+            ctx.element->attribute(attr_2);
+            auto attr_3 = mud::xml::dom::create_attribute("attr-3");
+            ctx.element->attribute(attr_3);
+        })
+    WHEN ("The an attribute is queried by name",
+        [](context& ctx) {
+            ctx.attribute = ctx.element->attribute("attr-2");
+        })
+    THEN ("The correct attribute is returned",
+        [](context& ctx) {
+            ASSERT(false, ctx.attribute == nullptr);
+            ASSERT("attr-2", ctx.attribute->local_name());
+        })
+
+  SCENARIO("Creating an element with no namespace")
+    GIVEN("An element with no namespace",
+        [](context& ctx) {
+            ctx.element = mud::xml::dom::create_element("book");
+        })
+    WHEN ("The element is examined")
+    THEN ("The local-name is the same as the qname")
+     AND ("The prefix is empty")
+     AND ("The namespace is not set")
+
+  SCENARIO("Creating an element with a default namespace")
+    GIVEN("An element with a default namespace",
+        [](context& ctx) {
+            ctx.uri = mud::core::uri("http://library.example.org");
+            ctx.element = mud::xml::dom::create_element("book", ctx.uri);
+        })
+    WHEN ("The element is examined")
+    THEN ("The local-name is the same as the qname")
+     AND ("The prefix is empty")
+     AND ("The namespace is set")
+
 END_FEATURE()
 
 /* clang-format on */

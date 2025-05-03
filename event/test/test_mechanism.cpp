@@ -61,8 +61,9 @@ mud::event::event_mechanism_factory::registrar<
     _registrar;
 
 test_mechanism::test_mechanism(
-    const std::shared_ptr<mud::core::simple_task_queue>& queue)
-  : mud::event::event_mechanism(queue), _running(false)
+    const std::shared_ptr<mud::core::simple_task_queue>& queue,
+    const std::shared_ptr<mud::event::timer_dispatcher>& timers)
+  : mud::event::event_mechanism(queue, timers), _running(false)
 {}
 
 test_mechanism::~test_mechanism()

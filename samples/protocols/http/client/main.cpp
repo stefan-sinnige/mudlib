@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <string.h>
 #include <utility>
 #include <vector>
 #include <mud/core/uri.h>

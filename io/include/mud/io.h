@@ -2,6 +2,8 @@
 #define _MUDLIB_IO_H_
 
 #include <mud/io/exception.h>
+#include <mud/io/host.h>
+#include <mud/io/interface.h>
 #include <mud/io/io.h>
 #include <mud/io/ns.h>
 #include <mud/io/pipe.h>

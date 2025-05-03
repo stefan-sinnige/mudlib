@@ -1,6 +1,7 @@
 #ifndef _MUDLIB_CORE_OBJECT_H_
 #define _MUDLIB_CORE_OBJECT_H_
 
+#include <memory>
 #include <mud/core/ns.h>
 #include <mud/core/notifier.h>
 

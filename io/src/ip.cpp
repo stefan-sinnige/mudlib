@@ -16,6 +16,7 @@
 #include "mud/io/ip.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <string.h>
 #include <sys/types.h>
 #include <system_error>
 

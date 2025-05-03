@@ -21,15 +21,16 @@ public:
 
     /**
      * @brief Create a new @c comment instance.
+     * @param text The text to set.
      */
-    static ptr create();
+    static ptr create(const std::string& text);
 
     /**
      * @brief Move a comment.
      * @param[in] rhs The comment to move from. After moving, it will
      * resemble an empty comment.
      */
-    comment(comment&& rhs);
+    comment(comment&& rhs) = default;
 
     /**
      * @brief Move a comment through assignment.
@@ -37,12 +38,12 @@ public:
      * resemble an empty comment.
      * @return A reference to this comment.
      */
-    comment& operator=(comment&& rhs);
+    comment& operator=(comment&& rhs) = default;
 
     /**
      * @brief Destructor.
      */
-    virtual ~comment();
+    virtual ~comment() = default;
 
     /**
      * @brief Return the contents of the comment.
@@ -60,7 +61,7 @@ private:
     /**
      * @brief Create an empty comment.
      */
-    comment();
+    comment(const std::string& text);
 
     /** The comment contents */
     std::string _text;

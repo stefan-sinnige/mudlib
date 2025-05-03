@@ -21,15 +21,16 @@ public:
 
     /**
      * @brief Create a new @c cdata_section instance.
+     * @param text The text to set.
      */
-    static ptr create();
+    static ptr create(const std::string& text);
 
     /**
      * @brief Move a CDATA section.
      * @param[in] rhs The CDATA section to move from. After moving, it will
      * resemble an empty CDATA section.
      */
-    cdata_section(cdata_section&& rhs);
+    cdata_section(cdata_section&& rhs) = default;
 
     /**
      * @brief Move a CDATA section through assignment.
@@ -37,12 +38,12 @@ public:
      * resemble an empty CDATA section.
      * @return A reference to this CDATA section.
      */
-    cdata_section& operator=(cdata_section&& rhs);
+    cdata_section& operator=(cdata_section&& rhs) = default;
 
     /**
      * @brief Destructor.
      */
-    virtual ~cdata_section();
+    virtual ~cdata_section() = default;
 
     /**
      * @brief Return the contents of the CDATA section.
@@ -58,9 +59,9 @@ public:
 
 private:
     /**
-     * @brief Create an empty CDATA section.
+     * @brief Create an CDATA section with text.
      */
-    cdata_section();
+    cdata_section(const std::string& text);
 
     /** The CDATA section contents */
     std::string _text;

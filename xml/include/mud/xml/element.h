@@ -2,6 +2,7 @@
 #define _MUDLIB_XML_ELEMENT_H_
 
 #include <mud/xml/attribute.h>
+#include <mud/xml/namespace.h>
 #include <mud/xml/node.h>
 #include <mud/xml/ns.h>
 #include <string>
@@ -29,16 +30,35 @@ public:
     typedef std::shared_ptr<mud::xml::element> ptr;
 
     /**
-     * @brief Create a new @c element instance.
+     * @brief Create a new @c element instance with a qualified name.
+     *
+     * @details
+     * A qualified name is a name of the form
+     * @verbatim
+     *    [ prefix ':' ] local-name
+     * @endverbatim
+     * If the @c prefix is omitted, the @c local-name is said to be part of the
+     * default namespace. Otherwise, the @c prefix references the namespace
+     * prefix that the element is defined in.
      */
-    static ptr create();
+    static ptr create(const std::string& qname);
+
+    /**
+     * @brief Create an XML element node with a local-name that is part of
+     * a defined namespace. The local-name should @c em not contain a prefix
+     * specification as that is provided by the resolved namespace definition.
+     *
+     * @param local_name The local-name.
+     * @param uri The namespace URI.
+     */
+    static ptr create(const std::string& local_name, const mud::core::uri& uri);
 
     /**
      * @brief Move a element.
      * @param[in] rhs The element to move from. After moving, it will
      * resemble an empty element.
      */
-    element(element&& rhs);
+    element(element&& rhs) = default;
 
     /**
      * @brief Move a element through assignment.
@@ -46,24 +66,44 @@ public:
      * resemble an empty element.
      * @return A reference to this element.
      */
-    element& operator=(element&& rhs);
+    element& operator=(element&& rhs) = default;
 
     /**
      * @brief Destructor.
      */
-    virtual ~element();
+    virtual ~element() = default;
 
     /**
-     * @brief Return the name of the element.
+     * @brief Return the qualified name of the element.
+     *
+     * @details
+     * If the element has a non-default namespace, the qualified name is
+     * returned consisting of the namespace prefix and the local-name. If the
+     * element is part of the default namespace, only the local-name is
+     * returned.
+     *
+     * If the non-default namespace cannot be resolved, the local-name is
+     * returned.
      */
     const std::string& name() const;
 
     /**
-     * @brief Set the name of the element.
-     * @param[in] value The value to set.
+     * @brief Return the local-name of the element.
+     *
+     * @details
+     * The local-name is the part of the element name without any prefix.
      */
-    void name(const std::string& value);
-    void name(std::string&& value);
+    const std::string& local_name() const;
+
+    /**
+     * @brief Return the prefix of the element.
+     *
+     * @details
+     * The prefix of an element is the namespace prefix of the element's
+     * non-default namespace. If the element is part of the default namespace,
+     * an empty prefix is returned.
+     */
+    const std::string& prefix() const;
 
     /**
      * @brief Return the attributes of the element.
@@ -84,6 +124,14 @@ public:
     void attribute(const mud::xml::attribute::ptr& value);
 
     /**
+     * @brief Return the attribute that matches the @c local_name.
+     * @param local_name The attribute's local name to query for.
+     * @return The attribute with matching local name, or @c nullptr if there is
+     * no matching attribute.
+     */
+    mud::xml::attribute::ptr attribute(const std::string& local_name) const;
+
+    /**
      * @brief Return the children of the element.
      */
     virtual const mud::xml::node_seq& children() const override;
@@ -102,22 +150,70 @@ public:
     void child(const mud::xml::node::ptr& value);
 
     /**
-     * @brief Return the parent of the element.
+     * @brief Return all the child elements that match the @c local_name.
+     * @param local_name The child element's local name to query for.
+     * @return The list of all direct children with matching local name.
+     */
+    mud::xml::node_seq elements(const std::string& local_name) const;
+
+    /**
+     * @brief Return the namespace definition associated to this element.
      *
      * @details
-     * The parent of the element is either another @c element, or a @c document
-     * if the parent is the @em root element.
+     * The namespace definition is a resolved one if the element's prefix
+     * is not defined, or if the prefix matches a resolved namespace of this
+     * node or of its closest ancestor.
      */
-    mud::xml::node::ptr parent() const;
+    const mud::xml::ns::ptr& ns() const;
+
+    /**
+     * @brief Return the resolved namespace definition associated to this
+     * element.
+     *
+     * @details
+     * The resolved namespace is the namespace definition that maches the URI
+     * of this element. If the element's namespace cannot be resolved by the
+     * node itself or its ancestors, then the unresolved element's namespace
+     * definition is returned.
+     */
+    mud::xml::ns::ptr resolved_ns() const;
+
+    /**
+     * @brief Return the resolved namespace definition associated to the
+     * specified namespace URI.
+     *
+     * @details
+     * The resolved namespace is the namespace definition that maches the
+     * specified URI. If the namespace cannot be resolved by the node itself or
+     * its ancestors, then a @c nullptr shall be returned.
+     *
+     * @param uri The namespace URI to resolve.
+     */
+    mud::xml::ns::ptr resolved_ns(const mud::core::uri& uri) const;
 
 private:
     /**
-     * @brief Create an empty element without a name.
+     * @brief Create an XML element node with a qualified name.
+     * @param qname The qualified name.
      */
-    element();
+    element(const std::string& qname);
 
-    /** The name */
+    /**
+     * @brief Create an XML element node with a local-name that is part of
+     * a defined namespace. 
+     * @param qname The qualified name.
+     * @param uri The namespace URI.
+     */
+    element(const std::string& local_name, const mud::core::uri& uri);
+
+    /** The qualified name */
     std::string _name;
+
+    /** The prefix */
+    std::string _prefix;
+
+    /** The local name */
+    std::string _local_name;
 
     /** The attributes */
     mud::xml::attribute_set _attributes;
@@ -125,8 +221,11 @@ private:
     /** The direct nodes */
     mud::xml::node_seq _children;
 
-    /** The parent. */
-    mud::xml::node::ptr _parent;
+    /** The resolved namespace. */
+    mud::xml::ns::ptr _ns;
+
+    /** The list of namespaces defined at this element. */
+    mud::xml::ns_list _namespaces;
 };
 
 END_MUDLIB_XML_NS

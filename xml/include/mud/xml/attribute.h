@@ -1,10 +1,13 @@
 #ifndef _MUDLIB_XML_ATTRIBUTE_H_
 #define _MUDLIB_XML_ATTRIBUTE_H_
 
+#include <mud/core/uri.h>
 #include <mud/xml/ns.h>
+#include <mud/xml/namespace.h>
 #include <mud/xml/node.h>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <unordered_set>
 
 BEGIN_MUDLIB_XML_NS
@@ -17,7 +20,7 @@ BEGIN_MUDLIB_XML_NS
  * the following properties:
  *  * A local name
  *  * A normalised value
- *  * An owner element that this attribute is a member of.
+ *  * A parent element that this attribute is a member of.
  */
 class MUDLIB_XML_API attribute: public node
 {
@@ -28,16 +31,46 @@ public:
     typedef std::shared_ptr<mud::xml::attribute> ptr;
 
     /**
-     * @brief Create a new @c attribute instance.
+     * @brief @brief Create an XML attribute node with a qualified name.
+     *
+     * @details
+     * A qualified name is a name of the form
+     * @verbatim
+     *    [ prefix ':' ] local-name
+     * @endverbatim
+     * If the @c prefix is omitted, the @c local-name is said to be part of the
+     * default namespace. Otherwise, the @c prefix references the namespace
+     * prefix that the attribute is defined in.
+     *
+     * A special namespace definition attribute can be defined through this
+     * method by specifying the name as
+     * @verbatim
+     *    'xmlns' [ ':' prefix ]
+     * @endverbatim
+     * This defines a resolved namespace whose URI is provided by the attribute
+     * value. If the prefix is omitted, then the attribute defines a default
+     * namespace.
+     *
+     * @param qname The qualified name.
      */
-    static ptr create();
+    static ptr create(const std::string& qname);
+
+    /**
+     * @brief Create an XML attribute node with a local-name that is part of
+     * a defined namespace. The local-name should @c em not contain a prefix
+     * specification as that is provided by the resolved namespace definition.
+     *
+     * @param local_name The local-name.
+     * @param uri The namespace URI.
+     */
+    static ptr create(const std::string& local_name, const mud::core::uri& uri);
 
     /**
      * @brief Move a attribute.
      * @param[in] rhs The attribute to move from. After moving, it will
      * resemble an empty attribute.
      */
-    attribute(attribute&& rhs);
+    attribute(attribute&& rhs) = default;
 
     /**
      * @brief Move a attribute through assignment.
@@ -45,24 +78,44 @@ public:
      * resemble an empty attribute.
      * @return A reference to this attribute.
      */
-    attribute& operator=(attribute&& rhs);
+    attribute& operator=(attribute&& rhs) = default;
 
     /**
      * @brief Destructor.
      */
-    virtual ~attribute();
+    virtual ~attribute() = default;
 
     /**
-     * @brief Return the name of the attribute.
+     * @brief Return the qualified name of the attribute.
+     *
+     * @details
+     * If the attribute has a non-default namespace, the qualified name is
+     * returned consisting of the namespace prefix and the local-name. If the
+     * attribute is part of the default namespace, only the local-name is
+     * returned.
+     *
+     * If the non-default namespace cannot be resolved, the local-name is
+     * returned.
      */
     const std::string& name() const;
 
     /**
-     * @brief Set the name of the attribute.
-     * @param[in] value The value to set.
+     * @brief Return the local-name of the attribute.
+     *
+     * @details
+     * The local-name is the part of the attribute name without any prefix.
      */
-    void name(const std::string& value);
-    void name(std::string&& value);
+    const std::string& local_name() const;
+
+    /**
+     * @brief Return the prefix of the attribute.
+     *
+     * @details
+     * The prefix of an attribute is the namespace prefix of the attribute's
+     * non-default namespace. If the attribute is part of the default namespace,
+     * an empty prefix is returned.
+     */
+    const std::string& prefix() const;
 
     /**
      * @brief Return the value of the attribute.
@@ -76,17 +129,69 @@ public:
     void value(const std::string& value);
     void value(std::string&& value);
 
+    /**
+     * @brief Set the value of the attribute.
+     * @param[in] value The value to set.
+     *
+     * @details
+     * The value to be set must have a definition for an output streaming
+     * operator.
+     */
+    template<typename T>
+    void value(const T& value) {
+        std::stringstream sstr;
+        sstr << value;
+        this->value(sstr.str());
+    }
+
+    /**
+     * @brief Return the namespace definition associated to this attribute.
+     *
+     * @details
+     * The namespace definition is a resolved one if the attribute's prefix
+     * is not defined, or if the prefix matches a resolved namespace of its
+     * containing @c element node or of its closest ancestor.
+     */
+    const mud::xml::ns::ptr& ns() const;
+
+    /**
+     * @brief Return the resolved namespace definition associated to this
+     * attribute.
+     *
+     * @details
+     * The resolved namespace is the namespace definition that maches the URI
+     * of this attribute. If the attribute's namespace cannot be resolved by
+     * containing @c element node or its ancestors, then a @c nullptr shall be
+     * returned.
+     */
+    mud::xml::ns::ptr resolved_ns() const;
+
 private:
     /**
-     * @brief Create an empty attribute.
+     * @brief Create an XML attribute node with a qualified name.
+     * @param qname The qualified name.
      */
-    attribute();
+    attribute(const std::string& qname);
 
-    /** The name */
+    /**
+     * @brief Create an XML attribute node with a local-name that is part of
+     * a defined namespace. 
+     * @param qname The qualified name.
+     * @param uri The namespace URI.
+     */
+    attribute(const std::string& local_name, const mud::core::uri& uri);
+
+    /** The qualified name */
     std::string _name;
+
+    /** The local name */
+    std::string _local_name;
 
     /** The value */
     std::string _value;
+
+    /** The namespace definition if the attribute is a namespace. */
+    mud::xml::ns::ptr _ns;
 };
 
 /**

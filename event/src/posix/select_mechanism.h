@@ -43,10 +43,12 @@ public:
 
     /**
      * @brief Default constructor.
-     * @param [in] The queue to hold signaled events.
+     * @param queue The queue to hold signaled events.
+     * @param timers The timer dispatcher to hold event timers.
      */
     select_mechanism(
-        const std::shared_ptr<mud::core::simple_task_queue>& queue);
+        const std::shared_ptr<mud::core::simple_task_queue>& queue,
+        const std::shared_ptr<mud::event::timer_dispatcher>& timers);
 
     /**
      * Destructor.

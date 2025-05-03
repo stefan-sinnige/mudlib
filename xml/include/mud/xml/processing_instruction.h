@@ -23,15 +23,17 @@ public:
 
     /**
      * @brief Create a new @c processing_instruction instance.
+     * @param target The target to set.
+     * @param data The data to set.
      */
-    static ptr create();
+    static ptr create(const std::string& target, const std::string& data);
 
     /**
      * @brief Move a processing instruction.
      * @param[in] rhs The processing instruction to move from. After moving,
      * it will resemble an empty processing instruction.
      */
-    processing_instruction(processing_instruction&& rhs);
+    processing_instruction(processing_instruction&& rhs) = default;
 
     /**
      * @brief Move a processing instruction through assignment.
@@ -39,12 +41,12 @@ public:
      * it will resemble an empty processing instruction.
      * @return A reference to this processing instruction.
      */
-    processing_instruction& operator=(processing_instruction&& rhs);
+    processing_instruction& operator=(processing_instruction&& rhs) = default;
 
     /**
      * @brief Destructor.
      */
-    virtual ~processing_instruction();
+    virtual ~processing_instruction() = default;
 
     /**
      * @brief Return the target of the processing instruction.
@@ -72,9 +74,9 @@ public:
 
 private:
     /**
-     * @brief Create an empty processing instruction..
+     * @brief Create an processing instruction.
      */
-    processing_instruction();
+    processing_instruction(const std::string& target, const std::string& data);
 
     /** The processing instruction target */
     std::string _target;

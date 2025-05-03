@@ -8,7 +8,8 @@ libmudcore_la_SOURCES = \
     src/impulse.cpp \
     src/notifier.cpp \
     src/object.cpp \
-    src/uri.cpp
+    src/uri.cpp \
+    src/uuid.cpp
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
@@ -28,7 +29,8 @@ includemudcore_HEADERS = \
     include/mud/core/poly_map.h \
     include/mud/core/poly_vector.h \
     include/mud/core/task.h \
-    include/mud/core/uri.h
+    include/mud/core/uri.h \
+    include/mud/core/uuid.h
 
 libmudcore_la_CPPFLAGS = \
     -I$(srcdir)/include \

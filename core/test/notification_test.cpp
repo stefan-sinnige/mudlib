@@ -13,14 +13,17 @@
 class sample_receptor: public mud::core::object
 {
 public:
-    typedef mud::core::impulse<int>        val_impulse_t;
-    typedef std::shared_ptr<val_impulse_t> val_impulse_ptr_t;
-    typedef mud::core::impulse<int&>       ref_impulse_t;
-    typedef std::shared_ptr<ref_impulse_t> ref_impulse_ptr_t;
+    typedef mud::core::impulse<int>         val_impulse_t;
+    typedef std::shared_ptr<val_impulse_t>  val_impulse_ptr_t;
+    typedef mud::core::impulse<int&>        ref_impulse_t;
+    typedef std::shared_ptr<ref_impulse_t>  ref_impulse_ptr_t;
+    typedef mud::core::impulse<void>        void_impulse_t;
+    typedef std::shared_ptr<void_impulse_t> void_impulse_ptr_t;
 
     sample_receptor() {
-        _val_impulse_ptr = std::make_shared<val_impulse_t>();
-        _ref_impulse_ptr = std::make_shared<ref_impulse_t>();
+        _val_impulse_ptr  = std::make_shared<val_impulse_t>();
+        _ref_impulse_ptr  = std::make_shared<ref_impulse_t>();
+        _void_impulse_ptr = std::make_shared<void_impulse_t>();
     }
     
     /* The impulses that an effector can connect to. */
@@ -30,6 +33,9 @@ public:
     ref_impulse_ptr_t ref_impulse() {
         return _ref_impulse_ptr;
     }
+    void_impulse_ptr_t void_impulse() {
+        return _void_impulse_ptr;
+    }
 
     /* Send notifications to any connected effector. */
     void val_pulse(int value) {
@@ -38,10 +44,14 @@ public:
     void ref_pulse(int& value) {
         _ref_impulse_ptr->pulse(value);
     }
+    void void_pulse() {
+        _void_impulse_ptr->pulse();
+    }
 
 private:
-    val_impulse_ptr_t _val_impulse_ptr;
-    ref_impulse_ptr_t _ref_impulse_ptr;
+    val_impulse_ptr_t  _val_impulse_ptr;
+    ref_impulse_ptr_t  _ref_impulse_ptr;
+    void_impulse_ptr_t _void_impulse_ptr;
 };
 
 class sample_effector: public mud::core::object
@@ -73,6 +83,9 @@ public:
         ++_impulse_count;
         _impulse_value = value;
     }
+    void on_void_impulse() {
+        ++_impulse_count;
+    }
 
 private:
     int& _impulse_count;
@@ -94,6 +107,11 @@ void static_ref_effector(int& value)
 {
     ++static_count;
     static_value = value;
+}
+
+void static_void_effector()
+{
+    ++static_count;
 }
 
 /* Test structures for lambda effectors */
@@ -166,17 +184,27 @@ FEATURE("Notification")
             ctx._other_effector,
             &sample_effector::on_val_impulse);
     })
-  DEFINE_GIVEN("A static effector is attached to a receptor", [](context& ctx) {
+  DEFINE_GIVEN("A dynamic effector with val arguments is attached to a receptor",
+    [](context& ctx) {
+        ctx._effector = new sample_effector(
+            ctx._impulse_count[0], ctx._impulse_value[0]);
+        ctx._receptor->val_impulse()->attach(
+            ctx._effector,
+            &sample_effector::on_val_impulse);
+    })
+  DEFINE_GIVEN("A static effector with val arguments is attached to a receptor",
+    [](context& ctx) {
          ctx._receptor->val_impulse()->attach(
              &static_val_effector);
     })
-  DEFINE_GIVEN("A lambda effector is attached to a receptor", [](context& ctx) {
+  DEFINE_GIVEN("A lambda effector with ref arguments is attached to a receptor",
+    [](context& ctx) {
          ctx._receptor->val_impulse()->attach([](int value) {
              ++lambda_count;
              lambda_value = value;
          });
     })
-  DEFINE_GIVEN("A dynamic effector is attached to a receptor (by reference)",
+  DEFINE_GIVEN("A dynamic effector with ref arguments is attached to a receptor",
     [](context& ctx) {
         ctx._effector = new sample_effector(
             ctx._impulse_count[0], ctx._impulse_value[0]);
@@ -184,22 +212,42 @@ FEATURE("Notification")
             ctx._effector,
             &sample_effector::on_ref_impulse);
     })
-  DEFINE_GIVEN("A static effector is attached to a receptor (by reference)",
+  DEFINE_GIVEN("A static effector with ref arguments is attached to a receptor",
     [](context& ctx) {
          ctx._receptor->val_impulse()->attach(
              &static_val_effector);
     })
-  DEFINE_GIVEN("A lambda effector is attached to a receptor (by reference)",
+  DEFINE_GIVEN("A lambda effector with ref arguments is attached to a receptor",
     [](context& ctx) {
          ctx._receptor->ref_impulse()->attach([](int& value) {
              ++lambda_count;
              lambda_value = value;
          });
     })
+  DEFINE_GIVEN("A dynamic effector with no arguments is attached to a receptor",
+    [](context& ctx) {
+        ctx._effector = new sample_effector(
+            ctx._impulse_count[0], ctx._impulse_value[0]);
+        ctx._receptor->void_impulse()->attach(
+            ctx._effector,
+            &sample_effector::on_void_impulse);
+    })
+  DEFINE_GIVEN("A static effector with no arguments is attached to a receptor",
+    [](context& ctx) {
+         ctx._receptor->void_impulse()->attach(
+             &static_void_effector);
+    })
+  DEFINE_GIVEN("A lambda effector with no arguments is attached to a receptor",
+    [](context& ctx) {
+         ctx._receptor->void_impulse()->attach([]() {
+             ++lambda_count;
+         });
+    })
   DEFINE_WHEN("A notification is sent", [](context& ctx) {
         int value = 100;
         ctx._receptor->val_pulse(value);
         ctx._receptor->ref_pulse(value);
+        ctx._receptor->void_pulse();
     })
   DEFINE_WHEN("The effector is deleted", [](context& ctx) {
         delete ctx._effector;
@@ -208,6 +256,12 @@ FEATURE("Notification")
   DEFINE_WHEN("The other effector is deleted", [](context& ctx) {
         delete ctx._other_effector;
         ctx._other_effector = nullptr;
+    })
+  DEFINE_THEN("The static effector receives a notification", [](context& ctx) {
+        ASSERT(1, static_count);
+    })
+  DEFINE_THEN("The lambda effector receives a notification", [](context& ctx) {
+        ASSERT(1, lambda_count);
     })
   DEFINE_WHEN ("The effector is copied to another effector", [](context& ctx) {
         ctx._other_effector = new sample_effector(
@@ -221,11 +275,30 @@ FEATURE("Notification")
     })
   DEFINE_THEN("The effector receives a notification", [](context& ctx) {
         ASSERT(1, ctx._impulse_count[0]);
+    })
+  DEFINE_THEN("The static effector has received a value with the notification",
+    [](context& ctx) {
+        ASSERT(100, static_value);
+    })
+  DEFINE_THEN("The lambda effector has received a value with the notification",
+    [](context& ctx) {
+        ASSERT(100, lambda_value);
+    })
+  DEFINE_THEN("The effector has received a value with the notification",
+    [](context& ctx) {
         ASSERT(100, ctx._impulse_value[0]);
+    })
+  DEFINE_THEN("The other effector has received a value with the notification",
+    [](context& ctx) {
+        ASSERT(100, ctx._impulse_value[1]);
+    })
+  DEFINE_THEN("Both effectors have received a value with the notification",
+    [](context& ctx) {
+        ASSERT(100, ctx._impulse_value[0]);
+        ASSERT(100, ctx._impulse_value[1]);
     })
   DEFINE_THEN("The other effector receives a notification", [](context& ctx) {
         ASSERT(1, ctx._impulse_count[1]);
-        ASSERT(100, ctx._impulse_value[1]);
     })
   DEFINE_THEN("The effector does not receive a notification",
     [](context& ctx) {
@@ -239,23 +312,11 @@ FEATURE("Notification")
     })
   DEFINE_THEN("Both effectors receive a notification", [](context& ctx) {
         ASSERT(1, ctx._impulse_count[0]);
-        ASSERT(100, ctx._impulse_value[0]);
         ASSERT(1, ctx._impulse_count[1]);
-        ASSERT(100, ctx._impulse_value[1]);
     })
   DEFINE_THEN("No effector receive a notification", [](context& ctx) {
         ASSERT(0, ctx._impulse_count[0]);
-        ASSERT(0, ctx._impulse_value[0]);
         ASSERT(0, ctx._impulse_count[1]);
-        ASSERT(0, ctx._impulse_value[1]);
-    })
-  DEFINE_THEN("The static effector receives a notification", [](context& ctx) {
-        ASSERT(1, static_count);
-        ASSERT(100, static_value);
-    })
-  DEFINE_THEN("The lambda effector receives a notification", [](context& ctx) {
-        ASSERT(1, lambda_count);
-        ASSERT(100, lambda_value);
     })
   END_DEFINES()
 
@@ -303,12 +364,14 @@ FEATURE("Notification")
      AND ("An effector is attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("The effector receives a notification")
+     AND ("The effector has received a value with the notification")
 
   SCENARIO("Notification with multiple effectors")
     GIVEN("A receptor")
      AND ("Two effectors are attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("Both effectors receive a notification")
+     AND ("Both effectors have received a value with the notification")
 
   SCENARIO("Notification on a deleted effector")
     GIVEN("A receptor")
@@ -317,33 +380,64 @@ FEATURE("Notification")
      AND ("A notification is sent")
     THEN ("The effector does not receive a notification")
 
-  SCENARIO("Notification with a static effector")
+  SCENARIO("Notification with a static effector using values")
     GIVEN("A receptor")
-     AND ("A static effector is attached to a receptor")
+     AND ("A dynamic effector with val arguments is attached to a receptor")
+     AND ("A static effector with val arguments is attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("The static effector receives a notification")
+     AND ("The static effector has received a value with the notification")
 
-  SCENARIO("Notification with a lambda effector")
+  SCENARIO("Notification with a static effector using values")
     GIVEN("A receptor")
-     AND ("A lambda effector is attached to a receptor")
+     AND ("A static effector with val arguments is attached to a receptor")
+    WHEN ("A notification is sent")
+    THEN ("The static effector receives a notification")
+     AND ("The static effector has received a value with the notification")
+
+  SCENARIO("Notification with a lambda effector using values")
+    GIVEN("A receptor")
+     AND ("A lambda effector with ref arguments is attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("The lambda effector receives a notification")
+     AND ("The lambda effector has received a value with the notification")
 
   SCENARIO("Notification with a dynamic effector using references")
     GIVEN("A receptor")
-     AND ("A dynamic effector is attached to a receptor (by reference)")
+     AND ("A dynamic effector with ref arguments is attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("The effector receives a notification")
+     AND ("The effector has received a value with the notification")
 
   SCENARIO("Notification with a static effector using references")
     GIVEN("A receptor")
-     AND ("A static effector is attached to a receptor (by reference)")
+     AND ("A static effector with ref arguments is attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("The static effector receives a notification")
+     AND ("The static effector has received a value with the notification")
 
   SCENARIO("Notification with a lambda effector using references")
     GIVEN("A receptor")
-     AND ("A lambda effector is attached to a receptor (by reference)")
+     AND ("A lambda effector with ref arguments is attached to a receptor")
+    WHEN ("A notification is sent")
+    THEN ("The lambda effector receives a notification")
+     AND ("The lambda effector has received a value with the notification")
+
+  SCENARIO("Notification with a dynamic effector with no arguments")
+    GIVEN("A receptor")
+     AND ("A dynamic effector with no arguments is attached to a receptor")
+    WHEN ("A notification is sent")
+    THEN ("The effector receives a notification")
+
+  SCENARIO("Notification with a static effector with no arguments")
+    GIVEN("A receptor")
+     AND ("A static effector with no arguments is attached to a receptor")
+    WHEN ("A notification is sent")
+    THEN ("The static effector receives a notification")
+
+  SCENARIO("Notification with a lambda effector with no arguments")
+    GIVEN("A receptor")
+     AND ("A lambda effector with no arguments is attached to a receptor")
     WHEN ("A notification is sent")
     THEN ("The lambda effector receives a notification")
 

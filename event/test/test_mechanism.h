@@ -56,7 +56,9 @@ public:
     typedef std::function<void(void)> event_handler;
 
     /* Constructor */
-    test_mechanism(const std::shared_ptr<mud::core::simple_task_queue>& queue);
+    test_mechanism(
+            const std::shared_ptr<mud::core::simple_task_queue>& queue,
+            const std::shared_ptr<mud::event::timer_dispatcher>& timers);
 
     /* Destructor */
     ~test_mechanism();

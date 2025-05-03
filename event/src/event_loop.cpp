@@ -1,5 +1,6 @@
 #include "mud/event/event_loop.h"
 #include "posix/select_mechanism.h"
+#include "timer_dispatcher.h"
 #include <algorithm>
 #include <errno.h>
 #include <map>
@@ -54,6 +55,11 @@ public:
      */
     std::shared_future<void> terminate();
 
+    /*
+     * Return the rimer dispatcher.
+     */
+    const std::shared_ptr<mud::event::timer_dispatcher>& timers();
+
     /**
      * Non-copyable
      */
@@ -66,6 +72,9 @@ private:
 
     /** The task queue to hold signaled event tasks. */
     std::shared_ptr<mud::core::simple_task_queue> _queue;
+
+    /** The timer dispatcher to hold the event timers. */
+    std::shared_ptr<mud::event::timer_dispatcher> _timers;
 
     /** The task worker pool to handle signaled event tasks. */
     mud::core::task_worker_pool<mud::core::simple_task> _pool;
@@ -86,8 +95,10 @@ private:
 };
 
 event_loop::impl::impl()
-  : _queue(std::make_shared<mud::core::simple_task_queue>()), _pool(_queue, 2),
-    _running(false)
+  : _queue(std::make_shared<mud::core::simple_task_queue>())
+  , _timers(std::make_shared<mud::event::timer_dispatcher>())
+  , _pool(_queue, 2)
+  , _running(false)
 {
     /* Always load the select mechanism which is used by the self-signalling
      * resource. This is either a UDP socket connection or an unnamed pipe -
@@ -104,7 +115,7 @@ event_loop::impl::add_mechanism(mud::core::handle::type_t type)
     std::lock_guard<std::mutex> lock(_lock);
     if (_mechanisms.find(type) == _mechanisms.end()) {
         auto mechanism =
-            event_mechanism_factory::instance().create(type, _queue);
+            event_mechanism_factory::instance().create(type, _queue, _timers);
         _mechanisms[type] = std::move(mechanism);
     }
 }
@@ -203,6 +214,12 @@ event_loop::impl::terminate()
     return _future;
 }
 
+const std::shared_ptr<mud::event::timer_dispatcher>&
+event_loop::impl::timers()
+{
+    return _timers;
+}
+
 void
 event_loop::impl::assert_not_running()
 {
@@ -255,6 +272,12 @@ event_loop::global()
 {
     static event_loop _global;
     return _global;
+}
+
+const std::shared_ptr<mud::event::timer_dispatcher>&
+event_loop::timers()
+{
+    return _impl->timers();
 }
 
 void

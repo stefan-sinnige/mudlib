@@ -4,6 +4,7 @@
 #include <mud/xml/attribute.h>
 #include <mud/xml/cdata_section.h>
 #include <mud/xml/char_data.h>
+#include <mud/xml/char_reference.h>
 #include <mud/xml/comment.h>
 #include <mud/xml/declaration.h>
 #include <mud/xml/document.h>
@@ -14,8 +15,6 @@
 #include <mud/xml/ns.h>
 #include <mud/xml/processing_instruction.h>
 #include <mud/xml/query.h>
-#include <mud/xml/reader.h>
-#include <mud/xml/writer.h>
 
 /* vi: set ai ts=4 expandtab: */
 

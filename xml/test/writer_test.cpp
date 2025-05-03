@@ -3,9 +3,9 @@
 #include "mud/xml/char_data.h"
 #include "mud/xml/comment.h"
 #include "mud/xml/declaration.h"
+#include "mud/xml/document.h"
 #include "mud/xml/element.h"
 #include "mud/xml/processing_instruction.h"
-#include "mud/xml/writer.h"
 #include "mud/xml/dom.h"
 #include <memory>
 #include <sstream>
@@ -31,7 +31,7 @@ CONTEXT()
 END_CONTEXT()
 
 FEATURE("Writer")
-    DEFINE_WHEN("The text is written",
+    DEFINE_WHEN("The document is written",
         [](context& ctx) {
             ctx.text << ctx.doc;
         })
@@ -48,7 +48,7 @@ FEATURE("Writer")
             auto decl = mud::xml::dom::create_declaration();
             ctx.doc->child(decl);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<?xml version="1.0"?>)XML", ctx.text.str());
@@ -58,11 +58,10 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
+            auto root = mud::xml::dom::create_element("root");
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<root/>)XML", ctx.text.str());
@@ -72,17 +71,14 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
-            auto child1 = mud::xml::dom::create_element();
-            child1->name("child-1");
-            auto child2 = mud::xml::dom::create_element();
-            child2->name("child-2");
+            auto root = mud::xml::dom::create_element("root");
+            auto child1 = mud::xml::dom::create_element("child-1");
+            auto child2 = mud::xml::dom::create_element("child-2");
             root->child(child1);
             root->child(child2);
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<root><child-1/><child-2/></root>)XML",
@@ -93,19 +89,16 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
-            auto attr1 = mud::xml::dom::create_attribute();
-            attr1->name("attr-1");
+            auto root = mud::xml::dom::create_element("root");
+            auto attr1 = mud::xml::dom::create_attribute("attr-1");
             attr1->value("value-1");
-            auto attr2 = mud::xml::dom::create_attribute();
-            attr2->name("attr-2");
+            auto attr2 = mud::xml::dom::create_attribute("attr-2");
             attr2->value("value-2");
             root->attribute(attr1);
             root->attribute(attr2);
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             // Attributes are unordered
@@ -121,14 +114,12 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
-            auto char_data = mud::xml::dom::create_char_data();
-            char_data->text("Lorus ipsum");
+            auto root = mud::xml::dom::create_element("root");
+            auto char_data = mud::xml::dom::create_char_data("Lorus ipsum");
             root->child(char_data);
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<root>Lorus ipsum</root>)XML", ctx.text.str());
@@ -138,14 +129,13 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
-            auto cdata_section = mud::xml::dom::create_cdata_section();
-            cdata_section->text("Lorus ipsum");
+            auto root = mud::xml::dom::create_element("root");
+            auto cdata_section = mud::xml::dom::create_cdata_section(
+                    "Lorus ipsum");
             root->child(cdata_section);
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<root><![CDATA[Lorus ipsum]]></root>)XML",
@@ -156,14 +146,12 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
-            auto comment = mud::xml::dom::create_comment();
-            comment->text("Lorus ipsum");
+            auto root = mud::xml::dom::create_element("root");
+            auto comment = mud::xml::dom::create_comment("Lorus ipsum");
             root->child(comment);
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<root><!--Lorus ipsum--></root>)XML", ctx.text.str());
@@ -173,18 +161,35 @@ FEATURE("Writer")
     GIVEN("An XML document",
         [](context& ctx) {
             ctx.doc = mud::xml::dom::create_document();
-            auto root = mud::xml::dom::create_element();
-            root->name("root");
-            auto pi = mud::xml::dom::create_processing_instruction();
-            pi->target("php");
-            pi->data("phpinfo();");
+            auto root = mud::xml::dom::create_element("root");
+            auto pi = mud::xml::dom::create_processing_instruction(
+                    "php", "phpinfo();");
             root->child(pi);
             ctx.doc->child(root);
         })
-    WHEN ("The text is written")
+    WHEN ("The document is written")
     THEN ("The text represents the document contents",
         [](context& ctx) {
             ASSERT(R"XML(<root><?php phpinfo();?></root>)XML", ctx.text.str());
+        })
+
+  SCENARIO("Writing XML document with escaped characters")
+    GIVEN("An XML document",
+        [](context& ctx) {
+            ctx.doc = mud::xml::dom::create_document();
+            auto root = mud::xml::dom::create_element("root");
+            auto attr = mud::xml::dom::create_attribute("att");
+            attr->value("Read & weep");
+            root->attribute(attr);
+            auto char_data = mud::xml::dom::create_char_data(
+                    "one < three > two");
+            root->child(char_data);
+            ctx.doc->child(root);
+        })
+    WHEN ("The document is written")
+    THEN ("The text represents the document contents",
+        [](context& ctx) {
+            ASSERT(R"XML(<root att="Read &amp; weep">one &lt; three &gt; two</root>)XML", ctx.text.str());
         })
 
 END_FEATURE()

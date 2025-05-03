@@ -5,10 +5,12 @@ mudevent_test_SOURCES = \
     main.cpp \
     event_test.cpp \
     event_loop_test.cpp \
-    test_mechanism.cpp
+    test_mechanism.cpp \
+    timer_test.cpp
 
 mudevent_test_CPPFLAGS = \
 	-I$(srcdir)/../include \
+	-I$(srcdir)/../src \
 	-I$(srcdir)/../../core/include \
 	-I$(srcdir)/../../test/include
 

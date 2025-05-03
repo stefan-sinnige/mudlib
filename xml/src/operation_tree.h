@@ -135,6 +135,8 @@ class axis_step : public step_expr
 {
 public:
     enum class axis_t {
+        ATTRIBUTE,              /**< Select a matching attribute node. This
+                                 * can be abbreviated with the "@" symbol. */
         CHILD,                  /**< Select matching child nodes. This is
                                  * equivalent to the '/' path operator. If
                                  * no explicit axis is defined, then this

@@ -42,6 +42,11 @@ public:
     void stop();
 
     /**
+     * @brief Retun the listening end-point.
+     */
+    const mud::io::tcp::endpoint& endpoint() const;
+
+    /**
      * @brief Process an incoming request.
      *
      * @details

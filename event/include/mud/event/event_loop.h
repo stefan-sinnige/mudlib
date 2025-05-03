@@ -11,6 +11,12 @@
 BEGIN_MUDLIB_EVENT_NS
 
 /**
+ * Forward declarations.
+ */
+class timer;
+class timer_dispatcher;
+
+/**
  * @brief A base class to define a blocking loop that reacts on @c event's.
  *
  * The event-loop waits for triggered events indefinitely or until told
@@ -110,7 +116,21 @@ public:
      */
     static event_loop& global();
 
+    /**
+     * @brief Return the timer dispatcher.
+     *
+     * @details
+     * This is a private function that should not be used by a user. It is only
+     * made public to make it accessible by the unit-test.
+     */
+    const std::shared_ptr<timer_dispatcher>& timers();
+
 private:
+    /**
+     * Friends that require privileged access.
+     */
+    friend class mud::event::timer;
+
     /**
      * Platform specific implementation.
      */

@@ -191,7 +191,7 @@ FEATURE("HTTP/1.0 Message")
         })
 
   SCENARIO("Reading Entity-Body without Content-Length")
-    GIVEN("An HTTP Message with a Content-Length and Entity-Body field",
+    GIVEN("An HTTP Message with Entity body and without a Content-Length field",
         [](context& ctx) {
             ctx.msg = &ctx.resp;
             ctx.istr = std::istringstream(

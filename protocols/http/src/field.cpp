@@ -271,26 +271,53 @@ operator>>(std::istream& istr, status_code& field)
 
 const char _HTTP_REASON_PHRASE[] = "__ReasonPhrase";
 
+const std::string Continue = "Continue";
+const std::string SwitchingProtocols = "Switching Protocols";
 const std::string OK = "OK";
 const std::string Created = "Created";
 const std::string Accepted = "Accepted";
 const std::string NoContent = "No Content";
+const std::string ResetContent = "Reset Content";
+const std::string PartialContent = "Partial Content";
+const std::string MultipleChoice = "Multiple Choice";
 const std::string MovedPermanently = "Moved Permanently";
 const std::string MovedTemporarily = "Moved Temporarily";
 const std::string NotModified = "Not Modified";
+const std::string UseProxy = "Use Proxy";
+const std::string TemporaryRedirect = "Temporary Redirect";
 const std::string BadRequest = "Bad Request";
 const std::string Unauthorized = "Unauthorized";
 const std::string Forbidden = "Forbidden";
 const std::string NotFound = "Not Found";
 const std::string InternalServerError = "Internal Server Error";
+const std::string NotAcceptable = "Not Acceptable";
+const std::string ProxyAuthenticationRequired = "Proxy Authentication Required";
+const std::string RequestTimeout = "Request Time-out";
+const std::string Conflict = "Conflict";
+const std::string Gone = "Gone";
+const std::string LengthRequired = "Length Required";
+const std::string PreconditionFailed = "Precondition Failed";
+const std::string RequestEntityTooLarge = "Request Entity Too Large";
+const std::string RequestURITooLarge = "Request-URI Too Large";
+const std::string UnsupportedMediaType = "Unsupported Media Type";
+const std::string RequestRangeNotSatifiable = "Request range not satisfiable";
+const std::string ExpectationFailed = "Expectation Failed";
 const std::string NotImplemented = "Not Implemented";
 const std::string BadGateway = "Bad Gateway";
 const std::string ServiceUnavailable = "Service Unavailable";
+const std::string GatewayTimeout = "Gateway Time-out";
+const std::string HTTPVersionNotSupported = "HTTP Version not supported";
 
 std::ostream&
 operator<<(std::ostream& ostr, const reason_phrase& field)
 {
     switch (field.value()) {
+        case reason_phrase_e::Continue:
+            ostr << Continue;
+            break;
+        case reason_phrase_e::SwitchingProtocols:
+            ostr << SwitchingProtocols;
+            break;
         case reason_phrase_e::OK:
             ostr << OK;
             break;
@@ -303,6 +330,15 @@ operator<<(std::ostream& ostr, const reason_phrase& field)
         case reason_phrase_e::NoContent:
             ostr << NoContent;
             break;
+        case reason_phrase_e::ResetContent:
+            ostr << ResetContent;
+            break;
+        case reason_phrase_e::PartialContent:
+            ostr << PartialContent;
+            break;
+        case reason_phrase_e::MultipleChoice:
+            ostr << MultipleChoice;
+            break;
         case reason_phrase_e::MovedPermanently:
             ostr << MovedPermanently;
             break;
@@ -311,6 +347,12 @@ operator<<(std::ostream& ostr, const reason_phrase& field)
             break;
         case reason_phrase_e::NotModified:
             ostr << NotModified;
+            break;
+        case reason_phrase_e::UseProxy:
+            ostr << UseProxy;
+            break;
+        case reason_phrase_e::TemporaryRedirect:
+            ostr << TemporaryRedirect;
             break;
         case reason_phrase_e::BadRequest:
             ostr << BadRequest;
@@ -327,6 +369,42 @@ operator<<(std::ostream& ostr, const reason_phrase& field)
         case reason_phrase_e::InternalServerError:
             ostr << InternalServerError;
             break;
+        case reason_phrase_e::NotAcceptable:
+            ostr << NotAcceptable;
+            break;
+        case reason_phrase_e::ProxyAuthenticationRequired:
+            ostr << ProxyAuthenticationRequired;
+            break;
+        case reason_phrase_e::RequestTimeout:
+            ostr << RequestTimeout;
+            break;
+        case reason_phrase_e::Conflict:
+            ostr << Conflict;
+            break;
+        case reason_phrase_e::Gone:
+            ostr << Gone;
+            break;
+        case reason_phrase_e::LengthRequired:
+            ostr << LengthRequired;
+            break;
+        case reason_phrase_e::PreconditionFailed:
+            ostr << PreconditionFailed;
+            break;
+        case reason_phrase_e::RequestEntityTooLarge:
+            ostr << RequestEntityTooLarge;
+            break;
+        case reason_phrase_e::RequestURITooLarge:
+            ostr << RequestURITooLarge;
+            break;
+        case reason_phrase_e::UnsupportedMediaType:
+            ostr << UnsupportedMediaType;
+            break;
+        case reason_phrase_e::RequestRangeNotSatifiable:
+            ostr << RequestRangeNotSatifiable;
+            break;
+        case reason_phrase_e::ExpectationFailed:
+            ostr << ExpectationFailed;
+            break;
         case reason_phrase_e::NotImplemented:
             ostr << NotImplemented;
             break;
@@ -335,6 +413,12 @@ operator<<(std::ostream& ostr, const reason_phrase& field)
             break;
         case reason_phrase_e::ServiceUnavailable:
             ostr << ServiceUnavailable;
+            break;
+        case reason_phrase_e::GatewayTimeout:
+            ostr << GatewayTimeout;
+            break;
+        case reason_phrase_e::HTTPVersionNotSupported:
+            ostr << HTTPVersionNotSupported;
             break;
         default:
             break;
@@ -346,7 +430,11 @@ std::istream&
 operator>>(std::istream& istr, reason_phrase& field)
 {
     std::string tok = tokenise(istr, include_all);
-    if (equal_case(tok, OK)) {
+    if (equal_case(tok, Continue)) {
+        field.value(reason_phrase_e::Continue);
+    } else if (equal_case(tok, SwitchingProtocols)) {
+        field.value(reason_phrase_e::SwitchingProtocols);
+    } else if (equal_case(tok, OK)) {
         field.value(reason_phrase_e::OK);
     } else if (equal_case(tok, Created)) {
         field.value(reason_phrase_e::Created);
@@ -354,12 +442,22 @@ operator>>(std::istream& istr, reason_phrase& field)
         field.value(reason_phrase_e::Accepted);
     } else if (equal_case(tok, NoContent)) {
         field.value(reason_phrase_e::NoContent);
+    } else if (equal_case(tok, ResetContent)) {
+        field.value(reason_phrase_e::ResetContent);
+    } else if (equal_case(tok, PartialContent)) {
+        field.value(reason_phrase_e::PartialContent);
+    } else if (equal_case(tok, MultipleChoice)) {
+        field.value(reason_phrase_e::MultipleChoice);
     } else if (equal_case(tok, MovedPermanently)) {
         field.value(reason_phrase_e::MovedPermanently);
     } else if (equal_case(tok, MovedTemporarily)) {
         field.value(reason_phrase_e::MovedTemporarily);
     } else if (equal_case(tok, NotModified)) {
         field.value(reason_phrase_e::NotModified);
+    } else if (equal_case(tok, UseProxy)) {
+        field.value(reason_phrase_e::UseProxy);
+    } else if (equal_case(tok, TemporaryRedirect)) {
+        field.value(reason_phrase_e::TemporaryRedirect);
     } else if (equal_case(tok, BadRequest)) {
         field.value(reason_phrase_e::BadRequest);
     } else if (equal_case(tok, Unauthorized)) {
@@ -370,14 +468,42 @@ operator>>(std::istream& istr, reason_phrase& field)
         field.value(reason_phrase_e::NotFound);
     } else if (equal_case(tok, InternalServerError)) {
         field.value(reason_phrase_e::InternalServerError);
+    } else if (equal_case(tok, NotAcceptable)) {
+        field.value(reason_phrase_e::NotAcceptable);
+    } else if (equal_case(tok, ProxyAuthenticationRequired)) {
+        field.value(reason_phrase_e::ProxyAuthenticationRequired);
+    } else if (equal_case(tok, RequestTimeout)) {
+        field.value(reason_phrase_e::RequestTimeout);
+    } else if (equal_case(tok, Conflict)) {
+        field.value(reason_phrase_e::Conflict);
+    } else if (equal_case(tok, Gone)) {
+        field.value(reason_phrase_e::Gone);
+    } else if (equal_case(tok, LengthRequired)) {
+        field.value(reason_phrase_e::LengthRequired);
+    } else if (equal_case(tok, PreconditionFailed)) {
+        field.value(reason_phrase_e::PreconditionFailed);
+    } else if (equal_case(tok, RequestEntityTooLarge)) {
+        field.value(reason_phrase_e::RequestEntityTooLarge);
+    } else if (equal_case(tok, RequestURITooLarge)) {
+        field.value(reason_phrase_e::RequestURITooLarge);
+    } else if (equal_case(tok, UnsupportedMediaType)) {
+        field.value(reason_phrase_e::UnsupportedMediaType);
+    } else if (equal_case(tok, RequestRangeNotSatifiable)) {
+        field.value(reason_phrase_e::RequestRangeNotSatifiable);
+    } else if (equal_case(tok, ExpectationFailed)) {
+        field.value(reason_phrase_e::ExpectationFailed);
     } else if (equal_case(tok, NotImplemented)) {
         field.value(reason_phrase_e::NotImplemented);
     } else if (equal_case(tok, BadGateway)) {
         field.value(reason_phrase_e::BadGateway);
     } else if (equal_case(tok, ServiceUnavailable)) {
         field.value(reason_phrase_e::ServiceUnavailable);
+    } else if (equal_case(tok, GatewayTimeout)) {
+        field.value(reason_phrase_e::GatewayTimeout);
+    } else if (equal_case(tok, HTTPVersionNotSupported)) {
+        field.value(reason_phrase_e::HTTPVersionNotSupported);
     } else {
-        throw std::out_of_range("Incorrectly formatted HTTP Version");
+        field.value(reason_phrase_e::ExtensionCode);
     }
     return istr;
 }

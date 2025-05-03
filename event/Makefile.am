@@ -6,6 +6,8 @@ libmudevent_la_SOURCES = \
     src/event.cpp \
     src/event_loop.cpp \
     src/event_mechanism.cpp \
+    src/timer.cpp \
+    src/timer_dispatcher.cpp \
     src/posix/select_mechanism.cpp 
 
 includemuddir = $(includedir)/mud
@@ -17,9 +19,11 @@ includemudevent_HEADERS = \
     include/mud/event/ns.h \
     include/mud/event/event.h \
     include/mud/event/event_loop.h \
-    include/mud/event/event_mechanism.h
+    include/mud/event/event_mechanism.h \
+    include/mud/event/timer.h
 
 libmudevent_la_CPPFLAGS = \
+    -I$(srcdir)/src \
     -I$(srcdir)/include \
 	-I$(srcdir)/../core/include \
 	$(PTHREAD_CFLAGS)
