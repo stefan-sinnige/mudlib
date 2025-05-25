@@ -80,6 +80,17 @@ FEATURE("Reader")
             ASSERT("root", ctx.doc->root()->name());
         })
 
+  SCENARIO("Reading XML document with enclosed whitespace")
+    GIVEN("A document text",
+        [](context& ctx){
+            ctx.text << " \t\r\n<root></root> \t\r\n";
+        })
+    WHEN("The text is read")
+    THEN("The root element is available",
+        [](context& ctx){
+            ASSERT("root", ctx.doc->root()->name());
+        })
+
   SCENARIO("Reading XML element hierarchy")
     GIVEN("A document text",
         [](context& ctx){
