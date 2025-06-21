@@ -74,9 +74,13 @@ windows_handle::signal::impl::impl()
     // Create a manual reset event.
     HANDLE handle = ::CreateEvent(nullptr, true, false, nullptr);
 
-    // Dave the handle
+    // Save the handle
     _handle = std::unique_ptr<mud::core::handle>(
         new mud::core::windows_handle(handle));
+
+    // Logging
+    LOG(log);
+    TRACE(log) << "Select event " << HANDLE << std::endl;
 }
 
 windows_handle::signal::impl::~impl()
@@ -96,12 +100,20 @@ windows_handle::signal::impl::handle() const
 void
 windows_handle::signal::impl::trigger()
 {
+    LOG(log);
+    TRACE(log) << "Select event trigger fd: "
+               << mud::core::internal_handle<HANDLE>(_handle) << std::endl;
+
     ::SetEvent(mud::core::internal_handle<HANDLE>(_handle));
 }
 
 bool
 windows_handle::signal::impl::capture()
 {
+    LOG(log);
+    TRACE(log) << "Select event capture fd: "
+               << mud::core::internal_handle<HANDLE>(_handle) << std::endl;
+
     ::ResetEvent(mud::core::internal_handle<HANDLE>(_handle));
     // Cannot determine the current state
     return true;

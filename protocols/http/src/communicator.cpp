@@ -33,6 +33,12 @@ server::on_disconnect(mud::io::tcp::socket& /* unused */socket)
 void
 server::on_receive(mud::io::tcp::socket& /* unused */socket)
 {
+    // Logging
+    LOG(log);
+    DEBUG(log) << "HTTTP request from "
+               << socket.destination_endpoint().address().str() << ":"
+               << socket.destination_endpoint().port() << std::endl;
+
     // Expect an HTTP message.
     bool force_close = false;
     request req;
@@ -48,6 +54,7 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
         resp.reason_phrase(mud::http::reason_phrase_e::BadRequest);
         force_close = true;
     }
+    TRACE(log) << "Message details: " << std::endl << req << std::endl;
 
     // Create a response from the callback function.
     try {
@@ -90,6 +97,10 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
     }
 
     // Send the response.
+    DEBUG(log) << "HTTTP response to "
+               << socket.destination_endpoint().address().str() << ":"
+               << socket.destination_endpoint().port() << std::endl;
+    TRACE(log) << "Message details: " << std::endl << req << std::endl;
     ostr() << resp << std::flush;
 
     // Close the connection if we need to
@@ -116,6 +127,13 @@ client::connected() const
 void
 client::request(const mud::http::request& req)
 {
+    // Logging
+    LOG(log);
+    DEBUG(log) << "HTTP request to "
+               << device().destination_endpoint().address().str() << ":"
+               << device().destination_endpoint().port() << std::endl;
+    TRACE(log) << "Message details: " << std::endl << req << std::endl;
+
     ostr() << req << std::flush;
 }
 
@@ -134,6 +152,12 @@ client::on_disconnect(mud::io::tcp::socket& /* unused */socket)
 void
 client::on_receive(mud::io::tcp::socket& /* unused */ socket)
 {
+    // Logging
+    LOG(log);
+    DEBUG(log) << "HTTTP response from "
+               << socket.destination_endpoint().address().str() << ":"
+               << socket.destination_endpoint().port() << std::endl;
+
     // Expect an HTTP message.
     bool force_close = false;
     response resp;
@@ -145,6 +169,7 @@ client::on_receive(mud::io::tcp::socket& /* unused */ socket)
     } catch (std::exception& ex) {
         force_close = true;
     }
+    TRACE(log) << "Message details: " << std::endl << resp << std::endl;
 
     // Examine any Connection flag to see if we need to stay open
     //   * Not for HTTP 1.0

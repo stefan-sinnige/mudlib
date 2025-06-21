@@ -140,6 +140,11 @@ pipe::impl::impl() : _istr(nullptr), _ostr(nullptr)
     _write_handle = std::unique_ptr<mud::core::handle>(
         new mud::core::select_handle(int(pfd[1])));
 
+    /* Logging */
+    LOG(log);
+    INFO(log) << "Creating read pipe fd: " << pfd[0] << std::endl;
+    INFO(log) << "Creating write pipe fd: " << pfd[1] << std::endl;
+
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */
     _read_buffer =

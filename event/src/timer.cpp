@@ -5,12 +5,10 @@
 #include <atomic>
 #include <stdexcept>
 #include <thread>
-
 #include <ctime>
 #include <iomanip>
 #include <iostream>
 
-/*
 std::ostream&
 operator<<(std::ostream& ostr, const std::chrono::system_clock::time_point& tp)
 {
@@ -18,7 +16,6 @@ operator<<(std::ostream& ostr, const std::chrono::system_clock::time_point& tp)
     ostr << std::put_time(::localtime(&tp_t), "%F %T");
     return ostr;
 }
-*/
 
 BEGIN_MUDLIB_EVENT_NS
 
@@ -143,6 +140,8 @@ timer::start(
     const std::chrono::milliseconds& interval,
     const std::chrono::system_clock::time_point& epoch)
 {
+    LOG(log);
+    INFO(log) << "Starting timer at " << epoch << std::endl;
     _impl->start(interval, epoch);
     mud::event::event_loop::global().timers()->insert(_impl);
 }
@@ -150,6 +149,8 @@ timer::start(
 void
 timer::stop()
 {
+    LOG(log);
+    INFO(log) << "Stopping timer" << std::endl;
     _impl->stop();
     mud::event::event_loop::global().timers()->remove(_impl);
 }
@@ -157,6 +158,8 @@ timer::stop()
 void
 timer::at(const std::chrono::milliseconds& interval)
 {
+    LOG(log);
+    INFO(log) << "Starting timer at " << interval.count() << "ms" << std::endl;
     _impl->start(interval);
     mud::event::event_loop::global().timers()->insert(_impl);
 }
@@ -164,6 +167,8 @@ timer::at(const std::chrono::milliseconds& interval)
 void
 timer::at(const std::chrono::system_clock::time_point& epoch)
 {
+    LOG(log);
+    INFO(log) << "Starting timer at " << epoch << std::endl;
     _impl->start(epoch);
     mud::event::event_loop::global().timers()->insert(_impl);
 }
@@ -182,6 +187,8 @@ timer::expire_impulse() {
 void
 timer::on_expire(const std::chrono::system_clock::time_point& time_point)
 {
+    LOG(log);
+    INFO(log) << "Timer expired, pulsing" << std::endl;
     _impl->on_expire(time_point);
 }
 

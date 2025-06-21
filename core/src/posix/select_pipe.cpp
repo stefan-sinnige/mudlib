@@ -72,6 +72,11 @@ select_handle::signal::impl::impl()
         new mud::core::select_handle(int(pfd[0])));
     _write_handle = std::unique_ptr<mud::core::handle>(
         new mud::core::select_handle(int(pfd[1])));
+
+    /* Logging */
+    LOG(log);
+    DEBUG(log) << "Select read pipe fd: " << pfd[0] << std::endl;
+    DEBUG(log) << "Select write pipe fd: " << pfd[1] << std::endl;
 }
 
 select_handle::signal::impl::~impl()
@@ -95,6 +100,10 @@ select_handle::signal::impl::handle() const
 void
 select_handle::signal::impl::trigger()
 {
+    LOG(log);
+    TRACE(log) << "Select pipe trigger fd: "
+               << mud::core::internal_handle<int>(_write_handle) << std::endl;
+
     char ch = 'N';
     (void)::write(mud::core::internal_handle<int>(_write_handle), &ch, 1);
 }
@@ -102,6 +111,10 @@ select_handle::signal::impl::trigger()
 bool
 select_handle::signal::impl::capture()
 {
+    LOG(log);
+    TRACE(log) << "Select pipe capture fd: "
+               << mud::core::internal_handle<int>(_read_handle) << std::endl;
+
     char ch;
     int n = ::read(mud::core::internal_handle<int>(_read_handle), &ch, 1);
     return (n == 1);

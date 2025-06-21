@@ -386,6 +386,9 @@ tcp::acceptor::open(const endpoint& endpoint)
     _listen.source_endpoint(local_endpoint);
 
     /* Prepare to listen. */
+    LOG(log);
+    INFO(log) << "TCP listening to " << local_endpoint.address().str() << ":"
+              << local_endpoint.port() << std::endl;
     if (::listen(lstn, 8) != 0) {
         throw std::system_error(_listen.error(), std::system_category(),
                                 "listening for TCP connections");
@@ -463,6 +466,10 @@ tcp::acceptor::on_ready_accept()
     }
     tcp::endpoint remote_endpoint(addr.sin_addr.s_addr, ntohs(addr.sin_port));
     client.destination_endpoint(remote_endpoint);
+    LOG(log);
+    INFO(log) << "TCP accepted connection "
+              << remote_endpoint.address().str() << ":"
+              << remote_endpoint.port() << std::endl;
 
     // Call the impulse (one of the callers may take owenership with a
     // std::move).
@@ -502,6 +509,10 @@ tcp::connector::~connector() {}
 void
 tcp::connector::open(const endpoint& endpoint)
 {
+    LOG(log);
+    INFO(log) << "TCP connecting to " << endpoint.address().str() << ":"
+              << endpoint.port() << std::endl;
+
     /* Connect to the endpoint. */
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
@@ -546,6 +557,9 @@ tcp::connector::connect_impulse()
 mud::event::event::return_type
 tcp::connector::on_ready_connect()
 {
+    LOG(log);
+    INFO(log) << "TCP connected" << std::endl;
+
     /* Deregister the connector from the event-loop */
     mud::event::event_loop::global().deregister_handler(event());
 

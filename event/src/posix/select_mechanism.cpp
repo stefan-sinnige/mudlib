@@ -47,6 +47,10 @@ void
 select_mechanism::register_handler(event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
+    LOG(log);
+    INFO(log) << "Registering to select event mechanism fd: "
+              << mud::core::internal_handle<int>(event.handle())
+              << std::endl;
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
         _events.erase(found);
@@ -59,8 +63,13 @@ void
 select_mechanism::deregister_handler(event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
+
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
+        LOG(log);
+        INFO(log) << "Registering to select event mechanism fd: "
+                  << mud::core::internal_handle<int>(event.handle())
+                  << std::endl;
         _events.erase(found);
         nop();
     }
@@ -83,6 +92,9 @@ select_mechanism::initiate()
 void
 select_mechanism::loop()
 {
+    LOG(log);
+    INFO(log) << "Starting select event mechanism loop" << std::endl;
+
     /* Loop until we're told to stop. This loop is run on it's own thread. */
     while (_running.load() == true) {
         fd_set readfds, writefds, exceptfds;
@@ -155,6 +167,8 @@ select_mechanism::loop()
 void
 select_mechanism::terminate()
 {
+    LOG(log);
+    INFO(log) << "Terminating select event mechanism loop" << std::endl;
     if (_running.load() == true) {
         _running.store(false);
         nop();
@@ -204,6 +218,7 @@ void
 select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                               const fd_set& exceptfds)
 {
+    LOG(log);
     std::lock_guard<std::mutex> lock(_lock);
 
     /* Check all excepts */
@@ -216,6 +231,8 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                 event::signal_type::READING) {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &readfds)) {
+                DEBUG(log) << "Select event mechanism read trigger fd: "
+                           << handle << std::endl;
                 if (event_it->handle() == _self.handle()) {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
@@ -252,6 +269,8 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                 event::signal_type::WRITING) {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &writefds)) {
+                DEBUG(log) << "Select event mechanism write trigger fd: "
+                           << handle << std::endl;
                 if (event_it->handle() == _self.handle()) {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
@@ -293,6 +312,9 @@ select_mechanism::remove_badf()
             int handle = mud::core::internal_handle<int>(event_it->handle());
             int flags = fcntl(handle, F_GETFD);
             if (flags == -1 && errno == EBADF) {
+                LOG(log);
+                DEBUG(log) << "Select event mechanism removing bad fd: "
+                           << handle << std::endl;
                 event_it = _events.erase(event_it);
             }
             else {

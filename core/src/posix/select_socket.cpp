@@ -137,6 +137,10 @@ select_handle::signal::impl::impl()
     // Save the handle
     _handle =
         std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
+
+    // Logging
+    LOG(log);
+    DEBUG(log) << "Select socket fd: " << fd << std::endl;
 }
 
 select_handle::signal::impl::~impl()
@@ -154,6 +158,10 @@ select_handle::signal::impl::~impl()
 void
 select_handle::signal::impl::trigger()
 {
+    LOG(log);
+    TRACE(log) << "Select socket trigger fd: "
+               << mud::core::internal_handle<int>(_handle) << std::endl;
+
     // Write over UDP
     struct sockaddr_in write_addr;
     ::memcpy(&write_addr, &_addr, sizeof(write_addr));
@@ -169,6 +177,10 @@ select_handle::signal::impl::trigger()
 bool
 select_handle::signal::impl::capture()
 {
+    LOG(log);
+    TRACE(log) << "Select socket capture fd: "
+               << mud::core::internal_handle<int>(_handle) << std::endl;
+
     // Read from UDP
     struct sockaddr_in recv_addr;
     ::memcpy(&recv_addr, &_addr, sizeof(recv_addr));

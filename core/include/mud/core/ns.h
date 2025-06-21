@@ -21,6 +21,20 @@
     }                                                                          \
     }
 
+#ifdef MUDLIB_LIBRARY
+    #include "mud/core/internal/log.h"
+#else
+    #include <iostream>
+    #define LOG(obj)
+    #define TRACE(obj)  if (true) {} else std::cout
+    #define DEBUG(obj)  if (true) {} else std::cout
+    #define INFO(obj)   if (true) {} else std::cout
+    #define WARN(obj)   if (true) {} else std::cout
+    #define ERROR(obj)  if (true) {} else std::cout
+    #define FATAL(obj)  if (true) {} else std::cout
+    #define TYPEINFO(t) ""
+#endif
+
 /* vi: set ai ts=4 expandtab: */
 
 #endif /* _MUDLIB_CORE_NS_H_ */

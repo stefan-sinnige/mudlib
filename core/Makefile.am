@@ -6,6 +6,7 @@ libmudcore_la_SOURCES = \
     src/endian.cpp \
     src/handle.cpp \
     src/impulse.cpp \
+    src/log.cpp \
     src/notifier.cpp \
     src/object.cpp \
     src/uri.cpp \
@@ -23,6 +24,7 @@ includemudcore_HEADERS = \
     include/mud/core/factory.h \
     include/mud/core/handle.h \
     include/mud/core/impulse.h \
+    include/mud/core/log.h \
     include/mud/core/notifier.h \
     include/mud/core/object.h \
     include/mud/core/optional.h \

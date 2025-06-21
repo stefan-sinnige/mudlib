@@ -7,6 +7,9 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 PKG_PROG_PKG_CONFIG
 
+# Add flag to indicate we are building the mudlib library
+AC_DEFINE([MUDLIB_LIBRARY])
+
 # We only use C++17 (or above) features
 AX_CXX_COMPILE_STDCXX(17, , mandatory)
 
@@ -63,6 +66,7 @@ AC_CONFIG_FILES([
     protocols/soap/Makefile protocols/soap/test/Makefile
     protocols/tls/Makefile protocols/tls/test/Makefile
     samples/Makefile
+    samples/core/log/Makefile
     samples/io/Makefile
     samples/io/tcp/Makefile
     samples/io/tcp/client/Makefile

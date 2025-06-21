@@ -698,6 +698,8 @@ basic_socket::basic_socket(basic_socket::domain_t domain,
         throw std::system_error(errno, std::system_category(),
                                 "creating socket");
     }
+    LOG(log);
+    INFO(log) << "Creating socket fd: " << fd << std::endl;
     _handle =
         std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
 }
@@ -739,6 +741,9 @@ void
 basic_socket::close()
 {
     if (_handle != nullptr) {
+        LOG(log);
+        INFO(log) << "Closing socket fd: "
+                  << mud::core::internal_handle<int>(_handle) << std::endl;
         ::close(mud::core::internal_handle<int>(_handle));
         _handle.reset(nullptr);
     }

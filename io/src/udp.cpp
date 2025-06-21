@@ -243,6 +243,10 @@ udp::socket::impl::bind(const endpoint& endpoint)
                                 "binding UDP endpoint");
     }
 
+    LOG(log);
+    INFO(log) << "UDP bound to " << endpoint.address().str() << ":"
+              << endpoint.port() << std::endl;
+
     /* Establish the source endpoint details */
     if (::getsockname(sckt, (struct sockaddr*)&addr, &len) != 0) {
         throw std::system_error(errno, std::system_category(),

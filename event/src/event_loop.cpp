@@ -149,6 +149,9 @@ event_loop::impl::deregister_handler(event&& event)
 void
 event_loop::impl::loop()
 {
+    LOG(log);
+    INFO(log) << "Starting event loop" << std::endl;
+
     // Only run the loop if it is not yet running.
     if (_running.exchange(true) == true) {
         assert_not_running();
@@ -200,6 +203,9 @@ event_loop::impl::loop()
 std::shared_future<void>
 event_loop::impl::terminate()
 {
+    LOG(log);
+    INFO(log) << "Terminating event loop" << std::endl;
+
     std::lock_guard<std::mutex> lock(_lock);
 
     // Stop the task workers in the pool

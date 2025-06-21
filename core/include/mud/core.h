@@ -5,6 +5,7 @@
 #include <mud/core/exception.h>
 #include <mud/core/factory.h>
 #include <mud/core/handle.h>
+#include <mud/core/log.h>
 #include <mud/core/ns.h>
 #include <mud/core/optional.h>
 #include <mud/core/poly_map.h>
