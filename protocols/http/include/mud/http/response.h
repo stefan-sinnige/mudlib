@@ -43,6 +43,10 @@ public:
     {
         _reason_phrase = value;
     }
+    void reason_phrase(http::reason_phrase_e value)
+    {
+        _reason_phrase = http::reason_phrase(value);
+    }
 
     /**
      * Get the reason phrase.

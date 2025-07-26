@@ -268,6 +268,8 @@ task<void(Args...)>::operator()(Args... args)
     } catch (...) {
         _promise.set_exception(std::current_exception());
     }
+
+    INFO(log) << "Finished task" << std::endl;
 }
 
 template<class... Args>

@@ -106,99 +106,83 @@ operator>>(std::istream& istr, version& field)
 
 const char _HTTP_METHOD[] = "__Method";
 
-const std::string GET = "GET";
-const std::string HEAD = "HEAD";
-const std::string POST = "POST";
-const std::string PUT = "PUT";
-const std::string DELETE = "DELETE";
-const std::string CONNECT = "CONNECT";
-const std::string OPTIONS = "OPTIONS";
-const std::string TRACE = "TRACE";
+static std::map<method_e, std::string_view> g_method_map =
+{
+    { method_e::GET, "GET" },
+    { method_e::HEAD, "HEAD" },
+    { method_e::POST, "POST" },
+    { method_e::PUT, "PUT" },
+    { method_e::DELETE, "DELETE" },
+    { method_e::CONNECT, "CONNECT" },
+    { method_e::OPTIONS, "OPTIONS" },
+    { method_e::TRACE, "TRACE" }
+};
 
-request_method::request_method()
+http_method::http_method()
     : _type(method_e::UNKNOWN)
 {
 }
 
-request_method::request_method(method_e type)
+http_method::http_method(method_e type)
     : _type(type)
 {
 }
 
-request_method::request_method(const std::string& ext)
+http_method::http_method(const std::string& ext)
 {
-    if (ext == GET) {
-        _type = method_e::GET;
-    } else if (ext == HEAD) {
-        _type = method_e::HEAD;
-    } else if (ext == POST) {
-        _type = method_e::POST;
-    } else if (ext == PUT) {
-        _type = method_e::PUT;
-    } else if (ext == DELETE) {
-        _type = method_e::DELETE;
-    } else if (ext == CONNECT) {
-        _type = method_e::CONNECT;
-    } else if (ext == OPTIONS) {
-        _type = method_e::OPTIONS;
-    } else if (ext == TRACE) {
-        _type = method_e::TRACE;
-    } else {
+    // Find the @c ext string in the map
+    auto found = std::find_if(
+            g_method_map.begin(), g_method_map.end(),
+            [ext](const std::map<method_e,
+                  std::string_view>::value_type& item) -> bool
+            {
+                return item.second == ext;
+            });
+
+    // If found, use the predefined type, otherwise use the extension
+    if (found != g_method_map.end()) {
+        _type = found->first;
+    }
+    else {
         _type = method_e::EXT;
         _ext = ext;
     }
 }
 
 method_e
-request_method::type() const
+http_method::type() const
 {
     return _type;
 }
 
-request_method::operator method_e() const
+http_method::operator method_e() const
 {
     return _type;
 }
 
-const std::string&
-request_method::str() const
+std::string_view
+http_method::str() const
 {
-    switch (_type) {
-        case method_e::GET:
-            return GET;
-        case method_e::HEAD:
-            return HEAD;
-        case method_e::POST:
-            return POST;
-        case method_e::PUT:
-            return PUT;
-        case method_e::DELETE:
-            return DELETE;
-        case method_e::CONNECT:
-            return CONNECT;
-        case method_e::OPTIONS:
-            return OPTIONS;
-        case method_e::TRACE:
-            return TRACE;
-        case method_e::EXT:
-            return _ext;
-        default:
-            return GET;
+    if (_type == method_e::EXT) {
+        return _ext;
+    }
+    else {
+        return g_method_map[_type];
     }
 }
 
 std::ostream&
-operator<<(std::ostream& ostr, const request_method& value)
+operator<<(std::ostream& ostr, const http_method& value)
 {
     ostr << value.str();
     return ostr;
 }
 
 std::istream&
-operator>>(std::istream& istr, request_method& value)
+operator>>(std::istream& istr, http_method& value)
 {
     std::string tok = tokenise(istr, include_none);
-    value = request_method(tok);
+    value = http_method(tok);
     return istr;
 }
 
@@ -212,7 +196,7 @@ operator<<(std::ostream& ostr, const method& field)
 std::istream&
 operator>>(std::istream& istr, method& field)
 {
-    request_method value;
+    http_method value;
     istr >> value;
     field = method(value);
     return istr;
@@ -271,240 +255,128 @@ operator>>(std::istream& istr, status_code& field)
 
 const char _HTTP_REASON_PHRASE[] = "__ReasonPhrase";
 
-const std::string Continue = "Continue";
-const std::string SwitchingProtocols = "Switching Protocols";
-const std::string OK = "OK";
-const std::string Created = "Created";
-const std::string Accepted = "Accepted";
-const std::string NoContent = "No Content";
-const std::string ResetContent = "Reset Content";
-const std::string PartialContent = "Partial Content";
-const std::string MultipleChoice = "Multiple Choice";
-const std::string MovedPermanently = "Moved Permanently";
-const std::string MovedTemporarily = "Moved Temporarily";
-const std::string NotModified = "Not Modified";
-const std::string UseProxy = "Use Proxy";
-const std::string TemporaryRedirect = "Temporary Redirect";
-const std::string BadRequest = "Bad Request";
-const std::string Unauthorized = "Unauthorized";
-const std::string Forbidden = "Forbidden";
-const std::string NotFound = "Not Found";
-const std::string InternalServerError = "Internal Server Error";
-const std::string NotAcceptable = "Not Acceptable";
-const std::string ProxyAuthenticationRequired = "Proxy Authentication Required";
-const std::string RequestTimeout = "Request Time-out";
-const std::string Conflict = "Conflict";
-const std::string Gone = "Gone";
-const std::string LengthRequired = "Length Required";
-const std::string PreconditionFailed = "Precondition Failed";
-const std::string RequestEntityTooLarge = "Request Entity Too Large";
-const std::string RequestURITooLarge = "Request-URI Too Large";
-const std::string UnsupportedMediaType = "Unsupported Media Type";
-const std::string RequestRangeNotSatifiable = "Request range not satisfiable";
-const std::string ExpectationFailed = "Expectation Failed";
-const std::string NotImplemented = "Not Implemented";
-const std::string BadGateway = "Bad Gateway";
-const std::string ServiceUnavailable = "Service Unavailable";
-const std::string GatewayTimeout = "Gateway Time-out";
-const std::string HTTPVersionNotSupported = "HTTP Version not supported";
+static std::map<reason_phrase_e, std::string_view> g_reason_phrase_map =
+{
+    { reason_phrase_e::Unknown, "Unknown" },
+    { reason_phrase_e::Continue, "Continue" },
+    { reason_phrase_e::SwitchingProtocols, "Switching Protocols" },
+    { reason_phrase_e::OK, "OK" },
+    { reason_phrase_e::Created, "Created" },
+    { reason_phrase_e::Accepted, "Accepted" },
+    { reason_phrase_e::NoContent, "No Content" },
+    { reason_phrase_e::ResetContent, "Reset Content" },
+    { reason_phrase_e::PartialContent, "Partial Content" },
+    { reason_phrase_e::MultipleChoice, "Multiple Choice" },
+    { reason_phrase_e::MovedPermanently, "Moved Permanently" },
+    { reason_phrase_e::MovedTemporarily, "Moved Temporarily" },
+    { reason_phrase_e::NotModified, "Not Modified" },
+    { reason_phrase_e::UseProxy, "Use Proxy" },
+    { reason_phrase_e::TemporaryRedirect, "Temporary Redirect" },
+    { reason_phrase_e::BadRequest, "Bad Request" },
+    { reason_phrase_e::Unauthorized, "Unauthorized" },
+    { reason_phrase_e::Forbidden, "Forbidden" },
+    { reason_phrase_e::NotFound, "Not Found" },
+    { reason_phrase_e::InternalServerError, "Internal Server Error" },
+    { reason_phrase_e::NotAcceptable, "Not Acceptable" },
+    { reason_phrase_e::ProxyAuthenticationRequired, "Proxy Authentication Required" },
+    { reason_phrase_e::RequestTimeout, "Request Time-out" },
+    { reason_phrase_e::Conflict, "Conflict" },
+    { reason_phrase_e::Gone, "Gone" },
+    { reason_phrase_e::LengthRequired, "Length Required" },
+    { reason_phrase_e::PreconditionFailed, "Precondition Failed" },
+    { reason_phrase_e::RequestEntityTooLarge, "Request Entity Too Large" },
+    { reason_phrase_e::RequestURITooLarge, "Request-URI Too Large" },
+    { reason_phrase_e::UnsupportedMediaType, "Unsupported Media Type" },
+    { reason_phrase_e::RequestRangeNotSatifiable, "Request range not satisfiable" },
+    { reason_phrase_e::ExpectationFailed, "Expectation Failed" },
+    { reason_phrase_e::NotImplemented, "Not Implemented" },
+    { reason_phrase_e::BadGateway, "Bad Gateway" },
+    { reason_phrase_e::ServiceUnavailable, "Service Unavailable" },
+    { reason_phrase_e::GatewayTimeout, "Gateway Time-out" },
+    { reason_phrase_e::HTTPVersionNotSupported, "HTTP Version not supported" }
+};
+
+http_reason_phrase::http_reason_phrase()
+    : _type(reason_phrase_e::Unknown)
+{
+}
+
+http_reason_phrase::http_reason_phrase(reason_phrase_e type)
+    : _type(type)
+{
+}
+
+http_reason_phrase::http_reason_phrase(const std::string& ext)
+{
+    // Find the @c ext string in the map
+    auto found = std::find_if(
+            g_reason_phrase_map.begin(), g_reason_phrase_map.end(),
+            [ext](const std::map<reason_phrase_e,
+                  std::string_view>::value_type& item) -> bool
+            {
+                return item.second == ext;
+            });
+
+    // If found, use the predefined type, otherwise use the extension
+    if (found != g_reason_phrase_map.end()) {
+        _type = found->first;
+    }
+    else {
+        _type = reason_phrase_e::ExtensionCode;
+        _ext = ext;
+    }
+}
+
+reason_phrase_e
+http_reason_phrase::type() const
+{
+    return _type;
+}
+
+http_reason_phrase::operator reason_phrase_e() const
+{
+    return _type;
+}
+
+std::string_view
+http_reason_phrase::str() const
+{
+    if (_type == reason_phrase_e::ExtensionCode) {
+        return _ext;
+    }
+    else {
+        return g_reason_phrase_map[_type];
+    }
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const http_reason_phrase& value)
+{
+    ostr << value.str();
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, http_reason_phrase& value)
+{
+    std::string tok = tokenise(istr, include_none);
+    value = http_reason_phrase(tok);
+    return istr;
+}
 
 std::ostream&
 operator<<(std::ostream& ostr, const reason_phrase& field)
 {
-    switch (field.value()) {
-        case reason_phrase_e::Continue:
-            ostr << Continue;
-            break;
-        case reason_phrase_e::SwitchingProtocols:
-            ostr << SwitchingProtocols;
-            break;
-        case reason_phrase_e::OK:
-            ostr << OK;
-            break;
-        case reason_phrase_e::Created:
-            ostr << Created;
-            break;
-        case reason_phrase_e::Accepted:
-            ostr << Accepted;
-            break;
-        case reason_phrase_e::NoContent:
-            ostr << NoContent;
-            break;
-        case reason_phrase_e::ResetContent:
-            ostr << ResetContent;
-            break;
-        case reason_phrase_e::PartialContent:
-            ostr << PartialContent;
-            break;
-        case reason_phrase_e::MultipleChoice:
-            ostr << MultipleChoice;
-            break;
-        case reason_phrase_e::MovedPermanently:
-            ostr << MovedPermanently;
-            break;
-        case reason_phrase_e::MovedTemporarily:
-            ostr << MovedTemporarily;
-            break;
-        case reason_phrase_e::NotModified:
-            ostr << NotModified;
-            break;
-        case reason_phrase_e::UseProxy:
-            ostr << UseProxy;
-            break;
-        case reason_phrase_e::TemporaryRedirect:
-            ostr << TemporaryRedirect;
-            break;
-        case reason_phrase_e::BadRequest:
-            ostr << BadRequest;
-            break;
-        case reason_phrase_e::Unauthorized:
-            ostr << Unauthorized;
-            break;
-        case reason_phrase_e::Forbidden:
-            ostr << Forbidden;
-            break;
-        case reason_phrase_e::NotFound:
-            ostr << NotFound;
-            break;
-        case reason_phrase_e::InternalServerError:
-            ostr << InternalServerError;
-            break;
-        case reason_phrase_e::NotAcceptable:
-            ostr << NotAcceptable;
-            break;
-        case reason_phrase_e::ProxyAuthenticationRequired:
-            ostr << ProxyAuthenticationRequired;
-            break;
-        case reason_phrase_e::RequestTimeout:
-            ostr << RequestTimeout;
-            break;
-        case reason_phrase_e::Conflict:
-            ostr << Conflict;
-            break;
-        case reason_phrase_e::Gone:
-            ostr << Gone;
-            break;
-        case reason_phrase_e::LengthRequired:
-            ostr << LengthRequired;
-            break;
-        case reason_phrase_e::PreconditionFailed:
-            ostr << PreconditionFailed;
-            break;
-        case reason_phrase_e::RequestEntityTooLarge:
-            ostr << RequestEntityTooLarge;
-            break;
-        case reason_phrase_e::RequestURITooLarge:
-            ostr << RequestURITooLarge;
-            break;
-        case reason_phrase_e::UnsupportedMediaType:
-            ostr << UnsupportedMediaType;
-            break;
-        case reason_phrase_e::RequestRangeNotSatifiable:
-            ostr << RequestRangeNotSatifiable;
-            break;
-        case reason_phrase_e::ExpectationFailed:
-            ostr << ExpectationFailed;
-            break;
-        case reason_phrase_e::NotImplemented:
-            ostr << NotImplemented;
-            break;
-        case reason_phrase_e::BadGateway:
-            ostr << BadGateway;
-            break;
-        case reason_phrase_e::ServiceUnavailable:
-            ostr << ServiceUnavailable;
-            break;
-        case reason_phrase_e::GatewayTimeout:
-            ostr << GatewayTimeout;
-            break;
-        case reason_phrase_e::HTTPVersionNotSupported:
-            ostr << HTTPVersionNotSupported;
-            break;
-        default:
-            break;
-    }
+    ostr << field.value();
     return ostr;
 }
 
 std::istream&
 operator>>(std::istream& istr, reason_phrase& field)
 {
-    std::string tok = tokenise(istr, include_all);
-    if (equal_case(tok, Continue)) {
-        field.value(reason_phrase_e::Continue);
-    } else if (equal_case(tok, SwitchingProtocols)) {
-        field.value(reason_phrase_e::SwitchingProtocols);
-    } else if (equal_case(tok, OK)) {
-        field.value(reason_phrase_e::OK);
-    } else if (equal_case(tok, Created)) {
-        field.value(reason_phrase_e::Created);
-    } else if (equal_case(tok, Accepted)) {
-        field.value(reason_phrase_e::Accepted);
-    } else if (equal_case(tok, NoContent)) {
-        field.value(reason_phrase_e::NoContent);
-    } else if (equal_case(tok, ResetContent)) {
-        field.value(reason_phrase_e::ResetContent);
-    } else if (equal_case(tok, PartialContent)) {
-        field.value(reason_phrase_e::PartialContent);
-    } else if (equal_case(tok, MultipleChoice)) {
-        field.value(reason_phrase_e::MultipleChoice);
-    } else if (equal_case(tok, MovedPermanently)) {
-        field.value(reason_phrase_e::MovedPermanently);
-    } else if (equal_case(tok, MovedTemporarily)) {
-        field.value(reason_phrase_e::MovedTemporarily);
-    } else if (equal_case(tok, NotModified)) {
-        field.value(reason_phrase_e::NotModified);
-    } else if (equal_case(tok, UseProxy)) {
-        field.value(reason_phrase_e::UseProxy);
-    } else if (equal_case(tok, TemporaryRedirect)) {
-        field.value(reason_phrase_e::TemporaryRedirect);
-    } else if (equal_case(tok, BadRequest)) {
-        field.value(reason_phrase_e::BadRequest);
-    } else if (equal_case(tok, Unauthorized)) {
-        field.value(reason_phrase_e::Unauthorized);
-    } else if (equal_case(tok, Forbidden)) {
-        field.value(reason_phrase_e::Forbidden);
-    } else if (equal_case(tok, NotFound)) {
-        field.value(reason_phrase_e::NotFound);
-    } else if (equal_case(tok, InternalServerError)) {
-        field.value(reason_phrase_e::InternalServerError);
-    } else if (equal_case(tok, NotAcceptable)) {
-        field.value(reason_phrase_e::NotAcceptable);
-    } else if (equal_case(tok, ProxyAuthenticationRequired)) {
-        field.value(reason_phrase_e::ProxyAuthenticationRequired);
-    } else if (equal_case(tok, RequestTimeout)) {
-        field.value(reason_phrase_e::RequestTimeout);
-    } else if (equal_case(tok, Conflict)) {
-        field.value(reason_phrase_e::Conflict);
-    } else if (equal_case(tok, Gone)) {
-        field.value(reason_phrase_e::Gone);
-    } else if (equal_case(tok, LengthRequired)) {
-        field.value(reason_phrase_e::LengthRequired);
-    } else if (equal_case(tok, PreconditionFailed)) {
-        field.value(reason_phrase_e::PreconditionFailed);
-    } else if (equal_case(tok, RequestEntityTooLarge)) {
-        field.value(reason_phrase_e::RequestEntityTooLarge);
-    } else if (equal_case(tok, RequestURITooLarge)) {
-        field.value(reason_phrase_e::RequestURITooLarge);
-    } else if (equal_case(tok, UnsupportedMediaType)) {
-        field.value(reason_phrase_e::UnsupportedMediaType);
-    } else if (equal_case(tok, RequestRangeNotSatifiable)) {
-        field.value(reason_phrase_e::RequestRangeNotSatifiable);
-    } else if (equal_case(tok, ExpectationFailed)) {
-        field.value(reason_phrase_e::ExpectationFailed);
-    } else if (equal_case(tok, NotImplemented)) {
-        field.value(reason_phrase_e::NotImplemented);
-    } else if (equal_case(tok, BadGateway)) {
-        field.value(reason_phrase_e::BadGateway);
-    } else if (equal_case(tok, ServiceUnavailable)) {
-        field.value(reason_phrase_e::ServiceUnavailable);
-    } else if (equal_case(tok, GatewayTimeout)) {
-        field.value(reason_phrase_e::GatewayTimeout);
-    } else if (equal_case(tok, HTTPVersionNotSupported)) {
-        field.value(reason_phrase_e::HTTPVersionNotSupported);
-    } else {
-        field.value(reason_phrase_e::ExtensionCode);
-    }
+    http_reason_phrase value;
+    istr >> value;
+    field = reason_phrase(value);
     return istr;
 }
 
@@ -605,6 +477,130 @@ operator>>(std::istream& istr, content_length& field)
 
 field_factory::registrar<_HTTP_CONTENT_LENGTH, content_length>
     content_length_registrar;
+
+/* ======================================================================
+ * Content-Type
+ * ====================================================================== */
+
+const char _HTTP_CONTENT_TYPE[] = "Content-Type";
+
+static std::map<content_type_e, std::string_view> g_content_type_map =
+{
+    { content_type_e::Unknown, "unknown/unknown" },
+    { content_type_e::ApplicationForm, "application/x-www-form-urlencoded" },
+    { content_type_e::ApplicationJson, "application/json" },
+    { content_type_e::ApplicationOctetStream, "application/octet-stream" },
+    { content_type_e::ApplicationPdf, "application/pdf" },
+    { content_type_e::ApplicationPgpEncrypted, "application/pgp-encrypted" },
+    { content_type_e::ApplicationPgpSignature, "application/pgp-signature" },
+    { content_type_e::ApplicationPkcs7Mime, "application/pkcs7-mime" },
+    { content_type_e::ApplicationPkcs7Signature, "application/pkcs7-signature" },
+    { content_type_e::ApplicationXml, "application/xml" },
+    { content_type_e::ApplicationZip, "application/zip" },
+    { content_type_e::AudioMpeg, "audio/mpeg" },
+    { content_type_e::AudioFlac, "audio/flac" },
+    { content_type_e::AudioWav, "audio/wav" },
+    { content_type_e::ImageJpeg, "image/jpeg" },
+    { content_type_e::ImageGif, "image/gif" },
+    { content_type_e::ImagePng, "image/png" },
+    { content_type_e::ImageSvg, "image/svg" },
+    { content_type_e::MultipartAlternative, "multipart/alternative" }, 
+    { content_type_e::MultipartEncrypted,  "multipart/encrypted" },
+    { content_type_e::MultipartForm_data,  "multipart/form-data" },
+    { content_type_e::MultipartMixed,  "multipart/mixed" },
+    { content_type_e::MultipartRelated,  "multipart/related" },
+    { content_type_e::MultipartSigned,  "multipart/signed" },
+    { content_type_e::TextHtml, "text/html" },
+    { content_type_e::TextPlain, "text/plain" },
+    { content_type_e::TextCss, "text/css" },
+    { content_type_e::TextJavascript, "text/javascript" },
+    { content_type_e::VideoMp4, "video/mp4" },
+    { content_type_e::VideoMpeg, "video/mpeg" }
+};
+
+http_content_type::http_content_type()
+    : _type(content_type_e::Unknown)
+{
+}
+
+http_content_type::http_content_type(content_type_e type)
+    : _type(type)
+{
+}
+
+http_content_type::http_content_type(const std::string& ext)
+{
+    // Find the @c ext string in the map
+    auto found = std::find_if(
+            g_content_type_map.begin(), g_content_type_map.end(),
+            [ext](const std::map<content_type_e,
+                  std::string_view>::value_type& item) -> bool
+            {
+                return item.second == ext;
+            });
+
+    // If found, use the predefined type, otherwise use the extension
+    if (found != g_content_type_map.end()) {
+        _type = found->first;
+    }
+    else {
+        _type = content_type_e::ExtensionCode;
+        _ext = ext;
+    }
+}
+
+content_type_e
+http_content_type::type() const
+{
+    return _type;
+}
+
+http_content_type::operator content_type_e() const
+{
+    return _type;
+}
+
+std::string_view
+http_content_type::str() const
+{
+    if (_type == content_type_e::ExtensionCode) {
+        return _ext;
+    }
+    else {
+        return g_content_type_map[_type];
+    }
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const http_content_type& value)
+{
+    ostr << value.str();
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, http_content_type& value)
+{
+    std::string tok = tokenise(istr, include_none);
+    value = http_content_type(tok);
+    return istr;
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const content_type& field)
+{
+    ostr << field.value();
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, content_type& field)
+{
+    http_content_type value;
+    istr >> value;
+    field = content_type(value);
+    return istr;
+}
 
 /* ======================================================================
  * Date

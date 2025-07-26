@@ -441,24 +441,24 @@ enum class method_e
  * standard HTTP methods are supported by their enumerated value, while non
  * standard methods can be described by their name as a string.
  */
-class request_method
+class http_method
 {
 public:
     /** Define an unsepcified HTTP method. */
-    request_method();
+    http_method();
 
     /** Define a known HTTP method. */
-    request_method(method_e type);
+    http_method(method_e type);
 
     /** Define a HTTP extension method. */
-    request_method(const std::string& ext);
+    http_method(const std::string& ext);
 
     /**
      * @brief Get the method type.
      *
      * @details
      * Return the HTTP method type. If the type is @c method_e::EXT then the
-     * method name is defined by the @c extension function.
+     * method name is defined by the @c str function.
      */
     method_e type() const;
 
@@ -467,14 +467,14 @@ public:
      *
      * @details
      * Return the HTTP method type. If the type is @c method_e::EXT then the
-     * method name is defined by the @c extension function.
+     * method name is defined by the @c str function.
      */
     operator method_e() const;
 
     /**
      * @brief Get the method type as a string.
      */
-    const std::string& str() const;
+    std::string_view str() const;
 
 private:
     /* The method type */
@@ -484,12 +484,12 @@ private:
     std::string _ext;
 };
 std::ostream&
-operator<<(std::ostream&, const request_method&);
+operator<<(std::ostream&, const http_method&);
 std::istream&
-operator>>(std::istream&, request_method&);
+operator>>(std::istream&, http_method&);
 
 extern const char _HTTP_METHOD[];
-typedef field<(base_field::field)-10001, request_method, _HTTP_METHOD> method;
+typedef field<(base_field::field)-10001, http_method, _HTTP_METHOD> method;
 std::ostream&
 operator<<(std::ostream&, const method&);
 std::istream&
@@ -560,6 +560,7 @@ operator>>(std::istream&, status_code&);
  */
 enum class reason_phrase_e
 {
+    Unknown,
     Continue,
     SwitchingProtocols,
     OK,
@@ -598,8 +599,66 @@ enum class reason_phrase_e
     HTTPVersionNotSupported,
     ExtensionCode
 };
+
+/**
+ * @brief The class describing an HTTP reason_phrase field.
+ *
+ * @details
+ * The HTTP  reason_phrase defines the intended purpose of the message. The
+ * standard HTTP reason_phrases are supported by their enumerated value, while
+ * non standard reason_phrases can be described by their name as a string.
+ */
+class http_reason_phrase
+{
+public:
+    /** Define an unsepcified HTTP reason_phrase. */
+    http_reason_phrase();
+
+    /** Define a known HTTP reason_phrase. */
+    http_reason_phrase(reason_phrase_e type);
+
+    /** Define a HTTP extension reason_phrase. */
+    http_reason_phrase(const std::string& ext);
+
+    /**
+     * @brief Get the reason_phrase type.
+     *
+     * @details
+     * Return the HTTP reason_phrase type. If the type is @c
+     * reason_phrase_e::EXT then the reason_phrase name is defined by the
+     * @c str function.
+     */
+    reason_phrase_e type() const;
+
+    /**
+     * @brief Implicit conversion to the reason_phrase type enumeration.
+     *
+     * @details
+     * Return the HTTP reason_phrase type. If the type is @c
+     * reason_phrase_e::EXT then the reason_phrase name is defined by the @c
+     * str function.
+     */
+    operator reason_phrase_e() const;
+
+    /**
+     * @brief Get the reason_phrase type as a string.
+     */
+    std::string_view str() const;
+
+private:
+    /* The reason_phrase type */
+    reason_phrase_e _type;
+
+    /* The extension reason_phrase (type is ExtensionCode) */
+    std::string _ext;
+};
+std::ostream&
+operator<<(std::ostream&, const http_reason_phrase&);
+std::istream&
+operator>>(std::istream&, http_reason_phrase&);
+
 extern const char _HTTP_REASON_PHRASE[];
-typedef field<(base_field::field)-10004, reason_phrase_e, _HTTP_REASON_PHRASE>
+typedef field<(base_field::field)-10004, http_reason_phrase, _HTTP_REASON_PHRASE>
     reason_phrase;
 std::ostream&
 operator<<(std::ostream&, const reason_phrase&);
@@ -621,7 +680,7 @@ operator>>(std::istream&, entity_body&);
  * The class describing an HTTP Allow.
  */
 extern const char _HTTP_ALLOW[];
-typedef field_list<base_field::field::ALLOW, request_method, _HTTP_ALLOW> allow;
+typedef field_list<base_field::field::ALLOW, http_method, _HTTP_ALLOW> allow;
 std::ostream&
 operator<<(std::ostream&, const allow&);
 std::istream&
@@ -653,6 +712,99 @@ std::ostream&
 operator<<(std::ostream&, const content_length&);
 std::istream&
 operator>>(std::istream&, content_length&);
+
+/** Predefined Content-Types */
+enum class content_type_e
+{
+    Unknown,                   /**< Unknown HTTP Content-Type */
+    ApplicationForm,           /**< Form data Content-Type */
+    ApplicationJson,           /**< JSON Content-Type */
+    ApplicationOctetStream,    /**< Generic binary octet Content-Type */
+    ApplicationPgpEncrypted,   /**< PGP encrypted data Content-Type */
+    ApplicationPgpSignature,   /**< PGP signature data Content-Type */
+    ApplicationPkcs7Mime,      /**< PKCS#7 encrypted data Content-Type */
+    ApplicationPkcs7Signature, /**< PKCS#7 signature data Content-Type */
+    ApplicationPdf,            /**< PDF Content-Type */
+    ApplicationXml,            /**< XML Content-Type */
+    ApplicationZip,            /**< Compressed ZIP Content-Type */
+    AudioFlac,                 /**< FLAC audio Content-Type */
+    AudioMpeg,                 /**< MPEG audio Content-Type */
+    AudioWav,                  /**< WAV audio Content-Type */
+    ImageJpeg,                 /**< JPEG image Content-Type */
+    ImageGif,                  /**< GIF image Content-Type */
+    ImagePng,                  /**< PNG image Content-Type */
+    ImageSvg,                  /**< SVG image Content-Type */
+    MultipartAlternative,      /**< Alternative Content-Type (RFC 2046) */
+    MultipartEncrypted,        /**< Encrypted data Content-Type (RFC 1847) */
+    MultipartForm_data,        /**< Form data Content-Type (RFC 7578) */
+    MultipartMixed,            /**< Mixed data Content-Type (RFC 2046) */
+    MultipartRelated,          /**< Related data Content-Type (RFC 2387) */
+    MultipartSigned,           /**< Signature data Content-Type (RFC 1847) */
+    TextHtml,                  /**< Content-Type */
+    TextPlain,                 /**< Content-Type */
+    TextCss,                   /**< Content-Type */
+    TextJavascript,            /**< Content-Type */
+    VideoMp4,                  /**< Content-Type */
+    VideoMpeg,                 /**< Content-Type */
+    ExtensionCode = -1         /**< HTTP extension Content-Type */
+};
+
+/**
+ * The class describing an HTTP Content-Type field.
+ */
+class http_content_type
+{
+public:
+    /** Define an unsepcified HTTP Content-Type. */
+    http_content_type();
+
+    /** Define a known HTTP Content-Type. */
+    http_content_type(content_type_e type);
+
+    /** Define a HTTP extension Content-Type. */
+    http_content_type(const std::string& ext);
+
+    /**
+     * @brief Get the Content-Type.
+     *
+     * @details
+     * Return the HTTP Content-Type. If the type is @c content_type_e::EXT then
+     * the method name is defined by the @c str function.
+     */
+    content_type_e type() const;
+
+    /**
+     * @brief Implicit conversion to the Content-Type enumeration.
+     *
+     * @details
+     * Return the HTTP Content-Type. If the type is @c content_type_e::EXT then
+     * the Content-Type is defined by the @c str function.
+     */
+    operator content_type_e() const;
+
+    /**
+     * @brief Get the method type as a string.
+     */
+    std::string_view str() const;
+
+private:
+    /* The Content-Type */
+    content_type_e _type;
+
+    /* The extension Content-Type (type is EXT) */
+    std::string _ext;
+};
+std::ostream&
+operator<<(std::ostream&, const http_content_type&);
+std::istream&
+operator>>(std::istream&, http_content_type&);
+
+extern const char _HTTP_CONTENT_TYPE[];
+typedef field<base_field::field::CONTENT_TYPE, http_content_type, _HTTP_CONTENT_TYPE> content_type;
+std::ostream&
+operator<<(std::ostream&, const content_type&);
+std::istream&
+operator>>(std::istream&, content_type&);
 
 /**
  * The class describing an HTTP Date (UTC/GMT).
