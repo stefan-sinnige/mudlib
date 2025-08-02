@@ -8,6 +8,7 @@ libmudhttp_la_SOURCES = \
     src/communicator.cpp \
     src/field.cpp \
     src/message.cpp \
+    src/remediator.cpp \
     src/request.cpp \
     src/response.cpp \
     src/server.cpp \

@@ -173,12 +173,6 @@ public:
     const http::entity_body& entity_body() const { return _entity_body; }
     http::entity_body& entity_body() { return _entity_body; }
 
-    /**
-     * Normalise the message, conforming to teh standard. Based upon the HTTP
-     * version, certain fields are required or have restrictions.
-     */
-    virtual void normalise() {}
-
 protected:
     /**
      * Construction of a message of a certain type.

@@ -16,18 +16,6 @@ request::uri(const std::string& value)
     uri(mud::core::uri(value));
 }
 
-void
-request::normalise()
-{
-    // HTTP 1.1 normalisation:
-    //    * Host is required, set to URI host if not found
-    if (version() == mud::http::version_e::HTTP11) {
-        if (!exists<mud::http::host>()) {
-            field<mud::http::host>(_uri.value().host());
-        }
-    }
-}
-
 END_MUDLIB_HTTP_NS
 
 /* vi: set ai ts=4 expandtab: */

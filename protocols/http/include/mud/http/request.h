@@ -51,12 +51,6 @@ public:
     const http::uri& uri() const { return _uri; }
     http::uri& uri() { return _uri; }
 
-    /**
-     * Normalise the message, conforming to teh standard. Based upon the HTTP
-     * version, certain fields are required or have restrictions.
-     */
-    void normalise() override;
-
 private:
     /**
      * The request line

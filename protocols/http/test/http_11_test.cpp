@@ -104,20 +104,30 @@ FEATURE("HTTP/1.1 Protocol")
    * The scenarios.
    */
 
-    SCENARIO("HTTP server retains a connection when no Connection field is present")
+    SCENARIO("HTTP connection responds to 'Connection' field in request")
         GIVEN("An HTTP server is listening for inbound connections")
-        WHEN ("A client sends a request without a Connection field",
+        WHEN ("A client sends a request with a Connection field",
             [](context& ctx) {
                 mud::http::request req;
                 req.version(mud::http::version_e::HTTP11);
                 req.method(mud::http::method_e::GET);
                 req.uri("http://www.example.com/index.html");
+                req.field<mud::http::connection>(
+                    ctx.sample().entry<mud::http::connection>("request"));
                 ctx.resp_future = ctx.client.request(ctx.endpoint, req);
             })
         THEN ("The client receives a response")
-         AND ("The connection is kept alive")
+         AND ("The response contains the associated Connection field",
+            [](context& ctx) {
+                ASSERT(ctx.sample().entry<mud::http::connection>("response"),
+                       ctx.resp.field<mud::http::connection>().value());
+            })
+        SAMPLES("request", "response")
+            SAMPLE("close", "close")
+            SAMPLE("keep-alive", "keep-alive")
+        END_SAMPLES()
 
-    SCENARIO("HTTP server retains a connection when a keep-alive Connection field is present")
+    SCENARIO("HTTP connection persists when 'Connection: Keep-Alive' is present")
         GIVEN("An HTTP server is listening for inbound connections")
         WHEN ("A client sends a request with a keep-alive Connection field",
             [](context& ctx) {
@@ -132,7 +142,7 @@ FEATURE("HTTP/1.1 Protocol")
         THEN ("The client receives a response")
          AND ("The connection is kept alive")
 
-    SCENARIO("HTTP server closes a connection when a close Connection field is present")
+    SCENARIO("HTTP connection closes when 'Connection: Close' is present")
         GIVEN("An HTTP server is listening for inbound connections")
         WHEN ("A client sends a request with a close Connection field",
             [](context& ctx) {
@@ -176,6 +186,24 @@ FEATURE("HTTP/1.1 Protocol")
                 ctx.resp = ctx.resp_future.get();
             })
         THEN ("The connection is kept alive")
+
+    SCENARIO("HTTP 'Content-Length' is remediated when not supplied")
+        GIVEN("An HTTP server is listening for inbound connections",
+            [](context& ctx) {
+                mud::http::response response;
+                response.version(mud::http::version_e::HTTP11);
+                response.status_code(mud::http::status_code_e::OK);
+                response.reason_phrase(mud::http::reason_phrase_e::OK);
+                response.entity_body("Hello World");
+                ctx.server.response(response);
+                ctx.server.start(ctx.endpoint);
+            })
+        WHEN ("A client sends a request")
+        THEN ("The client receives a response")
+         AND ("THe response contains a 'Content-Length'",
+            [](context& ctx) {
+                ASSERT(11, ctx.resp.field<mud::http::content_length>());
+            })
 
 END_FEATURE()
 
