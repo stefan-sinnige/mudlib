@@ -513,6 +513,33 @@ udp::communicator::on_ready_receive()
 }
 
 void
+udp::broadcast::operator()(mud::io::udp::socket& socket, bool value)
+{
+    // Apply the option
+    int optval = (value ? 1 : 0);
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::setsockopt(handle, SOL_SOCKET, SO_BROADCAST, &optval,
+                     sizeof(optval)) < 0) {
+        throw std::system_error(errno, std::system_category(),
+                            "setting socket option");
+    }
+}
+
+bool
+udp::broadcast::operator()(mud::io::udp::socket& socket)
+{
+    int enable = false;
+    socklen_t len = sizeof(int);
+    int handle = mud::core::internal_handle<int>(socket.handle());
+    if (::getsockopt(handle, SOL_SOCKET, SO_BROADCAST,
+                    GETSOCKOPT_CAST & enable, &len) < 0) {
+        throw std::system_error(errno, std::system_category(),
+                                "retrieving socket option");
+    }
+    return (enable != 0);
+}
+
+void
 udp::igmp_add::operator()(
         mud::io::udp::socket& socket,
         const std::pair<mud::io::ip::address, mud::io::ip::address>& value)

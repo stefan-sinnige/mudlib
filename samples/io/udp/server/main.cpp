@@ -85,7 +85,7 @@ int
 main(int argc, char** argv)
 {
     // Command line arguments processing.
-    std::string host = "127.0.0.1";
+    std::string host = "0.0.0.0";
     uint16_t port = 12345;
     while (--argc > 0 && *(++argv)[0] == '-') {
         if (strcmp(*argv, "--host") == 0) {

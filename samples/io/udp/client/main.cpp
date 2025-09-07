@@ -1,4 +1,5 @@
 #include "mud/event/event_loop.h"
+#include "mud/io/interface.h"
 #include "mud/io/udp.h"
 #include <cstring>
 #include <iostream>
@@ -40,15 +41,28 @@ client::~client() {}
 void
 client::run(const std::string& host, uint16_t port)
 {
-    // Setup the communicator
+    // Construct the peer endpoint to connect to.
+    mud::io::udp::endpoint peer(host, port);
+
+    // If the 'host' is a broadcast address, set its socket option.
     mud::io::udp::socket socket;
+    for (auto& netif: mud::io::ip::interface::interfaces()) {
+        for (auto& netconf: netif.addresses()) {
+            if (netconf.broadcast() == peer.address()) {
+                std::cout << "Host is a broadcast address" << std::endl;
+                socket.option<bool, mud::io::udp::broadcast>(true);
+            }
+        }
+    }
+
+    // Setup the communicator
     _communicator.open(std::move(socket));
 
     // Send a message
     std::string msg = "Hello";
     std::cout << "Sending  to " << host << ":" << port << ": " << msg
               << std::endl;
-    _communicator.ostr(mud::io::udp::endpoint(host, port)) << msg << std::endl;
+    _communicator.ostr(peer) << msg << std::endl;
 }
 
 void
