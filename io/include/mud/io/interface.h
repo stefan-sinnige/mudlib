@@ -15,7 +15,7 @@ BEGIN_MUDLIB_IO_NS
 namespace ip {
 
     /**
-     * @brief An IP network interface address configruation.
+     * @brief An IP network interface address configuration.
      *
      * @details
      * The IP network address is associated to a device and defines its IP based

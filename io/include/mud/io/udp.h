@@ -328,7 +328,27 @@ namespace udp {
     };
 
     /**
-     * @brief Add the socket to a multicast address group.
+     * @brief Socket option to enable UDP broadcast permission.
+     */
+    class MUDLIB_IO_API broadcast
+    {
+    public:
+        // The value type
+        typedef bool Value;
+
+        /**
+        * @brief Set the broadcast permission transmission.
+        */
+        void operator()(mud::io::udp::socket& socket, Value value);
+
+        /**
+        * @brief Retrieve the broadcast permission transmission.
+        */
+        Value operator()(mud::io::udp::socket& socket);
+    };
+
+    /**
+     * @brief Socket option to add the socket to a multicast address group.
      */
     class MUDLIB_IO_API igmp_add
     {
@@ -348,7 +368,7 @@ namespace udp {
     };
 
     /**
-     * @brief Drop the socket from a multicast address group.
+     * @brief Socket option to drop the socket from a multicast address group.
      */
     class MUDLIB_IO_API igmp_drop
     {
@@ -383,7 +403,7 @@ namespace udp {
         /**
         * @brief Set the multicast membership details.
         */
-        void operator()(mud::io::udp::socket& socket, bool value);
+        void operator()(mud::io::udp::socket& socket, Value value);
 
         /**
         * @brief Retrieve the multicast membership details.
