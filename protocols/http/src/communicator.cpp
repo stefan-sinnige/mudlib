@@ -1,4 +1,5 @@
 #include "mud/http/communicator.h"
+#include "remediator.h"
 
 BEGIN_MUDLIB_HTTP_NS
 
@@ -40,7 +41,6 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
                << socket.destination_endpoint().port() << std::endl;
 
     // Expect an HTTP message.
-    bool force_close = false;
     request req;
     response resp;
     try {
@@ -52,7 +52,8 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
         resp.version(req.version());
         resp.status_code(mud::http::status_code_e::BadRequest);
         resp.reason_phrase(mud::http::reason_phrase_e::BadRequest);
-        force_close = true;
+        close();
+        return;
     }
     TRACE(log) << "Message details: " << std::endl << req << std::endl;
 
@@ -63,38 +64,12 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
         resp.version(req.version());
         resp.status_code(mud::http::status_code_e::InternalServerError);
         resp.reason_phrase(mud::http::reason_phrase_e::InternalServerError);
-        force_close = true;
+        close();
+        return;
     }
 
-    // Set the Connection header field
-    //   * Not for HTTP 1.0
-    //     * Connection always closed after sending the response
-    //   * Use the response setting if it has been defined
-    //   * Use the request setting if it has been defined
-    //   * Use keep-alive if none is defined in the response or request
-    if (resp.version() == mud::http::version_e::HTTP10) {
-        force_close = true;
-    }
-    else
-    {
-        if (force_close) {
-            resp.field<mud::http::connection>(mud::http::connection_e::Close);
-        }
-        else {
-            auto conn = mud::http::connection_e::KeepAlive;
-            if (resp.exists<mud::http::connection>()) {
-                conn = resp.field<mud::http::connection>();
-            }
-            else
-            if (req.exists<mud::http::connection>()) {
-                conn = req.field<mud::http::connection>();
-            }
-            if (conn == mud::http::connection_e::Close) {
-                force_close = true;
-            }
-            resp.field<mud::http::connection>(conn);
-        }
-    }
+    // Remediate the response
+    remediator(resp.version().value()).remediate(req, resp);
 
     // Send the response.
     DEBUG(log) << "HTTTP response to "
@@ -104,9 +79,14 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
     ostr() << resp << std::flush;
 
     // Close the connection if we need to
-    if (force_close)
-    {
+    if (resp.version() == mud::http::version_e::HTTP10) {
         close();
+    }
+    else if ( resp.exists<mud::http::connection>()) {
+        auto conn = resp.field<mud::http::connection>();
+        if (conn == mud::http::connection_e::Close) {
+            close();
+        }
     }
 }
 
@@ -127,14 +107,18 @@ client::connected() const
 void
 client::request(const mud::http::request& req)
 {
+    // Remediate the request
+    mud::http::request request = req;
+    remediator(request.version().value()).remediate(request);
+
     // Logging
     LOG(log);
     DEBUG(log) << "HTTP request to "
                << device().destination_endpoint().address().str() << ":"
                << device().destination_endpoint().port() << std::endl;
-    TRACE(log) << "Message details: " << std::endl << req << std::endl;
+    TRACE(log) << "Message details: " << std::endl << request << std::endl;
 
-    ostr() << req << std::flush;
+    ostr() << request << std::flush;
 }
 
 void

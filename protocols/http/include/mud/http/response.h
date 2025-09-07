@@ -54,12 +54,6 @@ public:
     const http::reason_phrase& reason_phrase() const { return _reason_phrase; }
     http::reason_phrase& reason_phrase() { return _reason_phrase; }
 
-    /**
-     * Normalise the message, conforming to teh standard. Based upon the HTTP
-     * version, certain fields are required or have restrictions.
-     */
-    void normalise() override;
-
 private:
     /**
      * The status line

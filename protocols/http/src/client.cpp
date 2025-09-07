@@ -78,9 +78,8 @@ std::future<mud::http::response>
 client::impl::request(const mud::io::tcp::endpoint& endpoint,
                       const mud::http::request& req)
 {
-    // Get the request to send and ensure it is normalised.
+    // Save the request to send
     _request = req;
-    _request.normalise();
 
     _response = std::promise<mud::http::response>();
     if (!_http_communicator.connected()) {
