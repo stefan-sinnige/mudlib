@@ -20,6 +20,32 @@ public:
     request();
 
     /**
+     * Copy an HTTP request message.
+     * @param[in] rhs The message details to copy.
+     */
+    request(const request& rhs) = default;
+
+    /**
+     * Move an HTTP request message.
+     * @param[in] rhs The message details to move.
+     */
+    request(request&& rhs) = default;
+
+    /**
+     * Assign an HTTP request message.
+     * @param[in] rhs The message details to copy.
+     * @return Reference to this message.
+     */
+    request& operator=(const request& rhs) = default;
+
+    /**
+     * Move assign an HTTP request message.
+     * @param[in] rhs The message details to move.
+     * @return Reference to this message.
+     */
+    request& operator=(request&& rhs) = default;
+
+    /**
      *  Destructor.
      */
     virtual ~request() = default;

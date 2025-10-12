@@ -260,7 +260,7 @@ void
 task<void(Args...)>::operator()(Args... args)
 {
     LOG(log);
-    INFO(log) << "Running task" << std::endl;
+    TRACE(log) << "Running task" << std::endl;
 
     try {
         _fn(std::forward<Args>(args)...);
@@ -269,7 +269,7 @@ task<void(Args...)>::operator()(Args... args)
         _promise.set_exception(std::current_exception());
     }
 
-    INFO(log) << "Finished task" << std::endl;
+    TRACE(log) << "Finished task" << std::endl;
 }
 
 template<class... Args>
@@ -426,14 +426,14 @@ template<typename Task>
 task_queue<Task>::task_queue() : _sync(new task_queue_synchronisation)
 {
     LOG(log);
-    INFO(log) << "Creating task queue " << std::endl;
+    DEBUG(log) << "Creating task queue " << std::endl;
 }
 
 template<typename Task>
 task_queue<Task>::~task_queue()
 {
     LOG(log);
-    INFO(log) << "Terminating task queue" << std::endl;
+    DEBUG(log) << "Terminating task queue" << std::endl;
 
     _sync->terminate();
 }
@@ -443,7 +443,7 @@ void
 task_queue<Task>::push(task_type&& tsk)
 {
     LOG(log);
-    INFO(log) << "Pushing task to queue" << std::endl;
+    TRACE(log) << "Pushing task to queue" << std::endl;
 
     std::lock_guard<std::mutex> lock(_sync->_cv_lock);
     _tasks.push(std::move(tsk));
@@ -459,7 +459,7 @@ task_queue<Task>::pop(task_type& tsk)
     bool popped = false;
     if (!_tasks.empty()) {
         LOG(log);
-        INFO(log) << "Popping task from queue" << std::endl;
+        TRACE(log) << "Popping task from queue" << std::endl;
 
         tsk = std::move(_tasks.front());
         _tasks.pop();
@@ -480,7 +480,7 @@ task_queue<Task>::wait_pop(task_type& tsk)
     if (!_sync->_terminate) {
         if (!_tasks.empty()) {
             LOG(log);
-            INFO(log) << "Popping task from queue" << std::endl;
+            TRACE(log) << "Popping task from queue" << std::endl;
 
             tsk = std::move(_tasks.front());
             _tasks.pop();
@@ -683,7 +683,7 @@ task_worker_pool<Task>::initiate()
     }
 
     LOG(log);
-    INFO(log) << "Initiating task worker pool with " << _nr_workers
+    DEBUG(log) << "Initiating task worker pool with " << _nr_workers
               << " workers" <<std::endl;
 
     // Ensure the synchronisation is reset
@@ -706,7 +706,7 @@ void
 task_worker_pool<Task>::terminate()
 {
     LOG(log);
-    INFO(log) << "Terminating task worker pool" << std::endl;
+    DEBUG(log) << "Terminating task worker pool" << std::endl;
 
     _queue->synchronisation()->terminate();
 }

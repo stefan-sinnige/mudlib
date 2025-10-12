@@ -34,8 +34,15 @@ public:
 
     /**
      * Copy constructor.
+     * @param[in] rhs The message details to copy.
      */
     message(const message& rhs) = default;
+
+    /**
+     * Move constructor.
+     * @param[in] rhs The message details to move.
+     */
+    message(message&& rhs) = default;
 
     /**
      * Destructor.
@@ -48,6 +55,13 @@ public:
      * @return Reference to this message.
      */
     message& operator=(const message& rhs) = default;
+
+    /**
+     * Move assign an HTTP mesage.
+     * @param[in] rhs The message details to move.
+     * @return Reference to this message.
+     */
+    message& operator=(message&& rhs) = default;
 
     /**
      * Clear the HTTP message to its undetermined state.

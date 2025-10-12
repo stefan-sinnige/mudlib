@@ -19,6 +19,32 @@ public:
     response();
 
     /**
+     * Copy an HTTP response message.
+     * @param[in] rhs The message details to copy.
+     */
+    response(const response& rhs) = default;
+
+    /**
+     * Move an HTTP response message.
+     * @param[in] rhs The message details to move.
+     */
+    response(response&& rhs) = default;
+
+    /**
+     * Assign an HTTP response message.
+     * @param[in] rhs The message details to copy.
+     * @return Reference to this message.
+     */
+    response& operator=(const response& rhs) = default;
+
+    /**
+     * Move assign an HTTP response message.
+     * @param[in] rhs The message details to move.
+     * @return Reference to this message.
+     */
+    response& operator=(response&& rhs) = default;
+
+    /**
      *  Destructor.
      */
     virtual ~response() = default;

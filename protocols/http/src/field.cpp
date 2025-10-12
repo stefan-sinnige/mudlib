@@ -374,9 +374,8 @@ operator<<(std::ostream& ostr, const reason_phrase& field)
 std::istream&
 operator>>(std::istream& istr, reason_phrase& field)
 {
-    http_reason_phrase value;
-    istr >> value;
-    field = reason_phrase(value);
+    std::string tok = tokenise(istr, include_all);
+    field = reason_phrase(tok);
     return istr;
 }
 

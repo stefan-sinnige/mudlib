@@ -86,8 +86,8 @@ basic_streambuf::sync()
 {
     int num = pptr() - pbase();
     int nwrite = write(_buffer, num);
-    if (nwrite != num) {
-        return 1;
+    if (nwrite == -1) {
+        return -1;
     }
     pbump(-nwrite);
     return 0;

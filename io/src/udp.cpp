@@ -13,6 +13,7 @@ typedef short sa_family_t;
     #define SETSOCKOPT_CAST (const void*)
     #define GETSOCKOPT_CAST (void*)
     #include <netinet/in.h>
+    #include <sys/select.h>
     #include <sys/socket.h>
 #endif
 #include <string.h>
@@ -83,6 +84,7 @@ namespace _udp {
 
     ssize_t streambuf::read(void* buf, size_t count)
     {
+        LOG(log);
         // Initialise the socket address to hold the peer address.
         struct sockaddr_in addr;
         ::memset(&addr, 0, sizeof(sockaddr_in));
@@ -90,20 +92,59 @@ namespace _udp {
 
         // Receive.
         int hndl = mud::core::internal_handle<int>(handle());
-        ssize_t nread = ::recvfrom(hndl, RECVFROM_CAST buf, count, 0,
-                                   (struct sockaddr*)&addr, &addr_sz);
+        ssize_t nread;
+        int tries = 10;
+        while ((nread = ::recvfrom(hndl, RECVFROM_CAST buf, count, 0,
+                                   (struct sockaddr*)&addr, &addr_sz)) < 0
+               && tries-- > 0)
+        {
+            if (errno == EINTR) {
+                /* Receive was interrupted, try again */
+                continue;
+            }
+            else
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                /* Not ready to receive, wait a bit (1 millisecond) */
+                fd_set rdfs;
+                FD_ZERO(&rdfs);
+                FD_SET(hndl, &rdfs);
+                struct timeval  tv;
+                tv.tv_sec = 0; 
+                tv.tv_usec = 1 * 1000;
+                if (::select(hndl+1, &rdfs, nullptr, nullptr, &tv) <= 0) {
+                    /* Still nothing available, or low-level errors */
+                    return -1;
+                }
+                if (! FD_ISSET(hndl, &rdfs)) {
+                    return -1;
+                }
+                continue;
+            }
+            else { 
+                /* Anything else is an error */
+                return -1;
+            }
+        };
+
+        // If we have received something, update the peer information.
         if (nread >= 0) {
             // Establish the destination endpoint.
             udp::endpoint destination(addr.sin_addr.s_addr,
                                       ntohs(addr.sin_port));
             _destination_endpoint = destination;
         }
+
+        // We may have received less than asked for.
+        TRACE(log) << "Received " << nread << " bytes on UDP socket"
+                   << std::endl;
         return nread;
     }
 
     ssize_t streambuf::write(const void* buf, size_t count)
     {
-        // Initialise the socket address to send to.
+        LOG(log);
+
+        /* Initialise the socket address to send to. */
         struct sockaddr_in addr;
         ::memset(&addr, 0, sizeof(sockaddr_in));
         addr.sin_family = static_cast<sa_family_t>(
@@ -111,10 +152,52 @@ namespace _udp {
         addr.sin_port = htons(_destination_endpoint.port());
         addr.sin_addr.s_addr = _destination_endpoint.address();
 
-        // Send.
+        /* Send the data. */
         int hndl = mud::core::internal_handle<int>(handle());
-        ssize_t nwrite = ::sendto(hndl, SENDTO_CAST buf, count, 0,
-                                  (struct sockaddr*)&addr, sizeof(addr));
+        ssize_t nwrite;
+        int tries = 10;
+        while ((nwrite = ::sendto(hndl, SENDTO_CAST buf, count, 0,
+                                  (struct sockaddr*)&addr, sizeof(addr))) < 0
+               && tries-- > 0)
+        {
+            if (errno == EINTR) {
+                /* Send was interrupted, try again */
+                continue;
+            }
+            else
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                /* Not ready to write, wait a bit ( 1 millisecond) */
+                fd_set wrfs;
+                FD_ZERO(&wrfs);
+                FD_SET(hndl, &wrfs);
+                struct timeval  tv;
+                tv.tv_sec = 0;
+                tv.tv_usec = 1 * 1000;
+                if (::select(hndl+1, nullptr, &wrfs, nullptr, &tv) <= 0) {
+                    /* Still not ready to write, or low-level errors */
+                    return -1;
+                }
+                if (! FD_ISSET(hndl, &wrfs)) {
+                    return -1;
+                }
+                continue;
+            }
+            else if (errno == EMSGSIZE) {
+                /* The block is too large, halve it and try again */
+                if (count <= 1) {
+                    /* Smallest block possible was not small enough */
+                    return -1;
+                }
+                count >>= 1;
+                continue;
+            }
+            else {
+                /* Anything else is an error. */
+                return -1;
+            }
+        }
+
+        /* If we have sent something, update the source information. */
         if (nwrite >= 0) {
             // Establish the source endpoint.
             struct sockaddr_in addr;
@@ -128,6 +211,13 @@ namespace _udp {
             udp::endpoint source(addr.sin_addr.s_addr, ntohs(addr.sin_port));
             _source_endpoint = source;
         }
+
+        /* We may have written less than asked for, for example, the output
+         * buffer is full. We may need subsequent calls to flush more data if
+         * needed dictated by more calls to `underflow` or related.
+         * Not sure how this is handled within UDP ... hope and pray. */
+        TRACE(log) << "Sent " << nwrite << " bytes on UDP socket"
+                   << std::endl;
         return nwrite;
     }
 
