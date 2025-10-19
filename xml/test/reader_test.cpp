@@ -83,7 +83,7 @@ FEATURE("Reader")
   SCENARIO("Reading XML document with enclosed whitespace")
     GIVEN("A document text",
         [](context& ctx){
-            ctx.text << " \t\r\n<root></root> \t\r\n";
+            ctx.text << " \t\r\n<?xml version=\"1.0\"?><root></root> \t\r\n";
         })
     WHEN("The text is read")
     THEN("The root element is available",

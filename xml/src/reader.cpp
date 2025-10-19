@@ -54,12 +54,12 @@ operator>>(std::istream& istr, mud::xml::document::ptr& doc)
     yyxml_scan_stream(istr, ctx.scanner);
 
     // Set the debugging options if it has been specified
-    // if (istr.iword(__scanner_debug) == 1) {
-    //     yyxmlset_debug(1, ctx.scanner);
-    // }
-    // if (istr.iword(__parser_debug) == 1) {
-    //     yyxmldebug = 1;
-    // }
+    if (istr.iword(__scanner_debug) == 1) {
+        yyxmlset_debug(1, ctx.scanner);
+    }
+    if (istr.iword(__parser_debug) == 1) {
+        yyxmldebug = 1;
+    }
 
     /* Parse into a document */
     int result = yyxmlparse(&ctx);

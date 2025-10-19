@@ -8,8 +8,15 @@ BEGIN_MUDLIB_XML_NS
 /* static */ document::ptr
 document::create()
 {
-    return std::shared_ptr<xml::document>(new document());
+    struct make_shared_enabler: public xml::document
+    {
+        make_shared_enabler()
+            : xml::document()
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>();
 }
+
 document::document() : node(node::type_t::DOCUMENT)
 {}
 

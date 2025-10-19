@@ -6,7 +6,13 @@ BEGIN_MUDLIB_XML_NS
 /* static */ comment::ptr
 comment::create(const std::string& text)
 {
-    return std::shared_ptr<xml::comment>(new comment(text));
+    struct make_shared_enabler: public xml::comment
+    {
+        make_shared_enabler(const std::string& text)
+            : xml::comment(text)
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>(text);
 }
 
 comment::comment(const std::string& text)

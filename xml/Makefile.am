@@ -1,5 +1,8 @@
 SUBDIRS = . test
 
+BISONFLAGS=--html=src/$(basename $(?F)).html
+FLEXFLAGS=
+
 lib_LTLIBRARIES = libmudxml.la
 
 BUILT_SOURCES = \
@@ -52,10 +55,10 @@ libmudxml_la_CPPFLAGS = \
     -I$(srcdir)/../core/include
 
 src/parser.cpp src/parser.hpp: src/parser.y
-	$(BISON) $?
+	$(BISON) $(BISONFLAGS) $?
 
 src/scanner.cpp: src/scanner.l
-	$(FLEX) $?
+	$(FLEX) $(FLEXFLAGS) $?
 
 # vi: set ts=4 noexpandtab:
 

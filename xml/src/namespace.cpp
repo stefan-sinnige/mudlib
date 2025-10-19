@@ -5,7 +5,13 @@ BEGIN_MUDLIB_XML_NS
 /* static */ ns::ptr
 ns::create()
 {
-    return std::shared_ptr<xml::ns>(new ns());
+    struct make_shared_enabler: public xml::ns
+    {
+        make_shared_enabler()
+            : xml::ns()
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>();
 }
 
 ns::ns()

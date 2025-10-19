@@ -7,6 +7,8 @@
 %option noyywrap
 %option yylineno
 
+%option extra-type="struct yyxmlextra"
+
 %{
 /* Verified with Flex 2.6 
  *
@@ -25,6 +27,20 @@
 #include <mud/xml.h>
 #include "src/parser.hpp"
 
+/* Additional reentrant scanner context details. This allows for:
+ *     - using std::istreams instead of FILE*
+ *     - keep track of a stack of states
+ * The element stack level keeps track how deep we are in the recursion of
+ * the [39] element rules. This is used when another state needs to be entered
+ * while we're already in a different state. When the state is returned, it
+ * returns to the previous state. Only one level is currently allowed.
+ */
+struct yyxmlextra {
+    std::istream* istr;
+    int element_stack_level;
+    int saved_state;
+};
+
 /* Update the column */
 #define YY_USER_ACTION \
     yylloc->first_line = yylloc->last_line = yylineno; \
@@ -36,29 +52,19 @@
  * does render the yyxml_set_in useless, unless we cater for that here. 
  * Don;t do buffering here,but rely on the buffering within the std::istream
  * instead. */
-#undef YY_EXTRA_TYPE
-#define YY_EXTRA_TYPE std::istream*
 #undef YY_INPUT
 #define YY_INPUT(buf, result, max_size) \
     { \
         char c; \
-        yyextra->get(c); \
-        result = !(*yyextra) ? YY_NULL : (buf[0] = c, 1); \
+        yyextra.istr->get(c); \
+        result = !(*(yyextra.istr)) ? YY_NULL : (buf[0] = c, 1); \
     }
-
-/*
- * The element stack level keeps track how deep we are in the recursion of
- * the [39] element rules.
- */
-
-static int yy_element_stack_level = 0;
 
 /* Push/Pop a state. This is used when another state needs to be entered
  * while we're already in a different state. When the state is returned, it
  * returns to the previous state. Only one level is currently allowed. */
-static int yy_saved_state = 0;
-#define PUSH_STATE() yy_saved_state = YY_START
-#define POP_STATE()  BEGIN(yy_saved_state)
+#define PUSH_STATE() yyextra.saved_state = YY_START
+#define POP_STATE()  BEGIN(yyextra.saved_state)
 
 %}
 
@@ -678,10 +684,10 @@ Extender        \xB7
          */
 <INITIAL,content>\< {
             BEGIN(element);
-            ++yy_element_stack_level;
+            ++(yyextra.element_stack_level);
             #ifdef FLEX_DEBUG
                 if (yy_flex_debug) 
-                    fprintf(stderr, "--element stack level: %d\n", yy_element_stack_level);
+                    fprintf(stderr, "--element stack level: %d\n", yyextra.element_stack_level);
             #endif
             return(OPENTAG);
         }
@@ -695,12 +701,12 @@ Extender        \xB7
             return(NAME);
         }
 <attribute>"/>" {
-            --yy_element_stack_level;
+            --(yyextra.element_stack_level);
             #ifdef FLEX_DEBUG
                 if (yy_flex_debug)
-                    fprintf(stderr, "--element stack level: %d\n", yy_element_stack_level);
+                    fprintf(stderr, "--element stack level: %d\n", yyextra.element_stack_level);
             #endif
-            if (yy_element_stack_level == 0) {
+            if (yyextra.element_stack_level == 0) {
                 BEGIN(0);
             } else {
                 BEGIN(content);
@@ -715,21 +721,21 @@ Extender        \xB7
          * [42] ETag
          * This state can only be reached from the content state. At this point
          * it is determined if this end-tag ends an inner or the (single) outer
-         * element. This is accomplished by inspecting the yy_element_stack_level.
-         * If the inner element is ended, the state is changed to content, other-
-         * wise, the state is changed to initial.
+         * element. This is accomplished by inspecting the element_stack_level.
+         * If the inner element is ended, the state is changed to content,
+         * otherwise, the state is changed to initial.
          */
 <etag>{Name} {
             yylval->str = new std::string(yytext);
             return(NAME);
         }
 <etag>\> {
-            --yy_element_stack_level;
+            --(yyextra.element_stack_level);
             #ifdef FLEX_DEBUG
                 if (yy_flex_debug)
-                    fprintf(stderr, "--element stack level: %d\n", yy_element_stack_level);
+                    fprintf(stderr, "--element stack level: %d\n", yyextra.element_stack_level);
             #endif
-            if (yy_element_stack_level == 0) {
+            if (yyextra.element_stack_level == 0) {
                 BEGIN(0);
             } else {
                 BEGIN(content);
@@ -755,7 +761,7 @@ Extender        \xB7
          * the states.
          */
 <*>{S} {
-            return(S);
+            //return(S);
         }
         /*
          * Single and double quotes are shard at numerous places.
@@ -774,7 +780,11 @@ Extender        \xB7
  */
 void yyxml_scan_stream(std::istream& istr, yyscan_t scanner)
 {
-    yyset_extra(&istr, scanner);
+    struct yyxmlextra extra;
+    extra.istr = &istr;
+    extra.element_stack_level = 0;
+    extra.saved_state = 0;
+    yyset_extra(extra, scanner);
 }
 
 /* vi: set ai ts=4 expandtab: */

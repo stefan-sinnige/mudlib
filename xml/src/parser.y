@@ -85,7 +85,7 @@
        return yyxmllex(yylval_param, yylloc_param, ctx_param->scanner);
     }
 
-    /* THe error handler. */
+    /* The error handler. */
     int yyxmlerror(YYLTYPE* loc, xml_ctx_t* ctx, const char* msg)
     {
         /* Externale definition to get the token text. */
@@ -112,7 +112,7 @@
 %token ATTLIST ATTYPE STRINGTYPE TOKENIZEDTYPE NOTATION NMTOKEN ATTVALUE
 %token ENTITY ENTITYVALUE NDATA 
 %token OPENTAG OPENTAGEND CLOSETAG EMPTYCLOSETAG COMMENTOPEN COMMENT COMMENTCLOSE 
-%token S XMLPIOPEN PIOPEN PITARGET PIDATA PICLOSE EQ NAME
+%token XMLPIOPEN PIOPEN PITARGET PIDATA PICLOSE EQ NAME
 %token PEREFERENCE REQUIRED IMPLIED FIXED
 %token OPENPAR CLOSEPAR CLOSEPARSTAR OPENBRACK CLOSEBRACK SQUOTE DQUOTE PERCENT QUESTION 
 %token STAR PLUS COMMA PIPE CHARDATA CDSTART CDATA CDEND
@@ -134,15 +134,6 @@ document
       ctx->document = mud::xml::dom::create_document();
       ctx->document->children(std::move(*children));
     }
- ;
-
-/*
- * [3] S : (#x20 | #x9 | #xD | #xA)+
- */
-
-S_opt
-  : S
-  | /* empty */
  ;
 
 /*
@@ -306,13 +297,13 @@ XMLDecl_opt
  */
 
 VersionInfo
-  : S VERSION Eq SQUOTE VERSIONNUM SQUOTE S_opt
+  : VERSION Eq SQUOTE VERSIONNUM SQUOTE
     {
-      $<str>$ = $<str>5;
+      $<str>$ = $<str>4;
     }
-  | S VERSION Eq DQUOTE VERSIONNUM DQUOTE S_opt
+  | VERSION Eq DQUOTE VERSIONNUM DQUOTE
     {
-      $<str>$ = $<str>5;
+      $<str>$ = $<str>4;
     }
  ;
 
@@ -321,7 +312,7 @@ VersionInfo
  */
 
 Eq
-  : S_opt EQ S_opt
+  : EQ
  ;
 
 /*
@@ -354,7 +345,7 @@ Misc
     {
         $<node>$ = $<node>1;
     }
-  | S
+  | /* empty */ 
     {
         $<node>$ = nullptr;
     }
@@ -365,19 +356,19 @@ Misc
  */
 
 doctypedecl
-  : DOCTYPE S NAME S_ExternalID_opt S_opt doctypedeclarations CLOSETAG
+  : DOCTYPE NAME ExternalID_opt doctypedeclarations CLOSETAG
     {  
-      std::unique_ptr<std::string> name($<str>3);
+      std::unique_ptr<std::string> name($<str>2);
     }
  ;
 
-S_ExternalID_opt
-  : S ExternalID
+ExternalID_opt
+  : ExternalID
   | /* empty */
  ;
 
 doctypedeclarations
-  : OPENBRACK declarations_seq_opt CLOSEBRACK S_opt
+  : OPENBRACK declarations_seq_opt CLOSEBRACK
   | /* empty */
  ;
 
@@ -400,7 +391,7 @@ DeclSep
     {
       std::unique_ptr<std::string> pe_reference($<str>1);
     }
-  | S
+  | /* empty */
  ;
 
 /*
@@ -421,11 +412,11 @@ MarkupDecl
  */
 
 SDDecl_opt
-  : STANDALONE Eq SQUOTE YESNO SQUOTE S_opt
+  : STANDALONE Eq SQUOTE YESNO SQUOTE
     {
       $<str>$ = $<str>4;
     }
-  | STANDALONE Eq DQUOTE YESNO DQUOTE S_opt
+  | STANDALONE Eq DQUOTE YESNO DQUOTE
     {
       $<str>$ = $<str>4;
     }
@@ -459,10 +450,10 @@ element
  */
 
 STag 
-  : OPENTAG NAME S_opt Attribute_seq_opt CLOSETAG
+  : OPENTAG NAME Attribute_seq_opt CLOSETAG
     {
       std::unique_ptr<std::string> name($<str>2);
-      std::unique_ptr<mud::xml::attribute_set> attrs($<attributes>4);
+      std::unique_ptr<mud::xml::attribute_set> attrs($<attributes>3);
       auto element = mud::xml::dom::create_element(*name);
       element->attributes(std::move(*attrs));
       $<node>$ = new mud::xml::node::ptr(element);
@@ -474,7 +465,7 @@ STag
  */
 
 Attribute_seq_opt
-  : Attribute_seq S_opt
+  : Attribute_seq
     {
       $<attributes>$ = $<attributes>1;
     }
@@ -486,10 +477,10 @@ Attribute_seq_opt
  ;
 
 Attribute_seq
-  : Attribute_seq S Attribute
+  : Attribute_seq Attribute
     {
       auto attrs = $<attributes>1;
-      attrs->insert((*$<node>3)->get_shared<mud::xml::attribute>());
+      attrs->insert((*$<node>2)->get_shared<mud::xml::attribute>());
       $<attributes>$ = attrs;
     }
   | Attribute
@@ -517,7 +508,7 @@ Attribute
  */
 
 ETag 
-  : OPENTAGEND NAME S_opt CLOSETAG
+  : OPENTAGEND NAME CLOSETAG
     {
       $<str>$ = $<str>2;
     }
@@ -595,11 +586,11 @@ contents_choice
  */
 
 EmptyElemTag 
-  : OPENTAG NAME S_opt Attribute_seq_opt EMPTYCLOSETAG
+  : OPENTAG NAME Attribute_seq_opt EMPTYCLOSETAG
     {
       std::unique_ptr<std::string> name($<str>2);
       auto element = mud::xml::dom::create_element(*name);
-      auto attrs = $<attributes>4;;
+      auto attrs = $<attributes>3;;
       element->attributes(std::move(*attrs));
       $<node>$ = new mud::xml::node::ptr(element);
     }
@@ -610,9 +601,9 @@ EmptyElemTag
  */
 
 ElementDecl
-  : ELEMENT S NAME S contentspec S_opt CLOSETAG
+  : ELEMENT NAME contentspec CLOSETAG
     {
-      std::unique_ptr<std::string> name($<str>3);
+      std::unique_ptr<std::string> name($<str>2);
     }
  ;
 
@@ -669,12 +660,12 @@ name_choice_sequence
  */
 
 choice
-  : OPENPAR S_opt cp_choice S_opt CLOSEPAR
+  : OPENPAR cp_choice CLOSEPAR
  ;
 
 cp_choice
-  : cp_choice S_opt PIPE S_opt cp
-  | cp S_opt PIPE S_opt cp
+  : cp_choice PIPE cp
+  | cp PIPE cp
  ;
 
 /*
@@ -682,12 +673,12 @@ cp_choice
  */
 
 sequence 
-  : OPENPAR S_opt cp S_opt CLOSEPAR
-  | OPENPAR S_opt cp S_opt COMMA S_opt cp_seq CLOSEPAR
+  : OPENPAR cp CLOSEPAR
+  | OPENPAR cp COMMA cp_seq CLOSEPAR
  ;
 
 cp_seq
-  : cp_seq S_opt COMMA S_opt cp
+  : cp_seq COMMA cp
   | cp
  ;
 
@@ -696,18 +687,18 @@ cp_seq
  */
 
 Mixed 
-  : OPENPAR S_opt PCDATA names_seq S_opt CLOSEPARSTAR
-  | OPENPAR S_opt PCDATA S_opt CLOSEPAR
+  : OPENPAR PCDATA names_seq CLOSEPARSTAR
+  | OPENPAR PCDATA CLOSEPAR
  ;
 
 names_seq
-  : names_seq S_opt PIPE S_opt NAME
+  : names_seq PIPE NAME
     {
-      std::unique_ptr<std::string> name($<str>5);
+      std::unique_ptr<std::string> name($<str>3);
     }
-  | S_opt PIPE S_opt NAME
+  | PIPE NAME
     {
-      std::unique_ptr<std::string> name($<str>4);
+      std::unique_ptr<std::string> name($<str>2);
     }
  ;
 
@@ -716,11 +707,11 @@ names_seq
  */
 
 AttlistDecl 
-  : ATTLIST S NAME AttDef_seq_opt S_opt CLOSETAG
+  : ATTLIST NAME AttDef_seq_opt CLOSETAG
  ;
 
 /*
- * [53] AttDef : S Name S AttType S DefaultDecl
+ * [53] AttDef : Name AttType DefaultDecl
  */
 
 AttDef_seq_opt
@@ -729,9 +720,9 @@ AttDef_seq_opt
  ;
 
 AttDef 
-  : S NAME S AttType S DefaultDecl
+  : NAME AttType DefaultDecl
     {
-      std::unique_ptr<std::string> name($<str>2);
+      std::unique_ptr<std::string> name($<str>1);
     }
  ;
 
@@ -759,13 +750,13 @@ EnumeratedType
  */
 
 NotationType 
-  : NOTATION S OPENPAR S_opt NotationTypeNames_seq S_opt CLOSEPAR
+  : NOTATION OPENPAR NotationTypeNames_seq CLOSEPAR
  ;
 
 NotationTypeNames_seq
-  : NotationTypeNames_seq S_opt PIPE S_opt NAME
+  : NotationTypeNames_seq PIPE NAME
     {
-      std::unique_ptr<std::string> name($<str>5);
+      std::unique_ptr<std::string> name($<str>3);
     }
   | NAME
     {
@@ -778,13 +769,13 @@ NotationTypeNames_seq
  */
 
 Enumeration
-  : OPENPAR S_opt EnumerationTokens_seq S_opt CLOSEPAR
+  : OPENPAR EnumerationTokens_seq CLOSEPAR
  ;
 
 EnumerationTokens_seq
-  : EnumerationTokens_seq S_opt PIPE S_opt NMTOKEN
+  : EnumerationTokens_seq PIPE NMTOKEN
     {
-      std::unique_ptr<std::string> token($<str>5);
+      std::unique_ptr<std::string> token($<str>3);
     }
   | NMTOKEN
     {
@@ -803,7 +794,7 @@ DefaultDecl
  ;
 
 FIXED_opt 
-  : FIXED S
+  : FIXED
   | /* empty */
  ;
 
@@ -828,9 +819,9 @@ EntityDecl
  */
 
 GEDecl
-  : ENTITY S NAME S EntityDef CLOSETAG
+  : ENTITY NAME EntityDef CLOSETAG
     {
-      std::unique_ptr<std::string> name($<str>3);
+      std::unique_ptr<std::string> name($<str>2);
     }
  ;
 
@@ -839,9 +830,9 @@ GEDecl
  */
 
 PEDecl
-  : ENTITY S PERCENT S NAME S PEDef S_opt CLOSETAG
+  : ENTITY PERCENT NAME PEDef CLOSETAG
     {
-      std::unique_ptr<std::string> name($<str>5);
+      std::unique_ptr<std::string> name($<str>3);
     }
  ;
 
@@ -850,8 +841,8 @@ PEDecl
  */
 
 EntityDef
-  : EntityValue S_opt
-  | ExternalID S_opt NDataDecl_opt
+  : EntityValue 
+  | ExternalID NDataDecl_opt
  ;
 
 /*
@@ -868,14 +859,14 @@ PEDef
  */
 
 ExternalID
-  : SYSTEM S SYSTEMLITERAL
+  : SYSTEM SYSTEMLITERAL
     {
-      std::unique_ptr<std::string> literal($<str>3);
+      std::unique_ptr<std::string> literal($<str>2);
     }
-  | PUBLIC S PUBIDLITERAL S SYSTEMLITERAL
+  | PUBLIC PUBIDLITERAL SYSTEMLITERAL
     {
-      std::unique_ptr<std::string> pubid_literal($<str>3);
-      std::unique_ptr<std::string> system_literal($<str>5);
+      std::unique_ptr<std::string> pubid_literal($<str>2);
+      std::unique_ptr<std::string> system_literal($<str>3);
     }
  ;
 
@@ -884,14 +875,14 @@ ExternalID
  */
 
 NDataDecl_opt
-  : NDataDecl S_opt
+  : NDataDecl
   | /* empty */
  ;
 
 NDataDecl
-  : NDATA S NAME
+  : NDATA NAME
     {
-      std::unique_ptr<std::string> name($<str>3);
+      std::unique_ptr<std::string> name($<str>2);
     }
  ;
 
@@ -901,11 +892,11 @@ NDataDecl
  */
 
 EncodingDecl_opt 
-  : ENCODING Eq SQUOTE ENCNAME SQUOTE S_opt
+  : ENCODING Eq SQUOTE ENCNAME SQUOTE
     {
       $<str>$ = $<str>4;
     }
-  | ENCODING Eq DQUOTE ENCNAME DQUOTE S_opt
+  | ENCODING Eq DQUOTE ENCNAME DQUOTE
     {
       $<str>$ = $<str>4;
     }
@@ -921,9 +912,9 @@ EncodingDecl_opt
  */
 
 Notation
-  : NOTATION S NAME S ExternalID S_opt CLOSETAG
+  : NOTATION NAME ExternalID CLOSETAG
     {
-      std::unique_ptr<std::string> name($<str>3);
+      std::unique_ptr<std::string> name($<str>2);
     }
  ;
 

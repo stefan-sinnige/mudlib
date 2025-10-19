@@ -6,7 +6,13 @@ BEGIN_MUDLIB_XML_NS
 /* static */ cdata_section::ptr
 cdata_section::create(const std::string& text)
 {
-    return std::shared_ptr<xml::cdata_section>(new cdata_section(text));
+    struct make_shared_enabler: public xml::cdata_section
+    {
+        make_shared_enabler(const std::string& text)
+            : xml::cdata_section(text)
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>(text);
 }
 
 cdata_section::cdata_section(const std::string& text)
