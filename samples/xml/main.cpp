@@ -34,7 +34,7 @@ main(int argc, char** argv)
 
     // Extract an XML document from the input stream
     mud::xml::document::ptr doc;
-    *istr >> doc;
+    *istr >> mud::xml::parser_debug >> mud::xml::scanner_debug >> doc;
 
     // Output the XML document to standard-out.
     std::cout << doc;

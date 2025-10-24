@@ -42,21 +42,21 @@
     /* The reentrant parser uses the following context. */
     typedef void* yyscan_t;
     typedef struct html_ctx_t {
-      yyscan_t scanner;             /* The lexical scanner */
+      yyscan_t scanner;              /* The lexical scanner */
       html_ctx_t* parent;            /* Reference to the parent. */
-      int errors;                   /* The number of errors detected. */
-      mud::html::document* document; /* The resulting XML document. */
+      int errors;                    /* The number of errors detected. */
+      mud::html::document* document; /* The resulting HTML document. */
     } html_ctx_t;
 }
 
 %code provides {
-    /* Initialise the XML parser context */
+    /* Initialise the HTML parser context */
     extern void html_ctx_init(html_ctx_t* ctx, const std::string& filename,
             html_ctx_t* parent);
 }
 
 %code {
-    /* Initialise the XML parser context */
+    /* Initialise the HTML parser context */
     void html_ctx_init(html_ctx_t* ctx, const std::string& filename,
             html_ctx_t* parent)
     {

@@ -1,0 +1,40 @@
+#ifndef _MUDLIB_HTML_SCANNER_H_
+#define _MUDLIB_HTML_SCANNER_H_
+
+#include <istream>
+#include <stack>
+
+#ifndef YYDEBUG
+# define YYDEBUG 0
+#endif
+#if YYDEBUG
+extern in yyhtmldebug;
+#endif
+
+/* Additional reentrant scanner context details. This allows for:
+ *     - using std::istreams instead of FILE*
+ *     - keep track of a stack of states
+ * The element stack level keeps track how deep we are in the recursion of
+ * the [39] element rules. This is used when another state needs to be entered
+ * while we're already in a different state. When the state is returned, it
+ * returns to the previous state.
+ */
+struct yyhtmlextra {
+    std::istream* istr;
+    std::stack<int> saved_states;
+};
+
+/* External declations from the scanner */
+extern struct yy_buffer_state* yyhtml_scan_string(const char*, yyscan_t);
+extern int yyhtmllex_init(yyscan_t*);
+extern int yyhtmllex_init_extra(struct yyhtmlextra*, yyscan_t*);
+extern int yyhtmllex_destroy(yyscan_t);
+extern void yyhtmlset_debug(int, yyscan_t);
+extern void yyhtmlset_lineno(int, yyscan_t);
+extern void yyhtmlset_column(int, yyscan_t);
+extern void yyhtml_scan_stream(std::istream&, yyscan_t);
+
+/* vi: set ai ts=4 expandtab: */
+
+#endif /* _MUDLIB_HTML_SCANNER_H_ */
+

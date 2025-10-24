@@ -1,26 +1,8 @@
 #include "mud/xml.h"
 #include "src/parser.hpp"
+#include "src/scanner.h"
 #include <utility>
-
 #include <iostream>
-
-/* External declations from the scanner */
-extern struct yy_buffer_state*
-yyxml_scan_string(const char*, yyscan_t);
-extern int
-yyxmllex_init(yyscan_t*);
-extern int yyxmllex_destroy(yyscan_t);
-extern void
-yyxmlset_debug(int, yyscan_t);
-extern void
-yyxmlset_lineno(int, yyscan_t);
-extern void
-yyxmlset_column(int, yyscan_t);
-extern void
-yyxml_scan_stream(std::istream&, yyscan_t);
-
-/* External declations from the reader */
-extern int yyxmldebug;
 
 /* Scanner and parser debug stream manipulators */
 static int __scanner_debug = std::ios_base::xalloc();
@@ -47,18 +29,24 @@ END_MUDLIB_XML_NS
 std::istream&
 operator>>(std::istream& istr, mud::xml::document::ptr& doc)
 {
-    /* Set-up scanning from an input-stream */
+    // Set-up scanning context
     xml_ctx_t ctx;
     xml_ctx_init(&ctx, "", NULL);
     yyxmllex_init(&(ctx.scanner));
-    yyxml_scan_stream(istr, ctx.scanner);
+
+    // Use a reentrant extra structure
+    struct yyxmlextra extra;
+    extra.istr = &istr;
+    yyxmllex_init_extra(&extra, &(ctx.scanner));
 
     // Set the debugging options if it has been specified
     if (istr.iword(__scanner_debug) == 1) {
         yyxmlset_debug(1, ctx.scanner);
     }
     if (istr.iword(__parser_debug) == 1) {
+#if YYDEBUG
         yyxmldebug = 1;
+#endif
     }
 
     /* Parse into a document */

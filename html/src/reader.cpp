@@ -1,29 +1,9 @@
 #include "src/parser.hpp"
+#include "src/scanner.h"
 #include "mud/html.h"
 #include <utility>
 
 #include <iostream>
-
-/* External declations from the scanner */
-extern struct yy_buffer_state*
-yyhtml_scan_string(const char*, yyscan_t);
-extern int
-yyhtmllex_init(yyscan_t*);
-extern int
-yyhtmllex_destroy(yyscan_t);
-extern void
-yyhtmllex_init_states();
-extern void
-yyhtmlset_debug(int, yyscan_t);
-extern void
-yyhtmlset_lineno(int, yyscan_t);
-extern void
-yyhtmlset_column(int, yyscan_t);
-extern void
-yyhtml_scan_stream(std::istream&, yyscan_t);
-
-/* External declations from the reader */
-extern int yyhtmldebug;
 
 /* Scanner and parser debug stream manipulators */
 static int __scanner_debug = std::ios_base::xalloc();
@@ -50,20 +30,25 @@ END_MUDLIB_HTML_NS
 std::istream&
 operator>>(std::istream& istr, mud::html::document& doc)
 {
-    /* Set-up scanning from an input-stream */
+    // Set-up scanning context
     html_ctx_t ctx;
     html_ctx_init(&ctx, "", NULL);
-    yyhtmllex_init_states();
     yyhtmllex_init(&(ctx.scanner));
-    yyhtml_scan_stream(istr, ctx.scanner);
+
+    // Use a reentrant extra structure
+    struct yyhtmlextra extra;
+    extra.istr = &istr;
+    yyhtmllex_init_extra(&extra, &(ctx.scanner));
 
     // Set the debugging options if it has been specified
-    // if (istr.iword(__scanner_debug) == 1) {
-    //     yyhtmlset_debug(1, ctx.scanner);
-    // }
-    // if (istr.iword(__parser_debug) == 1) {
-    //     yyhtmldebug = 1;
-    // }
+    if (istr.iword(__scanner_debug) == 1) {
+        yyhtmlset_debug(1, ctx.scanner);
+    }
+    if (istr.iword(__parser_debug) == 1) {
+#if YYDEBUG
+        yyhtmldebug = 1;
+#endif
+    }
 
     /* Parse into a document */
     int result = yyhtmlparse(&ctx);

@@ -80,24 +80,32 @@ namespace _tcp {
             }
             else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                /* Not ready to receive, wait a bit (1 millisecond) */
+                /* Not ready to receive, wait a bit (5 seconds maximum). This
+                 * has the side-effect that this read will be blocked at most
+                 * by this time interval. */
                 fd_set rdfs;
                 FD_ZERO(&rdfs);
                 FD_SET(hndl, &rdfs);
                 struct timeval  tv;
-                tv.tv_sec = 0;
-                tv.tv_usec = 1 * 1000;
+                tv.tv_sec = 5;
+                tv.tv_usec = 0;
                 if (::select(hndl+1, &rdfs, nullptr, nullptr, &tv) <= 0) {
                     /* Still nothing available, or low-level errors */
+                    ERROR(log) << "No data available on socket " << hndl
+                               << ": " << strerror(errno) << std::endl;
                     return -1;
                 }
                 if (! FD_ISSET(hndl, &rdfs)) {
+                    ERROR(log) << "No data available on socket " << hndl
+                               << std::endl;
                     return -1;
                 }
                 continue;
             }
             else {
                 /* Anything else is an error */
+                ERROR(log) << "Error on socket " << hndl << strerror(errno)
+                               << std::endl;
                 return -1;
             }
         }
@@ -105,7 +113,7 @@ namespace _tcp {
         /* We may have received less than asked for, for example, the peer is
          * still sending more packets. We may need subsequent calls to get more
          * data if needed, dictated by more calls to `underflow` or related. */
-        TRACE(log) << "Received " << nread << " bytes on TCP socket"
+        TRACE(log) << "Received " << nread << " bytes on TCP socket " << hndl
                    << std::endl;
         return nread;
     }
@@ -125,7 +133,7 @@ namespace _tcp {
             }
             else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                /* Not ready to write, wait a bit ( 1 millisecond) */
+                /* Not ready to write, wait a bit (1 millisecond) */
                 fd_set wrfs;
                 FD_ZERO(&wrfs);
                 FD_SET(hndl, &wrfs);
@@ -134,9 +142,13 @@ namespace _tcp {
                 tv.tv_usec = 1 * 1000;
                 if (::select(hndl+1, nullptr, &wrfs, nullptr, &tv) <= 0) {
                     /* Still not ready to write, or low-level errors */
+                    ERROR(log) << "Socket " << hndl << " not ready to write"
+                               << std::endl;
                     return -1;
                 }
                 if (! FD_ISSET(hndl, &wrfs)) {
+                    ERROR(log) << "Socket " << hndl << " not ready to write"
+                               << std::endl;
                     return -1;
                 }
                 continue;
@@ -152,13 +164,15 @@ namespace _tcp {
             }
             else {
                 /* Anything else is an error. */
+                ERROR(log) << "Error on socket " << hndl << strerror(errno)
+                               << std::endl;
                 return -1;
             }
         }
         /* We may have written less than asked for, for example, the output
          * buffer is full. We may need subsequent calls to flush more data if
          * needed dictated by more calls to `underflow` or related. */
-        TRACE(log) << "Sent " << nwrite << " bytes on TCP socket"
+        TRACE(log) << "Sent " << nwrite << " bytes on TCP socket " << hndl
                    << std::endl;
         return nwrite;
     }

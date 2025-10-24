@@ -7,7 +7,7 @@
 %option noyywrap
 %option yylineno
 
-%option extra-type="struct yyxmlextra"
+%option extra-type="struct yyxmlextra*"
 
 %{
 /* Verified with Flex 2.6 
@@ -21,25 +21,13 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <istream>
+#include <stack>
 #include <string.h>
 #include <string>
 #include <stdlib.h>
 #include <mud/xml.h>
 #include "src/parser.hpp"
-
-/* Additional reentrant scanner context details. This allows for:
- *     - using std::istreams instead of FILE*
- *     - keep track of a stack of states
- * The element stack level keeps track how deep we are in the recursion of
- * the [39] element rules. This is used when another state needs to be entered
- * while we're already in a different state. When the state is returned, it
- * returns to the previous state. Only one level is currently allowed.
- */
-struct yyxmlextra {
-    std::istream* istr;
-    int element_stack_level;
-    int saved_state;
-};
+#include "src/scanner.h"
 
 /* Update the column */
 #define YY_USER_ACTION \
@@ -56,15 +44,18 @@ struct yyxmlextra {
 #define YY_INPUT(buf, result, max_size) \
     { \
         char c; \
-        yyextra.istr->get(c); \
-        result = !(*(yyextra.istr)) ? YY_NULL : (buf[0] = c, 1); \
+        yyextra->istr->get(c); \
+        result = !(*(yyextra->istr)) ? YY_NULL : (buf[0] = c, 1); \
     }
 
 /* Push/Pop a state. This is used when another state needs to be entered
  * while we're already in a different state. When the state is returned, it
  * returns to the previous state. Only one level is currently allowed. */
-#define PUSH_STATE() yyextra.saved_state = YY_START
-#define POP_STATE()  BEGIN(yyextra.saved_state)
+#define PUSH(STATE) yyxmllex_push_state(yyg, STATE, __LINE__)
+#define POP() yyxmllex_pop_state(yyg, __LINE__)
+
+void yyxmllex_push_state(struct yyguts_t* guts, int state, int linenr);
+void yyxmllex_pop_state(struct yyguts_t* guts, int linenr);
 
 %}
 
@@ -193,8 +184,7 @@ Extender        \xB7
          * originated from.
          */
 <attribute,defaultdecl>\" {
-            PUSH_STATE();
-            BEGIN(attvalue_dquote);
+            PUSH(attvalue_dquote);
             return (DQUOTE);
         }
 <attvalue_dquote>[^"]* {
@@ -202,12 +192,11 @@ Extender        \xB7
             return(ATTVALUE);
         }
 <attvalue_dquote>\" {
-            POP_STATE();
+            POP();
             return(DQUOTE);
         }
 <attribute,defaultdecl>\' {
-            PUSH_STATE();
-            BEGIN(attvalue_squote);
+            PUSH(attvalue_squote);
             return (SQUOTE);
         }
 <attvalue_squote>[^']* {
@@ -215,7 +204,7 @@ Extender        \xB7
             return(ATTVALUE);
         }
 <attvalue_squote>\' {
-            POP_STATE();
+            POP();
             return(SQUOTE);
         }
         /*
@@ -224,8 +213,7 @@ Extender        \xB7
          * allowed. Everything between these two tokens is captured and returned.
          */
 <*>"<!--" {
-            PUSH_STATE();
-            BEGIN(comment);
+            PUSH(comment);
             return(COMMENTOPEN);
         }
 <comment>({CharExceptDash}|(\-{CharExceptDash}))*    {
@@ -233,7 +221,7 @@ Extender        \xB7
             return(COMMENT);
         }
 <comment>"-->" {
-            POP_STATE();
+            POP();
             return(COMMENTCLOSE);
         }
         /*
@@ -243,7 +231,7 @@ Extender        \xB7
          * captured and returned.
          */
 <content>{CDStart} {
-            BEGIN(cdsect);
+            PUSH(cdsect);
             return(CDSTART);
         }
 <cdsect>({CharExceptSqClose}|(\[{CharExceptSqClose})|(\[\[{CharExceptGreat}))* {
@@ -251,7 +239,7 @@ Extender        \xB7
             return(CDATA);
         }
 <cdsect>{CDEnd} {
-            BEGIN(content);
+            POP();
             return(CDEND);
         }
         /*
@@ -261,7 +249,7 @@ Extender        \xB7
          * This will be ended by the <xmldecl>"&>"
          */
 "<?xml"    {
-            BEGIN(xmldecl);
+            PUSH(xmldecl);
             return(XMLPIOPEN);
         }
         /*
@@ -270,11 +258,11 @@ Extender        \xB7
          * it will accept the 'version' string, followed by the VersionNum.
          */ 
 <xmldecl>"version" {
-            BEGIN(versioninfo);
+            PUSH(versioninfo);
             return(VERSION);
         }
 <versioninfo>{VersionNum} {
-            BEGIN(xmldecl);
+            POP();
             yylval->str = new std::string(yytext);
             return(VERSIONNUM);
         }
@@ -291,11 +279,11 @@ Extender        \xB7
          * it will accept the 'encoding' string, followed by the EncName.
          */
 <xmldecl>"encoding" {
-            BEGIN(encoding);
+            PUSH(encoding);
             return(ENCODING);
         }
 <encoding>{EncName} {
-            BEGIN(xmldecl);
+            POP();
             yylval->str = new std::string(yytext);
             return(ENCNAME);
         }
@@ -305,16 +293,16 @@ Extender        \xB7
          * it will accept the 'standalone' string, followed by eitehr 'yes' or 'no'.
          */
 <xmldecl>"standalone"    {
-            BEGIN(standalone);
+            PUSH(standalone);
             return(STANDALONE);
         }
 <standalone>("yes"|"no") {
-            BEGIN(xmldecl);
+            POP();
             yylval->str = new std::string(yytext);
             return(YESNO);
         }
 <xmldecl>"?>"    {
-            BEGIN(0);
+            POP();
             return(PICLOSE);
         }
         /*
@@ -323,13 +311,12 @@ Extender        \xB7
          * here we accept the target and data parts.
          */
 <INITIAL,markupdecl,content>"<?" {
-            PUSH_STATE();
-            BEGIN(pitarget);
+            PUSH(pitarget);
             return(PIOPEN);
         }
 <pitarget>{Name} {
             yylval->str = new std::string(yytext);
-            BEGIN(pidata);
+            PUSH(pidata);
             return(PITARGET);
         }
 <pidata>({CharExceptQuest}|(\?{CharExceptGreat}))* {
@@ -337,7 +324,8 @@ Extender        \xB7
             return(PIDATA);
         }
 <pidata>"?>"    {
-            POP_STATE();
+            POP(); /* pidata */
+            POP(); /* pitarget */
             return(PICLOSE);
         }
         /*
@@ -346,16 +334,17 @@ Extender        \xB7
          * enter their own start state to control specific scanning.
          */
 "<!DOCTYPE"    {
-            BEGIN(doctype);
+            PUSH(doctype);
             return(DOCTYPE);
         }
 <doctype>{Name} {
-            BEGIN(doctype2);
+            POP();
+            PUSH(doctype2);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
 <doctype2>\> {
-            BEGIN(0);
+            POP();
             return(CLOSETAG);
         }
         /*
@@ -365,22 +354,20 @@ Extender        \xB7
          * end with the SystemLiteral.
          */
 <doctype2,notationdecl2,entitydecldef>"SYSTEM" {
-            PUSH_STATE();
-            BEGIN(systemextent);
+            PUSH(systemextent);
             return(SYSTEM);
         }
 <doctype2,notationdecl2,entitydecldef>"PUBLIC" {
-            PUSH_STATE();
-            BEGIN(publicextent);
+            PUSH(publicextent);
             return(PUBLIC);
         }
 <systemextent>{SystemLiteral} {
-            POP_STATE();
+            POP();
             yylval->str = new std::string(yytext);
             return(SYSTEMLITERAL);
         }
 <publicextent>{PubidLiteral} {
-            BEGIN(systemextent);
+            PUSH(systemextent);
             yylval->str = new std::string(yytext);
             return(PUBIDLITERAL);
         }
@@ -401,11 +388,11 @@ Extender        \xB7
          * entered.
          */
 <doctype2>\[ {
-            BEGIN(markupdecl);
+            PUSH(markupdecl);
             return(OPENBRACK);
         }
 <markupdecl>\] {
-            BEGIN(doctype2);
+            PUSH(doctype2);
             return(CLOSEBRACK);
         }
         /*
@@ -414,11 +401,11 @@ Extender        \xB7
          * is expected, followed by [46] contentspec.
          */
 <markupdecl>"<!ELEMENT" {
-            BEGIN(elementdecl);
+            PUSH(elementdecl);
             return(ELEMENT);
         }
 <elementdecl>{Name} {
-            BEGIN(contentspec);
+            PUSH(contentspec);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
@@ -433,7 +420,7 @@ Extender        \xB7
             return(ANY);
         }
 <contentspec>\> {
-            BEGIN(markupdecl);
+            PUSH(markupdecl);
             return(CLOSETAG);
         }
         /*
@@ -452,7 +439,7 @@ Extender        \xB7
             return(PLUS);
         }
 <contentspec>\( {
-            BEGIN(mixedchildren);
+            PUSH(mixedchildren);
             return(OPENPAR);
         }
 <mixedchildren>"#PCDATA" {
@@ -469,11 +456,11 @@ Extender        \xB7
             return(COMMA);
         }
 <mixedchildren>")*" {
-            BEGIN(contentspec);
+            PUSH(contentspec);
             return(CLOSEPARSTAR);
         }
 <mixedchildren>\) {
-            BEGIN(contentspec);
+            PUSH(contentspec);
             return(CLOSEPAR);
         }
         /*
@@ -482,11 +469,11 @@ Extender        \xB7
          * and [53] AttDef can be entered.
          */
 <markupdecl>"<!ATTLIST" {
-            BEGIN(attlistdecl);
+            PUSH(attlistdecl);
             return(ATTLIST);
         }
 <attlistdecl>{Name} {
-            BEGIN(attdef);
+            PUSH(attdef);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
@@ -499,12 +486,12 @@ Extender        \xB7
          * when we scan an end-tag.
          */
 <attdef>{Name} {
-            BEGIN(atttype);
+            PUSH(atttype);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
 <attdef>\> {
-            BEGIN(markupdecl);
+            PUSH(markupdecl);
             return(CLOSETAG);
         }
         /*
@@ -514,12 +501,12 @@ Extender        \xB7
          * down into the [58] NotationType and the [59] Enumeration (see below).
          */
 <atttype>{StringType} {
-            BEGIN(defaultdecl);
+            PUSH(defaultdecl);
             yylval->str = new std::string(yytext);
             return(STRINGTYPE);
         }
 <atttype>{TokenizedType} {
-            BEGIN(defaultdecl);
+            PUSH(defaultdecl);
             yylval->str = new std::string(yytext);
             return(TOKENIZEDTYPE);
         }
@@ -530,7 +517,7 @@ Extender        \xB7
          * After that, te attlist3 state is restored.
          */
 <atttype>"NOTATION" {
-            BEGIN(notationtype);
+            PUSH(notationtype);
             return(NOTATION);
         }
 <notationtype>\( {
@@ -544,7 +531,7 @@ Extender        \xB7
             return(PIPE);
         }
 <notationtype>\) {
-            BEGIN(defaultdecl);
+            PUSH(defaultdecl);
             return(CLOSEPAR);
         }
         /*
@@ -553,7 +540,7 @@ Extender        \xB7
          * is the only one to be accepted between a '(' and a ')'.
          */
 <atttype>\( {
-            BEGIN(enumeration);
+            PUSH(enumeration);
             return(OPENPAR);
         }
 <enumeration>{Nmtoken} {
@@ -564,7 +551,7 @@ Extender        \xB7
             return(PIPE);
         }
 <enumeration>\) {
-            BEGIN(defaultdecl);
+            PUSH(defaultdecl);
             return(CLOSEPAR);
         }
         /*
@@ -583,12 +570,12 @@ Extender        \xB7
             return(FIXED);
         }
 <defaultdecl>{Name} {
-            BEGIN(atttype);
+            PUSH(atttype);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
 <defaultdecl>\> {
-            BEGIN(markupdecl);
+            PUSH(markupdecl);
             return(CLOSETAG);
         }
         /*
@@ -598,19 +585,19 @@ Extender        \xB7
          * in order to keep the scanner simple.
          */
 <markupdecl>"<!ENTITY" {
-            BEGIN(entitydecl);
+            PUSH(entitydecl);
             return(ENTITY);
         }
 <entitydecl>\% {
             return(PERCENT);
         }
 <entitydecl>{Name} {
-            BEGIN(entitydecldef);
+            PUSH(entitydecldef);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
 <entitydecldef>\> {
-            BEGIN(markupdecl);
+            PUSH(markupdecl);
             return(CLOSETAG);
         }
         /*
@@ -620,7 +607,7 @@ Extender        \xB7
          * entitydecldef state.
          */
 <entitydecldef>\" {
-            BEGIN(entityvalue_dquote);
+            PUSH(entityvalue_dquote);
             return(DQUOTE);
         }
 <entityvalue_dquote>[^"]* {
@@ -628,11 +615,11 @@ Extender        \xB7
             return(ENTITYVALUE);
         }
 <entityvalue_dquote>\" {
-            BEGIN(entitydecldef);
+            PUSH(entitydecldef);
             return(DQUOTE);
         }
 <entitydecldef>\" {
-            BEGIN(entityvalue_squote);
+            PUSH(entityvalue_squote);
             return(SQUOTE);
         }
 <entityvalue_squote>[^']* {
@@ -640,7 +627,7 @@ Extender        \xB7
             return(ENTITYVALUE);
         }
 <entityvalue_squote>\' {
-            BEGIN(entitydecldef);
+            PUSH(entitydecldef);
             return(SQUOTE);
         }
         /*
@@ -649,11 +636,11 @@ Extender        \xB7
          * is scanned and the state is returned to entitydecldef.
          */
 <entitydecldef>"NDATA" {
-            BEGIN(ndatadecl);
+            PUSH(ndatadecl);
             return(NDATA);
         }
 <ndatadecl>{Name} {
-            BEGIN(entitydecldef);
+            PUSH(entitydecldef);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
@@ -664,16 +651,16 @@ Extender        \xB7
          * normal close tag and will return to the doctype2 state.
          */
 <markupdecl>"<!NOTATION" {
-            BEGIN(notationdecl);
+            PUSH(notationdecl);
             return(NOTATION);
         }
 <notationdecl>{Name} {
-            BEGIN(notationdecl2);
+            PUSH(notationdecl2);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
 <notationdecl2>\> {
-            BEGIN(markupdecl);
+            PUSH(markupdecl);
             return(CLOSETAG);
         }
         /*
@@ -683,16 +670,11 @@ Extender        \xB7
          * element rule.
          */
 <INITIAL,content>\< {
-            BEGIN(element);
-            ++(yyextra.element_stack_level);
-            #ifdef FLEX_DEBUG
-                if (yy_flex_debug) 
-                    fprintf(stderr, "--element stack level: %d\n", yyextra.element_stack_level);
-            #endif
+            PUSH(element);
             return(OPENTAG);
         }
 <element>{Name} {
-            BEGIN(attribute);
+            PUSH(attribute);
             yylval->str = new std::string(yytext);
             return(NAME);
         }
@@ -701,20 +683,13 @@ Extender        \xB7
             return(NAME);
         }
 <attribute>"/>" {
-            --(yyextra.element_stack_level);
-            #ifdef FLEX_DEBUG
-                if (yy_flex_debug)
-                    fprintf(stderr, "--element stack level: %d\n", yyextra.element_stack_level);
-            #endif
-            if (yyextra.element_stack_level == 0) {
-                BEGIN(0);
-            } else {
-                BEGIN(content);
-            }
+            POP(); /* attribute */
+            POP(); /* element */
             return(EMPTYCLOSETAG);
         }
 <attribute>\> {
-            BEGIN(content);
+            POP();
+            PUSH(content);
             return(CLOSETAG);
         }
         /*
@@ -730,16 +705,8 @@ Extender        \xB7
             return(NAME);
         }
 <etag>\> {
-            --(yyextra.element_stack_level);
-            #ifdef FLEX_DEBUG
-                if (yy_flex_debug)
-                    fprintf(stderr, "--element stack level: %d\n", yyextra.element_stack_level);
-            #endif
-            if (yyextra.element_stack_level == 0) {
-                BEGIN(0);
-            } else {
-                BEGIN(content);
-            }
+            POP(); /* etag */
+            POP(); /* element */
             return(CLOSETAG);
         }
         /*
@@ -748,7 +715,8 @@ Extender        \xB7
          * explicitely and just made part of the content itself.
          */
 <content>"</" {
-            BEGIN(etag);
+            POP();
+            PUSH(etag);
             return(OPENTAGEND);
         }
 <content>[^<]* {
@@ -776,15 +744,52 @@ Extender        \xB7
 %%
 
 /*
- * Set the scanning method to use an inut stream.
+ * Keep track of the scanner states:
+ *    - The state at the front of the queue is the current scanning state
+ *    - If the queue is empty, the current scanning state is INITIAL (0)
  */
-void yyxml_scan_stream(std::istream& istr, yyscan_t scanner)
+
+void
+yyxmllex_print_states(struct yyguts_t* yyg, int linenr)
 {
-    struct yyxmlextra extra;
-    extra.istr = &istr;
-    extra.element_stack_level = 0;
-    extra.saved_state = 0;
-    yyset_extra(extra, scanner);
+    bool top = true;
+    std::stack<int> copy = yyextra->saved_states;
+    std::stack<int> reverse;
+    while (!copy.empty()) {
+        reverse.push(copy.top());
+        copy.pop();
+    }
+    fprintf(stderr, "--scan stack at line %d (", linenr);
+    while (!reverse.empty())
+    {
+        fprintf(stderr, " %d", reverse.top());
+        reverse.pop();
+    }
+    fprintf(stderr, " )\n");
+
+}
+
+void
+yyxmllex_push_state(struct yyguts_t* yyg, int state, int linenr)
+{
+    yyextra->saved_states.push(state);
+    BEGIN(state);
+    if (yy_flex_debug) {
+        yyxmllex_print_states(yyg, linenr);
+    }
+}
+
+void
+yyxmllex_pop_state(struct yyguts_t* yyg, int linenr)
+{
+    if (yyextra->saved_states.size()) {
+        yyextra->saved_states.pop();
+    }
+    BEGIN(yyextra->saved_states.size() ? yyextra->saved_states.top() : INITIAL);
+    if (yy_flex_debug) {
+        yyxmllex_print_states(yyg, linenr);
+    }
+    
 }
 
 /* vi: set ai ts=4 expandtab: */
