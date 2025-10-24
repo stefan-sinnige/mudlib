@@ -7,13 +7,26 @@ BEGIN_MUDLIB_XML_NS
 /* static */ attribute::ptr
 attribute::create(const std::string& qname)
 {
-    return std::shared_ptr<xml::attribute>(new attribute(qname));
+    struct make_shared_enabler: public xml::attribute
+    {
+        make_shared_enabler(const std::string& qname)
+            : xml::attribute(qname)
+        {}
+    };
+    return std::make_shared<make_shared_enabler>(qname);
 }
 
 /* static */ attribute::ptr
 attribute::create(const std::string& local_name, const mud::core::uri& uri)
 {
-    return std::shared_ptr<xml::attribute>(new attribute(local_name, uri));
+    struct make_shared_enabler: public xml::attribute
+    {
+        make_shared_enabler(const std::string& local_name,
+                            const mud::core::uri& uri)
+            : xml::attribute(local_name, uri)
+        {}
+    };
+    return std::make_shared<make_shared_enabler>(local_name, uri);
 }
 
 attribute::attribute(const std::string& qname)

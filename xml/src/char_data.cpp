@@ -6,7 +6,13 @@ BEGIN_MUDLIB_XML_NS
 /* static */ char_data::ptr
 char_data::create(const std::string& text)
 {
-    return std::shared_ptr<xml::char_data>(new char_data(text));
+    struct make_shared_enabler: public xml::char_data
+    {
+        make_shared_enabler(const std::string& text)
+            : xml::char_data(text)
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>(text);
 }
 
 char_data::char_data(const std::string& text)

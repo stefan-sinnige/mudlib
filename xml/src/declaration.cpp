@@ -6,7 +6,13 @@ BEGIN_MUDLIB_XML_NS
 /* static */ declaration::ptr
 declaration::create()
 {
-    return std::shared_ptr<xml::declaration>(new declaration());
+    struct make_shared_enabler: public xml::declaration
+    {
+        make_shared_enabler()
+            : xml::declaration()
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>();
 }
 
 declaration::declaration()

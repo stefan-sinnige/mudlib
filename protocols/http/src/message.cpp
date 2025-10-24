@@ -184,6 +184,9 @@ operator>>(std::istream& istr, message& msg)
         std::string body;
         body.resize(content_length);
         istr.read(&body[0], content_length);
+        if (istr.gcount() != content_length) {
+            throw std::out_of_range("HTTP Entity-Body not fully received");
+        }
         msg.entity_body(body);
     } else if (msg.type() == message::type::RESPONSE) {
         // Read until the end, but only for a Response Message (RFC 9110 - 8.6)

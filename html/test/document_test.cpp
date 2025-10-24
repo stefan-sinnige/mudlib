@@ -67,7 +67,7 @@ FEATURE("Document")
                   mud::html::document>::value);
         })
 
-  /* Although this is not a valid XML document */
+  /* Although this is not a valid HTML document */
   SCENARIO("An empty document has no nodes")
     GIVEN("An empty document")
     WHEN ("The document is examined")

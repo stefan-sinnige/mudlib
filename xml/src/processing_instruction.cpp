@@ -7,8 +7,13 @@ BEGIN_MUDLIB_XML_NS
 processing_instruction::create(const std::string& target,
         const std::string& data)
 {
-    return std::shared_ptr<xml::processing_instruction>(
-            new processing_instruction(target, data));
+    struct make_shared_enabler: public xml::processing_instruction
+    {
+        make_shared_enabler(const std::string& target, const std::string& data)
+            : xml::processing_instruction(target, data)
+        {}  
+    };
+    return std::make_shared<make_shared_enabler>(target, data);
 }
 
 processing_instruction::processing_instruction(const std::string& target,

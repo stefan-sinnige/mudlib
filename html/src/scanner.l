@@ -6,6 +6,7 @@
 %option yylineno
 %option outfile="src/scanner.cpp"
 %option prefix="yyhtml"
+%option extra-type="struct yyhtmlextra*"
 
 %{
 /* Verified with Flex 2.6
@@ -15,7 +16,7 @@
  * but not through the proposed implementation. The grammar provided here
  * is stricter.
  *
- * There is similarities to the XML specification!
+ * There are similarities to the XML specification!
  */
 
 /* Additional C++ statements */
@@ -28,6 +29,7 @@
 #include <stdlib.h>
 #include <mud/html.h>
 #include "src/parser.hpp"
+#include "src/scanner.h"
 
 /* Update the column */
 #define YY_USER_ACTION \
@@ -37,28 +39,24 @@
     yycolumn += (int)yyleng;
 
 /* Redefine YY_INPUT to use std::istream, instead of the standard FILE*. This
- * does render the yyxml_set_in useless, unless we cater for that here. 
- * Don;t do buffering here,but rely on the buffering within the std::istream
+ * does render the yyhtml_set_in useless, unless we cater for that here. 
+ * Don't do buffering here,but rely on the buffering within the std::istream
  * instead. */
-#undef YY_EXTRA_TYPE
-#define YY_EXTRA_TYPE std::istream*
 #undef YY_INPUT
 #define YY_INPUT(buf, result, max_size) \
     { \
         char c; \
-        yyextra->get(c); \
-        result = !(*yyextra) ? YY_NULL : (buf[0] = c, 1); \
+        yyextra->istr->get(c); \
+        result = !(*(yyextra->istr)) ? YY_NULL : (buf[0] = c, 1); \
     }
 
 /* Push/Pop a state. This is used to have stack-level control of the scanning
  * state. */
-static std::stack<int> yy_saved_states;
-#define PUSH(STATE) yyhtmllex_push_state(yyg, STATE)
-#define POP() yyhtmllex_pop_state(yyg)
+#define PUSH(STATE) yyhtmllex_push_state(yyg, STATE, __LINE__)
+#define POP() yyhtmllex_pop_state(yyg, __LINE__)
 
-void yyhtmllex_init_states();
-void yyhtmllex_push_state(struct yyguts_t* yyg, int state);
-void yyhtmllex_pop_state(struct yyguts_t* yyg);
+void yyhtmllex_push_state(struct yyguts_t* yyg, int state, int linenr);
+void yyhtmllex_pop_state(struct yyguts_t* yyg, int linenr);
 
 
 %}
@@ -306,7 +304,7 @@ S                     [\x20\x09\x0D\x0A]+
             return(ATTVALUE);
         }
 <attvalue_dquote>\" {
-            POP();
+            POP(); 
             return(DQUOTE);
         }
 <attvalue_squote>\' {
@@ -314,9 +312,9 @@ S                     [\x20\x09\x0D\x0A]+
             return(SQUOTE);
         }
 <attribute>"/>" {
-            POP();
-            POP();
-            POP();
+            POP(); /* attvalue_xquote */
+            POP(); /* attribute */
+            POP(); /* element */
             return(EMPTYCLOSETAG);
         }
 <attribute>\> {
@@ -372,63 +370,49 @@ S                     [\x20\x09\x0D\x0A]+
 %%
 
 /*
- * Set the scanning method to use an inut stream.
- */
-void yyhtml_scan_stream(std::istream& istr, yyscan_t scanner)
-{
-    yyset_extra(&istr, scanner);
-}
-
-/*
  * Keep track of the scanner states:
  *    - The state at the front of the queue is the current scanning state
  *    - If the queue is empty, the current scanning state is INITIAL (0)
  */
-void
-yyhtmllex_init_states()
-{
-    yy_saved_states = std::stack<int>();
-}
 
 void
-yyhtmllex_print_states(struct yyguts_t* yyg)
+yyhtmllex_print_states(struct yyguts_t* yyg, int linenr)
 {
     bool top = true;
-    std::stack<int> copy = yy_saved_states;
-    printf("Scanning states:");
-    while (!copy.empty())
-    {
-        printf(" %d", copy.top());
-        if (top)
-        {
-            printf("*");
-            top = false;
-        }
+    std::stack<int> copy = yyextra->saved_states;
+    std::stack<int> reverse;
+    while (!copy.empty()) {
+        reverse.push(copy.top());
         copy.pop();
     }
-    printf("\n");
-
+    fprintf(stderr, "--scan stack at line %d (", linenr);
+    while (!reverse.empty())
+    {
+        fprintf(stderr, " %d", reverse.top());
+        reverse.pop();
+    }
+    fprintf(stderr, " )\n");
 }
 
 void
-yyhtmllex_push_state(struct yyguts_t* yyg, int state)
+yyhtmllex_push_state(struct yyguts_t* yyg, int state, int linenr)
 {
-    yy_saved_states.push(state);
+    yyextra->saved_states.push(state);
     BEGIN(state);
     if (yy_flex_debug) {
-        yyhtmllex_print_states(yyg);
+        yyhtmllex_print_states(yyg, linenr);
     }
 }
 
 void
-yyhtmllex_pop_state(struct yyguts_t* yyg)
+yyhtmllex_pop_state(struct yyguts_t* yyg, int linenr)
 {
-    if (yy_saved_states.size()) {
-        yy_saved_states.pop();
+    if (yyextra->saved_states.size()) {
+        yyextra->saved_states.pop();
     }
-    BEGIN(yy_saved_states.size() ? yy_saved_states.top() : INITIAL);
+    BEGIN(yyextra->saved_states.size() ? yyextra->saved_states.top() : INITIAL);
     if (yy_flex_debug) {
-        yyhtmllex_print_states(yyg);
+        yyhtmllex_print_states(yyg, linenr);
     }
     
 }

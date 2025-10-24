@@ -22,7 +22,7 @@ CONTEXT()
     ~context() {
     }
 
-    /* The XML text stream */
+    /* The HTML text stream */
     std::stringstream text;
 
     /* The document */
