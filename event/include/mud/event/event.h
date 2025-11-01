@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <mud/core/handle.h>
+#include <mud/core/uuid.h>
 #include <mud/event/ns.h>
 
 BEGIN_MUDLIB_EVENT_NS
@@ -49,24 +50,32 @@ public:
     typedef std::function<return_type(void)> function_type;
 
     /**
+     * @brief Default constructor, creating a null-event.
+     * @details The event is created without any handle, mask or handler and
+     * with a null-ID.
+     */
+    event();
+
+    /**
      * @brief Constructor, defining an event, the signal and the handler.
-     * @param handle [in] The handle to examine.
+     * @param handle [in] The handle.
      * @param mask [in] The signal mask to register.
      * @param handler [in] The callable handler function
      */
-    event(const std::unique_ptr<mud::core::handle>& handle, signal_type mask,
+    event(std::shared_ptr<mud::core::handle> handle, signal_type mask,
           function_type&& handler);
 
     /**
-     * @brief Constructor for lookup purposes only.
-     * @param handle [in] The handle to look up.
+     * @brief Copy constructor.
+     * @param rhs The event to copy.
      */
-    event(const std::unique_ptr<mud::core::handle>& handle);
+    event(const event& rhs) = default;
 
     /**
-     * @brief Copy constructor.
+     * @brief Move constructor.
+     * @param rhs The event to move.
      */
-    event(const event& rhs);
+    event(event&& rhs) = default;
 
     /**
      * @brief Destructor.
@@ -74,21 +83,44 @@ public:
     virtual ~event();
 
     /**
-     * @brief Equality operator, based on the handle only.
+     * @brief Copy assignment.
+     * @param rhs The event to copy.
+     */
+    event& operator=(const event& rhs) = default;
+
+    /**
+     * @brief Move assignment.
+     * @param rhs The event to move.
+     */
+    event& operator=(event&& rhs) = default;
+
+    /**
+     * @brief Equality operator.
      * @param[in] rhs The event to compare against.
      */
     bool operator==(const event& rhs) const;
 
     /**
-     * @brief Inequality operator, based on the handle only.
+     * @brief Inequality operator.
      * @param[in] rhs The event to compare against.
      */
     bool operator!=(const event& rhs) const;
 
     /**
+     * @brief The event ID.
+     */
+    const mud::core::uuid& id() const;
+
+    /**
+     * @brief Set the handle to examine.
+     * @param handle The handle to set.
+     */
+    void handle(std::shared_ptr<mud::core::handle> handle);
+
+    /**
      * @brief Return the handle to examine.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle() const;
 
     /**
      * @brief The signal mask.
@@ -100,20 +132,12 @@ public:
      */
     function_type handler() const;
 
-    /**
-     * Not copy-assignable
-     */
-    event& operator=(const event& rhs) = delete;
-
-    /**
-     * Not moveable
-     */
-    event(event&& rhs) = delete;
-    event& operator=(event&& rhs) = delete;
-
 private:
+    /** The event ID. */
+    mud::core::uuid _id;
+
     /** The handle to examine. */
-    const std::unique_ptr<mud::core::handle>& _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 
     /** The signal mask to register */
     signal_type _mask;

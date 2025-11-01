@@ -14,6 +14,12 @@ void
 end_communicator::open(mock::device&& device)
 {
     _device = std::move(device);
+    _event = mud::event::event(
+        _device.handle(),
+        mud::event::event::signal_type::READY,
+        []() {
+            return mud::event::event::return_type::CONTINUE;
+        });
     _device.on_ready_read_cb(std::bind(
         &end_communicator::on_ready_read, this));
 }
@@ -41,15 +47,10 @@ end_communicator::device()
     return _device;
 }
 
-mud::event::event
-end_communicator::event()
+const mud::event::event&
+end_communicator::event() const
 {
-    return mud::event::event(
-        _device.handle(),
-        mud::event::event::signal_type::READY,
-        []() {
-            return mud::event::event::return_type::CONTINUE;
-        });
+    return _event;
 }
 
 void

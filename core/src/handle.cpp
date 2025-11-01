@@ -9,11 +9,8 @@ BEGIN_MUDLIB_CORE_NS
 
 template<>
 int
-internal_handle<int>(const std::unique_ptr<handle>& handle)
+internal_handle<int>(std::shared_ptr<handle> handle)
 {
-    if (!handle) {
-        throw mud::core::not_owner();
-    }
     if ((handle->type() != handle::type_t::SELECT) &&
         (handle->type() != handle::type_t::__TEST)) {
         throw std::invalid_argument("Handle of incorrect type");

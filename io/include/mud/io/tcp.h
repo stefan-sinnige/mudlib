@@ -34,7 +34,7 @@ namespace tcp {
         /**
          * @brief Default constructor.
          */
-        endpoint();
+        endpoint() = default;
 
         /**
          * @brief Constructor.
@@ -46,17 +46,17 @@ namespace tcp {
         /**
          * @brief Copy constructor.
          */
-        endpoint(const endpoint& rhs);
+        endpoint(const endpoint& rhs) = default;
 
         /**
          * @brief Assinging operator.
          */
-        endpoint& operator=(const endpoint& rhs);
+        endpoint& operator=(const endpoint& rhs) = default;
 
         /**
          * @brief Destructor.
          */
-        virtual ~endpoint();
+        virtual ~endpoint() = default;
 
         /**
          * @brief The address of the endpoint.
@@ -73,7 +73,7 @@ namespace tcp {
         mud::io::ip::address _address;
 
         /** The port */
-        uint16_t _port;
+        uint16_t _port = 0;
     };
 
     /**
@@ -181,7 +181,7 @@ namespace tcp {
         socket(mud::io::basic_socket::domain_t domain,
                mud::io::basic_socket::type_t type,
                mud::io::basic_socket::protocol_t protocol,
-               std::unique_ptr<mud::core::handle> handle);
+               std::shared_ptr<mud::core::handle> handle);
 
         /**
          * Set the source and destination end points.
@@ -238,7 +238,7 @@ namespace tcp {
         /**
          * @brief Move assignment.
          */
-        acceptor& operator=(acceptor&&);
+        acceptor& operator=(acceptor&&) = default;
 
         /**
          * Destructor.
@@ -273,7 +273,7 @@ namespace tcp {
          *
          * @return The event.
          */
-        mud::event::event event();
+        const mud::event::event& event() const;
 
         /**
          * @brief The @c impulse when a new connection has been accepted.
@@ -296,6 +296,9 @@ namespace tcp {
 
         /** The socket used for listening for incoming connections. */
         tcp::socket _listen;
+
+        /** The accept event. */
+        mud::event::event _accept_event;
 
         /** The accept impulse. */
         accept_impulse_type _accept_impulse;
@@ -332,12 +335,12 @@ namespace tcp {
         /**
          * @brief Move assignment.
          */
-        connector& operator=(connector&&);
+        connector& operator=(connector&&) = default;
 
         /**
          * Destructor.
          */
-        virtual ~connector();
+        virtual ~connector() = default;
 
         /**
          * @brief Open the socket connection to initiate a connection request.
@@ -358,7 +361,7 @@ namespace tcp {
          *
          * @return The event.
          */
-        mud::event::event event();
+        const mud::event::event& event() const;
 
         /**
          * @brief The @c impulse when a new connection has been connected.
@@ -378,6 +381,9 @@ namespace tcp {
 
         /** The socket to use for accepting connections. */
         tcp::socket _socket;
+
+        /** The connect event. */
+        mud::event::event _connect_event;
 
         /** The connect impulse. */
         connect_impulse_type _connect_impulse;
@@ -407,7 +413,7 @@ namespace tcp {
         /**
          * @brief Constructor.
          */
-        communicator();
+        communicator() = default;
 
         /**
          * @brief Construct a communicator while moving the contents from
@@ -415,7 +421,7 @@ namespace tcp {
          *
          * @param other The communicator to move from.
          */
-        communicator(communicator&&);
+        communicator(communicator&&) = default;
 
         /**
          * @brief Initialise a communicator while moving the contents from
@@ -424,7 +430,7 @@ namespace tcp {
          * @param other The communicator to move from.
          * @return Reference to itself.
          */
-        communicator& operator=(communicator&&);
+        communicator& operator=(communicator&&) = default;
 
         /**
          * @brief Destructor. Closes the communication.
@@ -483,14 +489,17 @@ namespace tcp {
          *
          * @return The event.
          */
-        virtual mud::event::event event() override;
+        virtual const mud::event::event& event() const override;
 
     private:
         /** Event handler when there is data available. */
         mud::event::event::return_type on_ready_receive();
 
+        /** The receive event. */
+        mud::event::event _receive_event;
+
         /** The connected state */
-        bool _connected;
+        bool _connected = false;
 
         /** The socket used for communications. */
         tcp::socket _socket;

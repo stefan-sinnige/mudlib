@@ -87,17 +87,17 @@ namespace ip {
         /**
          * @brief Copy constructor
          */
-        address(const address& rhs);
+        address(const address& rhs) = default;
 
         /**
          * @brief Destructor
          */
-        virtual ~address();
+        virtual ~address() = default;
 
         /**
          * @brief Assignment operator
          */
-        address& operator=(const address& rhs);
+        address& operator=(const address& rhs) = default;
 
         /**
          * @brief Return true if the address is an 'any' address.
@@ -150,22 +150,22 @@ namespace ip {
         socket(mud::io::basic_socket::domain_t domain,
                mud::io::basic_socket::type_t type,
                mud::io::basic_socket::protocol_t protocol,
-               std::unique_ptr<mud::core::handle> handle);
+               std::shared_ptr<mud::core::handle> handle);
 
         /**
          * @brief Move constructor, passing ownership of the socket.
          */
-        socket(socket&& rhs);
+        socket(socket&& rhs) = default;
 
         /**
          * @brief Move assignment, passing ownership of the socket.
          */
-        socket& operator=(socket&& rhs);
+        socket& operator=(socket&& rhs) = default;
 
         /**
          * @brief Destructor.
          */
-        virtual ~socket();
+        virtual ~socket() = default;
 
         /**
          * Non-copyable.

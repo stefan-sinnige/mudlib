@@ -37,12 +37,12 @@ public:
     /**
      * Register an event handler with the loop.
      */
-    void register_handler(event&& event);
+    void register_handler(const event& event);
 
     /**
      * Deregister an event handler associated to a handle from the loop.
      */
-    void deregister_handler(event&& event);
+    void deregister_handler(const event& event);
 
     /**
      * Run the loop, waiting for all registered @c handle and invoke the
@@ -121,28 +121,38 @@ event_loop::impl::add_mechanism(mud::core::handle::type_t type)
 }
 
 void
-event_loop::impl::register_handler(event&& event)
+event_loop::impl::register_handler(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
+
+    // Nothing to do for a null event
+    if (event.id().null()) {
+        return;
+    }
 
     // Register the event with the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
     if (find != _mechanisms.end()) {
-        find->second->register_handler(std::move(event));
+        find->second->register_handler(event);
     } else {
         throw std::invalid_argument("event for unregistered mechanism");
     }
 }
 
 void
-event_loop::impl::deregister_handler(event&& event)
+event_loop::impl::deregister_handler(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
+
+    // Nothing to do for a null event
+    if (event.id().null()) {
+        return;
+    }
 
     // Deregister the event from the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
     if (find != _mechanisms.end()) {
-        find->second->deregister_handler(std::move(event));
+        find->second->deregister_handler(event);
     }
 }
 
@@ -250,15 +260,15 @@ event_loop::add_mechanism(mud::core::handle::type_t type)
 }
 
 void
-event_loop::register_handler(event&& event)
+event_loop::register_handler(const event& event)
 {
-    _impl->register_handler(std::move(event));
+    _impl->register_handler(event);
 }
 
 void
-event_loop::deregister_handler(event&& event)
+event_loop::deregister_handler(const event& event)
 {
-    _impl->deregister_handler(std::move(event));
+    _impl->deregister_handler(event);
 }
 
 void

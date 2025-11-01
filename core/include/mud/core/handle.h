@@ -62,7 +62,7 @@ public:
         /**
          * @brief The handle associated to the resource.
          */
-        virtual const std::unique_ptr<mud::core::handle>& handle() const = 0;
+        virtual std::shared_ptr<mud::core::handle> handle() const = 0;
 
         /**
          * @brief Signal the resources.
@@ -142,9 +142,6 @@ handle::type() const
  * refer to a resource on any other level, like a reference to a window on a
  * graphics display. The @basic_handle only provides a very basic concept of
  * uniqueness of a particular type.
- *
- * As a resource is associated to a single handle, the handle object is often
- * used in combination with a @c std::unique_ptr to ensure unique access.
  */
 template<handle::type_t Type, typename Resource, Resource Invalid>
 class basic_handle : public handle
@@ -173,7 +170,7 @@ public:
         /**
          * @brief The handle associated to the resource.
          */
-        virtual const std::unique_ptr<mud::core::handle>& handle()
+        virtual std::shared_ptr<mud::core::handle> handle()
             const override;
 
         /**
@@ -241,7 +238,7 @@ private:
      * @brief Friend class to access internal representation.
      */
     template<typename R>
-    friend R internal_handle(const std::unique_ptr<handle>&);
+    friend R internal_handle(std::shared_ptr<handle>);
 
     /**
      * @brief Return the externally defined resource.
@@ -297,9 +294,6 @@ basic_handle<Type, Resource, Invalid>::valid() const
  * atomic resource, it is not associated to a particular operating system
  * resource, but rather to a unique resource state.
  *
- * As a resource is associated to a single handle, the handle object is often
- * used in combination with a @c std::unique_ptr to ensure unique access.
- *
  * An atomic resource handle can generally not be waited (until C++20).
  */
 template<handle::type_t Type, typename AtomicType>
@@ -329,8 +323,7 @@ public:
         /**
          * @brief The handle associated to the resource.
          */
-        virtual const std::unique_ptr<mud::core::handle>& handle()
-            const override;
+        virtual std::shared_ptr<mud::core::handle> handle() const override;
 
         /**
          * @brief Signal the resources.
@@ -419,7 +412,7 @@ private:
      * @brief Friend class to access internal representation.
      */
     template<typename R>
-    friend R internal_handle(const std::unique_ptr<handle>&);
+    friend R internal_handle(std::shared_ptr<handle>);
 
     /**
      * @brief Return the externally defined resource.
@@ -486,7 +479,7 @@ atomic_handle<Type, AtomicType>::signal::~signal()
 {}
 
 template<handle::type_t Type, typename AtomicType>
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 atomic_handle<Type, AtomicType>::signal::handle() const
 {
     return _impl;
@@ -532,7 +525,7 @@ atomic_handle<Type, AtomicType>::signal::capture(AtomicType expected,
  */
 template<typename Resource>
 Resource
-internal_handle(const std::unique_ptr<handle>& handle)
+internal_handle(std::shared_ptr<handle> handle)
 {
     const std::type_info& info = typeid(Resource);
     std::stringstream msg;
@@ -550,7 +543,7 @@ internal_handle(const std::unique_ptr<handle>& handle)
 typedef atomic_handle<handle::type_t::ATOMIC_BOOL, bool> atomic_bool_handle;
 template<>
 MUDLIB_CORE_API bool
-internal_handle<bool>(const std::unique_ptr<handle>&);
+internal_handle<bool>(std::shared_ptr<handle>);
 
 /**
  * @brief: A handle to an @c select resource type.
@@ -558,7 +551,7 @@ internal_handle<bool>(const std::unique_ptr<handle>&);
 typedef basic_handle<handle::type_t::SELECT, int, 0> select_handle;
 template<>
 MUDLIB_CORE_API int
-internal_handle<int>(const std::unique_ptr<handle>&);
+internal_handle<int>(std::shared_ptr<handle>);
 
 #if defined(_WIN32)
 /**
@@ -567,7 +560,7 @@ internal_handle<int>(const std::unique_ptr<handle>&);
 typedef basic_handle<handle::type_t::W32HANDLE, HANDLE, nullptr> windows_handle;
 template<>
 MUDLIB_CORE_API HANDLE
-internal_handle<HANDLE>(const std::unique_ptr<handle>&);
+internal_handle<HANDLE>(std::shared_ptr<handle>);
 
 /**
  * @brief: A handle to a windows @c HHWND resource type.
@@ -575,7 +568,7 @@ internal_handle<HANDLE>(const std::unique_ptr<handle>&);
 typedef basic_handle<handle::type_t::W32WND, HWND, nullptr> win32_handle;
 template<>
 MUDLIB_CORE_API HWND
-internal_handle<HWND>(const std::unique_ptr<handle>&);
+internal_handle<HWND>(std::shared_ptr<handle>);
 #endif
 
 #if defined(__APPLE__)
@@ -593,7 +586,7 @@ typedef mud::core::basic_handle<mud::core::handle::type_t::COCOA, void*,
 typedef basic_handle<handle::type_t::__TEST, int, 0> __test_handle;
 template<>
 MUDLIB_CORE_API int
-internal_handle<int>(const std::unique_ptr<handle>&);
+internal_handle<int>(std::shared_ptr<handle>);
 
 END_MUDLIB_CORE_NS
 

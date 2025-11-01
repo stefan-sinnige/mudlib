@@ -7,13 +7,18 @@ BEGIN_MUDLIB_CORE_NS
  * Version 4
  * ====================================================================== */
 
-uuid_v4::uuid_v4()
+uuid_v4::uuid_v4(bool isNull)
 {
-    static std::random_device g_device;
-    std::mt19937_64 rng(g_device());
-    _lower = rng();
-    _upper = rng();
-    to_string();
+    if (!isNull) {
+        static std::random_device g_device;
+        std::mt19937_64 rng(g_device());
+        _lower = rng();
+        _upper = rng();
+        to_string();
+    }
+    else {
+        clear();
+    }
 }
 
 uuid_v4::uuid_v4(const std::string& str)

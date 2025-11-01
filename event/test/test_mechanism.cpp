@@ -24,7 +24,7 @@ test_resource::test_resource()
 test_resource::~test_resource()
 {
     if (_handle != nullptr) {
-        _handle.reset(nullptr);
+        _handle.reset();
     }
 }
 
@@ -46,7 +46,7 @@ test_resource::read()
     return c;
 }
 
-const std::unique_ptr<mud::core::handle>&
+const std::shared_ptr<mud::core::handle>&
 test_resource::handle() const
 {
     return _handle;
@@ -76,7 +76,7 @@ test_mechanism::~test_mechanism()
 }
 
 void
-test_mechanism::register_handler(mud::event::event&& event)
+test_mechanism::register_handler(const mud::event::event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -87,7 +87,7 @@ test_mechanism::register_handler(mud::event::event&& event)
 }
 
 void
-test_mechanism::deregister_handler(mud::event::event&& event)
+test_mechanism::deregister_handler(const mud::event::event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -125,26 +125,28 @@ test_mechanism::loop()
     // Polling all events
     while (_running) {
         _lock.lock();
+        /* Move all events that need to be triggered to another list */
+        std::list<mud::event::event> triggers;
         auto event_it = _events.begin();
         while (event_it != _events.end()) {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (os_handle_map[handle] == os_handle_signal::READY_TO_READ) {
-                /* Take the event off the list and have it handled as a
-                 * task by a task worker.  If the handler instructs to
-                 * register the same event again, do so with a copy. */
-                auto handler = event_it->handler();
-                mud::event::event copy = *event_it;
-                mud::core::simple_task task([handler, copy, this]() {
-                    if (handler() == mud::event::event::return_type::CONTINUE) {
-                        mud::event::event ev = copy;
-                        this->register_handler(std::move(ev));
-                    }
-                });
-                queue()->push(std::move(task));
+                triggers.push_back(*event_it);
                 event_it = _events.erase(event_it);
             } else {
                 ++event_it;
             }
+        }
+        /* Trigger all events as a task that is handled by a task worker. The
+         * handler can instruct to register the event again. */
+        for (auto event: triggers) {
+            auto handler = event.handler();
+            mud::core::simple_task task([handler, event, this]() {
+                if (handler() == mud::event::event::return_type::CONTINUE) {
+                    this->register_handler(event);
+                }
+            });
+            queue()->push(std::move(task));
         }
         _lock.unlock();
         std::this_thread::yield();

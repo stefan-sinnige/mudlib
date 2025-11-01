@@ -27,7 +27,7 @@ namespace udp {
         /**
          * @brief Default constructor.
          */
-        endpoint();
+        endpoint() = default;
 
         /**
          * @brief Constructor.
@@ -39,17 +39,17 @@ namespace udp {
         /**
          * @brief Copy constructor.
          */
-        endpoint(const endpoint& rhs);
+        endpoint(const endpoint& rhs) = default;
 
         /**
          * @brief Assinging operator.
          */
-        endpoint& operator=(const endpoint& rhs);
+        endpoint& operator=(const endpoint& rhs) = default;
 
         /**
          * @brief Destructor.
          */
-        virtual ~endpoint();
+        virtual ~endpoint() = default;
 
         /**
          * @brief The address of the endpoint.
@@ -66,7 +66,7 @@ namespace udp {
         mud::io::ip::address _address;
 
         /** The port */
-        uint16_t _port;
+        uint16_t _port = 0;
     };
 
     /**
@@ -216,7 +216,7 @@ namespace udp {
         /**
          * Constructor.
          */
-        communicator();
+        communicator() = default;
 
         /**
          * @brief Construct a communicator while moving the contents from
@@ -224,7 +224,7 @@ namespace udp {
          *
          * @param other The communicator to move from.
          */
-        communicator(communicator&&);
+        communicator(communicator&&) = default;
 
         /**
          * @brief Initialise a communicator while moving the contents from
@@ -233,7 +233,7 @@ namespace udp {
          * @param other The communicator to move from.
          * @return Reference to itself.
          */
-        communicator& operator=(communicator&&);
+        communicator& operator=(communicator&&) = default;
 
         /**
          * Destructor. Closes the communication.
@@ -301,7 +301,7 @@ namespace udp {
          *
          * @return The event.
          */
-        virtual mud::event::event event() override;
+        virtual const mud::event::event& event() const override;
 
         /**
          * @brief Get the source endpoint of the socket connection.
@@ -320,8 +320,11 @@ namespace udp {
         /** Event handler when there is data available. */
         mud::event::event::return_type on_ready_receive();
 
+        /** The event */
+        mud::event::event _receive_event;
+
         /** The connected state */
-        bool _connected;
+        bool _connected = false;
 
         /** The socket used for communications. */
         udp::socket _socket;

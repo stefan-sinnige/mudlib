@@ -26,7 +26,7 @@ public:
     /**
      * The handle.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle() const;
 
     /**
      * Send a signal to the resource.
@@ -40,10 +40,10 @@ public:
 
 private:
     /** The read handle */
-    std::unique_ptr<mud::core::handle> _read_handle;
+    std::shared_ptr<mud::core::handle> _read_handle;
 
     /** The write handle */
-    std::unique_ptr<mud::core::handle> _write_handle;
+    std::shared_ptr<mud::core::handle> _write_handle;
 };
 
 template<>
@@ -68,9 +68,9 @@ select_handle::signal::impl::impl()
     }
 
     /* Set the ownership of the pipe handles */
-    _read_handle = std::unique_ptr<mud::core::handle>(
+    _read_handle = std::shared_ptr<mud::core::handle>(
         new mud::core::select_handle(int(pfd[0])));
-    _write_handle = std::unique_ptr<mud::core::handle>(
+    _write_handle = std::shared_ptr<mud::core::handle>(
         new mud::core::select_handle(int(pfd[1])));
 
     /* Logging */
@@ -83,15 +83,15 @@ select_handle::signal::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_read_handle));
-        _read_handle.reset(nullptr);
+        _read_handle.reset();
     }
     if (_write_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_write_handle));
-        _write_handle.reset(nullptr);
+        _write_handle.reset();
     }
 }
 
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 select_handle::signal::impl::handle() const
 {
     return _read_handle;
@@ -133,7 +133,7 @@ select_handle::signal::~signal()
 {}
 
 template<>
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 select_handle::signal::handle() const
 {
     return _impl->handle();

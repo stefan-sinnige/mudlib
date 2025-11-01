@@ -191,12 +191,12 @@ public:
     /**
      * Move constructor, moving socket ownership.
      */
-    basic_socket(basic_socket&& rhs);
+    basic_socket(basic_socket&& rhs) = default;
 
     /**
      * @brief Move assignment, moving socket ownership.
      */
-    basic_socket& operator=(basic_socket&& rhs);
+    basic_socket& operator=(basic_socket&& rhs) = default;
 
     /**
      * @brief Destructor
@@ -206,7 +206,7 @@ public:
     /**
      * The socket file-descriptor handle.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle();
 
     /**
      * The domain when the socket was created.
@@ -243,7 +243,7 @@ protected:
      * @param handle [in] The existing socket handle.
      */
     basic_socket(domain_t domain, type_t type, protocol_t protocol,
-                 std::unique_ptr<mud::core::handle> handle);
+                 std::shared_ptr<mud::core::handle> handle);
 
     /**
      * @brief The error code of a socket operation. This has to be
@@ -253,7 +253,7 @@ protected:
 
 private:
     /* The socket descriptor. */
-    std::unique_ptr<mud::core::handle> _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 
     /* The domain */
     domain_t _domain;

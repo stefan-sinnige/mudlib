@@ -54,13 +54,13 @@ public:
      * The handle associated to the read end (sink) of the pipe.
      * @return The handle to the resource.
      */
-    const std::unique_ptr<mud::core::handle>& read_handle() const;
+    const std::shared_ptr<mud::core::handle>& read_handle() const;
 
     /**
      * The handle associated to the write end (source) of the pipe.
      * @return The handle to the resource.
      */
-    const std::unique_ptr<mud::core::handle>& write_handle() const;
+    const std::shared_ptr<mud::core::handle>& write_handle() const;
 
     /**
      * Non-copyable

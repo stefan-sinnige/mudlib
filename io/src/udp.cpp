@@ -52,7 +52,7 @@ namespace _udp {
          * @param [in] putbacksize The size of the putback buffer.
          */
         streambuf(udp::socket& socket,
-                  const std::unique_ptr<mud::core::handle>& handle,
+                  std::shared_ptr<mud::core::handle> handle,
                   udp::endpoint& source_endpoint,
                   udp::endpoint& destination_endpoint, size_t bufsize = 10,
                   size_t putbacksize = 4);
@@ -73,7 +73,7 @@ namespace _udp {
     };
 
     streambuf::streambuf(udp::socket& socket,
-                         const std::unique_ptr<mud::core::handle>& handle,
+                         std::shared_ptr<mud::core::handle> handle,
                          udp::endpoint& source_endpoint,
                          udp::endpoint& destination_endpoint, size_t bufsize,
                          size_t putbacksize)
@@ -233,7 +233,7 @@ public:
     /**
      * Constructor.
      */
-    impl(udp::socket& socket, const std::unique_ptr<mud::core::handle>&);
+    impl(udp::socket& socket, std::shared_ptr<mud::core::handle>);
 
     /**
      * Destructor.
@@ -276,7 +276,7 @@ private:
     udp::socket& _socket;
 
     /** Reference to the socket handle. */
-    const std::unique_ptr<mud::core::handle>& _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 
     /** The stream for reading. */
     std::istream _istr;
@@ -298,7 +298,7 @@ private:
 };
 
 udp::socket::impl::impl(udp::socket& socket,
-                        const std::unique_ptr<mud::core::handle>& handle)
+                        std::shared_ptr<mud::core::handle> handle)
   : _socket(socket), _handle(handle), _istr(nullptr), _ostr(nullptr)
 {
     /* Create the stream buffers and assign them to the input and output
@@ -385,28 +385,9 @@ udp::socket::impl_deleter::operator()(udp::socket::impl* ptr) const
 
 /** The endpoint */
 
-udp::endpoint::endpoint() : _address(), _port(0) {}
-
 udp::endpoint::endpoint(const mud::io::ip::address& address, uint16_t port)
   : _address(address), _port(port)
 {}
-
-udp::endpoint::endpoint(const endpoint& rhs)
-{
-    operator=(rhs);
-}
-
-udp::endpoint&
-udp::endpoint::operator=(const endpoint& rhs)
-{
-    if (this != &rhs) {
-        _address = rhs._address;
-        _port = rhs._port;
-    }
-    return *this;
-}
-
-udp::endpoint::~endpoint() {}
 
 const mud::io::ip::address&
 udp::endpoint::address() const
@@ -495,27 +476,9 @@ udp::socket::ostr(const endpoint& endpoint)
 
 /** The communicator */
 
-udp::communicator::communicator()
-  : _connected(false)
-{}
-
-udp::communicator::communicator(communicator&& other)
-    : _connected(other._connected)
-    , _socket(std::move(other._socket))
-{
-}
-
 udp::communicator::~communicator()
 {
     close();
-}
-
-udp::communicator&
-udp::communicator::operator=(communicator&& other)
-{
-    _connected = other._connected;
-    _socket = std::move(other._socket);
-    return *this;
 }
 
 void
@@ -526,6 +489,11 @@ udp::communicator::open(udp::socket&& socket)
 
     /* Call the impulse */
     connect_impulse()->pulse(_socket);
+
+    /* Create the event */
+    _receive_event = mud::event::event(
+        _socket.handle(), mud::event::event::signal_type::READING,
+        std::bind(&communicator::on_ready_receive, this));
 
     /* Register the communicator to the event loop */
     mud::event::event_loop::global().register_handler(event());
@@ -568,12 +536,10 @@ udp::communicator::device()
     return _socket;
 }
 
-mud::event::event
-udp::communicator::event()
+const mud::event::event&
+udp::communicator::event() const
 {
-    return mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::READING,
-        std::bind(&communicator::on_ready_receive, this));
+    return _receive_event;
 }
 
 const udp::endpoint&

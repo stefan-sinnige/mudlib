@@ -5,7 +5,7 @@ BEGIN_MUDLIB_CORE_NS
 
 template<>
 HANDLE
-internal_handle<HANDLE>(const std::unique_ptr<handle>& handle)
+internal_handle<HANDLE>(std::shared_ptr<handle> handle)
 {
     if (handle->type() != handle::type_t::W32HANDLE) {
         throw std::invalid_argument("Handle of incorrect type");
@@ -16,7 +16,7 @@ internal_handle<HANDLE>(const std::unique_ptr<handle>& handle)
 
 template<>
 HWND
-internal_handle<HWND>(const std::unique_ptr<handle>& handle)
+internal_handle<HWND>(std::shared_ptr<handle> handle)
 {
     if (handle->type() != handle::type_t::W32WND) {
         throw std::invalid_argument("Handle of incorrect type");
@@ -45,7 +45,7 @@ public:
     /**
      * The handle.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle() const;
 
     /**
      * Send a signal to the resource.
@@ -59,7 +59,7 @@ public:
 
 private:
     /** The event handle */
-    std::unique_ptr<mud::core::handle> _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 };
 
 template<>
@@ -75,7 +75,7 @@ windows_handle::signal::impl::impl()
     HANDLE handle = ::CreateEvent(nullptr, true, false, nullptr);
 
     // Save the handle
-    _handle = std::unique_ptr<mud::core::handle>(
+    _handle = std::shared_ptr<mud::core::handle>(
         new mud::core::windows_handle(handle));
 
     // Logging
@@ -91,7 +91,7 @@ windows_handle::signal::impl::~impl()
     }
 }
 
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 windows_handle::signal::impl::handle() const
 {
     return _handle;
@@ -132,7 +132,7 @@ windows_handle::signal::~signal()
 {}
 
 template<>
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 windows_handle::signal::handle() const
 {
     return _impl->handle();

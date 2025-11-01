@@ -88,19 +88,6 @@ ip::address::address(const std::string& node, const hints& criteria)
     }
 }
 
-ip::address::address(const address& rhs) : m_address(rhs.m_address) {}
-
-ip::address&
-ip::address::operator=(const address& rhs)
-{
-    if (this != &rhs) {
-        m_address = rhs.m_address;
-    }
-    return *this;
-}
-
-ip::address::~address() {}
-
 ip::address::operator uint32_t() const
 {
     return m_address;
@@ -126,28 +113,9 @@ ip::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
 
 ip::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
                    basic_socket::protocol_t protocol,
-                   std::unique_ptr<mud::core::handle> handle)
-  : basic_socket(domain, type, protocol, std::move(handle))
+                   std::shared_ptr<mud::core::handle> handle)
+  : basic_socket(domain, type, protocol, handle)
 {}
-
-ip::socket::socket(socket&& rhs) : basic_socket(std::move(rhs))
-{
-    std::swap(_source_address, rhs._source_address);
-    std::swap(_destination_address, rhs._destination_address);
-}
-
-ip::socket&
-ip::socket::operator=(socket&& rhs)
-{
-    if (this != &rhs) {
-        basic_socket::operator=(std::move(rhs));
-        std::swap(_source_address, rhs._source_address);
-        std::swap(_destination_address, rhs._destination_address);
-    }
-    return *this;
-}
-
-ip::socket::~socket() {}
 
 const ip::address&
 ip::socket::source_address() const

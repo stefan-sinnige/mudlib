@@ -19,8 +19,8 @@ CONTEXT()
     int resource;
 
     /* The (integer) handles */
-    std::unique_ptr<mud::core::handle> handle;
-    std::unique_ptr<mud::core::handle> other;
+    std::shared_ptr<mud::core::handle> handle;
+    std::shared_ptr<mud::core::handle> other;
 END_CONTEXT()
 
 FEATURE("Handle")
@@ -31,12 +31,12 @@ FEATURE("Handle")
       DEFINE_GIVEN("An initialised operating system resource handle",
         [](context& ctx) {
             ctx.resource = 10;
-            ctx.handle = std::unique_ptr<mud::core::handle>(
+            ctx.handle = std::shared_ptr<mud::core::handle>(
                 new mud::core::select_handle(ctx.resource));
         })
       DEFINE_WHEN ("A handle is assigned",
         [](context& ctx) {
-            ctx.handle = std::unique_ptr<mud::core::handle>(
+            ctx.handle = std::shared_ptr<mud::core::handle>(
                 new mud::core::select_handle(ctx.resource));
         })
      DEFINE_THEN ("The handle is non-existent",
@@ -126,7 +126,7 @@ FEATURE("Handle")
   SCENARIO("Default constructed handle")
     GIVEN("An default constructed integer handle",
         [](context& ctx){
-            ctx.handle = std::unique_ptr<mud::core::handle>(
+            ctx.handle = std::shared_ptr<mud::core::handle>(
                 new mud::core::select_handle());
         })
     WHEN ("The handle is examined", [](context&){})
@@ -140,15 +140,6 @@ FEATURE("Handle")
             ASSERT(ctx.resource, mud::core::internal_handle<int>(ctx.handle));
         })
     AND ("The handle is valid")
-
-  SCENARIO("Moving a unique handle to another instance")
-    GIVEN("An initialised operating system resource handle")
-    WHEN ("A handle is assigned to another instance",
-        [](context& ctx) {
-            ctx.other = std::move(ctx.handle);
-        })
-    THEN ("The handle is non-existent")
-    AND  ("The other handle is valid")
 
 END_FEATURE()
 

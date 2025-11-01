@@ -77,7 +77,7 @@ public:
     /**
      * @brief The mock file-descriptor handle.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle();
 
     /**
      * @brief Register a handler when a message is ready to be processed.

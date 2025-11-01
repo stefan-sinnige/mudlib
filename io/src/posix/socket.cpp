@@ -700,41 +700,20 @@ basic_socket::basic_socket(basic_socket::domain_t domain,
     }
     LOG(log);
     INFO(log) << "Creating socket fd: " << fd << std::endl;
-    _handle =
-        std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
+    _handle = std::make_shared<mud::core::select_handle>(fd);
 }
 
 basic_socket::basic_socket(basic_socket::domain_t domain,
                            basic_socket::type_t type,
                            basic_socket::protocol_t protocol,
-                           std::unique_ptr<mud::core::handle> handle)
+                           std::shared_ptr<mud::core::handle> handle)
   : _domain(domain), _type(type), _protocol(protocol),
-    _handle(std::move(handle))
+    _handle(handle)
 {}
 
 basic_socket::~basic_socket()
 {
     close();
-}
-
-basic_socket::basic_socket(basic_socket&& rhs)
-{
-    _handle = std::move(rhs._handle);
-    _domain = rhs._domain;
-    _type = rhs._type;
-    _protocol = rhs._protocol;
-}
-
-basic_socket&
-basic_socket::operator=(basic_socket&& rhs)
-{
-    if (this != &rhs) {
-        _handle = std::move(rhs._handle);
-        _domain = rhs._domain;
-        _type = rhs._type;
-        _protocol = rhs._protocol;
-    }
-    return *this;
 }
 
 void
@@ -745,12 +724,12 @@ basic_socket::close()
         INFO(log) << "Closing socket fd: "
                   << mud::core::internal_handle<int>(_handle) << std::endl;
         ::close(mud::core::internal_handle<int>(_handle));
-        _handle.reset(nullptr);
+        _handle.reset();
     }
 }
 
-const std::unique_ptr<mud::core::handle>&
-basic_socket::handle() const
+std::shared_ptr<mud::core::handle>
+basic_socket::handle()
 {
     return _handle;
 }

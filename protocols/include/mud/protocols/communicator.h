@@ -170,7 +170,7 @@ public:
      *
      * @return The event.
      */
-    virtual mud::event::event event() = 0;
+    virtual const mud::event::event& event() const = 0;
 
     /**
      * @brief The impulse when something is ready to be processed by a higher
@@ -444,7 +444,7 @@ public:
      *
      * @return The event.
      */
-    virtual mud::event::event event() override {
+    virtual const mud::event::event& event() const override {
         return _lower.event();
     }
 private:

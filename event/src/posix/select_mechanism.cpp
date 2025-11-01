@@ -44,13 +44,13 @@ select_mechanism::~select_mechanism()
 }
 
 void
-select_mechanism::register_handler(event&& event)
+select_mechanism::register_handler(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     LOG(log);
     INFO(log) << "Registering to select event mechanism fd: "
               << mud::core::internal_handle<int>(event.handle())
-              << std::endl;
+              << " [" << event.id() << "]" << std::endl;
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
         _events.erase(found);
@@ -60,16 +60,16 @@ select_mechanism::register_handler(event&& event)
 }
 
 void
-select_mechanism::deregister_handler(event&& event)
+select_mechanism::deregister_handler(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
 
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
         LOG(log);
-        INFO(log) << "Registering to select event mechanism fd: "
+        INFO(log) << "Deregistering from select event mechanism fd: "
                   << mud::core::internal_handle<int>(event.handle())
-                  << std::endl;
+                  << " [" << event.id() << "]" << std::endl;
         _events.erase(found);
         nop();
     }
@@ -243,11 +243,10 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                      * a task by a task worker. If the handler instructs to
                      * register the same event again, do so. */
                     auto handler = event_it->handler();
-                    event copy = *event_it;
-                    mud::core::simple_task task([handler, copy, this]() {
+                    event ev = *event_it;
+                    mud::core::simple_task task([handler, ev, this]() {
                         if (handler() == event::return_type::CONTINUE) {
-                            event ev = copy;
-                            this->register_handler(std::move(ev));
+                            this->register_handler(ev);
                         }
                     });
                     queue()->push(std::move(task));
@@ -281,11 +280,10 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                      * a task by a task worker. If the handler instructs to
                      * register the same event again, do so. */
                     auto handler = event_it->handler();
-                    event copy = *event_it;
-                    mud::core::simple_task task([handler, copy, this]() {
+                    event ev = *event_it;
+                    mud::core::simple_task task([handler, ev, this]() {
                         if (handler() == event::return_type::CONTINUE) {
-                            event ev = copy;
-                            this->register_handler(std::move(ev));
+                            this->register_handler(ev);
                         }
                     });
                     queue()->push(std::move(task));

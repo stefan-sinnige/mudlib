@@ -48,7 +48,7 @@ public:
      *
      * @param[in] event  The event to register.
      */
-    virtual void register_handler(event&& event) = 0;
+    virtual void register_handler(const event& event) = 0;
 
     /**
      * @brief Deregister an event handler from the loop.
@@ -57,7 +57,7 @@ public:
      *
      * @param[in] event  The event to deregister.
      */
-    virtual void deregister_handler(event&& event) = 0;
+    virtual void deregister_handler(const event& event) = 0;
 
     /**
      * Initiate the mechanism on it's own thread.

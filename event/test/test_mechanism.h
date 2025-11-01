@@ -35,14 +35,14 @@ public:
     char read();
 
     /* Return the handle */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    const std::shared_ptr<mud::core::handle>& handle() const;
 
 private:
     /* The character buffer */
     char _ch;
 
     /* The handle. */
-    std::unique_ptr<mud::core::handle> _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 };
 
 /*
@@ -64,10 +64,10 @@ public:
     ~test_mechanism();
 
     /* Register handler */
-    void register_handler(mud::event::event&& event) override;
+    void register_handler(const mud::event::event& event) override;
 
     /* Deregister handler */
-    void deregister_handler(mud::event::event&& event) override;
+    void deregister_handler(const mud::event::event& event) override;
 
     /* Initiate */
     std::shared_future<void> initiate() override;

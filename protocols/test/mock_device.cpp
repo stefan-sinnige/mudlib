@@ -29,7 +29,7 @@ public:
     /**
      * The handle.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle() const;
 
     /**
      * Set the on-receive callback handler.
@@ -52,13 +52,13 @@ private:
     device::on_ready_read_func _on_ready_read_cb;
 
     /** The handle */
-    std::unique_ptr<mud::core::handle> _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 };
 
 device::impl::impl(std::istream& istr, std::ostream& ostr)
     : _istr(istr), _ostr(ostr), _on_ready_read_cb(nullptr)
 {
-    _handle = std::unique_ptr<mud::core::handle>(new mud::core::select_handle(0xBEEF));
+    _handle = std::make_shared<mud::core::select_handle>(0xBEEF);
 }
 
 device::impl::~impl()
@@ -77,7 +77,7 @@ device::impl::ostr()
     return _ostr;
 }
 
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 device::impl::handle() const
 {
     return _handle;
@@ -137,8 +137,8 @@ device::ostr()
     return _impl->ostr();
 }
 
-const std::unique_ptr<mud::core::handle>&
-device::handle() const
+std::shared_ptr<mud::core::handle>
+device::handle()
 {
     if (!_impl) {
         throw mud::core::not_owner();

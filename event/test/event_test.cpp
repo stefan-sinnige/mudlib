@@ -9,36 +9,21 @@
 CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
-        event = nullptr;
-        copy = nullptr;
-        lookup = nullptr;
-        handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::select_handle(10));
-        different_handle = std::unique_ptr<mud::core::handle>(
-                new mud::core::select_handle(20));
+        handle = std::make_shared<mud::core::select_handle>(10);
     }
 
     /* Destructor after each scenario */
     ~context() {
-        delete event;
-        delete copy;
-        delete lookup;
     }
 
     /* A handle */
-    std::unique_ptr<mud::core::handle> handle;
-
-    /* A different handle */
-    std::unique_ptr<mud::core::handle> different_handle;
+    std::shared_ptr<mud::core::handle> handle;
 
     /* An event. */
-    mud::event::event* event;
+    mud::event::event event;
 
-    /* A lookup event. */
-    mud::event::event* lookup;
-
-    /* A copy */
-    mud::event::event* copy;
+    /* Another event */
+    mud::event::event other;
 END_CONTEXT()
 
 FEATURE("Event")
@@ -48,29 +33,17 @@ FEATURE("Event")
    */
   DEFINE_GIVEN("An event object", 
       [](context& ctx) {
-        ctx.event = new mud::event::event(ctx.handle,
+        ctx.event = mud::event::event(ctx.handle,
                 mud::event::event::signal_type::READY,
                 [](){ return mud::event::event::return_type::REMOVE; });
       })
-  DEFINE_GIVEN("A lookup event object", 
+  DEFINE_GIVEN("A copied event object", 
       [](context& ctx) {
-        ctx.lookup = new mud::event::event(ctx.handle);
+        ctx.other = ctx.event;
       })
-  DEFINE_GIVEN("A lookup event object for a different handle",
+  DEFINE_GIVEN("A moved event object", 
       [](context& ctx) {
-        ctx.lookup = new mud::event::event(ctx.different_handle);
-      })
-  DEFINE_THEN("The handle is valid",
-          [](context& ctx) {
-              ASSERT(true, ctx.event->handle()->valid());
-      })
-  DEFINE_THEN("The handle of the copy is valid",
-          [](context& ctx) {
-              ASSERT(true, ctx.copy->handle()->valid());
-      })
-  DEFINE_THEN("The handle of the lookup is valid",
-          [](context& ctx) {
-              ASSERT(true, ctx.lookup->handle()->valid());
+        ctx.other = std::move(ctx.event);
       })
   END_DEFINES()
 
@@ -86,9 +59,9 @@ FEATURE("Event")
             ASSERT(false, std::is_default_constructible<
                   mud::event::event>::value);
         })
-    THEN ("The type is not copy-constructible",
+    THEN ("The type is copy-constructible",
         [](context& ctx) {
-            ASSERT(false, std::is_copy_constructible<
+            ASSERT(true, std::is_copy_constructible<
                   mud::event::event>::value);
         })
     THEN ("The type is move-constructible",
@@ -96,45 +69,50 @@ FEATURE("Event")
             ASSERT(true, std::is_move_constructible<
                   mud::event::event>::value);
         })
-    THEN ("The type is not copy-assignable",
+    THEN ("The type is copy-assignable",
         [](context& ctx) {
-            ASSERT(false, std::is_copy_assignable<
+            ASSERT(true, std::is_copy_assignable<
                   mud::event::event>::value);
         })
-    THEN ("The type is not move-assignable",
+    THEN ("The type is move-assignable",
         [](context& ctx) {
-            ASSERT(false, std::is_move_assignable<
+            ASSERT(true, std::is_move_assignable<
                   mud::event::event>::value);
         })
 
     SCENARIO("Event object creation")
       GIVEN("An event object")
       WHEN ("The event object is examined", [](context&){})
-      THEN ("The handle is valid")
-
-    SCENARIO("Lookup event object creation")
-      GIVEN("A lookup event object")
-      WHEN ("The event object is examined", [](context&){})
-      THEN ("The handle of the lookup is valid")
-
-    SCENARIO("Equality with lookup event with same handle")
-      GIVEN("An event object")
-      AND  ("A lookup event object")
-      WHEN ("Comparing the event with the lookup event", [](context&){})
-      THEN ("The comparison matches",
-          [](context& ctx) {
-              ASSERT(true,  (*ctx.event) == (*ctx.lookup));
-              ASSERT(false, (*ctx.event) != (*ctx.lookup));
+      THEN ("The event valid",
+          [](context& ctx){
+              ASSERT(false, ctx.event.id().null());
+              ASSERT(true, ctx.event.handle()->valid());
           })
 
-    SCENARIO("Inequality with lookup event with a different handle")
+    SCENARIO("Copying an event")
       GIVEN("An event object")
-      AND  ("A lookup event object for a different handle")
-      WHEN ("Comparing the event with the lookup event", [](context&){})
-      THEN ("The comparison does not match",
-          [](context& ctx) {
-              ASSERT(false, (*ctx.event) == (*ctx.lookup));
-              ASSERT(true,  (*ctx.event) != (*ctx.lookup));
+      AND  ("A copied event object")
+      WHEN ("The objects are examined", [](context&){})
+      THEN ("The events are considered equal",
+          [](context& ctx){
+              ASSERT(true, ctx.event == ctx.other);
+              ASSERT(true, ctx.event.id() == ctx.other.id());
+              ASSERT(true, ctx.event.handle() == ctx.other.handle());
+          })
+
+    SCENARIO("Moving an event")
+      GIVEN("An event object")
+      AND  ("A moved event object")
+      WHEN ("The objects are examined", [](context&){})
+      THEN ("The moved event is valid",
+          [](context& ctx){
+              ASSERT(false, ctx.other.id().null());
+              ASSERT(true, ctx.other.handle()->valid());
+          })
+      AND  ("The original event is invalid",
+          [](context& ctx){
+              ASSERT(true, ctx.event.id().null());
+              ASSERT(nullptr, ctx.event.handle().get());
           })
 
 END_FEATURE()

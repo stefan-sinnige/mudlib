@@ -70,18 +70,18 @@ public:
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event to regsietr.
+     * @param[in] event  The event to register.
      */
-    virtual void register_handler(event&& event);
+    virtual void register_handler(const event& event);
 
     /**
      * @brief Deregister an event from the loop.
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event to deregsietr.
+     * @param[in] event  The event to deregister.
      */
-    virtual void deregister_handler(event&& event);
+    virtual void deregister_handler(const event& event);
 
     /**
      * @brief Run the loop, waiting for all registered @c handle and invoke the

@@ -61,7 +61,7 @@ public:
     /**
      * The handle.
      */
-    const std::unique_ptr<mud::core::handle>& handle() const;
+    std::shared_ptr<mud::core::handle> handle() const;
 
     /**
      * Send a signal to the resource.
@@ -75,7 +75,7 @@ public:
 
 private:
     /** The socket handle */
-    std::unique_ptr<mud::core::handle> _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 
     /** The address and port of the bound UDP socket. */
     struct sockaddr_in _addr;
@@ -135,8 +135,7 @@ select_handle::signal::impl::impl()
     }
 
     // Save the handle
-    _handle =
-        std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
+    _handle = std::make_shared_ptr<mud::core::select_handle>(fd);
 
     // Logging
     LOG(log);
@@ -151,7 +150,7 @@ select_handle::signal::impl::~impl()
 #else
         ::close(mud::core::internal_handle<int>(_handle));
 #endif
-        _handle.reset(nullptr);
+        _handle.reset();
     }
 }
 
@@ -200,7 +199,7 @@ select_handle::signal::impl::capture()
     return nread == 1;
 }
 
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 select_handle::signal::impl::handle() const
 {
     return _handle;
@@ -219,7 +218,7 @@ select_handle::signal::~signal()
 {}
 
 template<>
-const std::unique_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 select_handle::signal::handle() const
 {
     return _impl->handle();

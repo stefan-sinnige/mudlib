@@ -20,9 +20,10 @@ public:
     std::istream& istr() override;
     std::ostream& ostr() override;
     mock::device& device() override;
-    mud::event::event event() override;
+    const mud::event::event& event() const override;
 private:
     void on_ready_read();
+    mud::event::event _event;
     mock::device _device;
 };
 

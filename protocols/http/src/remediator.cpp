@@ -63,7 +63,6 @@ http_11_remediator::remediate(
         resp.field<mud::http::content_length>(
             resp.entity_body().value().size());
     }
-    std::cout << resp << std::endl;
 };
 
 /* =========================================================================

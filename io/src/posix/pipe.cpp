@@ -26,7 +26,7 @@ namespace _pipe {
          * @param [in] bufsize The initial buffer size.
          * @param [in] putbacksize The size of the putback buffer.
          */
-        streambuf(const std::unique_ptr<mud::core::handle>& handle,
+        streambuf(const std::shared_ptr<mud::core::handle>& handle,
                   size_t bufsize = 10, size_t putbacksize = 4);
 
         /* Pipe specific read and write functions. */
@@ -34,7 +34,7 @@ namespace _pipe {
         ssize_t write(const void* buffer, size_t count) override;
     };
 
-    streambuf::streambuf(const std::unique_ptr<mud::core::handle>& handle,
+    streambuf::streambuf(const std::shared_ptr<mud::core::handle>& handle,
                          size_t bufsize, size_t putbacksize)
       : mud::io::basic_streambuf(handle, bufsize, putbacksize)
     {}
@@ -93,12 +93,12 @@ public:
     /**
      * The read handle.
      */
-    const std::unique_ptr<mud::core::handle>& read_handle() const;
+    const std::shared_ptr<mud::core::handle>& read_handle() const;
 
     /**
      * The write handle.
      */
-    const std::unique_ptr<mud::core::handle>& write_handle() const;
+    const std::shared_ptr<mud::core::handle>& write_handle() const;
 
 private:
     /** The stream for reading. */
@@ -114,10 +114,10 @@ private:
     std::unique_ptr<_pipe::streambuf> _write_buffer;
 
     /** The read handle */
-    std::unique_ptr<mud::core::handle> _read_handle;
+    std::shared_ptr<mud::core::handle> _read_handle;
 
     /** The write handle */
-    std::unique_ptr<mud::core::handle> _write_handle;
+    std::shared_ptr<mud::core::handle> _write_handle;
 };
 
 pipe::impl::impl() : _istr(nullptr), _ostr(nullptr)
@@ -135,10 +135,8 @@ pipe::impl::impl() : _istr(nullptr), _ostr(nullptr)
     }
 
     /* Set the ownership of the pipe handles */
-    _read_handle = std::unique_ptr<mud::core::handle>(
-        new mud::core::select_handle(int(pfd[0])));
-    _write_handle = std::unique_ptr<mud::core::handle>(
-        new mud::core::select_handle(int(pfd[1])));
+    _read_handle = std::make_shared<mud::core::select_handle>(int(pfd[0]));
+    _write_handle = std::make_shared<mud::core::select_handle>(int(pfd[1]));
 
     /* Logging */
     LOG(log);
@@ -159,11 +157,11 @@ pipe::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_read_handle));
-        _read_handle.reset(nullptr);
+        _read_handle.reset();
     }
     if (_write_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_write_handle));
-        _write_handle.reset(nullptr);
+        _write_handle.reset();
     }
 }
 
@@ -179,13 +177,13 @@ pipe::impl::ostr()
     return _ostr;
 }
 
-const std::unique_ptr<mud::core::handle>&
+const std::shared_ptr<mud::core::handle>&
 pipe::impl::read_handle() const
 {
     return _read_handle;
 }
 
-const std::unique_ptr<mud::core::handle>&
+const std::shared_ptr<mud::core::handle>&
 pipe::impl::write_handle() const
 {
     return _write_handle;
@@ -218,13 +216,13 @@ pipe::ostr()
     return _impl->ostr();
 }
 
-const std::unique_ptr<mud::core::handle>&
+const std::shared_ptr<mud::core::handle>&
 pipe::read_handle() const
 {
     return _impl->read_handle();
 }
 
-const std::unique_ptr<mud::core::handle>&
+const std::shared_ptr<mud::core::handle>&
 pipe::write_handle() const
 {
     return _impl->write_handle();

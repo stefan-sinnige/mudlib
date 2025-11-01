@@ -13,7 +13,7 @@
 BEGIN_MUDLIB_IO_NS
 
 basic_streambuf::basic_streambuf(
-    const std::unique_ptr<mud::core::handle>& handle, size_t bufsize /* = 10 */,
+    std::shared_ptr<mud::core::handle> handle, size_t bufsize /* = 10 */,
     size_t putbacksize /* = 4 */)
   : _handle(handle), _bufsize(bufsize), _putbacksize(putbacksize)
 {
@@ -93,8 +93,8 @@ basic_streambuf::sync()
     return 0;
 }
 
-const std::unique_ptr<mud::core::handle>&
-basic_streambuf::handle() const
+std::shared_ptr<mud::core::handle>
+basic_streambuf::handle()
 {
     return _handle;
 }

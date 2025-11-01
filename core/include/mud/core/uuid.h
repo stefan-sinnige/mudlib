@@ -34,12 +34,13 @@ class MUDLIB_CORE_API uuid_v4
 {
 public:
     /**
-     * @brief Creare a new UUID number.
+     * @brief Create a UUID number.
+     * @param isNull True if a null-UUID is to be created.
      */
-    uuid_v4();
+    uuid_v4(bool isNull = false);
 
     /**
-     * @brief Creare a new from a string representation.
+     * @brief Create a new from a string representation.
      * @param str The UUID value.
      *
      * @details

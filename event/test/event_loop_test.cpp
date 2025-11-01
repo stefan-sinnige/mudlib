@@ -12,10 +12,10 @@
 CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
-        ch = '\0';
-        calls = 0;
-        other_calls = 0;
-        future_task = promise_task.get_future();
+        event.ch = other.ch = '\0';
+        event.calls = other.calls = 0;
+        event.future_task = event.promise_task.get_future();
+        other.future_task = other.promise_task.get_future();
     }
 
     /* Destructor after each scenario */
@@ -44,18 +44,21 @@ CONTEXT()
     /* A handle for testing purposes (inter-thread communiation) */
     test_resource itc;
 
-    /* The character read from the resource. */
-    char ch;
+    /* Event data structure. This contains the event itself and the associated
+     * data. */
+    struct event_data {
+        mud::event::event event;
+        char ch;
+        int calls;
+        std::promise<void> promise_task;
+        std::future<void> future_task;
+    };
 
-    /* A counter for the number of calls executed in a handler. */
-    int calls;
+    /* An event */
+    struct event_data event;
 
-    /* A counter for the number of calls executed in a different handler. */
-    int other_calls;
-
-    /* The promise and future when the task is run */
-    std::promise<void> promise_task;
-    std::future<void> future_task;
+    /* Another event */
+    struct event_data other;
 END_CONTEXT()
 
 FEATURE("Event loop")
@@ -91,27 +94,33 @@ FEATURE("Event loop")
       })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
-          ctx.event_loop.register_handler(std::move(mud::event::event(
-          ctx.itc.handle(),
-          mud::event::event::signal_type::READING,
+          ctx.event.event = mud::event::event(
+              ctx.itc.handle(),
+              mud::event::event::signal_type::READING,
               [&ctx]() {
-                  ctx.ch = ctx.itc.read();
-                  ++ctx.calls;
-                  ctx.promise_task.set_value();
+                  ctx.event.ch = ctx.itc.read();
+                  ++ctx.event.calls;
+                  ctx.event.promise_task.set_value();
                   return mud::event::event::return_type::CONTINUE;
-          })));
+          });
+          ctx.event_loop.register_handler(ctx.event.event);
+      })
+  DEFINE_GIVEN("The same event is registered again",
+      [](context& ctx) {
+          ctx.event_loop.register_handler(ctx.event.event);
       })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
-          ctx.event_loop.register_handler(std::move(mud::event::event(
-          ctx.itc.handle(),
-          mud::event::event::signal_type::READING,
+          ctx.other.event = mud::event::event(
+              ctx.itc.handle(),
+              mud::event::event::signal_type::READING,
               [&ctx]() {
-                  ctx.ch = ctx.itc.read();
-                  ++ctx.other_calls;
-                  ctx.promise_task.set_value();
+                  ctx.other.ch = ctx.itc.read();
+                  ++ctx.other.calls;
+                  ctx.other.promise_task.set_value();
                   return mud::event::event::return_type::CONTINUE;
-          })));
+          });
+          ctx.event_loop.register_handler(ctx.other.event);
       })
   DEFINE_WHEN("The event is triggered",
       [](context& ctx) {
@@ -146,19 +155,19 @@ FEATURE("Event loop")
   DEFINE_THEN("The event handler is not called",
       [](context& ctx) {
           std::this_thread::sleep_for(ctx.timeout);
-          ASSERT(0, ctx.calls);
+          ASSERT(0, ctx.event.calls);
       })
   DEFINE_THEN("The event handler is called exactly once",
       [](context& ctx) {
-          ASSERT(true, ctx.future_task.valid());
-          ctx.future_task.wait();
-          ASSERT(1, ctx.calls);
+          ASSERT(true, ctx.event.future_task.valid());
+          ctx.event.future_task.wait();
+          ASSERT(1, ctx.event.calls);
       })
   DEFINE_THEN("The other event handler is called exactly once",
       [](context& ctx) {
-          ASSERT(true, ctx.future_task.valid());
-          ctx.future_task.wait();
-          ASSERT(1, ctx.other_calls);
+          ASSERT(true, ctx.other.future_task.valid());
+          ctx.other.future_task.wait();
+          ASSERT(1, ctx.other.calls);
      })
 
   END_DEFINES()
@@ -211,34 +220,41 @@ FEATURE("Event loop")
      AND ("A registered handler that handles an event")
     WHEN ("The event handler is deregistered",
         [](context& ctx) {
-            mud::event::event event(ctx.itc.handle());
-            ctx.event_loop.deregister_handler(std::move(event));
+            ctx.event_loop.deregister_handler(ctx.event.event);
         })
      AND ("The event is triggered")
     THEN ("The event handler is not called")
 
-  SCENARIO("Event loop calls only one event handler when two are registered")
+  SCENARIO("Event loop is called once when the same event is registered twice")
+    GIVEN("A running event loop")
+      AND("A registered handler that handles an event")
+      AND("The same event is registered again")
+    WHEN ("The event is triggered")
+    THEN ("The event handler is called exactly once")
+
+  SCENARIO("Event loop is called for all registered handlers")
     GIVEN("A running event loop")
       AND("A registered handler that handles an event")
       AND("Another registered handler that handles an event")
     WHEN ("The event is triggered")
-    THEN ("The event handler is not called")
+    THEN ("The event handler is called exactly once")
      AND ("The other event handler is called exactly once")
 
   SCENARIO("Event loop terminates by request from a handler routine")
     GIVEN("A running event loop")
       AND("A registered handler that terminates the loop",
           [](context& ctx) {
-            ctx.event_loop.register_handler(std::move(mud::event::event(
-              ctx.itc.handle(),
-              mud::event::event::signal_type::READING,
-              [&ctx]() {
-                ctx.itc.read();
-                ++ctx.calls;
-                ctx.future_loop = ctx.event_loop.terminate();
-                ctx.promise_task.set_value();
-                return mud::event::event::return_type::REMOVE;
-              })));
+            ctx.event.event = mud::event::event(
+                ctx.itc.handle(),
+                mud::event::event::signal_type::READING,
+                [&ctx]() {
+                    ctx.event.ch = ctx.itc.read();
+                    ++ctx.event.calls;
+                    ctx.future_loop = ctx.event_loop.terminate();
+                    ctx.event.promise_task.set_value();
+                    return mud::event::event::return_type::REMOVE;
+            });
+            ctx.event_loop.register_handler(ctx.event.event);
         })
     WHEN ("The event is triggered")
     THEN ("The event handler is called exactly once")
@@ -276,9 +292,7 @@ FEATURE("Event loop")
     THEN ("An assertion is thrown",
       [](context& ctx) {
         ASSERT_THROW(std::invalid_argument,
-            ctx.event_loop.register_handler(std::move(mud::event::event(
-                ))));
-            ());
+                     ctx.event_loop.register_handler(ctx.event));
       })
 */
 END_FEATURE()

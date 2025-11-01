@@ -60,14 +60,14 @@ public:
      *
      * @param[in] event  The event to register.
      */
-    virtual void register_handler(event&& event) override;
+    virtual void register_handler(const event& event) override;
 
     /**
      * Deregister an event handler from the loop.
      *
      * @param[in] event  The event to deregister.
      */
-    virtual void deregister_handler(event&& event) override;
+    virtual void deregister_handler(const event& event) override;
 
     /**
      * Initiate the mechanism.

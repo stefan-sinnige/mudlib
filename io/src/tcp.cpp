@@ -47,7 +47,7 @@ namespace _tcp {
          * @param [in] putbacksize The size of the putback buffer.
          */
         streambuf(tcp::socket& socket,
-                  const std::unique_ptr<mud::core::handle>& handle,
+                  std::shared_ptr<mud::core::handle> handle,
                   size_t bufsize = 10, size_t putbacksize = 4);
 
         /* TCP specific read and write functions. */
@@ -60,7 +60,7 @@ namespace _tcp {
     };
 
     streambuf::streambuf(tcp::socket& socket,
-                         const std::unique_ptr<mud::core::handle>& handle,
+                         std::shared_ptr<mud::core::handle> handle,
                          size_t bufsize, size_t putbacksize)
       : mud::io::basic_streambuf(handle, bufsize, putbacksize), _socket(socket)
     {}
@@ -189,7 +189,7 @@ public:
     /**
      * Constructor.
      */
-    impl(tcp::socket& socket, const std::unique_ptr<mud::core::handle>&);
+    impl(tcp::socket& socket, std::shared_ptr<mud::core::handle>);
 
     /**
      * Destructor.
@@ -221,7 +221,7 @@ private:
     tcp::socket& _socket;
 
     /** Reference to the socket handle. */
-    const std::unique_ptr<mud::core::handle>& _handle;
+    std::shared_ptr<mud::core::handle> _handle;
 
     /** The stream for reading. */
     std::istream _istr;
@@ -243,7 +243,7 @@ private:
 };
 
 tcp::socket::impl::impl(tcp::socket& socket,
-                        const std::unique_ptr<mud::core::handle>& handle)
+                        std::shared_ptr<mud::core::handle> handle)
   : _socket(socket), _handle(handle), _istr(nullptr), _ostr(nullptr)
 {
     /* Create the stream buffers and assign them to the input and output
@@ -290,28 +290,9 @@ tcp::socket::impl_deleter::operator()(tcp::socket::impl* ptr) const
 
 /** The endpoint */
 
-tcp::endpoint::endpoint() : _address(), _port(0) {}
-
 tcp::endpoint::endpoint(const mud::io::ip::address& address, uint16_t port)
   : _address(address), _port(port)
 {}
-
-tcp::endpoint::endpoint(const endpoint& rhs)
-{
-    operator=(rhs);
-}
-
-tcp::endpoint&
-tcp::endpoint::operator=(const endpoint& rhs)
-{
-    if (this != &rhs) {
-        _address = rhs._address;
-        _port = rhs._port;
-    }
-    return *this;
-}
-
-tcp::endpoint::~endpoint() {}
 
 const mud::io::ip::address&
 tcp::endpoint::address() const
@@ -343,8 +324,8 @@ tcp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
 
 tcp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
                     basic_socket::protocol_t protocol,
-                    std::unique_ptr<mud::core::handle> hndl)
-  : ip::socket(domain, type, protocol, std::move(hndl))
+                    std::shared_ptr<mud::core::handle> hndl)
+  : ip::socket(domain, type, protocol, hndl)
 {
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
@@ -414,23 +395,15 @@ tcp::acceptor::acceptor()
     _accept_impulse = std::make_shared<
         mud::core::impulse<mud::io::tcp::socket&>>();
 
+    _accept_event = mud::event::event(
+        _listen.handle(), mud::event::event::signal_type::READING,
+        std::bind(&acceptor::on_ready_accept, this));
+
     /* Set-up socket options to
      *   - reuse address to eliminate TIME_WAIT conditions.
      *   - enable non-blocking socket I/O */
     _listen.option<bool, mud::io::ip::reuse_address>(true);
     _listen.option<bool, mud::io::ip::nonblocking>(true);
-}
-
-tcp::acceptor&
-tcp::acceptor::operator=(acceptor&& rhs)
-{
-    if (&rhs != this) {
-        _connected = rhs._connected;
-        rhs._connected = false;
-        _listen = std::move(rhs._listen);
-        _accept_impulse = rhs._accept_impulse;
-    }
-    return *this;
 }
 
 tcp::acceptor::~acceptor()
@@ -494,12 +467,10 @@ tcp::acceptor::connected() const
     return _connected;
 }
 
-mud::event::event
-tcp::acceptor::event()
+const mud::event::event&
+tcp::acceptor::event() const
 {
-    return mud::event::event(
-        _listen.handle(), mud::event::event::signal_type::READING,
-        std::bind(&acceptor::on_ready_accept, this));
+    return _accept_event;
 }
 
 tcp::acceptor::accept_impulse_type
@@ -523,9 +494,8 @@ tcp::acceptor::on_ready_accept()
     }
 
     // Create the client socket connection.
-    std::unique_ptr<mud::core::handle> handle;
-    handle =
-        std::unique_ptr<mud::core::handle>(new mud::core::select_handle(fd));
+    std::shared_ptr<mud::core::handle> handle;
+    handle = std::make_shared<mud::core::select_handle>(fd);
     tcp::socket client(_listen.domain(), _listen.type(), _listen.protocol(),
                        std::move(handle));
 
@@ -568,21 +538,13 @@ tcp::connector::connector()
     _connect_impulse = std::make_shared<
         mud::core::impulse<mud::io::tcp::socket&>>();
 
+    _connect_event = mud::event::event(
+        _socket.handle(), mud::event::event::signal_type::WRITING,
+        std::bind(&connector::on_ready_connect, this));
+
     /* Set-up socket option to enable non-blocking I/O */
     _socket.option<bool, mud::io::ip::nonblocking>(true);
 }
-
-tcp::connector&
-tcp::connector::operator=(connector&& rhs)
-{
-    if (&rhs != this) {
-        _socket = std::move(rhs._socket);
-        _connect_impulse = rhs._connect_impulse;
-    }
-    return *this;
-}
-
-tcp::connector::~connector() {}
 
 void
 tcp::connector::open(const endpoint& endpoint)
@@ -618,12 +580,10 @@ tcp::connector::open(const endpoint& endpoint)
     mud::event::event_loop::global().register_handler(event());
 }
 
-mud::event::event
-tcp::connector::event()
+const mud::event::event&
+tcp::connector::event() const
 {
-    return mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::WRITING,
-        std::bind(&connector::on_ready_connect, this));
+    return _connect_event;
 }
 
 tcp::connector::connect_impulse_type
@@ -669,27 +629,9 @@ tcp::connector::on_ready_connect()
 
 /** The communicator */
 
-tcp::communicator::communicator()
-  : _connected(false)
-{}
-
-tcp::communicator::communicator(communicator&& other)
-    : _connected(other._connected)
-    , _socket(std::move(other._socket))
-{
-}
-
 tcp::communicator::~communicator()
 {
     close();
-}
-
-tcp::communicator&
-tcp::communicator::operator=(communicator&& other)
-{
-    _connected = other._connected;
-    _socket = std::move(other._socket);
-    return *this;
 }
 
 void
@@ -700,6 +642,10 @@ tcp::communicator::open(tcp::socket&& socket)
 
     /* Call the impulse */
     connect_impulse()->pulse(_socket);
+
+    _receive_event = mud::event::event(
+        _socket.handle(), mud::event::event::signal_type::READING,
+        std::bind(&communicator::on_ready_receive, this));
 
     /* Register the communicator to the event loop */
     mud::event::event_loop::global().register_handler(event());
@@ -743,12 +689,10 @@ tcp::communicator::device()
     return _socket;
 }
 
-mud::event::event
-tcp::communicator::event()
+const mud::event::event&
+tcp::communicator::event() const
 {
-    return mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::READING,
-        std::bind(&communicator::on_ready_receive, this));
+    return _receive_event;
 }
 
 mud::event::event::return_type
