@@ -723,6 +723,7 @@ basic_socket::close()
         LOG(log);
         INFO(log) << "Closing socket fd: "
                   << mud::core::internal_handle<int>(_handle) << std::endl;
+        ::close(mud::core::internal_handle<int>(_handle));
     }
 }
 
