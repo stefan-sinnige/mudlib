@@ -132,6 +132,9 @@ private:
     /** Self-signalling resource */
     mud::core::select_handle::signal _self;
 
+    /* Event for self-signalling resource */
+    mud::event::event _self_event;
+
     /** Registered events. */
     std::list<event> _events;
 

@@ -18,16 +18,26 @@ select_mechanism::select_mechanism(
     const std::shared_ptr<mud::event::timer_dispatcher>& timers)
   : mud::event::event_mechanism(queue, timers), _running(false)
 {
+    LOG(log);
+
     /* Always register the self-event to receive the trigger */
-    event ev(_self.handle(), event::signal_type::READING, [&]() {
-        _self.capture();
-        return mud::event::event::return_type::CONTINUE;
-    });
-    _events.push_back(ev);
+    _self_event = mud::event::event(
+            _self.handle(), event::signal_type::READING,
+            [&]() {
+                _self.capture();
+                return mud::event::event::return_type::CONTINUE;
+            });
+    _events.push_back(_self_event);
+    INFO(log) << "Registering self-event for select mechanism fd: "
+              << mud::core::internal_handle<int>(_self.handle())
+              << " [" << _self_event.id() << "]" << std::endl;
 
     /* Register the timer change event */
     mud::event::event timers_ev = timers->event();
     _events.push_back(timers_ev);
+    INFO(log) << "Registering timers-event for select mechanism fd: "
+              << mud::core::internal_handle<int>(timers_ev.handle())
+              << " [" << timers_ev.id() << "]" << std::endl;
 }
 
 select_mechanism::~select_mechanism()
@@ -48,7 +58,7 @@ select_mechanism::register_handler(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     LOG(log);
-    INFO(log) << "Registering to select event mechanism fd: "
+    INFO(log) << "Registering event for select mechanism fd: "
               << mud::core::internal_handle<int>(event.handle())
               << " [" << event.id() << "]" << std::endl;
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -67,7 +77,7 @@ select_mechanism::deregister_handler(const event& event)
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
         LOG(log);
-        INFO(log) << "Deregistering from select event mechanism fd: "
+        INFO(log) << "Deregistering event from select mechanism fd: "
                   << mud::core::internal_handle<int>(event.handle())
                   << " [" << event.id() << "]" << std::endl;
         _events.erase(found);
@@ -231,8 +241,6 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                 event::signal_type::READING) {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &readfds)) {
-                DEBUG(log) << "Select event mechanism read trigger fd: "
-                           << handle << std::endl;
                 if (event_it->handle() == _self.handle()) {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
@@ -242,9 +250,13 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                     /* Any other event is taken off the list and processed as
                      * a task by a task worker. If the handler instructs to
                      * register the same event again, do so. */
+                    INFO(log) << "Triggered read event " << event_it->id()
+                              << std::endl;
                     auto handler = event_it->handler();
                     event ev = *event_it;
                     mud::core::simple_task task([handler, ev, this]() {
+                        LOG(log);
+                        INFO(log) << "Executing event " << ev.id() << std::endl;
                         if (handler() == event::return_type::CONTINUE) {
                             this->register_handler(ev);
                         }
@@ -268,8 +280,6 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                 event::signal_type::WRITING) {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &writefds)) {
-                DEBUG(log) << "Select event mechanism write trigger fd: "
-                           << handle << std::endl;
                 if (event_it->handle() == _self.handle()) {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
@@ -279,9 +289,13 @@ select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                     /* Any other event is taken off the list and processed as
                      * a task by a task worker. If the handler instructs to
                      * register the same event again, do so. */
+                    INFO(log) << "Triggered write event " << event_it->id()
+                              << std::endl;
                     auto handler = event_it->handler();
                     event ev = *event_it;
                     mud::core::simple_task task([handler, ev, this]() {
+                        LOG(log);
+                        INFO(log) << "Executing event " << ev.id() << std::endl;
                         if (handler() == event::return_type::CONTINUE) {
                             this->register_handler(ev);
                         }

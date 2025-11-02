@@ -157,11 +157,9 @@ pipe::impl::~impl()
 {
     if (_read_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_read_handle));
-        _read_handle.reset();
     }
     if (_write_handle != nullptr) {
         ::close(mud::core::internal_handle<int>(_write_handle));
-        _write_handle.reset();
     }
 }
 

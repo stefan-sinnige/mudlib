@@ -1,3 +1,4 @@
+#include "mud/core/log.h"
 #include "mud/io/socket.h"
 #include "mud/io/exception.h"
 #include <iostream>
@@ -188,6 +189,8 @@ basic_socket::basic_socket(basic_socket::domain_t domain,
         throw std::system_error(error(), std::system_category(),
                                 "creating socket");
     }
+    LOG(log);
+    INFO(log) << "Creating socket fd: " << fd << std::endl;
     _handle = std::make_shared<mud::core::select_handle>(fd);
 }
 
@@ -208,8 +211,10 @@ void
 basic_socket::close()
 {
     if (_handle != nullptr) {
+        LOG(log);
+        INFO(log) << "Closing socket fd: "
+                  << mud::core::internal_handle<int>(_handle) << std::endl;
         ::closesocket(mud::core::internal_handle<int>(_handle));
-        _handle.reset();
     }
 }
 

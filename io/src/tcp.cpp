@@ -453,11 +453,13 @@ tcp::acceptor::open(const endpoint& endpoint)
 void
 tcp::acceptor::close()
 {
-    _connected = false;
-    if (_listen.handle() != nullptr) {
-        /* Deregister the acceptor from the event-loop */
-        mud::event::event_loop::global().deregister_handler(event());
-        _listen.close();
+    if (_connected) {
+        _connected = false;
+        if (_listen.handle() != nullptr) {
+            /* Deregister the acceptor from the event-loop */
+            mud::event::event_loop::global().deregister_handler(event());
+            _listen.close();
+        }
     }
 }
 
@@ -654,14 +656,16 @@ tcp::communicator::open(tcp::socket&& socket)
 void
 tcp::communicator::close()
 {
-    _connected = false;
-    if (_socket.handle() != nullptr) {
-        /* Deregister the communicator to the event loop */
-        mud::event::event_loop::global().deregister_handler(event());
-        _socket.close();
-
-        /* Call the impulse */
-        disconnect_impulse()->pulse(_socket);
+    if (_connected) {
+        _connected = false;
+        if (_socket.handle() != nullptr) {
+            /* Deregister the communicator from the event loop */
+            mud::event::event_loop::global().deregister_handler(event());
+            _socket.close();
+    
+            /* Call the impulse */
+            disconnect_impulse()->pulse(_socket);
+        }
     }
 }
 
