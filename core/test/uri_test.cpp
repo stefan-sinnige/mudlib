@@ -159,13 +159,14 @@ FEATURE("URI")
     GIVEN("An empty URI")
     WHEN ("A path is set as <unnormalised>",
         [](context& ctx) {
-          ctx.uri.path(ctx.sample().entry<std::string>("unnormalised"));
+          ctx.uri.path(ctx.sample<std::string>("unnormalised"));
         })
     THEN ("The path is <normalised>",
         [](context& ctx) {
-          ASSERT(ctx.sample().entry<std::string>("normalised"), ctx.uri.path());
+          ASSERT(ctx.sample<std::string>("normalised"), ctx.uri.path());
         })
-    SAMPLES("unnormalised", "normalised")
+    SAMPLES(std::string, std::string)
+        HEADINGS("unnormalised", "normalised")
         SAMPLE("hello/../dear/world", "dear/world")
         SAMPLE("hello/./dear/world", "hello/dear/world")
         SAMPLE("hello/../world/..", ".")
@@ -293,28 +294,29 @@ FEATURE("URI")
 
   SCENARIO("Various URI formats can be parsed")
     GIVEN("A '<uri>' URI as a string", [](context& ctx) {
-          ctx.str = ctx.sample().entry<std::string>("uri");
+          ctx.str = ctx.sample<std::string>("uri");
         })
     WHEN ("The URI is parsed", [](context& ctx) {
           ctx.uri = mud::core::uri(ctx.str);
         })
     THEN ("The URI is correctly formed", [](context& ctx) {
-          ASSERT(ctx.sample().entry<std::string>("scheme"),
+          ASSERT(ctx.sample<std::string>("scheme"),
                  ctx.uri.scheme());
-          ASSERT(ctx.sample().entry<std::string>("userinfo"),
+          ASSERT(ctx.sample<std::string>("userinfo"),
                  ctx.uri.user_info());
-          ASSERT(ctx.sample().entry<std::string>("host"),
+          ASSERT(ctx.sample<std::string>("host"),
                  ctx.uri.host());
-          ASSERT(ctx.sample().entry<uint16_t>("port"),
+          ASSERT(ctx.sample<uint16_t>("port"),
                  ctx.uri.port());
-          ASSERT(ctx.sample().entry<std::string>("path"),
+          ASSERT(ctx.sample<std::string>("path"),
                  ctx.uri.path());
-          ASSERT(ctx.sample().entry<std::string>("query"),
+          ASSERT(ctx.sample<std::string>("query"),
                  ctx.uri.query());
-          ASSERT(ctx.sample().entry<std::string>("fragment"),
+          ASSERT(ctx.sample<std::string>("fragment"),
                  ctx.uri.fragment());
         })
-    SAMPLES(   "uri",                                                              "scheme", "userinfo", "host",            "port", "path",             "query",                  "fragment")
+    SAMPLES(std::string, std::string, std::string, std::string, uint16_t, std::string, std::string, std::string)
+        HEADINGS("uri", "scheme", "userinfo", "host", "port", "path", "query","fragment")
         SAMPLE("http://www.example.com/index.html",                                "http",   "",         "www.example.com", 80,     "/index.html",      "",                       "")
         SAMPLE("http://www.example.com/index.html?id=10",                          "http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                  "")
         SAMPLE("http://www.example.com/index.html?id=10#top",                      "http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                  "top")
@@ -330,20 +332,21 @@ FEATURE("URI")
   SCENARIO("Various URI formats can be created")
     GIVEN("An empty URI")
     WHEN ("The URI is configured", [](context& ctx) {
-          ctx.uri.scheme(ctx.sample().entry<std::string>("scheme"));
-          ctx.uri.user_info(ctx.sample().entry<std::string>("userinfo"));
-          ctx.uri.host(ctx.sample().entry<std::string>("host"));
-          ctx.uri.port(ctx.sample().entry<uint16_t>("port"));
-          ctx.uri.path(ctx.sample().entry<std::string>("path"));
-          ctx.uri.query(ctx.sample().entry<std::string>("query"));
-          ctx.uri.fragment(ctx.sample().entry<std::string>("fragment"));
+          ctx.uri.scheme(ctx.sample<std::string>("scheme"));
+          ctx.uri.user_info(ctx.sample<std::string>("userinfo"));
+          ctx.uri.host(ctx.sample<std::string>("host"));
+          ctx.uri.port(ctx.sample<uint16_t>("port"));
+          ctx.uri.path(ctx.sample<std::string>("path"));
+          ctx.uri.query(ctx.sample<std::string>("query"));
+          ctx.uri.fragment(ctx.sample<std::string>("fragment"));
         })
     THEN ("The URI is correctly formed", [](context& ctx) {
           std::stringstream sstr;
           sstr << ctx.uri;
-          ASSERT(ctx.sample().entry<std::string>("uri"), sstr.str());
+          ASSERT(ctx.sample<std::string>("uri"), sstr.str());
         })
-    SAMPLES(   "scheme", "userinfo", "host",            "port", "path",             "query",                    "fragment", "uri")
+    SAMPLES(std::string, std::string, std::string, uint16_t, std::string, std::string, std::string, std::string)
+        HEADINGS("scheme", "userinfo", "host", "port", "path", "query", "fragment", "uri")
         SAMPLE("http",   "",         "www.example.com", 80,     "/index.html",      "",                         "",         "http://www.example.com/index.html")
         SAMPLE("http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                    "",         "http://www.example.com/index.html?id=10")
         SAMPLE("http",   "",         "www.example.com", 80,     "/index.html",      "id=10",                    "top",      "http://www.example.com/index.html?id=10#top")

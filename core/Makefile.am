@@ -5,6 +5,7 @@ lib_LTLIBRARIES = libmudcore.la
 libmudcore_la_SOURCES = \
     src/endian.cpp \
     src/handle.cpp \
+    src/json.cpp \
     src/impulse.cpp \
     src/log.cpp \
     src/notifier.cpp \
@@ -23,6 +24,7 @@ includemudcore_HEADERS = \
     include/mud/core/exception.h \
     include/mud/core/factory.h \
     include/mud/core/handle.h \
+    include/mud/core/json.h \
     include/mud/core/impulse.h \
     include/mud/core/log.h \
     include/mud/core/notifier.h \

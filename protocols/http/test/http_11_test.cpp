@@ -113,18 +113,21 @@ FEATURE("HTTP/1.1 Protocol")
                 req.method(mud::http::method_e::GET);
                 req.uri("http://www.example.com/index.html");
                 req.field<mud::http::connection>(
-                    ctx.sample().entry<mud::http::connection>("request"));
+                    ctx.sample<mud::http::connection>("request"));
                 ctx.resp_future = ctx.client.request(ctx.endpoint, req);
             })
         THEN ("The client receives a response")
          AND ("The response contains the associated Connection field",
             [](context& ctx) {
-                ASSERT(ctx.sample().entry<mud::http::connection>("response"),
+                ASSERT(ctx.sample<mud::http::connection>("response"),
                        ctx.resp.field<mud::http::connection>().value());
             })
-        SAMPLES("request", "response")
-            SAMPLE("close", "close")
-            SAMPLE("keep-alive", "keep-alive")
+        SAMPLES(mud::http::connection, mud::http::connection)
+            HEADINGS("request", "response")
+            SAMPLE(mud::http::connection_e::Close,
+                   mud::http::connection_e::Close)
+            SAMPLE(mud::http::connection_e::KeepAlive,
+                   mud::http::connection_e::KeepAlive)
         END_SAMPLES()
 
     SCENARIO("HTTP connection persists when 'Connection: Keep-Alive' is present")

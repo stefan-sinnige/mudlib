@@ -1,6 +1,7 @@
 #ifndef _MUDLIB_TEST_GHERKIN_H_
 #define _MUDLIB_TEST_GHERKIN_H_
 
+#include <any>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -8,6 +9,7 @@
 #include <mud/test/ns.h>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -37,242 +39,250 @@ class _feature;
 /**
  * @brief A generic multi-type data table container.
  *
- * A multi-type data table container with optional named columns. The data
- * is stored inetrnally as strings, but can be inserted and retrieved by
- * any type, provided that there is an @c std::istream and @c std::ostream
- * streaming operators defined.
+ * A multi-type data table container with optional named columns. The data can
+ * be used to store both data-tables as well as sample information. All data
+ * that is stored are required to
+ *    - Have a copy constructor
+ *    _ Have conversion constructors
+ *
+ * The _base_table is a base class interface that exposes the accessors and
+ * mutators used to set-up the table and to acquire access to its values. Each
+ * creation of a specific data or sample table in a scenario will create an
+ * implementation of the base table and identifies the number of columns and
+ * their associated type.
  */
-class MUDLIB_TEST_API _table
+class MUDLIB_TEST_API _base_table
 {
 public:
-    typedef std::string column_type;
-    typedef std::map<column_type, int> columns_type;
-    typedef std::vector<std::string> row_type;
-    typedef std::vector<row_type> rows_type;
+    /**
+     * @brief Type definition of a pointer to the table.
+     */
+    typedef std::shared_ptr<_base_table> ptr;
 
     /**
-     * @brief Constructor, creating an empty table without any definition.
+     * @brief Constructor.
      */
-    _table();
+    _base_table() = default;
 
     /**
      * @brief Destructor
      */
-    ~_table();
+    virtual ~_base_table() = default;
 
     /**
-     * @brief Specify un-named columns. The number of columns is determined
-     * by the inserted rows themselves.
+     * @brief Return the number of rows of the table.
      */
-    void columns();
+    virtual size_t rows() const = 0;
 
     /**
-     * @brief Specify named columns
+     * @brief Return the number of columns of the table.
      */
-    template<typename... A>
-    void columns(A... args);
+    virtual size_t columns() const = 0;
 
     /**
-     * @brief Specify a new row of values
-     * @param args [in] The values to insert.
+     * @brief Return the table entry by row and column.
+     * @param row The zero-based row number of the value to access.
+     * @param column The zero-based columns number of the value to access.
+     * @tparam T The type of the data to return.
      *
-     * All data is converted and stored as a string. When the data is
-     * retrieved, it can be converted back to the original form. It uses
-     * the @c std::istream and @c std::ostream streaming operations to
-     * convert to and from a string.
-     */
-    template<typename... A>
-    void row(A... args);
-
-    /**
-     * @brief Return the entry at (row, column).
-     * @param row [in] The row index, starting at 0 for the first row.
-     * @param column [in] The named column.
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * row and column numbers. The data is expected to be of the same type @c T
+     * as the type of the associated column when the data table has been
+     * defined.
      *
-     * This method is particularly useful for accessing data-table data.
+     * @throws std::bad_any_cast The type @c T does not match the type of the
+     * associated column.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
      */
     template<typename T>
-    T entry(int row, const std::string& column) const;
+    T entry(size_t row, size_t column) {
+        return std::any_cast<T>(entry(row, column));
+    }
 
     /**
-     * @brief Return the entry at (row, column).
-     * @param row [in] The row index, starting at 0 for the first row.
-     * @param column [in] The column index, starting at 0 for the first row.
+     * @brief Return the table entry by row and column.
+     * @param row The zero-based row number of the value to access.
+     * @param column The name of the column to access.
+     * @tparam T The type of the data to return.
      *
-     * This method is particularly useful for accessing data-table data.
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * row number and column name. The data is expected to be of the same type
+     * @c T as the type of the associated column when the data table has been
+     * defined.
+     *
+     * @throws std::bad_any_cast The type @c T does not match the type of the
+     * associated column.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
      */
     template<typename T>
-    T entry(int row, int column) const;
+    T entry(size_t row, const std::string& column_name) {
+        auto find = std::find(_headings.begin(), _headings.end(), column_name);
+        if (find == _headings.end()) {
+            throw std::out_of_range("unknown column name");
+        }
+        return std::any_cast<T>(entry(row, find - _headings.begin()));
+    }
 
     /**
-     * @brief Return the entry of a field.
-     * @param field [in] The named field.
+     * @brief Define the column heading names.
+     * @param names The names of the columns.
+     * @details
+     * Data entries can be identified by row and column number, but the columns
+     * can also be identified by a unique name. The naming of the columns is
+     * optional.
+     */
+    void headings(const std::vector<std::string>& names) {
+        _headings = names;
+    }
+
+protected:
+    /**
+     * @brief Return the table entry by row and column.
+     * @param row The zero-based row number of the value to access.
+     * @param column The zero-based columns number of the value to access.
      *
-     * This method is particularly useful for accessing sample data.
-     */
-    template<typename T>
-    T entry(const std::string& field) const;
-
-    /**
-     * @brief Return the entry of a field.
-     * @param field [in] The field index.
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * row and column numbers. The data that is retrieved is returned as a @c
+     * std::any and can be converted to its original datatype by using the @c
+     * std::any_cast<T>() function.
      *
-     * This method is particularly useful for accessing sample data.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
      */
-    template<typename T>
-    T entry(int column) const;
-
-    /**
-     * @brief Return the number of rows.
-     */
-    size_t row_count() const;
-
-    /**
-     * @brief Return a specific row.
-     * @param row [in] The row index, starting at 0 for the first row.
-     */
-    const _table::row_type& operator[](int idx) const;
-
-    /**
-     * @brief Return a sample table that only contains the specified row.
-     * @param row [in] The row index, starting at 0 for the first row.
-     */
-    _table sample(int idx) const;
+    virtual std::any entry(size_t row, size_t column) const = 0;
 
 private:
     /**
-     * @brief Specify a named column and associatged index.
+     * @brief The (optional) column names.
      */
-    void column_elements(size_t idx, const char* element);
-
-    template<typename T, typename... A>
-    void column_elements(size_t idx, T element, A... args);
-
-    /**
-     * @brief Specify a row element of type string.
-     */
-    void row_elements(const char* element);
-
-    /**
-     * @brief Specify a row element of any type, other than a string.
-     */
-    template<typename T>
-    void row_elements(T element);
-
-    /**
-     * @brief Specify a new row
-     */
-    template<typename T, typename... A>
-    void row_elements(T element, A... args);
-
-    /**
-     * @brief Return a string entry at (row, column).
-     * @param row [in] The row index, starting at 0 for the first row.
-     * @param column [in] The column index, starting at 0 for the first row.
-     * @param dummy [in] Dummy parameter used in template specialisation.
-     */
-    std::string entry(int row, int column, const std::string& dummy) const;
-
-    /**
-     * @brief Return a types entry at (row, column).
-     * @param row [in] The row index, starting at 0 for the first row.
-     * @param column [in] The column index, starting at 0 for the first row.
-     * @param dummy [in] Dummy parameter used in template specialisation.
-     */
-    template<typename T>
-    T entry(int row, int column, const T& dummy) const;
-
-    /* The map of named columns and their associated column index. */
-    columns_type _columns;
-
-    /* The list of rows. */
-    rows_type _rows;
+    std::vector<std::string> _headings;
 };
 
-template<typename... A>
-void
-mud::test::_table::columns(A... args)
+/**
+ * @brief The templated specialisation of a @c _base_table.
+ * @tparam Args The list of types that identifies the type of each table column.
+ *
+ * @details
+ * Each sample or data table is an specifialisation of this template where the
+ * template arguments define the data-types of each column.
+ */
+template<typename... Args>
+class _table: public _base_table
 {
-    column_elements(0, args...);
-}
+public:
+    /**
+     * @brief Type definition of the columns.
+     */
+    typedef std::tuple<Args...> column_type;
 
-template<typename... A>
-void
-mud::test::_table::row(A... args)
-{
-    _rows.push_back(row_type());
-    row_elements(args...);
-}
+    /**
+     * @brief Type definition of the table data. This is essentially a vector of
+     * rows where each row is a tuple of columns.
+     */
+    typedef std::vector<column_type> table_type;
 
-template<typename T>
-T
-mud::test::_table::entry(int row, const std::string& column) const
-{
-    T dummy;
-    int column_index = _columns.at(column);
-    return entry(row, column_index, dummy);
-}
+    /**
+     * @brief Constructor, creating an empty table.
+     */
+    _table() {}
 
-template<typename T>
-T
-mud::test::_table::entry(int row, int column) const
-{
-    T dummy;
-    return entry(row, column, dummy);
-}
+    /**
+     * @brief Return the number of rows of the table.
+     */
+    size_t rows() const override {
+        return _data.size();
+    }
 
-template<typename T>
-T
-mud::test::_table::entry(const std::string& field) const
-{
-    T dummy;
-    int column_index = _columns.at(field);
-    return entry(0, column_index, dummy);
-}
+    /**
+     * @brief Return the number of columns of the table.
+     */
+    size_t columns() const override {
+        return std::tuple_size<column_type>::value;
+    }
 
-template<typename T>
-T
-mud::test::_table::entry(int field) const
-{
-    T dummy;
-    return entry(0, field, dummy);
-}
+    /**
+     * @brief Push a new row of data to the end of the table.
+     * @param values The column data values.
+     * The list of values should match the size and type of the data table. Each
+     * value will be created using the associated column-type's conversion
+     * constructor.
+     */
+    void push_back(Args&&... args) {
+        _data.push_back(std::make_tuple(std::forward<Args>(args)...));
+    }
 
-template<typename T, typename... A>
-void
-mud::test::_table::column_elements(size_t idx, T element, A... args)
-{
-    column_elements(idx, element);
-    column_elements(idx + 1, args...);
+protected:
+    /**
+     * @brief Return the table entry by row and column.
+     * @param row The zero-based row number of the value to access.
+     * @param column The zero-based columns number of the value to access.
+     *
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * row and column numbers. The data that is retrieved is returned as a @c
+     * std::any and can be converted to its original datatype by using the @c
+     * std::any_cast<T>() function.
+     *
+     * Note that up to 16 columns are supported.
+     *
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
+     */
+    std::any entry(size_t row, size_t column) const override {
+        const column_type& data_row = _data[row];
+        return _entry(column, data_row);
+    }
+     
+private:
+    /**
+     * @brief Return the value of a single column.
+     * @param index The zero-based column index to return.
+     * @param data The tuple of values.
+     * @param indices The index sequence
+     * @details
+     * This helper function uses a fold expression with a comma expression to
+     * extract the @index'th column. It utilises the tuple of data together
+     * with a tuple of the same size containing the tuple index sequence. Only
+     * when the matching index is encountered, will it copy the tuple value to
+     * the end result.
+     * @return The data value at the requested column.
+     * @throw @c std::out_of_range if the index it not within the tuple size.
+     */
+    template<size_t... Idx>
+    std::any
+    _entry(size_t index, const column_type& data,
+           std::index_sequence<Idx...>) const
+    {
+        std::any value;
+        (..., ((Idx == index) ? value = std::get<Idx>(data) : value = value));
+        return value;
+    }
+
+    /**
+     * @brief Return the value of a single column.
+     * @param index The zero-based column index to return.
+     * @param data The tuple of values.
+     * @return The data value at the requested column.
+     * @throw @c std::out_of_range if the index it not within the tuple size.
+     */
+    std::any
+    _entry(size_t index, const column_type& data) const {
+        if (index >= std::tuple_size<column_type>{}) {
+            throw std::out_of_range("index out of range");
+        }
+        return _entry(index, data, std::make_index_sequence<sizeof...(Args)>());
+    }
+
+    /**
+     * @brief The data table.
+     */
+    table_type _data;
 };
-
-template<typename T>
-void
-mud::test::_table::row_elements(T element)
-{
-    std::stringstream sstr;
-    sstr << element;
-    _rows.back().push_back(sstr.str());
-}
-
-template<typename T, typename... A>
-void
-mud::test::_table::row_elements(T element, A... args)
-{
-    row_elements(element);
-    row_elements(args...);
-};
-
-template<typename T>
-T
-mud::test::_table::entry(int row, int column, const T& dummy) const
-{
-    T var;
-    std::string element = _rows[row][column];
-    std::stringstream sstr(element);
-    sstr >> var;
-    return var;
-}
 
 /**
  * @brief Base class for all context types.
@@ -284,24 +294,141 @@ mud::test::_table::entry(int row, int column, const T& dummy) const
 class _base_context
 {
 public:
-    // Set the data table.
-    void data(const _table& data) { _data = data; }
+    /**
+     * @brief Set the data table.
+     */
+    void data(_base_table::ptr data) { _data = data; }
 
-    // Return the data table.
-    const _table& data() const { return _data; }
+    /**
+     * @brief Return the data table.
+     */
+    _base_table::ptr data() const { return _data; }
 
-    // Set a specific sample for this test-run.
-    void sample(const _table& sample) { _sample = sample; }
+    /**
+     * @brief Set a samples.
+     */
+    void samples(_base_table::ptr samples) { _samples = samples; }
 
-    // Return the Sample data.
-    const _table& sample() const { return _sample; }
+    /**
+     * @brief Return the Samples.
+     */
+    _base_table::ptr samples() const { return _samples; }
+
+    /**
+     * @brief Set the current sample row to execute.
+     */
+    void row(size_t index) { _row = index; }
+
+    /**
+     * @brief Get the current sample row to execute.
+     */
+    size_t row() const { return _row; }
+          
+    /**
+     * @brief Return the sample table entry for the current row.
+     * @param column The zero-based columns number of the value to access.
+     * @tparam T The type of the data to return.
+     *
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * column number. The data is expected to be of the same type @c T as the
+     * type of the associated column when the data table has been defined.
+     *
+     * @throws std::bad_any_cast The type @c T does not match the type of the
+     * associated column.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
+     */
+    template<typename T>
+    T sample(size_t column) {
+        if (!_samples) {
+            throw std::out_of_range("no samples defined");
+        }
+        return _samples->entry<T>(_row, column);
+    }
+
+    /**
+     * @brief Return the sample table entry for the current row.
+     * @param column The name of the column to access.
+     * @tparam T The type of the data to return.
+     *
+     * @details
+     * Return a particular value in the table that is accessed by its column
+     * name. The data is expected to be of the same type @c T as the type of
+     * the associated column when the data table has been defined.
+     *
+     * @throws std::bad_any_cast The type @c T does not match the type of the
+     * associated column.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
+     */
+    template<typename T>
+    T sample(const std::string& column_name) {
+        if (!_samples) {
+            throw std::out_of_range("no samples defined");
+        }
+        return _samples->entry<T>(_row, column_name);
+    }
+
+    /**
+     * @brief Return the data table entry by row and column.
+     * @param row The zero-based row number of the value to access.
+     * @param column The zero-based columns number of the value to access.
+     * @tparam T The type of the data to return.
+     *
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * row and column numbers. The data is expected to be of the same type @c T
+     * as the type of the associated column when the data table has been
+     * defined.
+     *
+     * @throws std::bad_any_cast The type @c T does not match the type of the
+     * associated column.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
+     */
+    template<typename T>
+    T data(size_t row, size_t column) {
+        if (!_data) {
+            throw std::out_of_range("no data defined");
+        }
+        return _data->entry<T>(row, column);
+    }
+
+    /**
+     * @brief Return the data table entry by row and column.
+     * @param row The zero-based row number of the value to access.
+     * @param column The name of the column to access.
+     * @tparam T The type of the data to return.
+     *
+     * @details
+     * Return a particular value in the table that is accessed by its zero-based
+     * row number and column name. The data is expected to be of the same type
+     * @c T as the type of the associated column when the data table has been
+     * defined.
+     *
+     * @throws std::bad_any_cast The type @c T does not match the type of the
+     * associated column.
+     * @throws std::out_of_range The @c row and/or @c column values are out of
+     * the range of the defined table.
+     */
+    template<typename T>
+    T data(size_t row, const std::string& column_name) {
+        if (!_data) {
+            throw std::out_of_range("no data defined");
+        }
+        return _data->entry<T>(row, column_name);
+    }
 
 private:
     // The data table.
-    _table _data;
+    _base_table::ptr _data;
 
-    // The sample. This is a table with maximum one row!
-    _table _sample;
+    // The sample table
+    _base_table::ptr _samples;
+
+    // The current row
+    size_t _row = -1;
 };
 
 /**
@@ -353,7 +480,7 @@ public:
      * @brief Add a data table.
      * @param table [in] The function that returns the table.
      */
-    _given<context_type>& Data(std::function<_table()> func);
+    _given<context_type>& Data(std::function<_base_table::ptr()> func);
 
     /**
      * @brief Execute the 'given' step, and all its chained 'given' steps.
@@ -374,7 +501,7 @@ private:
     _feature<context_type>& _feat;
     std::string _id;
     function_type _func;
-    _table _data;
+    _base_table::ptr _data;
     mud::test::_given<context_type>* _chain;
 };
 
@@ -408,7 +535,7 @@ mud::test::_given<Context>::And(const std::string& id, function_type func)
 
 template<typename Context>
 mud::test::_given<Context>&
-mud::test::_given<Context>::Data(std::function<_table()> func)
+mud::test::_given<Context>::Data(std::function<_base_table::ptr()> func)
 {
     _data = func();
     return *this;
@@ -513,7 +640,7 @@ public:
      * @brief Add a data table.
      * @param table [in] The function that returns the table.
      */
-    _when<context_type>& Data(std::function<_table()> func);
+    _when<context_type>& Data(std::function<_base_table::ptr()> func);
 
     /**
      * @brief Execute the 'given' step, and all its chained 'given' steps.
@@ -534,7 +661,7 @@ private:
     _feature<context_type>& _feat;
     std::string _id;
     function_type _func;
-    _table _data;
+    _base_table::ptr _data;
     mud::test::_when<context_type>* _chain;
 };
 
@@ -568,7 +695,7 @@ mud::test::_when<Context>::And(const std::string& id, function_type func)
 
 template<typename Context>
 mud::test::_when<Context>&
-mud::test::_when<Context>::Data(std::function<_table()> func)
+mud::test::_when<Context>::Data(std::function<_base_table::ptr()> func)
 {
     _data = func();
     return *this;
@@ -676,7 +803,7 @@ public:
      * @brief Add a data table.
      * @param table [in] The function that returns the table.
      */
-    _then<context_type>& Data(std::function<_table()> func);
+    _then<context_type>& Data(std::function<_base_table::ptr()> func);
 
     /**
      * @brief Execute the 'then' step, and all its chained 'given' steps.
@@ -697,7 +824,7 @@ private:
     _feature<context_type>& _feat;
     std::string _id;
     function_type _func;
-    _table _data;
+    _base_table::ptr _data;
     mud::test::_then<context_type>* _chain;
 };
 
@@ -731,7 +858,7 @@ mud::test::_then<Context>::And(const std::string& id, function_type func)
 
 template<typename Context>
 mud::test::_then<Context>&
-mud::test::_then<Context>::Data(std::function<_table()> func)
+mud::test::_then<Context>::Data(std::function<_base_table::ptr()> func)
 {
     _data = func();
     return *this;
@@ -859,7 +986,7 @@ public:
      *
      * The scenario is run for each row in the sample table.
      */
-    void Samples(std::function<_table()> func);
+    void Samples(std::function<_base_table::ptr()> func);
 
     /**
      * @return The ID (description) of the 'scenario'.
@@ -886,7 +1013,7 @@ private:
 
     _feature<context_type>& _feat;
     std::string _id;
-    _table _samples;
+    _base_table::ptr _samples;
     mud::test::_given<context_type>* _given;
     mud::test::_when<context_type>* _when;
     mud::test::_then<context_type>* _then;
@@ -948,7 +1075,7 @@ mud::test::_scenario<Context>::Then(const std::string& id, function_type func)
 
 template<typename Context>
 void
-mud::test::_scenario<Context>::Samples(std::function<_table()> func)
+mud::test::_scenario<Context>::Samples(std::function<_base_table::ptr()> func)
 {
     _samples = func();
 }
@@ -974,11 +1101,12 @@ template<typename Context>
 bool
 mud::test::_scenario<Context>::run()
 {
-    if (_samples.row_count() > 0) {
+    if (_samples && _samples->rows() > 0) {
         bool result = true;
-        for (int i = 0; i < _samples.row_count(); ++i) {
+        for (size_t i = 0; i < _samples->rows(); ++i) {
             context_type ctx;
-            ctx.sample(_samples.sample(i));
+            ctx.samples(_samples);
+            ctx.row(i);
             result &= run(ctx);
         }
         return result;
@@ -996,22 +1124,37 @@ mud::test::_scenario<Context>::run(context_type& ctx)
     static const char* color_red = "\x1b[31m";
     static const char* color_green = "\x1b[32m";
     if (!(*_given)(ctx)) {
-        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id
-                  << std::endl;
+        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id;
+        if (ctx.samples()) {
+            std::cout << " [" << ctx.row()+1 << "/" << ctx.samples()->rows()
+                      << "]";
+        }
+        std::cout << std::endl;
         return false;
     }
     if (!(*_when)(ctx)) {
-        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id
-                  << std::endl;
+        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id;
+        if (ctx.samples()) {
+            std::cout << " [" << ctx.row()+1 << "/" << ctx.samples()->rows()
+                      << "]";
+        }
+        std::cout << std::endl;
         return false;
     }
     if (!(*_then)(ctx)) {
-        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id
-                  << std::endl;
+        std::cout << "[" << color_red << "FAIL" << color_default << "] " << _id;
+        if (ctx.samples()) {
+            std::cout << " [" << ctx.row()+1 << "/" << ctx.samples()->rows()
+                      << "]";
+        }
+        std::cout << std::endl;
         return false;
     }
-    std::cout << "[" << color_green << "PASS" << color_default << "] " << _id
-              << std::endl;
+    std::cout << "[" << color_green << "PASS" << color_default << "] " << _id;
+    if (ctx.samples()) {
+        std::cout << " [" << ctx.row()+1 << "/" << ctx.samples()->rows() << "]";
+    }
+    std::cout << std::endl;
     return true;
 }
 
@@ -1334,7 +1477,7 @@ public:
                 Dummy scnr;
 
 /**
- * @brief Macro to define a scenario
+ * @brief Macro to define a @c SCENARIO
  */
 #define SCENARIO(ID)                                                         \
                 ;                                                            \
@@ -1348,78 +1491,89 @@ public:
                 mud::test::_scenario<context> scnr(*this, ID);
 
 /**
- * @brief Macro to define a 'given' step.
+ * @brief Macro to define a @c GIVEN step.
  */
 #define GIVEN(...)                                                           \
                 scnr.Given( __VA_ARGS__)
 
 /**
- * @brief Macro to define a 'when' step.
+ * @brief Macro to define a @c WHEN step.
  */
 #define WHEN(...)                                                            \
                 ;                                                            \
                 scnr.When(__VA_ARGS__)
 
 /**
- * @brief Macro to define a 'then' step.
+ * @brief Macro to define a @c THEN step.
  */
 #define THEN(...)                                                            \
                 ;                                                            \
                 scnr.Then(__VA_ARGS__)
 
 /**
- * @brief Macro to define a 'and' step that can be used after a 'given',
- *        'when' and 'then' step.
+ * @brief Macro to define an @c AND step that can be used after a @GIVEN,
+ *        @c WHEN and @c THEN step.
  */
 #define AND(...)                                                             \
                 .And(__VA_ARGS__)
 
 /**
- * @brief Macro to define a data table that can be used in a 'given',
- *        'when' and 'then' step.
+ * @brief Macro to define a data table that can be used in a @c GIVEN, @c WHEN
+ *        and @c THEN steps. The entire table is made available to all the steps
+ *        in its entirety and the scenario is only executed once.
+ *        This is in contract to the @C SAMPLES table that executes the @c
+ *        SCENARIO for each row of the samples table.
  */
 #define DATA(...)                                                            \
-                .Data([]() -> mud::test::_table {                            \
-                    mud::test::_table data;                                  \
-                    data.columns(__VA_ARGS__);
+                .Data([]() -> mud::test::_base_table::ptr {                  \
+                    auto tbl = new mud::test::_table<__VA_ARGS__>;
 
 /**
- * @brief Macro to define a new data table row.
+ * @brief Macro to define a new @c DATA table row.
  */
 #define DATA_ROW(...)                                                        \
-                    data.row(__VA_ARGS__);
+                    tbl->push_back(__VA_ARGS__);
 
 /**
- * @brief Macro to define the end of a data table definition.
+ * @brief Macro to define the end of a @c DATA table definition.
  */
 #define END_DATA()                                                           \
-                    return data;                                             \
+                    return std::shared_ptr<mud::test::_base_table>(tbl);     \
                 })
 
 /**
- * @brief Macro to define a samples table that can be used in a 'scenario.
+ * @brief Macro to define a samples table that can be used in a @c SCENARIO. The
+ *        scenario is executed for each sample row and only the data that is
+ *        defined in that single row is available for that scenario execution.
+ *        This is in contrast to the @c DATA that makes the entire table
+ *        availabel to each step and the scenario is only executed once.
  */
 #define SAMPLES(...)                                                         \
                 ;                                                            \
-                scnr.Samples([]() -> mud::test::_table {                     \
-                    mud::test::_table samples;                               \
-                    samples.columns(__VA_ARGS__);
+                scnr.Samples([]() -> mud::test::_base_table::ptr {           \
+                    auto tbl = new mud::test::_table<__VA_ARGS__>;
 
 /**
- * @brief Macro to define a new data table row.
+ * @brief Macro to define a new @c SAMPLE table row.
  */
 #define SAMPLE(...)                                                          \
-                    samples.row(__VA_ARGS__);
+                    tbl->push_back(__VA_ARGS__);
 
 /**
- * @brief Macro to define the end of a data table definition.
+ * @brief Macro to define the end of a @c SAMPLES table definition.
  */
 #define END_SAMPLES()                                                        \
-                    return samples;                                          \
+                    return std::shared_ptr<mud::test::_base_table>(tbl);     \
                 })
 
 /**
- * @brief Macro to define the end of the feature definition.
+ * @brief Macro to define the optional new @c DATA table headings.
+ */
+#define HEADINGS(...)                                                        \
+                    tbl->headings({__VA_ARGS__});
+
+/**
+ * @brief Macro to define the end of the @c FEATURE definition.
  */
 #define END_FEATURE()                                                        \
                 ;                                                            \

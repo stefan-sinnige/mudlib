@@ -52,29 +52,32 @@ FEATURE("Gherkin")
 
   SCENARIO("Addition")
     GIVEN ("first value of <first>", [](context& ctx) {
-           ctx.a = ctx.sample().entry<int>("first"); })
+           ctx.a = ctx.sample<int>("first"); })
       AND ("second value of <second>", [](context& ctx) {
-           ctx.b = ctx.sample().entry<int>("second"); })
+           ctx.b = ctx.sample<int>("second"); })
     WHEN  ("calculating the sum")
     THEN  ("the sum is <result>", [](context& ctx) {
-            ASSERT(ctx.result, ctx.sample().entry<int>("result")); })
-    SAMPLES("first", "second", "result")
-        SAMPLE(0, 0, 0)
-        SAMPLE(4, 0, 4)
-        SAMPLE(0, 4, 4)
-        SAMPLE(5, 4, 9)
+            ASSERT(ctx.result, ctx.sample<int>("result")); })
+    SAMPLES(int, int, int, std::string)
+        HEADINGS("first", "second", "result", "comment")
+        SAMPLE(0, 0, 0, "This is")
+        SAMPLE(4, 0, 4, "a Gherkin")
+        SAMPLE(0, 4, 4, "scenario")
+        SAMPLE(5, 4, 9, "with samples")
     END_SAMPLES()
 
   SCENARIO("Average")
     GIVEN ("a list of values", [](context& ctx) {
-           for (int i = 0; i < ctx.data().row_count(); ++i)
+           std::cout << "Data has " << ctx.data()->rows() << " rows" << std::endl;
+           for (int i = 0; i < ctx.data()->rows(); ++i)
            {
-               ctx.input.push_back(ctx.data().entry<int>(i, "value"));
+               ctx.input.push_back(ctx.data<int>(i, "value"));
            }})
-      DATA("value")
-          DATA_ROW(5)
-          DATA_ROW(6)
-          DATA_ROW(7)
+      DATA(int, std::string)
+          HEADINGS("value", "comment")
+          DATA_ROW(5, "First row")
+          DATA_ROW(6, "Second row")
+          DATA_ROW(7, "Third row")
       END_DATA()
     WHEN  ("calculating the average", [](context& ctx) {
                int total = 0;

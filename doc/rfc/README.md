@@ -9,3 +9,4 @@
     * [Transport Layer  Security (TLS) Protocol Version 1.2](rfc5246.txt)
     * [Transport Layer  Security (TLS) Protocol Version 1.3](rfc8446.txt)
 * [Uniform Resource Identifier (URI): General Syntax](rfc3986.txt)
+* [The Javascript Object Notation (JSON) Data Interchange Format](rfc8259.txt)

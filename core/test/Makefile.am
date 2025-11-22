@@ -4,6 +4,7 @@ TESTS = $(check_PROGRAMS)
 mudcore_test_SOURCES = \
     main.cpp \
     endian_test.cpp \
+    json_test.cpp \
     handle_test.cpp \
     log_test.cpp \
     notification_test.cpp \

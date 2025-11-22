@@ -79,15 +79,15 @@ FEATURE("Character Reference")
   SCENARIO("Unescaping named character references")
     GIVEN("A named character reference",
         [](context& ctx) {
-            ctx.escaped = ctx.sample().entry<std::string>("ref");
+            ctx.escaped = ctx.sample<std::string>("ref");
         })
     WHEN ("The string is unescaped")
     THEN ("The result is the corresponding code point",
         [](context& ctx) {
-            ASSERT(ctx.sample().entry<std::string>("code-point"),
-                   ctx.unescaped);
+            ASSERT(ctx.sample<std::string>("code-point"), ctx.unescaped);
         })
-    SAMPLES("ref", "code-point")
+    SAMPLES(std::string, std::string)
+        HEADINGS("ref", "code-point")
         SAMPLE("&amp;", "\x26")
         SAMPLE("&lt;", "\x3C")
         SAMPLE("&gt;", "\x3E")
@@ -100,15 +100,15 @@ FEATURE("Character Reference")
   SCENARIO("Unescaping decimal character references")
     GIVEN("A named character reference",
         [](context& ctx) {
-            ctx.escaped = ctx.sample().entry<std::string>("ref");
+            ctx.escaped = ctx.sample<std::string>("ref");
         })
     WHEN ("The string is unescaped")
     THEN ("The result is the corresponding code point",
         [](context& ctx) {
-            ASSERT(ctx.sample().entry<std::string>("code-point"),
-                   ctx.unescaped);
+            ASSERT(ctx.sample<std::string>("code-point"), ctx.unescaped);
         })
-    SAMPLES("ref", "code-point")
+    SAMPLES(std::string, std::string)
+        HEADINGS("ref", "code-point")
         SAMPLE("&#38;", "\x26")
         SAMPLE("&#267;", "\xC4\x8B");
         SAMPLE("&#10769;", "\xE2\xA8\x91")
@@ -118,15 +118,15 @@ FEATURE("Character Reference")
   SCENARIO("Unescaping hexadecimal character references")
     GIVEN("A named character reference",
         [](context& ctx) {
-            ctx.escaped = ctx.sample().entry<std::string>("ref");
+            ctx.escaped = ctx.sample<std::string>("ref");
         })
     WHEN ("The string is unescaped")
     THEN ("The result is the corresponding code point",
         [](context& ctx) {
-            ASSERT(ctx.sample().entry<std::string>("code-point"),
-                   ctx.unescaped);
+            ASSERT(ctx.sample<std::string>("code-point"), ctx.unescaped);
         })
-    SAMPLES("ref", "code-point")
+    SAMPLES(std::string, std::string)
+        HEADINGS("ref", "code-point")
         SAMPLE("&#x26;", "\x26")
         SAMPLE("&#x10B;", "\xC4\x8B");
         SAMPLE("&#x2A11;", "\xE2\xA8\x91")
