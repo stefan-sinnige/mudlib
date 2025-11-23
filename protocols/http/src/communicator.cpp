@@ -52,7 +52,6 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
         resp.version(req.version());
         resp.status_code(mud::http::status_code_e::BadRequest);
         resp.reason_phrase(mud::http::reason_phrase_e::BadRequest);
-        close();
         return;
     }
     TRACE(log) << "Message details: " << std::endl << req << std::endl;
@@ -64,7 +63,6 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
         resp.version(req.version());
         resp.status_code(mud::http::status_code_e::InternalServerError);
         resp.reason_phrase(mud::http::reason_phrase_e::InternalServerError);
-        close();
         return;
     }
 
@@ -78,15 +76,18 @@ server::on_receive(mud::io::tcp::socket& /* unused */socket)
     TRACE(log) << "Message details: " << std::endl << req << std::endl;
     ostr() << resp << std::flush;
 
-    // Close the connection if we need to
+    // For HTTP/1.0, the server is expected to close the connection. However,
+    // this results in an accumulation of TIME_WAIT sockets on the server which
+    // may render the server to be inoperable (too many open file descriptors
+    // - defined by ulimit). As the socket port number is dynamically assigned
+    // when a connection is established, there is no remedy for this.
+    // It is strongly advised to move the TIME_WAIT towards the client as it can
+    // manage the TIME_WAIT better by reusing the address & port number through
+    // a socket-option (SO_REUSEADDR). The side that initiates the closing of
+    // the connection will need to manage the TIME_WAIT. For HTTP/1.1 the server
+    // will not initiate the close but relies on the client to do so.
     if (resp.version() == mud::http::version_e::HTTP10) {
         close();
-    }
-    else if ( resp.exists<mud::http::connection>()) {
-        auto conn = resp.field<mud::http::connection>();
-        if (conn == mud::http::connection_e::Close) {
-            close();
-        }
     }
 }
 

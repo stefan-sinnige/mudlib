@@ -25,6 +25,7 @@ CONTEXT()
 
     /* Destructor after each scenario */
     ~context() {
+        server.stop();
         mud::event::event_loop::global().terminate();
         if (thr.joinable())
         {
@@ -77,10 +78,6 @@ FEATURE("HTTP/1.0 Protocol")
           req.uri("http://www.example.com/index.html");
           ctx.resp_future = ctx.client.request(ctx.endpoint, req);
       })
-  DEFINE_WHEN ("The server is stopped",
-      [](context& ctx) {
-          ctx.server.stop();
-      })
   DEFINE_THEN("The client receives a response",
       [](context& ctx) {
           ASSERT(std::future_status::ready, 
@@ -98,7 +95,7 @@ FEATURE("HTTP/1.0 Protocol")
    * The scenarios.
    */
 
-    SCENARIO("HTTP server closes a connection when no Connection field is present")
+    SCENARIO("HTTP client closes a connection after receiving a reply")
         GIVEN("An HTTP server is listening for inbound connections")
         WHEN ("A client sends a request")
         THEN ("The client receives a response")

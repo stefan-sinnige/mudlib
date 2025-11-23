@@ -24,6 +24,7 @@ CONTEXT()
 
     /* Destructor after each scenario */
     ~context() {
+        server.stop();
         mud::event::event_loop::global().terminate();
         if (thr.joinable())
         {
