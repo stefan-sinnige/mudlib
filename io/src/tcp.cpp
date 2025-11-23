@@ -484,6 +484,11 @@ tcp::acceptor::accept_impulse()
 mud::event::event::return_type
 tcp::acceptor::on_ready_accept()
 {
+    // Bail out if not connected
+    if (!_connected) {
+        return mud::event::event::return_type::REMOVE;
+    }
+
     // Accept the connection. This may block if there is no client ready.
     struct sockaddr_in addr;
     socklen_t len = sizeof(addr);
@@ -702,6 +707,11 @@ tcp::communicator::event() const
 mud::event::event::return_type
 tcp::communicator::on_ready_receive()
 {
+    // Bail out if not connected
+    if (!_connected) {
+        return mud::event::event::return_type::REMOVE;
+    }
+
     // If no data present, assume that the connection is closed.
     if (istr().peek() == std::char_traits<char>::eof()) {
         close();
