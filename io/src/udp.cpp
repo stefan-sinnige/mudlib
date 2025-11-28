@@ -417,25 +417,6 @@ udp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
-udp::socket::socket(socket&& rhs) : ip::socket(std::move(rhs))
-{
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
-    _impl->source_endpoint() = rhs._impl->source_endpoint();
-    _impl->destination_endpoint() = rhs._impl->destination_endpoint();
-}
-
-udp::socket&
-udp::socket::operator=(udp::socket&& rhs)
-{
-    if (this != &rhs) {
-        ip::socket::operator=(std::move(rhs));
-        _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
-        _impl->source_endpoint() = rhs._impl->source_endpoint();
-        _impl->destination_endpoint() = rhs._impl->destination_endpoint();
-    }
-    return *this;
-}
-
 udp::socket::~socket() {}
 
 void

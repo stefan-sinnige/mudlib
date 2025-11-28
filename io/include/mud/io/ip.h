@@ -153,12 +153,14 @@ namespace ip {
                std::shared_ptr<mud::core::handle> handle);
 
         /**
-         * @brief Move constructor, passing ownership of the socket.
+         * @brief Move constructor.
+         * @details The socket ownership is transferred.
          */
         socket(socket&& rhs) = default;
 
         /**
-         * @brief Move assignment, passing ownership of the socket.
+         * @brief Move assignment.
+         * @details The socket ownership is transferred.
          */
         socket& operator=(socket&& rhs) = default;
 

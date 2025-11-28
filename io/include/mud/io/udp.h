@@ -92,13 +92,15 @@ namespace udp {
 
         /**
          * @brief Move constructor.
+         * @details The socket ownership is transferred.
          */
-        socket(socket&&);
+        socket(socket&&) = default;
 
         /**
          * @brief Move assignment.
+         * @details The socket ownership is transferred.
          */
-        socket& operator=(socket&&);
+        socket& operator=(socket&&) = default;
 
         /**
          * Destructor.

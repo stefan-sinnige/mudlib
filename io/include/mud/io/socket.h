@@ -189,12 +189,14 @@ public:
     basic_socket(domain_t domain, type_t type, protocol_t protocol);
 
     /**
-     * Move constructor, moving socket ownership.
+     * Move constructor.
+     * @details The socket ownership is transferred.
      */
     basic_socket(basic_socket&& rhs) = default;
 
     /**
-     * @brief Move assignment, moving socket ownership.
+     * @brief Move assignment.
+     * @details The socket ownership is transferred.
      */
     basic_socket& operator=(basic_socket&& rhs) = default;
 
