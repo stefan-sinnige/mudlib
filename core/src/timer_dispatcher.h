@@ -1,14 +1,14 @@
-#ifndef _MUDLIB_EVENT_TIMER_DISPATCHER_H_
-#define _MUDLIB_EVENT_TIMER_DISPATCHER_H_
+#ifndef _MUDLIB_CORE_TIMER_DISPATCHER_H_
+#define _MUDLIB_CORE_TIMER_DISPATCHER_H_
 
-#include "mud/event/event.h"
+#include "mud/core/event.h"
 #include "timer_impl.h"
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <vector>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * @brief The timer dispatcher.
@@ -44,7 +44,7 @@ public:
      *
      * @param timer The @c timer to add.
      */
-    void insert(const std::shared_ptr<mud::event::timer::impl>& timer);
+    void insert(const std::shared_ptr<mud::core::timer::impl>& timer);
 
     /**
      * @brief Remove a timer.
@@ -55,7 +55,7 @@ public:
      *
      * @param timer The @c timer to remove.
      */
-    void remove(const std::shared_ptr<mud::event::timer::impl>& timer);
+    void remove(const std::shared_ptr<mud::core::timer::impl>& timer);
 
     /**
      * @brief Dispatch the timer triggers.
@@ -84,7 +84,7 @@ public:
     /**
      * @brief Return the event to signal when the timer list has changed.
      */
-    mud::event::event event();
+    mud::core::event event();
 
 private:
     /**
@@ -93,7 +93,7 @@ private:
     void sort();
 
     /** The list of active timers.  */
-    std::vector<std::shared_ptr<mud::event::timer::impl>> _timers;
+    std::vector<std::shared_ptr<mud::core::timer::impl>> _timers;
 
     /** Protecting the list against simultaneous modifications.  */
     std::mutex _mutex;
@@ -102,8 +102,8 @@ private:
     mud::core::select_handle::signal _handle;
 };
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_EVENT_TIMER_DISPATCHER_H_ */
+#endif /* _MUDLIB_CORE_TIMER_DISPATCHER_H_ */

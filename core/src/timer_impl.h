@@ -1,12 +1,12 @@
-#ifndef _MUDLIB_EVENT_TIMER_IMPL_H_
-#define _MUDLIB_EVENT_TIMER_IMPL_H_
+#ifndef _MUDLIB_CORE_TIMER_IMPL_H_
+#define _MUDLIB_CORE_TIMER_IMPL_H_
 
-#include "mud/event/timer.h"
-#include "mud/event/event_loop.h"
+#include "mud/core/timer.h"
+#include "mud/core/event_loop.h"
 #include <atomic>
 #include <thread>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * Spin lock to safely protect the access and update of the timer expiration
@@ -53,7 +53,7 @@ private:
 };
 
 /**
- * @brief The implementation class of a @c mud::event::timer.
+ * @brief The implementation class of a @c mud::core::timer.
  */
 class timer::impl : public mud::core::object
 {
@@ -123,9 +123,9 @@ private:
     spin_lock _lock;
 };
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /*  _MUDLIB_EVENT_TIMER_IMPL_H_ */
+#endif /*  _MUDLIB_CORE_TIMER_IMPL_H_ */
 

@@ -1,4 +1,4 @@
-#include "mud/event/event.h"
+#include "mud/core/event.h"
 #include "mud/test.h"
 #include <future>
 #include <ostream>
@@ -20,10 +20,10 @@ CONTEXT()
     std::shared_ptr<mud::core::handle> handle;
 
     /* An event. */
-    mud::event::event event;
+    mud::core::event event;
 
     /* Another event */
-    mud::event::event other;
+    mud::core::event other;
 END_CONTEXT()
 
 FEATURE("Event")
@@ -33,9 +33,9 @@ FEATURE("Event")
    */
   DEFINE_GIVEN("An event object", 
       [](context& ctx) {
-        ctx.event = mud::event::event(ctx.handle,
-                mud::event::event::signal_type::READY,
-                [](){ return mud::event::event::return_type::REMOVE; });
+        ctx.event = mud::core::event(ctx.handle,
+                mud::core::event::signal_type::READY,
+                [](){ return mud::core::event::return_type::REMOVE; });
       })
   DEFINE_GIVEN("A copied event object", 
       [](context& ctx) {
@@ -57,27 +57,27 @@ FEATURE("Event")
     THEN ("The type is not default-constructible",
         [](context& ctx) {
             ASSERT(false, std::is_default_constructible<
-                  mud::event::event>::value);
+                  mud::core::event>::value);
         })
     THEN ("The type is copy-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_copy_constructible<
-                  mud::event::event>::value);
+                  mud::core::event>::value);
         })
     THEN ("The type is move-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_move_constructible<
-                  mud::event::event>::value);
+                  mud::core::event>::value);
         })
     THEN ("The type is copy-assignable",
         [](context& ctx) {
             ASSERT(true, std::is_copy_assignable<
-                  mud::event::event>::value);
+                  mud::core::event>::value);
         })
     THEN ("The type is move-assignable",
         [](context& ctx) {
             ASSERT(true, std::is_move_assignable<
-                  mud::event::event>::value);
+                  mud::core::event>::value);
         })
 
     SCENARIO("Event object creation")

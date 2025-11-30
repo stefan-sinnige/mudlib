@@ -1,14 +1,14 @@
-#ifndef _MUDLIB_EVENT_TIMER_H_
-#define _MUDLIB_EVENT_TIMER_H_
+#ifndef _MUDLIB_CORE_TIMER_H_
+#define _MUDLIB_CORE_TIMER_H_
 
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <mud/core/object.h>
 #include <mud/core/impulse.h>
-#include <mud/event/ns.h>
+#include <mud/core/ns.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * Forward declarations.
@@ -44,7 +44,7 @@ class timer_dispatcher;
  * resort to another means, like OS (kernel) based timers. Future enhancements
  * may add support for accurate timer.
  */
-class MUDLIB_EVENT_API timer
+class MUDLIB_CORE_API timer
 {
 public:
     /**
@@ -204,8 +204,8 @@ private:
     std::shared_ptr<impl> _impl;
 };
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_EVENT_TIMER_H_ */
+#endif /* _MUDLIB_CORE_TIMER_H_ */

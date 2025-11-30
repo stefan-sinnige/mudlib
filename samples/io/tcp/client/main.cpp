@@ -1,4 +1,4 @@
-#include "mud/event/event_loop.h"
+#include "mud/core/event_loop.h"
 #include "mud/io/tcp.h"
 #include <cstring>
 #include <iostream>
@@ -78,12 +78,12 @@ client::on_receive(mud::io::tcp::socket& /* unused */)
     if (_communicator.istr().fail()) {
         _communicator.close();
         std::cout << "Connection closed" << std::endl;
-        mud::event::event_loop::global().terminate();
+        mud::core::event_loop::global().terminate();
     } else {
         std::cout << "Receiving: " << msg << std::endl;
     }
 
-    mud::event::event_loop::global().terminate();
+    mud::core::event_loop::global().terminate();
 }
 
 // ===========================================================================
@@ -125,7 +125,7 @@ main(int argc, char** argv)
     }
 
     // Run the event loop.
-    mud::event::event_loop::global().loop();
+    mud::core::event_loop::global().loop();
 
     return 0;
 }

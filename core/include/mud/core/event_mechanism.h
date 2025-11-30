@@ -1,14 +1,14 @@
-#ifndef _MUDLIB_EVENT_MECHANISM_H_
-#define _MUDLIB_EVENT_MECHANISM_H_
+#ifndef _MUDLIB_CORE_MECHANISM_H_
+#define _MUDLIB_CORE_MECHANISM_H_
 
 #include <future>
 #include <mud/core/factory.h>
 #include <mud/core/handle.h>
 #include <mud/core/task.h>
-#include <mud/event/event.h>
-#include <mud/event/ns.h>
+#include <mud/core/event.h>
+#include <mud/core/ns.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * Forward declarations.
@@ -18,7 +18,7 @@ class timer_dispatcher;
 /**
  * @brief An abstract base class representing an event-loop mechanism.
  */
-class MUDLIB_EVENT_API event_mechanism
+class MUDLIB_CORE_API event_mechanism
 {
 public:
     /**
@@ -34,7 +34,7 @@ public:
      */
     event_mechanism(
             const std::shared_ptr<mud::core::simple_task_queue>& queue,
-            const std::shared_ptr<mud::event::timer_dispatcher>& timers);
+            const std::shared_ptr<mud::core::timer_dispatcher>& timers);
 
     /**
      * @brief Virtual destructor.
@@ -114,7 +114,7 @@ protected:
     /**
      * The timer dispatcher for timer events.
      */
-    const std::shared_ptr<mud::event::timer_dispatcher>& timers() const
+    const std::shared_ptr<mud::core::timer_dispatcher>& timers() const
     {
         return _timers;
     }
@@ -124,20 +124,20 @@ private:
     std::shared_ptr<mud::core::simple_task_queue> _queue;
 
     /** The timer dispatcher for timer. */
-    std::shared_ptr<mud::event::timer_dispatcher> _timers;
+    std::shared_ptr<mud::core::timer_dispatcher> _timers;
 };
 
 /**
  * @brief The factory of event mechanisms.
  */
 typedef mud::core::factory<mud::core::handle::type_t,
-                           mud::event::event_mechanism,
+                           mud::core::event_mechanism,
                            const std::shared_ptr<mud::core::simple_task_queue>&,
-                           const std::shared_ptr<mud::event::timer_dispatcher>&>
+                           const std::shared_ptr<mud::core::timer_dispatcher>&>
     event_mechanism_factory;
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /*  _MUDLIB_EVENT_MECHANISM_H_ */
+#endif /*  _MUDLIB_CORE_MECHANISM_H_ */

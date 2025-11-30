@@ -1,5 +1,5 @@
-#include "mud/event/event_loop.h"
-#include "mud/event/event_mechanism.h"
+#include "mud/core/event_loop.h"
+#include "mud/core/event_mechanism.h"
 #include "mud/test.h"
 #include "test_mechanism.h"
 #include <future>
@@ -33,7 +33,7 @@ CONTEXT()
     const std::chrono::milliseconds timeout = std::chrono::milliseconds(10);
 
     /* The event loop */
-    mud::event::event_loop event_loop;
+    mud::core::event_loop event_loop;
 
     /* The status of the thread running the event loop */
     std::future<void> future_thread;
@@ -47,7 +47,7 @@ CONTEXT()
     /* Event data structure. This contains the event itself and the associated
      * data. */
     struct event_data {
-        mud::event::event event;
+        mud::core::event event;
         char ch;
         int calls;
         std::promise<void> promise_task;
@@ -94,14 +94,14 @@ FEATURE("Event loop")
       })
   DEFINE_GIVEN("A registered handler that handles an event",
       [](context& ctx) {
-          ctx.event.event = mud::event::event(
+          ctx.event.event = mud::core::event(
               ctx.itc.handle(),
-              mud::event::event::signal_type::READING,
+              mud::core::event::signal_type::READING,
               [&ctx]() {
                   ctx.event.ch = ctx.itc.read();
                   ++ctx.event.calls;
                   ctx.event.promise_task.set_value();
-                  return mud::event::event::return_type::CONTINUE;
+                  return mud::core::event::return_type::CONTINUE;
           });
           ctx.event_loop.register_handler(ctx.event.event);
       })
@@ -111,14 +111,14 @@ FEATURE("Event loop")
       })
   DEFINE_GIVEN("Another registered handler that handles an event",
       [](context& ctx) {
-          ctx.other.event = mud::event::event(
+          ctx.other.event = mud::core::event(
               ctx.itc.handle(),
-              mud::event::event::signal_type::READING,
+              mud::core::event::signal_type::READING,
               [&ctx]() {
                   ctx.other.ch = ctx.itc.read();
                   ++ctx.other.calls;
                   ctx.other.promise_task.set_value();
-                  return mud::event::event::return_type::CONTINUE;
+                  return mud::core::event::return_type::CONTINUE;
           });
           ctx.event_loop.register_handler(ctx.other.event);
       })
@@ -182,18 +182,18 @@ FEATURE("Event loop")
     THEN ("The type is default constructible",
         [](context& ctx) {
             ASSERT(true, std::is_default_constructible<
-                  mud::event::event_loop>::value);
+                  mud::core::event_loop>::value);
         })
     THEN ("The type is not copy-constructible",
         [](context& ctx) {
             ASSERT(false, std::is_copy_constructible<
-                  mud::event::event_loop>::value);
+                  mud::core::event_loop>::value);
         })
     THEN ("The type is not assignable",
         [](context& ctx) {
             ASSERT(false, std::is_assignable<
-                  mud::event::event_loop,
-                  mud::event::event_loop>::value);
+                  mud::core::event_loop,
+                  mud::core::event_loop>::value);
         })
 
   SCENARIO("A stopped event loop returns an invalid termination future")
@@ -244,15 +244,15 @@ FEATURE("Event loop")
     GIVEN("A running event loop")
       AND("A registered handler that terminates the loop",
           [](context& ctx) {
-            ctx.event.event = mud::event::event(
+            ctx.event.event = mud::core::event(
                 ctx.itc.handle(),
-                mud::event::event::signal_type::READING,
+                mud::core::event::signal_type::READING,
                 [&ctx]() {
                     ctx.event.ch = ctx.itc.read();
                     ++ctx.event.calls;
                     ctx.future_loop = ctx.event_loop.terminate();
                     ctx.event.promise_task.set_value();
-                    return mud::event::event::return_type::REMOVE;
+                    return mud::core::event::return_type::REMOVE;
             });
             ctx.event_loop.register_handler(ctx.event.event);
         })

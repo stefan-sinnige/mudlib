@@ -5,7 +5,7 @@
 #include <memory>
 #include <mud/io/ip.h>
 #include <mud/io/ns.h>
-#include <mud/event/event.h>
+#include <mud/core/event.h>
 #include <mud/protocols/communicator.h>
 #include <ostream>
 #include <string>
@@ -317,7 +317,7 @@ namespace udp {
          *
          * @return The event.
          */
-        virtual const mud::event::event& event() const override;
+        virtual const mud::core::event& event() const override;
 
         /**
          * @brief Get the source endpoint of the socket connection.
@@ -334,10 +334,10 @@ namespace udp {
 
     private:
         /** Event handler when there is data available. */
-        mud::event::event::return_type on_ready_receive();
+        mud::core::event::return_type on_ready_receive();
 
         /** The event */
-        mud::event::event _receive_event;
+        mud::core::event _receive_event;
 
         /** The connected state */
         bool _connected = false;

@@ -17,12 +17,12 @@ typedef short sa_family_t;
     #include <sys/socket.h>
 #endif
 #include <string.h>
+#include "mud/core/event_loop.h"
 #include "mud/core/exception.h"
 #include "mud/io/exception.h"
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"
 #include "mud/io/udp.h"
-#include "mud/event/event_loop.h"
 
 using namespace std::placeholders;
 
@@ -500,12 +500,12 @@ udp::communicator::open(udp::socket&& socket)
     connect_impulse()->pulse(_socket);
 
     /* Create the event */
-    _receive_event = mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::READING,
+    _receive_event = mud::core::event(
+        _socket.handle(), mud::core::event::signal_type::READING,
         std::bind(&communicator::on_ready_receive, this));
 
     /* Register the communicator to the event loop */
-    mud::event::event_loop::global().register_handler(event());
+    mud::core::event_loop::global().register_handler(event());
 }
 
 void
@@ -545,7 +545,7 @@ udp::communicator::device()
     return _socket;
 }
 
-const mud::event::event&
+const mud::core::event&
 udp::communicator::event() const
 {
     return _receive_event;
@@ -563,7 +563,7 @@ udp::communicator::destination_endpoint() const
     return _socket.destination_endpoint();
 }
 
-mud::event::event::return_type
+mud::core::event::return_type
 udp::communicator::on_ready_receive()
 {
     // Call the impulse.
@@ -571,9 +571,9 @@ udp::communicator::on_ready_receive()
 
     // Continue receiving. while the socket is still open
     if (_socket.handle() != nullptr) {
-        return mud::event::event::return_type::CONTINUE;
+        return mud::core::event::return_type::CONTINUE;
     } else {
-        return mud::event::event::return_type::REMOVE;
+        return mud::core::event::return_type::REMOVE;
     }
 }
 

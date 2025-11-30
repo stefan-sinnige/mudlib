@@ -5,9 +5,9 @@
 #include <memory>
 #include <mud/io/ip.h>
 #include <mud/io/ns.h>
+#include <mud/core/event.h>
 #include <mud/core/object.h>
 #include <mud/core/impulse.h>
-#include <mud/event/event.h>
 #include <mud/protocols/communicator.h>
 #include <ostream>
 #include <string>
@@ -289,7 +289,7 @@ namespace tcp {
          *
          * @return The event.
          */
-        const mud::event::event& event() const;
+        const mud::core::event& event() const;
 
         /**
          * @brief The @c impulse when a new connection has been accepted.
@@ -305,7 +305,7 @@ namespace tcp {
 
     private:
         /** Event handler when a peer is connected. */
-        mud::event::event::return_type on_ready_accept();
+        mud::core::event::return_type on_ready_accept();
 
         /** The connected state */
         bool _connected;
@@ -314,7 +314,7 @@ namespace tcp {
         tcp::socket _listen;
 
         /** The accept event. */
-        mud::event::event _accept_event;
+        mud::core::event _accept_event;
 
         /** The accept impulse. */
         accept_impulse_type _accept_impulse;
@@ -377,7 +377,7 @@ namespace tcp {
          *
          * @return The event.
          */
-        const mud::event::event& event() const;
+        const mud::core::event& event() const;
 
         /**
          * @brief The @c impulse when a new connection has been connected.
@@ -393,13 +393,13 @@ namespace tcp {
 
     private:
         /** Event handler when a peer has accepted the connection. */
-        mud::event::event::return_type on_ready_connect();
+        mud::core::event::return_type on_ready_connect();
 
         /** The socket to use for accepting connections. */
         tcp::socket _socket;
 
         /** The connect event. */
-        mud::event::event _connect_event;
+        mud::core::event _connect_event;
 
         /** The connect impulse. */
         connect_impulse_type _connect_impulse;
@@ -505,14 +505,14 @@ namespace tcp {
          *
          * @return The event.
          */
-        virtual const mud::event::event& event() const override;
+        virtual const mud::core::event& event() const override;
 
     private:
         /** Event handler when there is data available. */
-        mud::event::event::return_type on_ready_receive();
+        mud::core::event::return_type on_ready_receive();
 
         /** The receive event. */
-        mud::event::event _receive_event;
+        mud::core::event _receive_event;
 
         /** The connected state */
         bool _connected = false;

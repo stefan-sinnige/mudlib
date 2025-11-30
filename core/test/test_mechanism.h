@@ -1,10 +1,10 @@
-#ifndef _MUDLIB_EVENT_TEST_MECHANISM_H_
-#define _MUDLIB_EVENT_TEST_MECHANISM_H_
+#ifndef _MUDLIB_CORE_TEST_MECHANISM_H_
+#define _MUDLIB_CORE_TEST_MECHANISM_H_
 
 #include <list>
 #include <map>
 #include <mud/core/handle.h>
-#include <mud/event/event_mechanism.h>
+#include <mud/core/event_mechanism.h>
 
 /*
  * Simulation of simple OS handle with a state to indicate if there is
@@ -49,7 +49,7 @@ private:
  * A Test mechanism for the test-resources. The main loop running on the
  * separate thread is implementing a simple polling mechanism.
  */
-class test_mechanism : public mud::event::event_mechanism
+class test_mechanism : public mud::core::event_mechanism
 {
 public:
     /* Type definition to the handler type */
@@ -58,16 +58,16 @@ public:
     /* Constructor */
     test_mechanism(
             const std::shared_ptr<mud::core::simple_task_queue>& queue,
-            const std::shared_ptr<mud::event::timer_dispatcher>& timers);
+            const std::shared_ptr<mud::core::timer_dispatcher>& timers);
 
     /* Destructor */
     ~test_mechanism();
 
     /* Register handler */
-    void register_handler(const mud::event::event& event) override;
+    void register_handler(const mud::core::event& event) override;
 
     /* Deregister handler */
-    void deregister_handler(const mud::event::event& event) override;
+    void deregister_handler(const mud::core::event& event) override;
 
     /* Initiate */
     std::shared_future<void> initiate() override;
@@ -79,7 +79,7 @@ private:
     /* Thread function */
     void loop();
 
-    std::list<mud::event::event> _events;
+    std::list<mud::core::event> _events;
     std::mutex _lock;
     std::atomic_bool _running;
     std::thread _thread;
@@ -89,4 +89,4 @@ private:
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_EVENT_TEST_MECHANISM_H_ */
+#endif /* _MUDLIB_CORE_TEST_MECHANISM_H_ */

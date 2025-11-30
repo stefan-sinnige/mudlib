@@ -2,10 +2,10 @@
 #include "posix/select_mechanism.h"
 #include <algorithm>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 void
-timer_dispatcher::insert(const std::shared_ptr<mud::event::timer::impl>& timer)
+timer_dispatcher::insert(const std::shared_ptr<mud::core::timer::impl>& timer)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _timers.push_back(timer);
@@ -14,7 +14,7 @@ timer_dispatcher::insert(const std::shared_ptr<mud::event::timer::impl>& timer)
 }
 
 void
-timer_dispatcher::remove(const std::shared_ptr<mud::event::timer::impl>& timer)
+timer_dispatcher::remove(const std::shared_ptr<mud::core::timer::impl>& timer)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     auto pos = std::find(_timers.begin(), _timers.end(), timer);
@@ -68,7 +68,7 @@ timer_dispatcher::sort()
     // Remove any timers that are inactive (erase-remove idiom).
     for (auto iter = _timers.begin(); iter != _timers.end(); /* inside loop */)
     {
-        if ((*iter)->type() == mud::event::timer::type_t::UNKNOWN) {
+        if ((*iter)->type() == mud::core::timer::type_t::UNKNOWN) {
             iter = _timers.erase(iter);
         }
         else {
@@ -83,20 +83,20 @@ timer_dispatcher::sort()
     });
 }
 
-mud::event::event
+mud::core::event
 timer_dispatcher::event()
 {
-    return mud::event::event(
-        _handle.handle(), mud::event::event::signal_type::READING,
+    return mud::core::event(
+        _handle.handle(), mud::core::event::signal_type::READING,
         [&]() {
             // The event was raised as part of a change to the list of timers,
             // in order to force the event-loop to re-evaluate itself and to
             // take into account any possible timer change.
             _handle.capture();
-            return mud::event::event::return_type::CONTINUE;
+            return mud::core::event::return_type::CONTINUE;
         });
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */

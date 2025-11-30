@@ -56,7 +56,6 @@ AC_CONFIG_FILES([
     Makefile
     core/Makefile core/test/Makefile
     doc/Makefile
-    event/Makefile event/test/Makefile
     html/Makefile html/test/Makefile
     html/src/entities_scanner_generator/Makefile
     io/Makefile io/test/Makefile

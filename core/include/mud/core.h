@@ -2,6 +2,9 @@
 #define _MUDLIB_CORE_H_
 
 #include <mud/core/endian.h>
+#include <mud/core/event.h>
+#include <mud/core/event_loop.h>
+#include <mud/core/event_mechanism.h>
 #include <mud/core/exception.h>
 #include <mud/core/factory.h>
 #include <mud/core/handle.h>
@@ -12,6 +15,7 @@
 #include <mud/core/poly_map.h>
 #include <mud/core/poly_vector.h>
 #include <mud/core/task.h>
+#include <mud/core/timer.h>
 #include <mud/core/uri.h>
 #include <mud/core/uuid.h>
 

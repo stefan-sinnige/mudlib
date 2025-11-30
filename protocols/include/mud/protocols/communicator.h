@@ -4,9 +4,9 @@
 #include <functional>
 #include <iostream>
 #include <mud/protocols/ns.h>
+#include <mud/core/event.h>
 #include <mud/core/object.h>
 #include <mud/core/impulse.h>
-#include <mud/event/event.h>
 
 BEGIN_MUDLIB_PROTOCOLS_NS
 
@@ -170,7 +170,7 @@ public:
      *
      * @return The event.
      */
-    virtual const mud::event::event& event() const = 0;
+    virtual const mud::core::event& event() const = 0;
 
     /**
      * @brief The impulse when something is ready to be processed by a higher
@@ -444,7 +444,7 @@ public:
      *
      * @return The event.
      */
-    virtual const mud::event::event& event() const override {
+    virtual const mud::core::event& event() const override {
         return _lower.event();
     }
 private:

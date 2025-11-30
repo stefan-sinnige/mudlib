@@ -6,8 +6,8 @@
 #include <list>
 #include <memory>
 #include <mud/core/handle.h>
-#include <mud/event/event_mechanism.h>
-#include <mud/event/ns.h>
+#include <mud/core/event_mechanism.h>
+#include <mud/core/ns.h>
 #include <thread>
 #if defined(_WIN32)
     #include <windows.h>
@@ -15,7 +15,7 @@
     #include <sys/select.h>
 #endif
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * @brief The event-loop mechanism using the POSIX @c select call.
@@ -48,7 +48,7 @@ public:
      */
     select_mechanism(
         const std::shared_ptr<mud::core::simple_task_queue>& queue,
-        const std::shared_ptr<mud::event::timer_dispatcher>& timers);
+        const std::shared_ptr<mud::core::timer_dispatcher>& timers);
 
     /**
      * Destructor.
@@ -133,7 +133,7 @@ private:
     mud::core::select_handle::signal _self;
 
     /* Event for self-signalling resource */
-    mud::event::event _self_event;
+    mud::core::event _self_event;
 
     /** Registered events. */
     std::list<event> _events;
@@ -154,7 +154,7 @@ private:
     std::shared_future<void> _future;
 };
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
