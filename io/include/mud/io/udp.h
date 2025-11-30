@@ -81,6 +81,20 @@ namespace udp {
         socket();
 
         /**
+         * @brief Construct an unspecified socket.
+         * @details
+         * The unspecified socket is an invalid socket without any associated
+         * resource. It cannot be used as-is, but can be used as a move-target
+         * for another socket.
+         *
+         * @code
+         * udp::socket socket(nullptr);
+         * socket = std::move(other_socket);
+         * @endcode
+         */
+       socket(nullptr_t);
+
+        /**
          * @brief Construct a specialised socket.
          * @param domain The communication domain.
          * @param type The socket type.
@@ -218,7 +232,7 @@ namespace udp {
         /**
          * Constructor.
          */
-        communicator() = default;
+        communicator();
 
         /**
          * @brief Construct a communicator while moving the contents from

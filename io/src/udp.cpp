@@ -17,6 +17,7 @@ typedef short sa_family_t;
     #include <sys/socket.h>
 #endif
 #include <string.h>
+#include "mud/core/exception.h"
 #include "mud/io/exception.h"
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"
@@ -410,6 +411,10 @@ udp::socket::socket()
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
+udp::socket::socket(std::nullptr_t)
+{
+}
+
 udp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
                     basic_socket::protocol_t protocol)
   : ip::socket(domain, type, protocol)
@@ -422,40 +427,63 @@ udp::socket::~socket() {}
 void
 udp::socket::bind(const endpoint& endpoint)
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }  
     _impl->bind(endpoint);
 }
 
 const udp::endpoint&
 udp::socket::source_endpoint() const
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }  
     return _impl->source_endpoint();
 }
 
 const udp::endpoint&
 udp::socket::destination_endpoint() const
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }  
     return _impl->destination_endpoint();
 }
 
 std::istream&
 udp::socket::istr()
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }  
     return _impl->istr();
 }
 
 std::ostream&
 udp::socket::ostr()
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }  
     return _impl->ostr();
 }
 
 std::ostream&
 udp::socket::ostr(const endpoint& endpoint)
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }  
     return _impl->ostr(endpoint);
 }
 
 /** The communicator */
+
+udp::communicator::communicator()
+    : _socket(nullptr)
+{
+}
 
 udp::communicator::~communicator()
 {
