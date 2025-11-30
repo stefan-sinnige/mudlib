@@ -8,5 +8,5 @@ Description: MUD library collection
 Version: @VERSION@
 
 Requires:
-Libs: -L${libdir} -lmudcore -lmudevent -lmudio -lmudhttp -lmudhtml -lmudxml
+Libs: -L${libdir} -lmudcore -lmudio -lmudhttp -lmudhtml -lmudxml
 Cflags: -I${includedir}
