@@ -88,6 +88,20 @@ namespace tcp {
         socket();
 
         /**
+         * @brief Construct an unspecified socket.
+         * @details
+         * The unspecified socket is an invalid socket without any associated
+         * resource. It cannot be used as-is, but can be used as a move-target
+         * for another socket.
+         *
+         * @code
+         * tcp::socket socket(nullptr);
+         * socket = std::move(other_socket);
+         * @endcode
+         */
+       socket(std::nullptr_t);
+
+        /**
          * @brief Construct a specialised socket.
          * @param domain The communication domain.
          * @param type The socket type.
@@ -99,13 +113,15 @@ namespace tcp {
 
         /**
          * @brief Move constructor.
+         * @details The socket ownership is transferred.
          */
-        socket(socket&&);
+        socket(socket&&) = default;
 
         /**
          * @brief Move assignment.
+         * @details The socket ownership is transferred.
          */
-        socket& operator=(socket&&);
+        socket& operator=(socket&&) = default;
 
         /**
          * Destructor.
@@ -413,7 +429,7 @@ namespace tcp {
         /**
          * @brief Constructor.
          */
-        communicator() = default;
+        communicator();
 
         /**
          * @brief Construct a communicator while moving the contents from

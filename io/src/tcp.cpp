@@ -13,6 +13,7 @@ typedef short sa_family_t;
     #include <sys/socket.h>
 #endif
 #include <string.h>
+#include "mud/core/exception.h"
 #include "mud/io/exception.h"
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"
@@ -315,6 +316,10 @@ tcp::socket::socket()
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
+tcp::socket::socket(std::nullptr_t)
+{
+}
+
 tcp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
                     basic_socket::protocol_t protocol)
   : ip::socket(domain, type, protocol)
@@ -330,60 +335,59 @@ tcp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
     _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
 }
 
-tcp::socket::socket(socket&& rhs) : ip::socket(std::move(rhs))
-{
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
-    _impl->source_endpoint() = rhs._impl->source_endpoint();
-    _impl->destination_endpoint() = rhs._impl->destination_endpoint();
-}
-
-tcp::socket&
-tcp::socket::operator=(tcp::socket&& rhs)
-{
-    if (this != &rhs) {
-        ip::socket::operator=(std::move(rhs));
-        _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
-        _impl->source_endpoint() = rhs._impl->source_endpoint();
-        _impl->destination_endpoint() = rhs._impl->destination_endpoint();
-    }
-    return *this;
-}
-
 tcp::socket::~socket() {}
 
 std::istream&
 tcp::socket::istr()
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }
     return _impl->istr();
 }
 
 std::ostream&
 tcp::socket::ostr()
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }
     return _impl->ostr();
 }
 
 const tcp::endpoint&
 tcp::socket::source_endpoint() const
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }
     return _impl->source_endpoint();
 }
 
 const tcp::endpoint&
 tcp::socket::destination_endpoint() const
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }
     return _impl->destination_endpoint();
 }
 
 void
 tcp::socket::source_endpoint(const tcp::endpoint& endpoint)
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }
     _impl->source_endpoint() = endpoint;
 }
 
 void
 tcp::socket::destination_endpoint(const tcp::endpoint& endpoint)
 {
+    if (!_impl) {
+        throw mud::core::not_owner();
+    }
     _impl->destination_endpoint() = endpoint;
 }
 
@@ -635,6 +639,11 @@ tcp::connector::on_ready_connect()
 }
 
 /** The communicator */
+
+tcp::communicator::communicator()
+    : _socket(nullptr)
+{
+}
 
 tcp::communicator::~communicator()
 {

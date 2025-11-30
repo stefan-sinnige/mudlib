@@ -131,6 +131,15 @@ namespace ip {
     {
     protected:
         /**
+         * @brief Construct an unspecified socket.
+         * @details
+         * The unspecified socket is an invalid socket without any associated
+         * resource. It cannot be used as-is, but can be used as a move-target
+         * for another socket.
+         */
+        socket() = default;
+
+        /**
          * @brief Construct an socket.
          * @param domain [in] The communication domain.
          * @param type [in] The socket type.
@@ -153,12 +162,14 @@ namespace ip {
                std::shared_ptr<mud::core::handle> handle);
 
         /**
-         * @brief Move constructor, passing ownership of the socket.
+         * @brief Move constructor.
+         * @details The socket ownership is transferred.
          */
         socket(socket&& rhs) = default;
 
         /**
-         * @brief Move assignment, passing ownership of the socket.
+         * @brief Move assignment.
+         * @details The socket ownership is transferred.
          */
         socket& operator=(socket&& rhs) = default;
 

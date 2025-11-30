@@ -173,6 +173,13 @@ int g_protocols[] = {
     IPPROTO_RAW
 };
 
+basic_socket::basic_socket()
+  : _domain(basic_socket::domain_t::UNSPEC)
+  , _type(basic_socket::type_t::UNSPEC)
+  , _protocol(basic_socket::protocol_t::UNSPEC)
+{
+}
+
 basic_socket::basic_socket(basic_socket::domain_t domain,
                            basic_socket::type_t type,
                            basic_socket::protocol_t protocol)
