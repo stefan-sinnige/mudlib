@@ -1,4 +1,4 @@
-#include "mud/event/event_loop.h"
+#include "mud/core/event_loop.h"
 #include "posix/select_mechanism.h"
 #include "timer_dispatcher.h"
 #include <algorithm>
@@ -10,10 +10,10 @@
 #include <system_error>
 #include <vector>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
- * @brief The implementation class of an @c mud::event::event_loop, managing
+ * @brief The implementation class of an @c mud::core::event_loop, managing
  * different underlying mechanisms, based on the type of handle being used.
  */
 class event_loop::impl
@@ -58,7 +58,7 @@ public:
     /*
      * Return the rimer dispatcher.
      */
-    const std::shared_ptr<mud::event::timer_dispatcher>& timers();
+    const std::shared_ptr<mud::core::timer_dispatcher>& timers();
 
     /**
      * Non-copyable
@@ -74,7 +74,7 @@ private:
     std::shared_ptr<mud::core::simple_task_queue> _queue;
 
     /** The timer dispatcher to hold the event timers. */
-    std::shared_ptr<mud::event::timer_dispatcher> _timers;
+    std::shared_ptr<mud::core::timer_dispatcher> _timers;
 
     /** The task worker pool to handle signaled event tasks. */
     mud::core::task_worker_pool<mud::core::simple_task> _pool;
@@ -96,7 +96,7 @@ private:
 
 event_loop::impl::impl()
   : _queue(std::make_shared<mud::core::simple_task_queue>())
-  , _timers(std::make_shared<mud::event::timer_dispatcher>())
+  , _timers(std::make_shared<mud::core::timer_dispatcher>())
   , _pool(_queue, 2)
   , _running(false)
 {
@@ -230,7 +230,7 @@ event_loop::impl::terminate()
     return _future;
 }
 
-const std::shared_ptr<mud::event::timer_dispatcher>&
+const std::shared_ptr<mud::core::timer_dispatcher>&
 event_loop::impl::timers()
 {
     return _timers;
@@ -240,7 +240,7 @@ void
 event_loop::impl::assert_not_running()
 {
     if (_running == true) {
-        throw std::invalid_argument("mud::event::event_loop already running");
+        throw std::invalid_argument("mud::core::event_loop already running");
     }
 }
 
@@ -290,7 +290,7 @@ event_loop::global()
     return _global;
 }
 
-const std::shared_ptr<mud::event::timer_dispatcher>&
+const std::shared_ptr<mud::core::timer_dispatcher>&
 event_loop::timers()
 {
     return _impl->timers();
@@ -318,6 +318,6 @@ operator&(event::signal_type lhs, event::signal_type rhs)
         static_cast<std::underlying_type<event::signal_type>::type>(rhs));
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */

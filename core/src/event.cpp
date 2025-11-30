@@ -1,6 +1,6 @@
-#include <mud/event/event.h>
+#include <mud/core/event.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 event::event()
   : _id(true)
@@ -49,6 +49,6 @@ event::handler() const
     return _fn;
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */

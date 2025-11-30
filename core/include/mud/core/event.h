@@ -1,13 +1,13 @@
-#ifndef _MUDLIB_EVENT_EVENT_H_
-#define _MUDLIB_EVENT_EVENT_H_
+#ifndef _MUDLIB_CORE_EVENT_H_
+#define _MUDLIB_CORE_EVENT_H_
 
 #include <functional>
 #include <memory>
 #include <mud/core/handle.h>
 #include <mud/core/uuid.h>
-#include <mud/event/ns.h>
+#include <mud/core/ns.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * @brief A event that can be signalled.
@@ -20,7 +20,7 @@ BEGIN_MUDLIB_EVENT_NS
  * Events can be waited upon by an @c event_loop and an associated handler can
  * be called when such an event has been triggered.
  */
-class MUDLIB_EVENT_API event
+class MUDLIB_CORE_API event
 {
 public:
     /**
@@ -158,8 +158,8 @@ operator|(event::signal_type lhs, event::signal_type rhs);
 event::signal_type
 operator&(event::signal_type lhs, event::signal_type rhs);
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_EVENT_EVENT_H_ */
+#endif /* _MUDLIB_CORE_EVENT_H_ */

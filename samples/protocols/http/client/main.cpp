@@ -3,8 +3,8 @@
 #include <string.h>
 #include <utility>
 #include <vector>
+#include <mud/core/event_loop.h>
 #include <mud/core/uri.h>
-#include <mud/event/event_loop.h>
 #include <mud/http/client.h>
 #include <mud/http/request.h>
 #include <mud/http/response.h>
@@ -71,7 +71,7 @@ Options:
 
     // Create the event-loop
     std::thread event_thread = std::thread([]() {
-        mud::event::event_loop::global().loop();
+        mud::core::event_loop::global().loop();
     });
 
     // Create the client to send the request and receive the response.
@@ -92,7 +92,7 @@ Options:
     }
 
     // Stop the event loop and exit
-    mud::event::event_loop::global().terminate();
+    mud::core::event_loop::global().terminate();
     event_thread.join();
     return 0;
 }

@@ -13,12 +13,12 @@ typedef short sa_family_t;
     #include <sys/socket.h>
 #endif
 #include <string.h>
+#include "mud/core/event_loop.h"
 #include "mud/core/exception.h"
 #include "mud/io/exception.h"
 #include "mud/io/ip.h"
 #include "mud/io/streambuf.h"
 #include "mud/io/tcp.h"
-#include "mud/event/event_loop.h"
 
 using namespace std::placeholders;
 
@@ -399,8 +399,8 @@ tcp::acceptor::acceptor()
     _accept_impulse = std::make_shared<
         mud::core::impulse<mud::io::tcp::socket&>>();
 
-    _accept_event = mud::event::event(
-        _listen.handle(), mud::event::event::signal_type::READING,
+    _accept_event = mud::core::event(
+        _listen.handle(), mud::core::event::signal_type::READING,
         std::bind(&acceptor::on_ready_accept, this));
 
     /* Set-up socket options to
@@ -451,7 +451,7 @@ tcp::acceptor::open(const endpoint& endpoint)
     _connected = true;
 
     /* Register the acceptor to the event loop */
-    mud::event::event_loop::global().register_handler(event());
+    mud::core::event_loop::global().register_handler(event());
 }
 
 void
@@ -461,7 +461,7 @@ tcp::acceptor::close()
         _connected = false;
         if (_listen.handle() != nullptr) {
             /* Deregister the acceptor from the event-loop */
-            mud::event::event_loop::global().deregister_handler(event());
+            mud::core::event_loop::global().deregister_handler(event());
             _listen.close();
         }
     }
@@ -473,7 +473,7 @@ tcp::acceptor::connected() const
     return _connected;
 }
 
-const mud::event::event&
+const mud::core::event&
 tcp::acceptor::event() const
 {
     return _accept_event;
@@ -485,12 +485,12 @@ tcp::acceptor::accept_impulse()
     return _accept_impulse;
 }
 
-mud::event::event::return_type
+mud::core::event::return_type
 tcp::acceptor::on_ready_accept()
 {
     // Bail out if not connected
     if (!_connected) {
-        return mud::event::event::return_type::REMOVE;
+        return mud::core::event::return_type::REMOVE;
     }
 
     // Accept the connection. This may block if there is no client ready.
@@ -536,9 +536,9 @@ tcp::acceptor::on_ready_accept()
 
     // Keep on accepting new connections. while the socket is still open
     if (_listen.handle() != nullptr) {
-        return mud::event::event::return_type::CONTINUE;
+        return mud::core::event::return_type::CONTINUE;
     } else {
-        return mud::event::event::return_type::REMOVE;
+        return mud::core::event::return_type::REMOVE;
     }
 }
 
@@ -549,8 +549,8 @@ tcp::connector::connector()
     _connect_impulse = std::make_shared<
         mud::core::impulse<mud::io::tcp::socket&>>();
 
-    _connect_event = mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::WRITING,
+    _connect_event = mud::core::event(
+        _socket.handle(), mud::core::event::signal_type::WRITING,
         std::bind(&connector::on_ready_connect, this));
 
     /* Set-up socket option to enable non-blocking I/O */
@@ -588,10 +588,10 @@ tcp::connector::open(const endpoint& endpoint)
     }
 
     /* Register the connector to the event loop */
-    mud::event::event_loop::global().register_handler(event());
+    mud::core::event_loop::global().register_handler(event());
 }
 
-const mud::event::event&
+const mud::core::event&
 tcp::connector::event() const
 {
     return _connect_event;
@@ -603,14 +603,14 @@ tcp::connector::connect_impulse()
     return _connect_impulse;
 }
 
-mud::event::event::return_type
+mud::core::event::return_type
 tcp::connector::on_ready_connect()
 {
     LOG(log);
     INFO(log) << "TCP connected" << std::endl;
 
     /* Deregister the connector from the event-loop */
-    mud::event::event_loop::global().deregister_handler(event());
+    mud::core::event_loop::global().deregister_handler(event());
 
     // Establish the source and destination endpoint details
     struct sockaddr_in addr;
@@ -635,7 +635,7 @@ tcp::connector::on_ready_connect()
     _connect_impulse->pulse(_socket);
 
     // Done
-    return mud::event::event::return_type::REMOVE;
+    return mud::core::event::return_type::REMOVE;
 }
 
 /** The communicator */
@@ -659,12 +659,12 @@ tcp::communicator::open(tcp::socket&& socket)
     /* Call the impulse */
     connect_impulse()->pulse(_socket);
 
-    _receive_event = mud::event::event(
-        _socket.handle(), mud::event::event::signal_type::READING,
+    _receive_event = mud::core::event(
+        _socket.handle(), mud::core::event::signal_type::READING,
         std::bind(&communicator::on_ready_receive, this));
 
     /* Register the communicator to the event loop */
-    mud::event::event_loop::global().register_handler(event());
+    mud::core::event_loop::global().register_handler(event());
 }
 
 void
@@ -674,7 +674,7 @@ tcp::communicator::close()
         _connected = false;
         if (_socket.handle() != nullptr) {
             /* Deregister the communicator from the event loop */
-            mud::event::event_loop::global().deregister_handler(event());
+            mud::core::event_loop::global().deregister_handler(event());
             _socket.close();
     
             /* Call the impulse */
@@ -707,24 +707,24 @@ tcp::communicator::device()
     return _socket;
 }
 
-const mud::event::event&
+const mud::core::event&
 tcp::communicator::event() const
 {
     return _receive_event;
 }
 
-mud::event::event::return_type
+mud::core::event::return_type
 tcp::communicator::on_ready_receive()
 {
     // Bail out if not connected
     if (!_connected) {
-        return mud::event::event::return_type::REMOVE;
+        return mud::core::event::return_type::REMOVE;
     }
 
     // If no data present, assume that the connection is closed.
     if (istr().peek() == std::char_traits<char>::eof()) {
         close();
-        return mud::event::event::return_type::REMOVE;
+        return mud::core::event::return_type::REMOVE;
     }
 
     // Call the impulse.
@@ -732,9 +732,9 @@ tcp::communicator::on_ready_receive()
 
     // Continue receiving while the socket is still open
     if (_socket.handle() != nullptr) {
-        return mud::event::event::return_type::CONTINUE;
+        return mud::core::event::return_type::CONTINUE;
     } else {
-        return mud::event::event::return_type::REMOVE;
+        return mud::core::event::return_type::REMOVE;
     }
 }
 

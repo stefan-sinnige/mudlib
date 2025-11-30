@@ -1,4 +1,4 @@
-#include "mud/event/event_loop.h"
+#include "mud/core/event_loop.h"
 #include "mud/io/interface.h"
 #include "mud/io/udp.h"
 #include <cstring>
@@ -87,7 +87,7 @@ client::on_receive(mud::io::udp::socket& /* unused */)
     }
 
     // Stop the event-loop, that will exit the application.
-    mud::event::event_loop::global().terminate();
+    mud::core::event_loop::global().terminate();
 }
 
 int
@@ -124,7 +124,7 @@ main(int argc, char** argv)
     }
 
     // Run the global event loop.
-    mud::event::event_loop::global().loop();
+    mud::core::event_loop::global().loop();
 
     return 0;
 }

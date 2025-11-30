@@ -1,4 +1,4 @@
-#include "mud/event/event_loop.h"
+#include "mud/core/event_loop.h"
 #include "mud/io/udp.h"
 #include <cstring>
 #include <iostream>
@@ -118,7 +118,7 @@ main(int argc, char** argv)
     }
 
     // Run the global event loop.
-    mud::event::event_loop::global().loop();
+    mud::core::event_loop::global().loop();
 
     return 0;
 }

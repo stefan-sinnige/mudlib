@@ -1,14 +1,14 @@
-#ifndef _MUDLIB_EVENT_EVENT_LOOP_H_
-#define _MUDLIB_EVENT_EVENT_LOOP_H_
+#ifndef _MUDLIB_CORE_EVENT_LOOP_H_
+#define _MUDLIB_CORE_EVENT_LOOP_H_
 
 #include <functional>
 #include <memory>
 #include <mud/core/handle.h>
-#include <mud/event/event.h>
-#include <mud/event/event_mechanism.h>
-#include <mud/event/ns.h>
+#include <mud/core/event.h>
+#include <mud/core/event_mechanism.h>
+#include <mud/core/ns.h>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /**
  * Forward declarations.
@@ -33,7 +33,7 @@ class timer_dispatcher;
  *
  * There is a single global event loop readily available.
  */
-class MUDLIB_EVENT_API event_loop
+class MUDLIB_CORE_API event_loop
 {
 public:
     /**
@@ -129,7 +129,7 @@ private:
     /**
      * Friends that require privileged access.
      */
-    friend class mud::event::timer;
+    friend class mud::core::timer;
 
     /**
      * Platform specific implementation.
@@ -142,8 +142,8 @@ private:
     std::unique_ptr<impl, impl_deleter> _impl;
 };
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_EVENT_EVENT_LOOP_H_ */
+#endif /* _MUDLIB_CORE_EVENT_LOOP_H_ */

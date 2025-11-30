@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <system_error>
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 /* Register this mechaism to the factory */
 event_mechanism_factory::registrar<mud::core::handle::type_t::SELECT,
@@ -15,17 +15,17 @@ event_mechanism_factory::registrar<mud::core::handle::type_t::SELECT,
 
 select_mechanism::select_mechanism(
     const std::shared_ptr<mud::core::simple_task_queue>& queue,
-    const std::shared_ptr<mud::event::timer_dispatcher>& timers)
-  : mud::event::event_mechanism(queue, timers), _running(false)
+    const std::shared_ptr<mud::core::timer_dispatcher>& timers)
+  : mud::core::event_mechanism(queue, timers), _running(false)
 {
     LOG(log);
 
     /* Always register the self-event to receive the trigger */
-    _self_event = mud::event::event(
+    _self_event = mud::core::event(
             _self.handle(), event::signal_type::READING,
             [&]() {
                 _self.capture();
-                return mud::event::event::return_type::CONTINUE;
+                return mud::core::event::return_type::CONTINUE;
             });
     _events.push_back(_self_event);
     INFO(log) << "Registering self-event for select mechanism fd: "
@@ -33,7 +33,7 @@ select_mechanism::select_mechanism(
               << " [" << _self_event.id() << "]" << std::endl;
 
     /* Register the timer change event */
-    mud::event::event timers_ev = timers->event();
+    mud::core::event timers_ev = timers->event();
     _events.push_back(timers_ev);
     INFO(log) << "Registering timers-event for select mechanism fd: "
               << mud::core::internal_handle<int>(timers_ev.handle())
@@ -339,6 +339,6 @@ select_mechanism::remove_badf()
     }
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */

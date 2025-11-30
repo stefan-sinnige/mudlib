@@ -1,5 +1,5 @@
-#include "mud/event/timer.h"
-#include "mud/event/event_loop.h"
+#include "mud/core/timer.h"
+#include "mud/core/event_loop.h"
 #include "timer_dispatcher.h"
 #include "mud/test.h"
 #include <future>
@@ -43,7 +43,7 @@ CONTEXT_1(mud::core::object)
     /* Destructor after each scenario */
     ~context() {
         if (event_thread.joinable()) {
-            mud::event::event_loop::global().terminate();
+            mud::core::event_loop::global().terminate();
             event_thread.join();
         }
     }
@@ -63,10 +63,10 @@ CONTEXT_1(mud::core::object)
     std::chrono::milliseconds delay;
 
     /* A single timer */
-    mud::event::timer timer;
+    mud::core::timer timer;
 
     /* A set of timers */
-    std::vector<mud::event::timer> timers;
+    std::vector<mud::core::timer> timers;
 
     /* The timer notification count */
     int notification_count;
@@ -95,26 +95,26 @@ FEATURE("Timer")
       [](context& ctx) {
           ctx.epoch = std::chrono::system_clock::now();
           ctx.event_thread = std::thread([]() {
-              mud::event::event_loop::global().loop();
+              mud::core::event_loop::global().loop();
           });
           std::this_thread::sleep_for(std::chrono::milliseconds(1));
       })
   DEFINE_WHEN("The timer is examined", [](context& ctx){
   })
   DEFINE_THEN("The type is unknown", [](context& ctx){
-      ASSERT(mud::event::timer::type_t::UNKNOWN, ctx.timer.type());
+      ASSERT(mud::core::timer::type_t::UNKNOWN, ctx.timer.type());
   })
   DEFINE_THEN("The type is periodic", [](context& ctx){
-      ASSERT(mud::event::timer::type_t::PERIODIC, ctx.timer.type());
+      ASSERT(mud::core::timer::type_t::PERIODIC, ctx.timer.type());
   })
   DEFINE_THEN("The type is once-off", [](context& ctx){
-      ASSERT(mud::event::timer::type_t::ONCE_OFF, ctx.timer.type());
+      ASSERT(mud::core::timer::type_t::ONCE_OFF, ctx.timer.type());
   })
   DEFINE_THEN("The timer is active", [](context& ctx){
-      ASSERT(true, mud::event::timer::type_t::UNKNOWN != ctx.timer.type());
+      ASSERT(true, mud::core::timer::type_t::UNKNOWN != ctx.timer.type());
   })
   DEFINE_THEN("The timer is inactive", [](context& ctx){
-      ASSERT(mud::event::timer::type_t::UNKNOWN, ctx.timer.type());
+      ASSERT(mud::core::timer::type_t::UNKNOWN, ctx.timer.type());
   })
   DEFINE_THEN("The timer is not triggered", [](context& ctx) {
       ASSERT(0, ctx.notification_count);
@@ -137,27 +137,27 @@ FEATURE("Timer")
     THEN ("The type is default-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_default_constructible<
-                  mud::event::timer>::value);
+                  mud::core::timer>::value);
         })
     THEN ("The type is not copy-constructible",
         [](context& ctx) {
             ASSERT(false, std::is_copy_constructible<
-                  mud::event::timer>::value);
+                  mud::core::timer>::value);
         })
     THEN ("The type is move-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_move_constructible<
-                  mud::event::timer>::value);
+                  mud::core::timer>::value);
         })
     THEN ("The type is not copy-assignable",
         [](context& ctx) {
             ASSERT(false, std::is_copy_assignable<
-                  mud::event::timer>::value);
+                  mud::core::timer>::value);
         })
     THEN ("The type is move-assignable",
         [](context& ctx) {
             ASSERT(true, std::is_move_assignable<
-                  mud::event::timer>::value);
+                  mud::core::timer>::value);
         })
 
   SCENARIO("Periodic Timer starting expiration time point")
@@ -185,7 +185,7 @@ FEATURE("Timer")
   SCENARIO("A periodic timer remains active after a trigger")
     GIVEN("A periodic 5 second timer")
     WHEN ("The timer is triggered at 6 seconds", [](context& ctx) {
-            auto& dispatcher = mud::event::event_loop::global().timers();
+            auto& dispatcher = mud::core::event_loop::global().timers();
             auto time_point = ctx.epoch + std::chrono::seconds(6);
             dispatcher->dispatch(time_point);
         })
@@ -201,7 +201,7 @@ FEATURE("Timer")
   SCENARIO("A once-off timer is deactivated after a trigger")
     GIVEN("A once-off timer in 1 hour")
     WHEN ("The timer is triggered in 1 hour", [](context& ctx) {
-            auto& dispatcher = mud::event::event_loop::global().timers();
+            auto& dispatcher = mud::core::event_loop::global().timers();
             auto time_point = ctx.epoch + std::chrono::hours(1);
             dispatcher->dispatch(time_point);
         })
@@ -211,7 +211,7 @@ FEATURE("Timer")
   SCENARIO("A periodic timer that is not expired does not trigger")
     GIVEN("A periodic 5 second timer")
     WHEN ("The timer is triggered at 4 seconds", [](context& ctx) {
-            auto& dispatcher = mud::event::event_loop::global().timers();
+            auto& dispatcher = mud::core::event_loop::global().timers();
             auto time_point = ctx.epoch + std::chrono::seconds(4);
             dispatcher->dispatch(time_point);
         })
@@ -220,7 +220,7 @@ FEATURE("Timer")
   SCENARIO("A once-off timer that is not expired does not trigger")
     GIVEN("A once-off timer in 1 hour")
     WHEN ("The timer is triggered in 30 miutes", [](context& ctx) {
-            auto& dispatcher = mud::event::event_loop::global().timers();
+            auto& dispatcher = mud::core::event_loop::global().timers();
             auto time_point = ctx.epoch + std::chrono::minutes(30);
             dispatcher->dispatch(time_point);
         })

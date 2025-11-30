@@ -1,6 +1,6 @@
 #include "mud/io/tcp.h"
 #include "mud/test.h"
-#include <mud/event/event_loop.h>
+#include <mud/core/event_loop.h>
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
@@ -24,14 +24,14 @@ CONTEXT_1(mud::core::object)
         , accepted(false), connected(false), received(false)
     {
         thr = std::thread([]() {
-            mud::event::event_loop::global().loop();
+            mud::core::event_loop::global().loop();
         });
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     // Destructor, executed after each scenario run
     ~context() {
-        mud::event::event_loop::global().terminate();
+        mud::core::event_loop::global().terminate();
         if (thr.joinable())
         {
             thr.join();
@@ -164,7 +164,7 @@ FEATURE("TCP sockets")
         std::string localhost("127.0.0.1");
         ctx.acceptor.accept_impulse()->attach(&ctx, &context::on_accept);
         ctx.acceptor.open(mud::io::tcp::endpoint(localhost, 52618));
-        mud::event::event_loop::global().register_handler(ctx.acceptor.event());
+        mud::core::event_loop::global().register_handler(ctx.acceptor.event());
 
     })
   DEFINE_GIVEN("There is no TCP server listening for inbound connections",
@@ -174,7 +174,7 @@ FEATURE("TCP sockets")
         std::string localhost("127.0.0.1");
         ctx.connector.connect_impulse()->attach(&ctx, &context::on_connect);
         ctx.connector.open(mud::io::tcp::endpoint(localhost, 52618));
-        mud::event::event_loop::global().register_handler(ctx.connector.event());
+        mud::core::event_loop::global().register_handler(ctx.connector.event());
     })
   DEFINE_WHEN("The TCP server accepts the connection",
     [](context& ctx){

@@ -56,14 +56,14 @@ test_resource::handle() const
  * Test mechanism
  */
 
-mud::event::event_mechanism_factory::registrar<
+mud::core::event_mechanism_factory::registrar<
     mud::core::handle::type_t::__TEST, test_mechanism>
     _registrar;
 
 test_mechanism::test_mechanism(
     const std::shared_ptr<mud::core::simple_task_queue>& queue,
-    const std::shared_ptr<mud::event::timer_dispatcher>& timers)
-  : mud::event::event_mechanism(queue, timers), _running(false)
+    const std::shared_ptr<mud::core::timer_dispatcher>& timers)
+  : mud::core::event_mechanism(queue, timers), _running(false)
 {}
 
 test_mechanism::~test_mechanism()
@@ -76,7 +76,7 @@ test_mechanism::~test_mechanism()
 }
 
 void
-test_mechanism::register_handler(const mud::event::event& event)
+test_mechanism::register_handler(const mud::core::event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -87,7 +87,7 @@ test_mechanism::register_handler(const mud::event::event& event)
 }
 
 void
-test_mechanism::deregister_handler(const mud::event::event& event)
+test_mechanism::deregister_handler(const mud::core::event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
@@ -126,7 +126,7 @@ test_mechanism::loop()
     while (_running) {
         _lock.lock();
         /* Move all events that need to be triggered to another list */
-        std::list<mud::event::event> triggers;
+        std::list<mud::core::event> triggers;
         auto event_it = _events.begin();
         while (event_it != _events.end()) {
             int handle = mud::core::internal_handle<int>(event_it->handle());
@@ -142,7 +142,7 @@ test_mechanism::loop()
         for (auto event: triggers) {
             auto handler = event.handler();
             mud::core::simple_task task([handler, event, this]() {
-                if (handler() == mud::event::event::return_type::CONTINUE) {
+                if (handler() == mud::core::event::return_type::CONTINUE) {
                     this->register_handler(event);
                 }
             });

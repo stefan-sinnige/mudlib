@@ -1,5 +1,5 @@
+#include "mud/core/event_loop.h"
 #include "mud/core/exception.h"
-#include "mud/event/event_loop.h"
 #include "mud/http/client.h"
 #include "mud/http/server.h"
 #include "mud/io/tcp.h"
@@ -18,7 +18,7 @@ CONTEXT()
         : endpoint(std::string("127.0.0.1"), 52618)
     {
         thr = std::thread([]() {
-            mud::event::event_loop::global().loop();
+            mud::core::event_loop::global().loop();
         });
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -26,7 +26,7 @@ CONTEXT()
     /* Destructor after each scenario */
     ~context() {
         server.stop();
-        mud::event::event_loop::global().terminate();
+        mud::core::event_loop::global().terminate();
         if (thr.joinable())
         {
             thr.join();

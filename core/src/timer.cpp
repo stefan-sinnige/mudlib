@@ -1,5 +1,5 @@
-#include "mud/event/timer.h"
-#include "mud/event/event_loop.h"
+#include "mud/core/timer.h"
+#include "mud/core/event_loop.h"
 #include "timer_impl.h"
 #include "timer_dispatcher.h"
 #include <atomic>
@@ -17,7 +17,7 @@ operator<<(std::ostream& ostr, const std::chrono::system_clock::time_point& tp)
     return ostr;
 }
 
-BEGIN_MUDLIB_EVENT_NS
+BEGIN_MUDLIB_CORE_NS
 
 timer::impl::impl()
     : _type(timer::type_t::UNKNOWN)
@@ -118,13 +118,13 @@ timer::~timer()
 }
 
 bool
-timer::operator==(const mud::event::timer& other) const
+timer::operator==(const mud::core::timer& other) const
 {
     return _impl == other._impl;
 }
 
 bool
-timer::operator!=(const mud::event::timer& other) const
+timer::operator!=(const mud::core::timer& other) const
 {
     return _impl != other._impl;
 }
@@ -143,7 +143,7 @@ timer::start(
     LOG(log);
     INFO(log) << "Starting timer at " << epoch << std::endl;
     _impl->start(interval, epoch);
-    mud::event::event_loop::global().timers()->insert(_impl);
+    mud::core::event_loop::global().timers()->insert(_impl);
 }
 
 void
@@ -152,7 +152,7 @@ timer::stop()
     LOG(log);
     INFO(log) << "Stopping timer" << std::endl;
     _impl->stop();
-    mud::event::event_loop::global().timers()->remove(_impl);
+    mud::core::event_loop::global().timers()->remove(_impl);
 }
 
 void
@@ -161,7 +161,7 @@ timer::at(const std::chrono::milliseconds& interval)
     LOG(log);
     INFO(log) << "Starting timer at " << interval.count() << "ms" << std::endl;
     _impl->start(interval);
-    mud::event::event_loop::global().timers()->insert(_impl);
+    mud::core::event_loop::global().timers()->insert(_impl);
 }
 
 void
@@ -170,7 +170,7 @@ timer::at(const std::chrono::system_clock::time_point& epoch)
     LOG(log);
     INFO(log) << "Starting timer at " << epoch << std::endl;
     _impl->start(epoch);
-    mud::event::event_loop::global().timers()->insert(_impl);
+    mud::core::event_loop::global().timers()->insert(_impl);
 }
 
 std::chrono::system_clock::time_point
@@ -192,6 +192,6 @@ timer::on_expire(const std::chrono::system_clock::time_point& time_point)
     _impl->on_expire(time_point);
 }
 
-END_MUDLIB_EVENT_NS
+END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
