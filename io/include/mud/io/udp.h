@@ -269,11 +269,6 @@ namespace udp {
         void close() override;
 
         /**
-         * @brief Return the connected state.
-         */
-        bool connected() const;
-
-        /**
          * @brief Get the stream object to read from the socket.
          * @return The stream object.
          */
@@ -311,13 +306,13 @@ namespace udp {
          *
          * @details
          * The event that is returned is to be used by an @c event_loop to
-         * invoke the @c receive_impulse trigger on the communicator. Any
+         * invoke the @c received notification on the communicator. Any
          * layered communicator on a higher protocol layer will then be
          * invoked as necessary, based on the message being received.
          *
          * @return The event.
          */
-        virtual const mud::core::event& event() const override;
+        virtual mud::core::event& event() override;
 
         /**
          * @brief Get the source endpoint of the socket connection.
@@ -334,7 +329,7 @@ namespace udp {
 
     private:
         /** Event handler when there is data available. */
-        mud::core::event::return_type on_ready_receive();
+        void on_ready_receive(const mud::core::message&);
 
         /** The event */
         mud::core::event _receive_event;

@@ -3,143 +3,146 @@
 
 #include <memory>
 #include <mud/core/ns.h>
-#include <mud/core/notifier.h>
+#include <mud/core/message.h>
 
 BEGIN_MUDLIB_CORE_NS
 
 /**
- * @brief The @c object class provides the basic mechanism for the notification
- * handling. In this concept, an object can act as an initiator of notifications
- * to interested parties. In that case, the object is sending an @c impulse
- * to other @c objects thave have been attached to that impulse.
- *
+ * @brief Generic base class to interact with the notification system.
  * @details
- * In the concept of notification handling, the system has been modeled as a
- * nervous system. A receptor object can issue impulses to a number of
- * effectors, each of which will define their own course of action when such
- * an impulse has been received. For example, when a TCP socket has received
- * data, it may send an impulse of that to any effector who may read or process
- * the data that was received. In this way, the receptor object would not need
- * to know intricate details about the actions in an effector, it merely is
- * responsible for issuing the impulse to any effector.
+ * In terms of the notification system, which is based on the publish/subscribe
+ * pattern, the @c object class provides the basic mechanism for the message
+ * notification handling. In this concept, an object can act both as the
+ * initiator and as the receiver of notifications. As the initiator, an object
+ * can @c notify a message to any interested party, and as a receiver, it can
+ * attach to any particular message being notified. 
  *
- * The @c object class serves as both a receptor and an effector. This means
- * that an @c object can only send notifications to other @c objects. The @c
- * impulse is a definition of a certain stimulus that the @c object can
- * trigger. Any @c object can attach itself to such an impulse and be notified
- * when it is triggered. The @c object can also detach itself from an impulse
- * wen it no longer wishes to be notified or when it is destructed.
+ * In the concept of notification handling, the system has been modeled as a
+ * publish-subscribe mechanism using particular @em topics. Any publisher can
+ * @c notify a topic message and any subscriver to that same topic will then
+ * be notified of its message. Only messages of a certain topic that a
+ * subscriber attaches itself to will be received by that subscriber.
+ *
+ * As publishers and subscribers only negotiate a particular topic, it is
+ * possible that subscribers can attach to a topic for which there are no
+ * publishers (yet), a publisher can notify a topic message without any attached
+ * subscribers, and multiple publishers can notify on the same topic. This
+ * concept allows for a full range of flexibility and in general, a publisher
+ * and a subscriber are not aware if either of them.
+ *
+ * A @em topic is a particular message identification that both subscribers and
+ * publishers use for negotiation and routing of any message of that topic. Each
+ * message that is sent will have the topic identification, but also a unique
+ * message instance identification as well. The latter is unique per message
+ * being notified by the publisher.
+ *
+ * When using @c attach, it is recommended to also call @c detach in the class's
+ * destructor to avoid race conditions when a message notification is dispatched
+ * to an object that is currently being destructed.
  */
 class MUDLIB_CORE_API object
 {
 public:
     /**
      * @brief Constructor
-     *
      * @details
      * Construct an @c object that is able to be a participant in the
-     * notification mechanism. Either as a receptor that issues notifications
-     * through an impulse, or as an effector that receives the notifications.
+     * notification mechanism. Either as a publisher that issues notifications,
+     * or as a subscriber that receives the notifications.
      */
     object() = default;
 
     /**
      * @brief Copy-constructor.
-     *
+     * @param other The object to copy from.
      * @details
      * Create an object as a copy of another one, but does @em not copy the
-     * @c notification subscriptions.
-     *
-     * @param other The object to copy from.
+     * subscriptions. Each instance of the @c object will need to manage its own
+     * subscriptions.
      */
-    object(const object& other);
+    object(const object& other) = default;
 
     /**
      * @brief Move-constructor.
-     *
+     * @param other The object to move from. Its subscriptions will be moved as
+     * well and the @c other will not have any subscriptions associated.
      * @details
-     * Create the object, as a copy of another one, but @em moves the @c
-     * notification subscriptions to this new instance.
-     *
-     * @param other The object to move from.
+     * Create the object, as a copy of another one, but @em moves the
+     * subscriptions to this new instance.
      */
-    object(object&& other);
+    object(object&& other) {
+        mud::core::broker::move(&other, this);
+    }
 
     /**
      * @brief Copy-assignment.
-     *
-     * @details
-     * Assign the contents of another @c object, but does @em not copy the
-     * @c notification subscriptions.
-     *
      * @param other The object to copy from.
      * @return A reference to itself.
+     * @details
+     * Assign the contents of another @c object, but does @em not copy the
+     * subscriptions.
      */
-    object& operator=(const object& other);
+    object& operator=(const object& other) = default;
 
     /**
      * @brief Move-assignment.
-     *
-     * @details
-     * Initialise the object, as a copy of another one, but @em moves the @c
-     * notification subscriptions to this new instance.
-     *
-     * @param other The object to move from.
+     * @param other The object to move from. Its subscriptions will be moved as
      * @return A reference to itself.
+     * @details
+     * Initialise the object, as a copy of another one, but @em moves the
+     * subscriptions to this new instance.
      */
-    object& operator=(object&& other);
+    object& operator=(object&& other) {
+        mud::core::broker::move(&other, this);
+        return *this;
+    }
 
     /**
      * @brief Destructor.
-     *
-     * @details
-     * When the object is destructed, all its attached notifiers are released
-     * from their associated @c impulses.
      */
     virtual ~object() {
-        for (auto notifier: _notifiers) {
-            notifier->detach(notifier.get());
-        }
+        detach();
     }
 
     /**
-     * @brief Attach a @p notifier to this object.
-     *
+     * @brief Attach a member function of an object to a topic.
+     * @param topic The topid ID to attach to.
+     * @param func The member function pointer to notify.
      * @details
-     * Attach a @p notifier to the receptor such that it can manage the
-     * notifications that reference this object. When the object is destructed,
-     * all notifiers are detached properly.
-     *
-     * The @c notifier can be passed as
-     *   - An object with its member function pointer
-     *   - A static function pointer
-     *   - A lambda function (without captures)
-     *
-     * @param notifier The notifier to attach.
+     * Create a notification subscription by attaching a specific member
+     * function to a @c topic. The function will be called on this object
+     * whenever a message of the @c topic type is notified by a publisher.
      */
-    void attach(std::shared_ptr<basic_notifier> notifier) {
-        _notifiers.push_back(notifier);
+    template<typename Type>
+    void attach(
+            const mud::core::uuid& topic,
+            void(Type::*func)(const message&))
+    {
+        mud::core::broker::attach(topic, static_cast<Type*>(this), func);
     }
 
     /**
-     * @brief Detach a @p notifier from the receptor.
-     *
+     * @brief Detach a member function of an object from a topic.
+     * @param topic The topid ID to detach from.
+     * @param func The member function pointer to notify.
      * @details
-     * Detach a @p notifier from the receptor. Note that the specific object
-     * will be removed, it is not based on notification function signature.
-     *
-     * @param notifier The notifier to detach.
+     * Delete a notification subscription by detaching a specific member
+     * function from a @c topic.
      */
-    void detach(std::shared_ptr<basic_notifier> notifier) {
-        auto iter = std::find(_notifiers.begin(), _notifiers.end(), notifier);
-        if (iter != _notifiers.end()) {
-            _notifiers.erase(iter);
-        }
+    template<typename Type>
+    void detach(
+            const mud::core::uuid& topic,
+            void(Type::*func)(const message&))
+    {
+        mud::core::broker::detach(topic, static_cast<Type*>(this), func);
     }
 
-private:
-    /** The list of notifiers that target this object as the effector. */
-    std::vector<std::shared_ptr<basic_notifier>> _notifiers;
+    /**
+     * @brief Detach from all topics.
+     */
+    void detach() {
+        mud::core::broker::detach(this);
+    }
 };
 
 END_MUDLIB_CORE_NS

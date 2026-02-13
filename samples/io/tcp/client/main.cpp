@@ -23,10 +23,10 @@ public:
 
 private:
     // The handler when connecting
-    void on_connect(mud::io::tcp::socket&);
+    void on_connected(const mud::core::message& msg);
 
     // The handler when receiving
-    void on_receive(mud::io::tcp::socket&);
+    void on_received(const mud::core::message& msg);
 
     // The client socket
     mud::io::tcp::connector _connector;
@@ -35,8 +35,8 @@ private:
 
 client::client()
 {
-    _connector.connect_impulse()->attach(this, &client::on_connect);
-    _communicator.receive_impulse()->attach(this, &client::on_receive);
+    attach(_connector.connected(), &client::on_connected);
+    attach(_communicator.received(), &client::on_received);
 }
 
 client::~client() {}
@@ -51,8 +51,11 @@ client::run(const std::string& host, uint16_t port)
 }
 
 void
-client::on_connect(mud::io::tcp::socket& socket)
+client::on_connected(const mud::core::message& /* msg */)
 {
+    // Get the connected socket
+    auto socket = std::move(_connector.connection());
+
     std::cout << "Connected ["
               << "local: " << socket.source_endpoint().address().str() << ":"
               << socket.source_endpoint().port() << " <-> "
@@ -70,7 +73,7 @@ client::on_connect(mud::io::tcp::socket& socket)
 }
 
 void
-client::on_receive(mud::io::tcp::socket& /* unused */)
+client::on_received(const mud::core::message& /* msg */)
 {
     // Receive
     std::string msg;

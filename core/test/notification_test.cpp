@@ -1,4 +1,3 @@
-#include "mud/core/impulse.h"
 #include "mud/core/object.h"
 #include "mud/test.h"
 #include <memory>
@@ -8,315 +7,241 @@
 
 /* clang-format off */
 
-/* Test structures for dynamic effectors */
+/* Test structures for dynamic subscribers */
 
-class sample_receptor: public mud::core::object
+class sample_publisher: public mud::core::object
 {
 public:
-    typedef mud::core::impulse<int>         val_impulse_t;
-    typedef std::shared_ptr<val_impulse_t>  val_impulse_ptr_t;
-    typedef mud::core::impulse<int&>        ref_impulse_t;
-    typedef std::shared_ptr<ref_impulse_t>  ref_impulse_ptr_t;
-    typedef mud::core::impulse<void>        void_impulse_t;
-    typedef std::shared_ptr<void_impulse_t> void_impulse_ptr_t;
-
-    sample_receptor() {
-        _val_impulse_ptr  = std::make_shared<val_impulse_t>();
-        _ref_impulse_ptr  = std::make_shared<ref_impulse_t>();
-        _void_impulse_ptr = std::make_shared<void_impulse_t>();
-    }
+    sample_publisher(const mud::core::uuid& topic)
+        : _topic(topic)
+    {}
     
-    /* The impulses that an effector can connect to. */
-    val_impulse_ptr_t val_impulse() {
-        return _val_impulse_ptr;
-    }
-    ref_impulse_ptr_t ref_impulse() {
-        return _ref_impulse_ptr;
-    }
-    void_impulse_ptr_t void_impulse() {
-        return _void_impulse_ptr;
-    }
-
-    /* Send notifications to any connected effector. */
-    void val_pulse(int value) {
-        _val_impulse_ptr->pulse(value);
-    }
-    void ref_pulse(int& value) {
-        _ref_impulse_ptr->pulse(value);
-    }
-    void void_pulse() {
-        _void_impulse_ptr->pulse();
+    /* Publish the notifications */
+    void publish() {
+        ::mud::core::broker::publish(_topic);
     }
 
 private:
-    val_impulse_ptr_t  _val_impulse_ptr;
-    ref_impulse_ptr_t  _ref_impulse_ptr;
-    void_impulse_ptr_t _void_impulse_ptr;
+    mud::core::uuid _topic;
 };
 
-class sample_effector: public mud::core::object
+class sample_subscriber: public mud::core::object
 {
 public:
-    sample_effector(int& count, int& value)
-        : _impulse_count(count), _impulse_value(value)
-    {
+    sample_subscriber() = default;
+
+    /* Notification handlers */
+    void on_notified(const mud::core::message&) {
+        ++_notified_count;
     }
 
-    sample_effector(int& count, int& value, const sample_effector& other)
-        : mud::core::object(other)
-        , _impulse_count(count), _impulse_value(value)
-    {
-    }
-
-    sample_effector(int& count, int& value, sample_effector&& other) 
-        : mud::core::object(std::move(other))
-        , _impulse_count(count), _impulse_value(value)
-    {
-    }
-
-    /* Functions that receive notifications from a receptor on an impulse */
-    void on_val_impulse(int value) {
-        ++_impulse_count;
-        _impulse_value = value;
-    }
-    void on_ref_impulse(int& value) {
-        ++_impulse_count;
-        _impulse_value = value;
-    }
-    void on_void_impulse() {
-        ++_impulse_count;
+    int notified_count() const {
+        return _notified_count;
     }
 
 private:
-    int& _impulse_count;
-    int& _impulse_value;
+    int _notified_count = 0;
 };
 
-/* Test structures for static effectors */
+/* Test structures for static subscribers */
 
 int static_count;
-int static_value;
 
-void static_val_effector(int value)
-{
-    ++static_count;
-    static_value = value;
-}
-
-void static_ref_effector(int& value)
-{
-    ++static_count;
-    static_value = value;
-}
-
-void static_void_effector()
+void on_notified(const mud::core::message&)
 {
     ++static_count;
 }
 
-/* Test structures for lambda effectors */
+/* Test structures for lambda subscribers */
 
 int lambda_count;
-int lambda_value;
 
 CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
-        _receptor = nullptr;
-        _effector = nullptr;
-        _other_effector = nullptr;
-        _impulse_count[0] = _impulse_count[1] = 0;
-        _impulse_value[0] = _impulse_value[1] = 0;
-        static_count = static_value = 0;
-        lambda_count = lambda_value = 0;
+        _publisher = nullptr;
+        _subscriber = nullptr;
+        _other_subscriber = nullptr;
+        static_count = 0;
+        lambda_count = 0;
     }
 
     /* Destructor after each scenario */
     ~context() {
-        delete _receptor;
-        delete _effector;
-        delete _other_effector;
+        delete _publisher;
+        delete _subscriber;
+        delete _other_subscriber;
     }
 
-    /* A receptor */
-    sample_receptor* _receptor;
+    /* The topic */
+    mud::core::uuid _topic;
 
-    /* Effectors */
-    sample_effector* _effector;
-    sample_effector* _other_effector;
+    /* A publisher */
+    sample_publisher* _publisher;
 
-    /* Impulse counts and values */
-    int _impulse_count[2];
-    int _impulse_value[2];
+    /* Subscribers */
+    sample_subscriber* _subscriber;
+    sample_subscriber* _other_subscriber;
 END_CONTEXT()
 
 FEATURE("Notification")
-  DEFINE_GIVEN("A receptor", [](context& ctx) {
-        ctx._receptor = new sample_receptor();
+  DEFINE_GIVEN("A publisher", [](context& ctx) {
+        ctx._publisher = new sample_publisher(ctx._topic);
     })
-  DEFINE_GIVEN("An effector", [](context& ctx) {
-        ctx._effector = new sample_effector(
-            ctx._impulse_count[0], ctx._impulse_value[0]);
+  DEFINE_GIVEN("A subscriber", [](context& ctx) {
+        ctx._subscriber = new sample_subscriber();
     })
-  DEFINE_GIVEN("An effector is attached to a receptor", [](context& ctx) {
-        ctx._effector = new sample_effector(
-            ctx._impulse_count[0], ctx._impulse_value[0]);
-        ctx._receptor->val_impulse()->attach(
-            ctx._effector,
-            &sample_effector::on_val_impulse);
+  DEFINE_GIVEN("A subscriber is attached", [](context& ctx) {
+        if (ctx._subscriber == nullptr) {
+            ctx._subscriber = new sample_subscriber();
+        }
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._subscriber, &sample_subscriber::on_notified);
     })
-  DEFINE_GIVEN("Another effector is attached to a receptor", [](context& ctx) {
-        ctx._other_effector = new sample_effector(
-            ctx._impulse_count[1], ctx._impulse_value[1]);
-        ctx._receptor->val_impulse()->attach(
-            ctx._other_effector,
-            &sample_effector::on_val_impulse);
-    })
-  DEFINE_GIVEN("Two effectors are attached to a receptor", [](context& ctx) {
-        ctx._effector = new sample_effector(
-            ctx._impulse_count[0], ctx._impulse_value[0]);
-        ctx._receptor->val_impulse()->attach(
-            ctx._effector,
-            &sample_effector::on_val_impulse);
-        ctx._other_effector = new sample_effector(
-            ctx._impulse_count[1], ctx._impulse_value[1]);
-        ctx._receptor->val_impulse()->attach(
-            ctx._other_effector,
-            &sample_effector::on_val_impulse);
-    })
-  DEFINE_GIVEN("A dynamic effector with val arguments is attached to a receptor",
+  DEFINE_GIVEN("The subscriber is attached twice",
     [](context& ctx) {
-        ctx._effector = new sample_effector(
-            ctx._impulse_count[0], ctx._impulse_value[0]);
-        ctx._receptor->val_impulse()->attach(
-            ctx._effector,
-            &sample_effector::on_val_impulse);
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._subscriber, &sample_subscriber::on_notified);
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._subscriber, &sample_subscriber::on_notified);
     })
-  DEFINE_GIVEN("A static effector with val arguments is attached to a receptor",
+  DEFINE_GIVEN("Another subscriber is attached",
     [](context& ctx) {
-         ctx._receptor->val_impulse()->attach(
-             &static_val_effector);
+        if (ctx._other_subscriber == nullptr) {
+            ctx._other_subscriber = new sample_subscriber();
+        }
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._other_subscriber, &sample_subscriber::on_notified);
     })
-  DEFINE_GIVEN("A lambda effector with ref arguments is attached to a receptor",
-    [](context& ctx) {
-         ctx._receptor->val_impulse()->attach([](int value) {
-             ++lambda_count;
-             lambda_value = value;
-         });
+  DEFINE_GIVEN("Two subscribers are attached", [](context& ctx) {
+        if (ctx._subscriber == nullptr) {
+            ctx._subscriber = new sample_subscriber();
+        }
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._subscriber, &sample_subscriber::on_notified);
+        if (ctx._other_subscriber == nullptr) {
+            ctx._other_subscriber = new sample_subscriber();
+        }
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._other_subscriber, &sample_subscriber::on_notified);
     })
-  DEFINE_GIVEN("A dynamic effector with ref arguments is attached to a receptor",
+  DEFINE_GIVEN("A dynamic subscriber is attached",
     [](context& ctx) {
-        ctx._effector = new sample_effector(
-            ctx._impulse_count[0], ctx._impulse_value[0]);
-        ctx._receptor->ref_impulse()->attach(
-            ctx._effector,
-            &sample_effector::on_ref_impulse);
+        if (ctx._subscriber == nullptr) {
+            ctx._subscriber = new sample_subscriber();
+        }
+        mud::core::broker::attach(
+            ctx._topic,
+            ctx._subscriber, &sample_subscriber::on_notified);
     })
-  DEFINE_GIVEN("A static effector with ref arguments is attached to a receptor",
+  DEFINE_GIVEN("A static subscriber is attached",
     [](context& ctx) {
-         ctx._receptor->val_impulse()->attach(
-             &static_val_effector);
+        mud::core::broker::attach(
+            ctx._topic,
+            &on_notified);
     })
-  DEFINE_GIVEN("A lambda effector with ref arguments is attached to a receptor",
+  DEFINE_GIVEN("A lambda subscriber is attached",
     [](context& ctx) {
-         ctx._receptor->ref_impulse()->attach([](int& value) {
-             ++lambda_count;
-             lambda_value = value;
-         });
-    })
-  DEFINE_GIVEN("A dynamic effector with no arguments is attached to a receptor",
-    [](context& ctx) {
-        ctx._effector = new sample_effector(
-            ctx._impulse_count[0], ctx._impulse_value[0]);
-        ctx._receptor->void_impulse()->attach(
-            ctx._effector,
-            &sample_effector::on_void_impulse);
-    })
-  DEFINE_GIVEN("A static effector with no arguments is attached to a receptor",
-    [](context& ctx) {
-         ctx._receptor->void_impulse()->attach(
-             &static_void_effector);
-    })
-  DEFINE_GIVEN("A lambda effector with no arguments is attached to a receptor",
-    [](context& ctx) {
-         ctx._receptor->void_impulse()->attach([]() {
-             ++lambda_count;
-         });
+        mud::core::broker::attach(
+            ctx._topic,
+            [](const mud::core::message&) {
+                 ++lambda_count;
+            });
     })
   DEFINE_WHEN("A notification is sent", [](context& ctx) {
-        int value = 100;
-        ctx._receptor->val_pulse(value);
-        ctx._receptor->ref_pulse(value);
-        ctx._receptor->void_pulse();
+        ctx._publisher->publish();
     })
-  DEFINE_WHEN("The effector is deleted", [](context& ctx) {
-        delete ctx._effector;
-        ctx._effector = nullptr;
+  DEFINE_WHEN("The publisher is deleted", [](context& ctx) {
+        delete ctx._publisher;
+        ctx._publisher = nullptr;
     })
-  DEFINE_WHEN("The other effector is deleted", [](context& ctx) {
-        delete ctx._other_effector;
-        ctx._other_effector = nullptr;
+  DEFINE_WHEN("The subscriber is deleted", [](context& ctx) {
+        delete ctx._subscriber;
+        ctx._subscriber = nullptr;
     })
-  DEFINE_THEN("The static effector receives a notification", [](context& ctx) {
+  DEFINE_WHEN("The other subscriber is deleted", [](context& ctx) {
+        delete ctx._other_subscriber;
+        ctx._other_subscriber = nullptr;
+    })
+  DEFINE_WHEN ("The static subscriber is detached",
+    [](context& ctx) {
+        mud::core::broker::detach(
+            ctx._topic,
+            &on_notified);
+    })
+  DEFINE_WHEN ("The dynamic subscriber is detached",
+    [](context& ctx) {
+        mud::core::broker::detach(
+            ctx._topic,
+            ctx._subscriber, &sample_subscriber::on_notified);
+    })
+  DEFINE_WHEN ("The subscriber is copied to another subscriber",
+    [](context& ctx) {
+        ctx._other_subscriber = new sample_subscriber(
+                *ctx._subscriber);
+
+    })
+  DEFINE_WHEN ("The subscriber is moved to another subscriber",
+    [](context& ctx) {
+        ctx._other_subscriber = new sample_subscriber(
+                std::move(*ctx._subscriber));
+    })
+  DEFINE_THEN("The static subscriber receives a notification",
+    [](context& ctx) {
         ASSERT(1, static_count);
     })
-  DEFINE_THEN("The lambda effector receives a notification", [](context& ctx) {
+  DEFINE_THEN("The lambda subscriber receives a notification",
+    [](context& ctx) {
         ASSERT(1, lambda_count);
     })
-  DEFINE_WHEN ("The effector is copied to another effector", [](context& ctx) {
-        ctx._other_effector = new sample_effector(
-            ctx._impulse_count[1], ctx._impulse_value[1],
-            *ctx._effector);
-    })
-  DEFINE_WHEN ("The effector is moved to another effector", [](context& ctx) {
-        ctx._other_effector = new sample_effector(
-            ctx._impulse_count[1], ctx._impulse_value[1],
-            std::move(*ctx._effector));
-    })
-  DEFINE_THEN("The effector receives a notification", [](context& ctx) {
-        ASSERT(1, ctx._impulse_count[0]);
-    })
-  DEFINE_THEN("The static effector has received a value with the notification",
+  DEFINE_THEN("The subscriber receives a notification",
     [](context& ctx) {
-        ASSERT(100, static_value);
+        ASSERT(1, ctx._subscriber->notified_count());
     })
-  DEFINE_THEN("The lambda effector has received a value with the notification",
+  DEFINE_THEN("The subscriber receives one notification",
     [](context& ctx) {
-        ASSERT(100, lambda_value);
+        ASSERT(1, ctx._subscriber->notified_count());
     })
-  DEFINE_THEN("The effector has received a value with the notification",
+  DEFINE_THEN("The other subscriber receives a notification", [](context& ctx) {
+        ASSERT(1, ctx._other_subscriber->notified_count());
+    })
+  DEFINE_THEN("The subscriber does not receive a notification",
     [](context& ctx) {
-        ASSERT(100, ctx._impulse_value[0]);
+        ASSERT(0, ctx._subscriber->notified_count());
     })
-  DEFINE_THEN("The other effector has received a value with the notification",
+  DEFINE_THEN("The other subscriber does not receive a notification",
     [](context& ctx) {
-        ASSERT(100, ctx._impulse_value[1]);
+        ASSERT(0, ctx._other_subscriber->notified_count());
     })
-  DEFINE_THEN("Both effectors have received a value with the notification",
+  DEFINE_THEN("The static subscriber does not receive a notification",
     [](context& ctx) {
-        ASSERT(100, ctx._impulse_value[0]);
-        ASSERT(100, ctx._impulse_value[1]);
+        ASSERT(0, static_count);
     })
-  DEFINE_THEN("The other effector receives a notification", [](context& ctx) {
-        ASSERT(1, ctx._impulse_count[1]);
+  DEFINE_THEN("Both subscribers receive a notification", [](context& ctx) {
+        ASSERT(1, ctx._subscriber->notified_count());
+        ASSERT(1, ctx._other_subscriber->notified_count());
     })
-  DEFINE_THEN("The effector does not receive a notification",
-    [](context& ctx) {
-        ASSERT(0, ctx._impulse_count[0]);
-        ASSERT(0, ctx._impulse_value[0]);
+  DEFINE_THEN("No subscriber receive a notification", [](context& ctx) {
+        ASSERT(0, ctx._subscriber->notified_count());
+        ASSERT(0, ctx._other_subscriber->notified_count());
     })
-  DEFINE_THEN("The other effector does not receive a notification",
-    [](context& ctx) {
-        ASSERT(0, ctx._impulse_count[1]);
-        ASSERT(0, ctx._impulse_value[1]);
+  DEFINE_THEN ("The publisher has no subscriptions", [](context& ctx) {
+        ASSERT(0, mud::core::broker::size(ctx._topic));
     })
-  DEFINE_THEN("Both effectors receive a notification", [](context& ctx) {
-        ASSERT(1, ctx._impulse_count[0]);
-        ASSERT(1, ctx._impulse_count[1]);
+  DEFINE_THEN ("The publisher has one subscription", [](context& ctx) {
+        ASSERT(1, mud::core::broker::size(ctx._topic));
     })
-  DEFINE_THEN("No effector receive a notification", [](context& ctx) {
-        ASSERT(0, ctx._impulse_count[0]);
-        ASSERT(0, ctx._impulse_count[1]);
+  DEFINE_THEN ("The publisher has two subscriptions", [](context& ctx) {
+        ASSERT(2, mud::core::broker::size(ctx._topic));
+    })
+  DEFINE_THEN ("The publisher has three subscriptions", [](context& ctx) {
+        ASSERT(3, mud::core::broker::size(ctx._topic));
     })
   END_DEFINES()
 
@@ -353,109 +278,98 @@ FEATURE("Notification")
                   mud::core::object>::value);
         })
 
-  SCENARIO("Notification with no effector")
-    GIVEN("A receptor")
-     AND ("An effector")
+  SCENARIO("Notification with no subscribers")
+    GIVEN("A publisher")
+     AND ("A subscriber")
     WHEN ("A notification is sent")
-    THEN ("The effector does not receive a notification")
+    THEN ("The subscriber does not receive a notification")
 
-  SCENARIO("Notification with an effector")
-    GIVEN("A receptor")
-     AND ("An effector is attached to a receptor")
+  SCENARIO("Notification with a subscriber")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
     WHEN ("A notification is sent")
-    THEN ("The effector receives a notification")
-     AND ("The effector has received a value with the notification")
+    THEN ("The subscriber receives a notification")
 
-  SCENARIO("Notification with multiple effectors")
-    GIVEN("A receptor")
-     AND ("Two effectors are attached to a receptor")
+  SCENARIO("Notification with multiple subscribers")
+    GIVEN("A publisher")
+     AND ("Two subscribers are attached")
     WHEN ("A notification is sent")
-    THEN ("Both effectors receive a notification")
-     AND ("Both effectors have received a value with the notification")
+    THEN ("Both subscribers receive a notification")
 
-  SCENARIO("Notification on a deleted effector")
-    GIVEN("A receptor")
-     AND ("An effector is attached to a receptor")
-    WHEN ("The effector is deleted")
+  SCENARIO("Notification on a deleted subscriber")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("The subscriber is deleted")
      AND ("A notification is sent")
-    THEN ("The effector does not receive a notification")
+    THEN("The publisher has no subscriptions")
 
-  SCENARIO("Notification with a static effector using values")
-    GIVEN("A receptor")
-     AND ("A dynamic effector with val arguments is attached to a receptor")
-     AND ("A static effector with val arguments is attached to a receptor")
+  SCENARIO("Notification with a dynamic subscriber")
+    GIVEN("A publisher")
+     AND ("A dynamic subscriber is attached")
     WHEN ("A notification is sent")
-    THEN ("The static effector receives a notification")
-     AND ("The static effector has received a value with the notification")
+    THEN ("The subscriber receives a notification")
 
-  SCENARIO("Notification with a static effector using values")
-    GIVEN("A receptor")
-     AND ("A static effector with val arguments is attached to a receptor")
+  SCENARIO("Notification with a static subscriber")
+    GIVEN("A publisher")
+     AND ("A static subscriber is attached")
     WHEN ("A notification is sent")
-    THEN ("The static effector receives a notification")
-     AND ("The static effector has received a value with the notification")
+    THEN ("The static subscriber receives a notification")
 
-  SCENARIO("Notification with a lambda effector using values")
-    GIVEN("A receptor")
-     AND ("A lambda effector with ref arguments is attached to a receptor")
+  SCENARIO("Notification with a lambda subscriber")
+    GIVEN("A publisher")
+     AND ("A lambda subscriber is attached")
     WHEN ("A notification is sent")
-    THEN ("The lambda effector receives a notification")
-     AND ("The lambda effector has received a value with the notification")
+    THEN ("The lambda subscriber receives a notification")
 
-  SCENARIO("Notification with a dynamic effector using references")
-    GIVEN("A receptor")
-     AND ("A dynamic effector with ref arguments is attached to a receptor")
+  SCENARIO("Notification with a duplicate subscriber")
+    GIVEN("A publisher")
+     AND ("A subscriber")
+     AND ("The subscriber is attached twice")
     WHEN ("A notification is sent")
-    THEN ("The effector receives a notification")
-     AND ("The effector has received a value with the notification")
+    THEN ("The subscriber receives one notification")
 
-  SCENARIO("Notification with a static effector using references")
-    GIVEN("A receptor")
-     AND ("A static effector with ref arguments is attached to a receptor")
-    WHEN ("A notification is sent")
-    THEN ("The static effector receives a notification")
-     AND ("The static effector has received a value with the notification")
-
-  SCENARIO("Notification with a lambda effector using references")
-    GIVEN("A receptor")
-     AND ("A lambda effector with ref arguments is attached to a receptor")
-    WHEN ("A notification is sent")
-    THEN ("The lambda effector receives a notification")
-     AND ("The lambda effector has received a value with the notification")
-
-  SCENARIO("Notification with a dynamic effector with no arguments")
-    GIVEN("A receptor")
-     AND ("A dynamic effector with no arguments is attached to a receptor")
-    WHEN ("A notification is sent")
-    THEN ("The effector receives a notification")
-
-  SCENARIO("Notification with a static effector with no arguments")
-    GIVEN("A receptor")
-     AND ("A static effector with no arguments is attached to a receptor")
-    WHEN ("A notification is sent")
-    THEN ("The static effector receives a notification")
-
-  SCENARIO("Notification with a lambda effector with no arguments")
-    GIVEN("A receptor")
-     AND ("A lambda effector with no arguments is attached to a receptor")
-    WHEN ("A notification is sent")
-    THEN ("The lambda effector receives a notification")
-
-  SCENARIO("A copied effector does not copy the notifications")
-    GIVEN("A receptor")
-     AND ("An effector is attached to a receptor")
-    WHEN ("The effector is copied to another effector")
+  SCENARIO("A copied subscriber does not copy the notifications")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("The subscriber is copied to another subscriber")
      AND ("A notification is sent")
-    THEN ("The effector receives a notification")
-     AND ("The other effector does not receive a notification")
+    THEN ("The subscriber receives a notification")
+     AND ("The other subscriber does not receive a notification")
 
-  SCENARIO("A moved effector moves the notifications")
-    GIVEN("A receptor")
-     AND ("An effector is attached to a receptor")
-    WHEN ("The effector is moved to another effector")
+  SCENARIO("A moved subscriber moves the notifications")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("The subscriber is moved to another subscriber")
      AND ("A notification is sent")
-    THEN ("The effector does not receive a notification")
-     AND ("The other effector receives a notification")
+    THEN ("The subscriber does not receive a notification")
+     AND ("The other subscriber receives a notification")
+
+  SCENARIO("A static subscriber can be detached")
+    GIVEN("A publisher")
+     AND ("A static subscriber is attached")
+    WHEN ("The static subscriber is detached")
+     AND ("A notification is sent")
+    THEN ("The static subscriber does not receive a notification")
+
+  SCENARIO("A dynamic subscriber can be detached")
+    GIVEN("A publisher")
+     AND ("A dynamic subscriber is attached")
+    WHEN ("The dynamic subscriber is detached")
+     AND ("A notification is sent")
+    THEN ("The subscriber does not receive a notification")
+
+  SCENARIO("A dynamic subscriber can be deleted while attached")
+    GIVEN("A publisher")
+     AND ("A dynamic subscriber is attached")
+    WHEN ("The subscriber is deleted")
+    THEN("The publisher has no subscriptions")
+
+  SCENARIO("A publisher can be deleted with an attached subscriber")
+    GIVEN("A publisher")
+     AND ("A dynamic subscriber is attached")
+    WHEN ("The publisher is deleted")
+     AND ("The dynamic subscriber is detached")
+    THEN("The publisher has no subscriptions")
 
 END_FEATURE()
 

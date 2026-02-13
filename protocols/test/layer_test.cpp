@@ -66,18 +66,18 @@ FEATURE("Communication Protocol Layering")
   DEFINE_WHEN("A message for layer A is sent",
       [](context& ctx){
         ctx.istr << "A_REQUEST" << std::endl;
-        ctx.end_comms->device().signal_read();
+        ctx.end_comms->device().simulate_signal();
       });
   DEFINE_WHEN("A message for layer B is sent",
       [](context& ctx){
         ctx.istr << "B_REQUEST" << std::endl;
-        ctx.end_comms->device().signal_read();
+        ctx.end_comms->device().simulate_signal();
       });
   DEFINE_WHEN("An enveloped message for layer B is sent",
       [](context& ctx){
         ctx.istr << "A_ENVELOPE" << std::endl
                  << "B_REQUEST" << std::endl;
-        ctx.end_comms->device().signal_read();
+        ctx.end_comms->device().simulate_signal();
       });
   DEFINE_THEN("A reply from layer A is received",
       [](context& ctx){

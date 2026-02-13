@@ -132,6 +132,13 @@ uuid_v4::operator!=(const uuid_v4& other) const
     return !operator==(other);
 }
 
+bool
+uuid_v4::operator<(const uuid_v4& other) const
+{
+    return ((_upper < other._upper) ||
+            (_upper == other._upper) && (_lower < other._lower));
+}
+
 const std::string&
 uuid_v4::str() const
 {

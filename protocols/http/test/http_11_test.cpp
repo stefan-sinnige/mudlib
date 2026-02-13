@@ -204,7 +204,7 @@ FEATURE("HTTP/1.1 Protocol")
             })
         WHEN ("A client sends a request")
         THEN ("The client receives a response")
-         AND ("THe response contains a 'Content-Length'",
+         AND ("The response contains a 'Content-Length'",
             [](context& ctx) {
                 ASSERT(11, ctx.resp.field<mud::http::content_length>());
             })

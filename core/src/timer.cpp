@@ -23,7 +23,6 @@ timer::impl::impl()
     : _type(timer::type_t::UNKNOWN)
     , _expiration(std::chrono::system_clock::time_point::max())
 {
-    _expire_impulse = std::make_shared<mud::core::impulse<void>>();
 }
 
 void
@@ -70,7 +69,7 @@ timer::impl::stop()
 }
 
 void
-timer::impl::on_expire(const std::chrono::system_clock::time_point& time_point)
+timer::impl::on_expired(const std::chrono::system_clock::time_point& time_point)
 {
     if (_type == timer::type_t::PERIODIC) {
         // Increase the expiration with the interval until the next point past
@@ -92,7 +91,12 @@ timer::impl::on_expire(const std::chrono::system_clock::time_point& time_point)
         // A once-off timer that has been triggered is no longer active.
         _type = timer::type_t::UNKNOWN;
     }
-    _expire_impulse->pulse();
+
+    // Publish the expired message
+    LOG(log);
+    INFO(log) << "Timer expired " << _expired << std::endl;
+    mud::core::timer::expired_message msg(_expired, time_point);
+    ::mud::core::broker::publish(msg);
 }
 
 std::chrono::system_clock::time_point
@@ -179,17 +183,9 @@ timer::expiration() const
     return _impl->expiration();
 }
 
-timer::expire_impulse_type
-timer::expire_impulse() {
-    return _impl->expire_impulse();
-}
-
-void
-timer::on_expire(const std::chrono::system_clock::time_point& time_point)
-{
-    LOG(log);
-    INFO(log) << "Timer expired, pulsing" << std::endl;
-    _impl->on_expire(time_point);
+const mud::core::uuid&
+timer::expired() const {
+    return _impl->expired();
 }
 
 END_MUDLIB_CORE_NS

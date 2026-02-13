@@ -4,6 +4,20 @@
 
 BEGIN_MUDLIB_CORE_NS
 
+timer_dispatcher::timer_dispatcher()
+    : _changed(mud::core::uuid(), _handle.handle(),
+               mud::core::event::signal_type::READING)
+{
+    /* Attach the handler when the timer list has changed (ie a timer has been
+     * added or removed. The handler will only reset the trigger handle as
+     * that is all that is required for the @c select to re-examine the timer
+     * list to calculate the updated timeout. */
+    ::mud::core::broker::attach(_changed.topic(),
+        [&](const mud::core::message&) {
+            _handle.capture();
+        });
+}
+
 void
 timer_dispatcher::insert(const std::shared_ptr<mud::core::timer::impl>& timer)
 {
@@ -23,23 +37,6 @@ timer_dispatcher::remove(const std::shared_ptr<mud::core::timer::impl>& timer)
     }
     sort();
     _handle.trigger();
-}
-
-void
-timer_dispatcher::dispatch(const std::chrono::system_clock::time_point& epoch)
-{
-    // Trigger all the timers that have expired and stop as soon as we hit a
-    // timer that has not yet expired.
-    std::lock_guard<std::mutex> lock(_mutex);
-    for (auto& timer: _timers) {
-        if (timer->expiration() <= epoch) {
-            timer->on_expire(epoch);
-        }
-        else {
-            break;
-        }
-    }
-    sort();
 }
 
 std::chrono::milliseconds
@@ -63,6 +60,29 @@ timer_dispatcher::wait_duration(
 }
 
 void
+timer_dispatcher::dispatch(const std::chrono::system_clock::time_point& epoch)
+{
+    // Trigger all the timers that have expired and stop as soon as we hit a
+    // timer that has not yet expired.
+    std::lock_guard<std::mutex> lock(_mutex);
+    for (auto& timer: _timers) {
+        if (timer->expiration() <= epoch) {
+            timer->on_expired(epoch);
+        }
+        else {
+            break;
+        }
+    }
+    sort();
+}
+
+mud::core::event&
+timer_dispatcher::changed()
+{
+    return _changed;
+}
+
+void
 timer_dispatcher::sort()
 {
     // Remove any timers that are inactive (erase-remove idiom).
@@ -83,18 +103,11 @@ timer_dispatcher::sort()
     });
 }
 
-mud::core::event
-timer_dispatcher::event()
+void
+timer_dispatcher::on_expired(const mud::core::message&)
 {
-    return mud::core::event(
-        _handle.handle(), mud::core::event::signal_type::READING,
-        [&]() {
-            // The event was raised as part of a change to the list of timers,
-            // in order to force the event-loop to re-evaluate itself and to
-            // take into account any possible timer change.
-            _handle.capture();
-            return mud::core::event::return_type::CONTINUE;
-        });
+    auto now = std::chrono::system_clock::now();
+    dispatch(now);
 }
 
 END_MUDLIB_CORE_NS

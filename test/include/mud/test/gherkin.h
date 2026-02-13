@@ -1406,115 +1406,111 @@ public:
 
 /**
  * @brief Macro to define a context.
+ * @param ARGS Variable number of arguments to specify additional derived
+ * classes that the context should be based upon.
  */
 
-#define CONTEXT()                                                            \
-    namespace /* unnamed */ {                                                \
-    class context : public mud::test::_base_context                          \
-    {                                                                        \
+#define CONTEXT(...)                                                          \
+    namespace /* unnamed */ {                                                 \
+    class context : public mud::test::_base_context __VA_OPT__(,) __VA_ARGS__ \
+    {                                                                         \
     public:
 
-#define CONTEXT_1(BASE)                                                      \
-    namespace /* unnamed */ {                                                \
-    class context : public mud::test::_base_context, public BASE             \
-    {                                                                        \
-    public:
-
-#define END_CONTEXT()                                                        \
+#define END_CONTEXT()                                                         \
     };
 
 /**
  * @brief Macro to define a feature
  */
 
-#define FEATURE(ID)                                                          \
-    class TestFeature : public mud::test::_feature<context>                  \
-    {                                                                        \
-    public:                                                                  \
-        static bool register_feature() {                                     \
-            mud::test::_feature_factory::register_feature(ID, []{            \
-                            return new TestFeature();                        \
-                    });                                                      \
-            return true;                                                     \
-        }                                                                    \
+#define FEATURE(ID)                                                           \
+    class TestFeature : public mud::test::_feature<context>                   \
+    {                                                                         \
+    public:                                                                   \
+        static bool register_feature() {                                      \
+            mud::test::_feature_factory::register_feature(ID, []{             \
+                            return new TestFeature();                         \
+                    });                                                       \
+            return true;                                                      \
+        }                                                                     \
         TestFeature() : _id(ID) {
 
 /**
  * @brief Macro to define a pre-defined 'given' step.
  */
-#define DEFINE_GIVEN(ID,FUNC)                                                \
+#define DEFINE_GIVEN(ID,FUNC)                                                 \
             register_given(ID, FUNC);
 
 /**
  * @brief Macro to define a pre-defined 'when' step.
  */
-#define DEFINE_WHEN(ID,FUNC)                                                 \
+#define DEFINE_WHEN(ID,FUNC)                                                  \
             register_when(ID, FUNC);
 
 /**
  * @brief Macro to define a pre-defined 'then' step.
  */
-#define DEFINE_THEN(ID,FUNC)                                                 \
+#define DEFINE_THEN(ID,FUNC)                                                  \
             register_then(ID, FUNC);
 
 /**
  * @brief Macro to define the end of all pre-defined steps. This macro must
  *        always be called, even when there are no pre-defined steps.
  */
-#define END_DEFINES()                                                        \
-        }                                                                    \
-        virtual std::pair<size_t, size_t> run(                               \
-                const std::string& filter) override                          \
-        {                                                                    \
-            static const char* color_default = "\x1b[0m";                    \
-            static const char* color_bold    = "\x1b[1m";                    \
-            std::cout << color_bold                                          \
-                      << "FEATURE: " << _id                                  \
-                      << color_default << std::endl;                         \
-            std::pair<size_t, size_t> result = {-1, -1};                     \
-            {                                                                \
-                class Dummy { public: bool run() { return true; }};          \
+#define END_DEFINES()                                                         \
+        }                                                                     \
+        virtual std::pair<size_t, size_t> run(                                \
+                const std::string& filter) override                           \
+        {                                                                     \
+            static const char* color_default = "\x1b[0m";                     \
+            static const char* color_bold    = "\x1b[1m";                     \
+            std::cout << color_bold                                           \
+                      << "FEATURE: " << _id                                   \
+                      << color_default << std::endl;                          \
+            std::pair<size_t, size_t> result = {-1, -1};                      \
+            {                                                                 \
+                class Dummy { public: bool run() { return true; }};           \
                 Dummy scnr;
 
 /**
  * @brief Macro to define a @c SCENARIO
  */
-#define SCENARIO(ID)                                                         \
-                ;                                                            \
-                ++result.first;                                              \
-                if (scnr.run()) {                                            \
-                    ++result.second;                                         \
-                }                                                            \
-            } ;                                                              \
-            if (filter.empty() || filter == ID)                              \
-            {                                                                \
+#define SCENARIO(ID)                                                          \
+                ;                                                             \
+                ++result.first;                                               \
+                if (scnr.run()) {                                             \
+                    ++result.second;                                          \
+                }                                                             \
+            } ;                                                               \
+            if (filter.empty() || filter == ID)                               \
+            {                                                                 \
                 mud::test::_scenario<context> scnr(*this, ID);
 
 /**
  * @brief Macro to define a @c GIVEN step.
  */
-#define GIVEN(...)                                                           \
+#define GIVEN(...)                                                            \
                 scnr.Given( __VA_ARGS__)
 
 /**
  * @brief Macro to define a @c WHEN step.
  */
-#define WHEN(...)                                                            \
-                ;                                                            \
+#define WHEN(...)                                                             \
+                ;                                                             \
                 scnr.When(__VA_ARGS__)
 
 /**
  * @brief Macro to define a @c THEN step.
  */
-#define THEN(...)                                                            \
-                ;                                                            \
+#define THEN(...)                                                             \
+                ;                                                             \
                 scnr.Then(__VA_ARGS__)
 
 /**
  * @brief Macro to define an @c AND step that can be used after a @GIVEN,
  *        @c WHEN and @c THEN step.
  */
-#define AND(...)                                                             \
+#define AND(...)                                                              \
                 .And(__VA_ARGS__)
 
 /**
@@ -1524,21 +1520,21 @@ public:
  *        This is in contract to the @C SAMPLES table that executes the @c
  *        SCENARIO for each row of the samples table.
  */
-#define DATA(...)                                                            \
-                .Data([]() -> mud::test::_base_table::ptr {                  \
+#define DATA(...)                                                             \
+                .Data([]() -> mud::test::_base_table::ptr {                   \
                     auto tbl = new mud::test::_table<__VA_ARGS__>;
 
 /**
  * @brief Macro to define a new @c DATA table row.
  */
-#define DATA_ROW(...)                                                        \
+#define DATA_ROW(...)                                                         \
                     tbl->push_back(__VA_ARGS__);
 
 /**
  * @brief Macro to define the end of a @c DATA table definition.
  */
-#define END_DATA()                                                           \
-                    return std::shared_ptr<mud::test::_base_table>(tbl);     \
+#define END_DATA()                                                            \
+                    return std::shared_ptr<mud::test::_base_table>(tbl);      \
                 })
 
 /**
@@ -1548,110 +1544,110 @@ public:
  *        This is in contrast to the @c DATA that makes the entire table
  *        availabel to each step and the scenario is only executed once.
  */
-#define SAMPLES(...)                                                         \
-                ;                                                            \
-                scnr.Samples([]() -> mud::test::_base_table::ptr {           \
+#define SAMPLES(...)                                                          \
+                ;                                                             \
+                scnr.Samples([]() -> mud::test::_base_table::ptr {            \
                     auto tbl = new mud::test::_table<__VA_ARGS__>;
 
 /**
  * @brief Macro to define a new @c SAMPLE table row.
  */
-#define SAMPLE(...)                                                          \
+#define SAMPLE(...)                                                           \
                     tbl->push_back(__VA_ARGS__);
 
 /**
  * @brief Macro to define the end of a @c SAMPLES table definition.
  */
-#define END_SAMPLES()                                                        \
-                    return std::shared_ptr<mud::test::_base_table>(tbl);     \
+#define END_SAMPLES()                                                         \
+                    return std::shared_ptr<mud::test::_base_table>(tbl);      \
                 })
 
 /**
  * @brief Macro to define the optional new @c DATA table headings.
  */
-#define HEADINGS(...)                                                        \
+#define HEADINGS(...)                                                         \
                     tbl->headings({__VA_ARGS__});
 
 /**
  * @brief Macro to define the end of the @c FEATURE definition.
  */
-#define END_FEATURE()                                                        \
-                ;                                                            \
-                ++result.first;                                              \
-                if (scnr.run()) {                                            \
-                    ++result.second;                                         \
-                }                                                            \
-            }                                                                \
-            return result;                                                   \
-        }                                                                    \
-        private:                                                             \
-            std::string _id;                                                 \
-        };                                                                   \
-        bool registered = TestFeature::register_feature();                   \
+#define END_FEATURE()                                                         \
+                ;                                                             \
+                ++result.first;                                               \
+                if (scnr.run()) {                                             \
+                    ++result.second;                                          \
+                }                                                             \
+            }                                                                 \
+            return result;                                                    \
+        }                                                                     \
+        private:                                                              \
+            std::string _id;                                                  \
+        };                                                                    \
+        bool registered = TestFeature::register_feature();                    \
     } /* namespace unnamed */
 
 /**
  * @brief Macro to define an assertion.
  */
-#define ASSERT(...)                                                          \
+#define ASSERT(...)                                                           \
     mud::test::Assert(__FILE__, __LINE__, __VA_ARGS__)
 
 /**
  * @brief Macro to define an assertion on throwing an excpetion.
  */
-#define ASSERT_THROW(EX,...)                                                 \
-    do                                                                       \
-    {                                                                        \
-        bool thrown = false;                                                 \
-        try {                                                                \
-            __VA_ARGS__;                                                     \
-        }                                                                    \
-        catch(const EX& ex) {                                                \
-            /* Expected */                                                   \
-            thrown = true;                                                   \
-        }                                                                    \
-        catch(const std::exception& ex) {                                    \
-            std::stringstream sstr;                                          \
-            sstr << "  Expected exception: " << typeid(EX).name()            \
-                 << std::endl                                                \
-                 << "  Actual exception  : std::exception - or derived";     \
-            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
-        }                                                                    \
-        catch(...) {                                                         \
-            std::stringstream sstr;                                          \
-            sstr << "  Expected exception: " << typeid(EX).name()            \
-                 << std::endl                                                \
-                 << "  Actual exception  : <unidentified>";                  \
-            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
-        }                                                                    \
-        if (!thrown) {                                                       \
-            std::stringstream sstr;                                          \
-            sstr << "  Expected exception: " << typeid(EX).name()            \
-                 << std::endl                                                \
-                 << "  Actual exception  : not thrown";                      \
-            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
-        }                                                                    \
+#define ASSERT_THROW(EX,...)                                                  \
+    do                                                                        \
+    {                                                                         \
+        bool thrown = false;                                                  \
+        try {                                                                 \
+            __VA_ARGS__;                                                      \
+        }                                                                     \
+        catch(const EX& ex) {                                                 \
+            /* Expected */                                                    \
+            thrown = true;                                                    \
+        }                                                                     \
+        catch(const std::exception& ex) {                                     \
+            std::stringstream sstr;                                           \
+            sstr << "  Expected exception: " << typeid(EX).name()             \
+                 << std::endl                                                 \
+                 << "  Actual exception  : std::exception - or derived";      \
+            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());          \
+        }                                                                     \
+        catch(...) {                                                          \
+            std::stringstream sstr;                                           \
+            sstr << "  Expected exception: " << typeid(EX).name()             \
+                 << std::endl                                                 \
+                 << "  Actual exception  : <unidentified>";                   \
+            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());          \
+        }                                                                     \
+        if (!thrown) {                                                        \
+            std::stringstream sstr;                                           \
+            sstr << "  Expected exception: " << typeid(EX).name()             \
+                 << std::endl                                                 \
+                 << "  Actual exception  : not thrown";                       \
+            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());          \
+        }                                                                     \
     } while(false)
 
 /**
  * @brief Macro to define an assertion on not-throwing an excpetion.
  */
-#define ASSERT_NO_THROW(...)                                                 \
-    do                                                                       \
-    {                                                                        \
-        try {                                                                \
-            __VA_ARGS__;                                                     \
-        }                                                                    \
-        catch(const std::exception& ex) {                                    \
-            std::stringstream sstr;                                          \
-            sstr << "  Unexpected exception: std::exception - or derived";   \
-            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
-        }                                                                    \
-        catch(...) {                                                         \
-            std::stringstream sstr;                                          \
-            sstr << "  Unexpected exception: <unidentified>";                \
-            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());         \
-        }                                                                    \
+#define ASSERT_NO_THROW(...)                                                  \
+    do                                                                        \
+    {                                                                         \
+        try {                                                                 \
+            __VA_ARGS__;                                                      \
+        }                                                                     \
+        catch(const std::exception& ex) {                                     \
+            std::stringstream sstr;                                           \
+            sstr << "  Unexpected exception: std::exception - or derived";    \
+            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());          \
+        }                                                                     \
+        catch(...) {                                                          \
+            std::stringstream sstr;                                           \
+            sstr << "  Unexpected exception: <unidentified>";                 \
+            mud::test::AssertFailed(__FILE__, __LINE__, sstr.str());          \
+        }                                                                     \
     } while(false)
 
 /**
@@ -1659,7 +1655,7 @@ public:
  * two @c size_t values, the first recording the total number of scenarios
  * that have been run, and the second the total number of success.
  */
-#define FEATURE_RUN(...)                                                    \
+#define FEATURE_RUN(...)                                                     \
     mud::test::_feature_factory::run(__VA_ARGS__)
 
 /* clang-format on */

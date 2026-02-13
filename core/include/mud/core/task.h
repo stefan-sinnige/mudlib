@@ -14,342 +14,12 @@
 BEGIN_MUDLIB_CORE_NS
 
 /**
- * Forward declaration of the template type such that specialisations can be
- * made.
- */
-template<class>
-class task;
-
-/**
- * @brief A representation of an executable task which can be run
- * asynchroneously and returns a non-void result.
- */
-template<class Result, class... Args>
-class task<Result(Args...)>
-{
-public:
-    /**
-     * @brief Type definition of the task function.
-     */
-    typedef std::function<Result(Args...)> function_type;
-
-    /**
-     * @brief Type definition of the result type.
-     */
-    typedef Result result_type;
-
-    /**
-     * @brief An invalid task.
-     */
-    task();
-
-    /**
-     * @brief Constructor of a task function to be executed.
-     */
-    task(function_type&& fn);
-
-    /**
-     * @brief Move constructor.
-     */
-    task(task&& other);
-
-    /**
-     * @brief Move assignment.
-     */
-    task& operator=(task&& rhs);
-
-    /**
-     * @brief Destructor.
-     */
-    virtual ~task();
-
-    /**
-     * @brief Execute the task function with the supplied arguments. The
-     * result is available through the future.
-     */
-    void operator()(Args...);
-
-    /**
-     * @brief Return the future to access the return upon completion.
-     */
-    std::future<result_type> get_future();
-
-    /**
-     * @brief Return true if the task is valid.
-     */
-    bool valid() const;
-
-    /**
-     * Non-copyable.
-     */
-    task(const task&) = delete;
-    task& operator=(const task&) = delete;
-
-private:
-    /**
-     * @brief The task function to execute.
-     */
-    function_type _fn;
-
-    /**
-     * @brief The promise to pass the result.
-     */
-    std::promise<result_type> _promise;
-};
-
-template<class Result, class... Args>
-task<Result(Args...)>::task() : _fn(nullptr)
-{}
-
-template<class Result, class... Args>
-task<Result(Args...)>::task(function_type&& fn) : _fn(std::move(fn))
-{}
-
-template<class Result, class... Args>
-task<Result(Args...)>::task(task&& rhs)
-{
-    _fn.swap(rhs._fn);
-    _promise.swap(rhs._promise);
-}
-
-template<class Result, class... Args>
-task<Result(Args...)>&
-task<Result(Args...)>::operator=(task&& rhs)
-{
-    _fn.swap(rhs._fn);
-    _promise.swap(rhs._promise);
-    return *this;
-}
-
-template<class Result, class... Args>
-task<Result(Args...)>::~task()
-{}
-
-template<class Result, class... Args>
-void
-task<Result(Args...)>::operator()(Args... args)
-{
-    try {
-        _promise.set_value(_fn(std::forward<Args>(args)...));
-    } catch (...) {
-        _promise.set_exception(std::current_exception());
-    }
-}
-
-template<class Result, class... Args>
-std::future<Result>
-task<Result(Args...)>::get_future()
-{
-    return _promise.get_future();
-}
-
-template<class Result, class... Args>
-bool
-task<Result(Args...)>::valid() const
-{
-    return (_fn != nullptr);
-}
-
-/**
- * @brief A representation of an executable task which can be run
- * asynchroneously and returns a void result.
- */
-template<class... Args>
-class task<void(Args...)>
-{
-public:
-    /**
-     * @brief Type definition of the task function.
-     */
-    typedef std::function<void(Args...)> function_type;
-
-    /**
-     * @brief Type definition of the result type.
-     */
-    typedef void result_type;
-
-    /**
-     * @brief An invalid task.
-     */
-    task();
-
-    /**
-     * @brief Constructor of a task function to be executed.
-     */
-    task(function_type&& fn);
-
-    /**
-     * @brief Move constructor.
-     */
-    task(task&& other);
-
-    /**
-     * @brief Move assignment.
-     */
-    task& operator=(task&& rhs);
-
-    /**
-     * @brief Destructor.
-     */
-    virtual ~task();
-
-    /**
-     * @brief Execute the task function with the supplied arguments. The
-     * result is available through the future.
-     */
-    void operator()(Args...);
-
-    /**
-     * @brief Return the future to access the return upon completion.
-     */
-    std::future<result_type> get_future();
-
-    /**
-     * @brief Return true if the task is valid.
-     */
-    bool valid() const;
-
-    /**
-     * Non-copyable.
-     */
-    task(const task&) = delete;
-    task& operator=(const task&) = delete;
-
-private:
-    /**
-     * @brief The task function to execute.
-     */
-    function_type _fn;
-
-    /**
-     * @brief The promise to pass the result.
-     */
-    std::promise<result_type> _promise;
-};
-
-template<class... Args>
-task<void(Args...)>::task() : _fn(nullptr)
-{}
-
-template<class... Args>
-task<void(Args...)>::task(function_type&& fn) : _fn(std::move(fn))
-{}
-
-template<class... Args>
-task<void(Args...)>::task(task&& rhs)
-{
-    _fn.swap(rhs._fn);
-    _promise.swap(rhs._promise);
-}
-
-template<class... Args>
-task<void(Args...)>&
-task<void(Args...)>::operator=(task&& rhs)
-{
-    _fn.swap(rhs._fn);
-    _promise.swap(rhs._promise);
-    return *this;
-}
-
-template<class... Args>
-task<void(Args...)>::~task()
-{}
-
-template<class... Args>
-void
-task<void(Args...)>::operator()(Args... args)
-{
-    LOG(log);
-    TRACE(log) << "Running task" << std::endl;
-
-    try {
-        _fn(std::forward<Args>(args)...);
-        _promise.set_value();
-    } catch (...) {
-        _promise.set_exception(std::current_exception());
-    }
-
-    TRACE(log) << "Finished task" << std::endl;
-}
-
-template<class... Args>
-std::future<void>
-task<void(Args...)>::get_future()
-{
-    return _promise.get_future();
-}
-
-template<class... Args>
-bool
-task<void(Args...)>::valid() const
-{
-    return (_fn != nullptr);
-}
-
-/**
- * @brief Type definition of a simple, self-contained task.
- */
-typedef task<void(void)> simple_task;
-
-/**
- * @brief Synchronisation between the task-queue and its workers is controlled
- * by a condition variable with two flags. One flag to indicate that there is
- * data available in the queue and another one to indicate that the workers
- * are requested to terminate.
- */
-
-typedef struct task_queue_synchronisation
-{
-    /**
-     * @brief Create a synchronisation object that is initiated.
-     */
-    task_queue_synchronisation()
-    {
-        _available = false;
-        _terminate = false;
-    }
-
-    /**
-     * @brief Destruct a synchronisation object.
-     */
-    ~task_queue_synchronisation() = default;
-
-    /**
-     * @brief Initiate the synchronisation by resetting the termination flag.
-     */
-    void initiate()
-    {
-        std::lock_guard<std::mutex> lock(_cv_lock);
-        _terminate = false;
-    }
-
-    /**
-     * @brief Request all workers to terminate
-     */
-    void terminate()
-    {
-        std::lock_guard<std::mutex> lock(_cv_lock);
-        _terminate = true;
-        _cv.notify_all();
-    }
-
-    /** The condition variable */
-    std::condition_variable _cv;
-
-    /** The mutex associated with the condition variable */
-    std::mutex _cv_lock;
-
-    /** The flag to indicate there is are tasks available in the queue. */
-    bool _available;
-
-    /** The flag to indicate that the workers are requested to terminate. */
-    bool _terminate;
-} task_queue_synchronisation;
-
-/**
- * @brief A queue of tasks that can be accessed asynchroneously. The queue can
- * be shared (e.g. through a @c shared_ptr) with mutlitple threads who can
- * either push new tasks or pop tasks from the queue.
+ * @brief A queue of tasks that can be accessed asynchroneously.
+ * @details
+ * The task queue is most notably used with the @c task_worker_pool and its @c
+ * task_worker threads and shared amongst them. The @c task_queue provides the
+ * mechanism to safely push new tasks onto the queue and pop them from the
+ * queue in a multi-threaded environment.
  */
 template<typename Task>
 class task_queue
@@ -358,7 +28,7 @@ public:
     /**
      * @brief Type definition of the task staored in the queue.
      */
-    typedef Task task_type;
+    typedef std::packaged_task<Task> task_type;
 
     /**
      * @brief Constructor, creating an empty queue.
@@ -396,11 +66,25 @@ public:
     bool wait_pop(task_type& tsk);
 
     /**
-     * @brief The reference to the synchronisation object which can be used
-     * by consumers of the tasks to be notified when data is available or
-     * by requesting waiting consumers to terminate.
+     * @brief Initiate the task queue.
+     * @details
+     * A task queue can be inititiated, even if it has been terminated before.
      */
-    const std::shared_ptr<task_queue_synchronisation>& synchronisation();
+    void initiate();
+
+    /**
+     * @brief Terminate the task queue.
+     * @details
+     * Terminate the task queue and notify any thread that actively waited for
+     * a task in the queue (see @c wait_pop).
+     */
+    void terminate();
+
+    /**
+     * @brief Return the termination status.
+     * @return True if the task queue has terminated.
+     */
+    bool terminated();
 
     /**
      * Non-copyable.
@@ -415,15 +99,33 @@ public:
     task_queue& operator=(task_queue&&) = delete;
 
 private:
+    /**
+     * @brief Synchronisation between the task-queue and its workers is
+     * controlled by a condition variable with two flags. One flag to indicate
+     * that there is data available in the queue and another one to indicate
+     * that the workers are requested to terminate.
+     */
+    
+    /** The condition variable */
+    std::condition_variable _cv;
+    
+    /** The mutex associated with the condition variable */
+    std::mutex _cv_lock;
+    
+    /** The flag to indicate there is are tasks available in the queue. */
+    bool _available;
+    
+    /** The flag to indicate that the workers are requested to terminate. */
+    bool _terminate;
+
     /** The task queue and its mutext protecting its contents */
     std::queue<task_type> _tasks;
-
-    /** The task queue synchronisation object */
-    std::shared_ptr<task_queue_synchronisation> _sync;
 };
 
 template<typename Task>
-task_queue<Task>::task_queue() : _sync(new task_queue_synchronisation)
+task_queue<Task>::task_queue()
+    : _available(false)
+    , _terminate(false)
 {
     LOG(log);
     DEBUG(log) << "Creating task queue " << std::endl;
@@ -434,8 +136,7 @@ task_queue<Task>::~task_queue()
 {
     LOG(log);
     DEBUG(log) << "Terminating task queue" << std::endl;
-
-    _sync->terminate();
+    terminate();
 }
 
 template<typename Task>
@@ -445,17 +146,17 @@ task_queue<Task>::push(task_type&& tsk)
     LOG(log);
     TRACE(log) << "Pushing task to queue" << std::endl;
 
-    std::lock_guard<std::mutex> lock(_sync->_cv_lock);
+    std::lock_guard<std::mutex> lock(_cv_lock);
     _tasks.push(std::move(tsk));
-    _sync->_available = true;
-    _sync->_cv.notify_one();
+    _available = true;
+    _cv.notify_one();
 }
 
 template<typename Task>
 bool
 task_queue<Task>::pop(task_type& tsk)
 {
-    std::lock_guard<std::mutex> lock(_sync->_cv_lock);
+    std::lock_guard<std::mutex> lock(_cv_lock);
     bool popped = false;
     if (!_tasks.empty()) {
         LOG(log);
@@ -465,7 +166,7 @@ task_queue<Task>::pop(task_type& tsk)
         _tasks.pop();
         popped = true;
     }
-    _sync->_available = !_tasks.empty();
+    _available = !_tasks.empty();
     return popped;
 }
 
@@ -473,11 +174,10 @@ template<typename Task>
 bool
 task_queue<Task>::wait_pop(task_type& tsk)
 {
-    std::unique_lock<std::mutex> lock(_sync->_cv_lock);
-    _sync->_cv.wait(lock,
-                    [this] { return _sync->_available || _sync->_terminate; });
+    std::unique_lock<std::mutex> lock(_cv_lock);
+    _cv.wait(lock, [this] { return _available || _terminate; });
     bool popped = false;
-    if (!_sync->_terminate) {
+    if (!_terminate) {
         if (!_tasks.empty()) {
             LOG(log);
             TRACE(log) << "Popping task from queue" << std::endl;
@@ -487,22 +187,35 @@ task_queue<Task>::wait_pop(task_type& tsk)
             popped = true;
         }
     }
-    _sync->_available = !_tasks.empty();
+    _available = !_tasks.empty();
     lock.unlock();
     return popped;
 }
 
 template<typename Task>
-const std::shared_ptr<task_queue_synchronisation>&
-task_queue<Task>::synchronisation()
+void
+task_queue<Task>::initiate()
 {
-    return _sync;
+    std::unique_lock<std::mutex> lock(_cv_lock);
+    _terminate = false;
 }
 
-/**
- * @brief Type definition of a queue for simple, self-contained tasks.
- */
-typedef task_queue<task<void(void)>> simple_task_queue;
+template<typename Task>
+void
+task_queue<Task>::terminate()
+{
+    std::unique_lock<std::mutex> lock(_cv_lock);
+    _terminate = true;
+    _cv.notify_all();
+}
+
+template<typename Task>
+bool
+task_queue<Task>::terminated()
+{
+    std::unique_lock<std::mutex> lock(_cv_lock);
+    return _terminate;
+}
 
 /**
  * @brief A worker thread that execute a task.
@@ -517,23 +230,23 @@ public:
     /**
      * @brief Type definition of the task to execute.
      */
-    typedef Task task_type;
+    typedef std::packaged_task<Task> task_type;
 
     /**
      * @brief Constructor to associate the worker with a task-queue. The thread
      * is started after successful construction.
      */
-    task_worker(const std::shared_ptr<task_queue<task_type>>& queue);
+    task_worker(std::shared_ptr<task_queue<Task>> queue);
 
     /**
      * @brief Move constructor.
      */
-    task_worker(task_worker&&);
+    task_worker(task_worker&&) = default;
 
     /**
      * @brief Move assignment.
      */
-    task_worker& operator=(task_worker&&);
+    task_worker& operator=(task_worker&&) = default;
 
     /**
      * @brief Destructor
@@ -553,27 +266,13 @@ private:
     void run();
 
     /** The task queue */
-    std::shared_ptr<task_queue<task_type>> _queue;
+    std::shared_ptr<task_queue<Task>> _queue;
 };
 
 template<typename Task>
-task_worker<Task>::task_worker(
-    const std::shared_ptr<task_queue<task_type>>& queue)
+task_worker<Task>::task_worker(std::shared_ptr<task_queue<Task>> queue)
   : std::thread(&task_worker::run, this), _queue(queue)
 {}
-
-template<typename Task>
-task_worker<Task>::task_worker(task_worker&& rhs)
-  : std::thread(std::move((std::thread &&) rhs)), _queue(std::move(rhs._queue))
-{}
-
-template<typename Task>
-task_worker<Task>&
-task_worker<Task>::operator=(task_worker&& rhs)
-{
-    std::thread::operator=(std::move((std::thread &&) rhs));
-    _queue = std::move(rhs._queue);
-}
 
 template<typename Task>
 task_worker<Task>::~task_worker()
@@ -587,7 +286,7 @@ template<typename Task>
 void
 task_worker<Task>::run()
 {
-    while (!_queue->synchronisation()->_terminate) {
+    while (!_queue->terminated()) {
         task_type tsk;
         if (_queue->wait_pop(tsk)) {
             tsk();
@@ -596,12 +295,10 @@ task_worker<Task>::run()
 }
 
 /**
- * @brief Type definition of a worker for simple, self-contained tasks.
- */
-typedef task_worker<task<void(void)>> simple_task_worker;
-
-/**
  * @brief A pool of @task_worker objects that all share one task queue.
+ * @details
+ * A @c task_worker_pool maintains a queue of tasks and a number of @c
+ * task_worker threads.
  */
 template<typename Task>
 class task_worker_pool
@@ -610,20 +307,20 @@ public:
     /**
      * Type definition of the task to execute.
      */
-    typedef Task task_type;
+    typedef std::packaged_task<Task> task_type;
 
     /**
      * Constructor, associating a queue to the pool and the number of task
      * workers.
      */
-    task_worker_pool(const std::shared_ptr<task_queue<task_type>>& queue,
+    task_worker_pool(std::shared_ptr<task_queue<Task>> queue,
                      size_t nr_workers = std::thread::hardware_concurrency());
 
     /** Destructor */
     virtual ~task_worker_pool();
 
     /**
-     * @brief Start all the task workers in the pool.
+     * @brief Start the task queue and all the task workers in the pool.
      */
     void initiate();
 
@@ -655,13 +352,13 @@ public:
 private:
     /** The task workers and the queue */
     size_t _nr_workers;
-    std::vector<std::unique_ptr<task_worker<task_type>>> _pool;
-    std::shared_ptr<task_queue<task_type>> _queue;
+    std::vector<std::unique_ptr<task_worker<Task>>> _pool;
+    std::shared_ptr<task_queue<Task>> _queue;
 };
 
 template<typename Task>
 task_worker_pool<Task>::task_worker_pool(
-    const std::shared_ptr<task_queue<task_type>>& queue, size_t nr_workers)
+    std::shared_ptr<task_queue<Task>> queue, size_t nr_workers)
   : _nr_workers(nr_workers), _queue(queue)
 {
 }
@@ -684,19 +381,19 @@ task_worker_pool<Task>::initiate()
 
     LOG(log);
     DEBUG(log) << "Initiating task worker pool with " << _nr_workers
-              << " workers" <<std::endl;
+               << " workers" <<std::endl;
 
-    // Ensure the synchronisation is reset
-    _queue->synchronisation()->initiate();
+    // Initiate the queue
+    _queue->initiate();
 
     // Create task-worker threads
     try {
         for (int i = 0; i < _nr_workers; ++i) {
-            _pool.push_back(std::unique_ptr<task_worker<task_type>>(
-                new task_worker<task_type>(_queue)));
+            _pool.push_back(std::unique_ptr<task_worker<Task>>(
+                new task_worker<Task>(_queue)));
         }
     } catch (...) {
-        terminate();
+        _queue->terminate();
         throw;
     }
 }
@@ -705,10 +402,8 @@ template<typename Task>
 void
 task_worker_pool<Task>::terminate()
 {
-    LOG(log);
-    DEBUG(log) << "Terminating task worker pool" << std::endl;
-
-    _queue->synchronisation()->terminate();
+    // Terminate the queue - this should in turn terminate all task_workers.
+    _queue->terminate();
 }
 
 template<typename Task>
@@ -722,11 +417,6 @@ task_worker_pool<Task>::wait()
     }
     _pool.clear();
 }
-
-/**
- * @brief Type definition of a worker pool for simple, self-contained tasks.
- */
-typedef task_worker_pool<task<void(void)>> simple_task_worker_pool;
 
 END_MUDLIB_CORE_NS
 

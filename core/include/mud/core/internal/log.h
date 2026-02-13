@@ -66,7 +66,7 @@ public:
     std::ostream& fatal();
 
     /**
-     * @brief Return a demangled representation of a type name, iff possible.
+     * @brief Return a demangled representation of a type name, if possible.
      * @param tp The type to demangle.
      */
     static std::string demangle(const std::type_info& tp);
@@ -147,6 +147,13 @@ END_MUDLIB_CORE_NS
     if (mud::core::log::internal_severity()                                    \
         > mud::core::log::severity_t::fatal)                                   \
     {} else obj.fatal()
+
+/**
+ * @brief Return the severity log level
+ * @param obj The internal log object variable.
+ */
+#define SEVERITY()                                                             \
+    mud::core::log::internal_severity()
 
 /**
  * @brief Return a name for the type.

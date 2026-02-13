@@ -63,25 +63,25 @@ public:
     void add_mechanism(mud::core::handle::type_t type);
 
     /**
-     * @brief Register an event with the loop.
+     * @brief Add an event to the loop.
      *
      * If an event is already associated with the same @c handle, then it
      * will be replaced with the new event object.
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event to register.
+     * @param[in] event  The event to add.
      */
-    virtual void register_handler(const event& event);
+    virtual void add(event&& event);
 
     /**
-     * @brief Deregister an event from the loop.
+     * @brief Remove an event from the loop.
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event to deregister.
+     * @param[in] event  The event to remove.
      */
-    virtual void deregister_handler(const event& event);
+    virtual void remove(const event& event);
 
     /**
      * @brief Run the loop, waiting for all registered @c handle and invoke the

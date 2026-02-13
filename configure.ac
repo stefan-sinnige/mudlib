@@ -10,8 +10,8 @@ PKG_PROG_PKG_CONFIG
 # Add flag to indicate we are building the mudlib library
 AC_DEFINE([MUDLIB_LIBRARY])
 
-# We only use C++17 (or above) features
-AX_CXX_COMPILE_STDCXX(17, , mandatory)
+# We only use C++20 (or above) features
+AX_CXX_COMPILE_STDCXX(20, , mandatory)
 
 # Check of pthread
 AX_PTHREAD()

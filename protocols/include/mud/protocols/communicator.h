@@ -5,8 +5,8 @@
 #include <iostream>
 #include <mud/protocols/ns.h>
 #include <mud/core/event.h>
+#include <mud/core/message.h>
 #include <mud/core/object.h>
-#include <mud/core/impulse.h>
 
 BEGIN_MUDLIB_PROTOCOLS_NS
 
@@ -22,9 +22,9 @@ BEGIN_MUDLIB_PROTOCOLS_NS
  * specific implementation would require. This includes the following concepts:
  *
  *    * Status of the connection or device (for example, open or closed). Any
- *      attaempt to communicate on a closed connection or device would normally
+ *      attempt to communicate on a closed connection or device would normally
  *      fail.
- *    * Impulses on state changes (connected or disconneted) and if data is
+ *    * Notification on state changes (connected or disconnected) and if data is
  *      available to be received
  *
  * Commnicators can be layered, similar to the networking OSI layering model,
@@ -38,44 +38,19 @@ BEGIN_MUDLIB_PROTOCOLS_NS
  * protocol, either the TLS or TCP communication layers.
  *
  * Layering can be implemented directly at the construction level and the
- * constructor which will (by default) setup the impulse from the lower 
+ * constructor which will (by default) setup the notifications from the lower 
  * communicator to their associated handler. These handlers can be overridden
- * by the implementations, or otherwise they will merely trigger the same
- * impulse themselves.
+ * by the implementations, or otherwise they will merely trigger a similar
+ * notification themselves.
  */
 template<typename Device>
 class MUDLIB_PROTOCOLS_API communicator: public mud::core::object
 {
 public:
     /**
-     * @brief The type of the @c impulse when something has been received on
-     * the device.
-     */
-    typedef std::shared_ptr<mud::core::impulse<Device&>>
-            receive_impulse_type;
-
-    /**
-     * @brief The type of the @c impulse when the device or a lower @c 
-     * communication signals that the connection is closed.
-     */
-    typedef std::shared_ptr<mud::core::impulse<Device&>>
-            disconnect_impulse_type;
-
-    /**
-     * @brief The type of the @c impulse when the device or a lower @c 
-     * communication signals that the connection is opened.
-     */
-    typedef std::shared_ptr<mud::core::impulse<Device&>>
-            connect_impulse_type;
-
-    /**
      * @brief Construct a communicator.
      */
-    communicator() {
-        _receive_impulse = std::make_shared<mud::core::impulse<Device&>>();
-        _connect_impulse = std::make_shared<mud::core::impulse<Device&>>();
-        _disconnect_impulse = std::make_shared<mud::core::impulse<Device&>>();
-    }
+    communicator() = default;
 
     /**
      * @brief Construct a communicator by moving the contents from another
@@ -162,7 +137,7 @@ public:
      *
      * @details
      * The event that is returned is to be used by an @c event_loop to invoke
-     * the @c on_receive handlers on the communicator. As only the @c
+     * the @c on_received handlers on the communicator. As only the @c
      * end_communicator will have direct access to the underlying @c Device,
      * the action will only trigger the @c end_communicator. Any layered
      * communicator on a higher protocol layer will then be invoked as
@@ -170,108 +145,106 @@ public:
      *
      * @return The event.
      */
-    virtual const mud::core::event& event() const = 0;
+    virtual mud::core::event& event() = 0;
 
     /**
-     * @brief The impulse when something is ready to be processed by a higher
-     * communication layer.
+     * @brief The notification when something is ready to be processed by a
+     * higher communication layer.
      *
      * @details
      * When a message has been received and is ready to be proceesed by a higher
      * communicator (ie when an enveloped message has been received), the @c
-     * receive_impulse will be invoked. This is usually only used internally
-     * and set-up by the communication layer, the end-communicator and the
-     * device.
+     * received notification will be published. This is usually only used
+     * internally and set-up by the communication layer, the end-communicator
+     * and the device.
      */
-    receive_impulse_type receive_impulse() {
-        return _receive_impulse;
+    const mud::core::uuid& received() {
+        return _received;
     }
 
     /**
-     * @brief The impulse when the communication layer (or the underlying
+     * @brief The notification when the communication layer (or the underlying
      * device) has been connected.
      *
      * @details
-     * When the communication layer is connected to the peer, the connecting
-     * impulse a triggered such that the communication layer can take
+     * When the communication layer is connected to the peer, the @c connected
+     * notification is published such that the communication layer can take
      * additional action.
      */
-    connect_impulse_type connect_impulse() {
-        return _connect_impulse;
+    const mud::core::uuid& connected() const {
+        return _connected;
     }
 
     /**
-     * @brief The impulse when the communication layer (or the underlying
+     * @brief The notification when the communication layer (or the underlying
      * device) has been disconnected.
      *
      * @details
-     * When the communication layer is no longer connected to the peer, the
-     * disconnecting impulse a triggered such that the communication layer can
-     * take appropriate action.
+     * When the communication layer is no longer connected to the peer, the @c
+     * disconnected notification is published such that the communication layer
+     * can take appropriate action.
      */
-    disconnect_impulse_type disconnect_impulse() {
-        return _disconnect_impulse;
+    const mud::core::uuid& disconnected() const {
+        return _disconnected;
     }
 
 protected:
     /**
      * @brief Handle the message of a lower communication layer.
+     * @param msg The notification message.
      *
      * @details
      * Process a message as triggered by a lower commuication layer. The lower
      * layer will process its own layer specific communication and will trigger
      * a higher layer if this is called for by its communication protocol.
      *
-     * This handler is usually attached to the impulse of a lower communicator.
-     * The default implementation is to signal the @c receive_impulse.
-     *
-     * @param device The device that has something to read. The implementation
-     * will usually ignore this parameter and rely on the streaming operators
-     * instead to communicate with the device.
+     * This handler is usually attached to the notification of a lower
+     * communicator. The default implementation is to publish the @c received
+     * notification.
      */
-    virtual void on_receive(Device& device) {
-        _receive_impulse->pulse(device);
+    virtual void on_received(const mud::core::message& msg) {
+        ::mud::core::broker::publish(_received);
     }
 
     /**
      * @brief Handle the connection of a lower communication layer.
-     *
+     * @param msg The notification message.
      * @details
-     * Process the signal that the lower-level communication layer has detected
-     * the the connection is connected.
+     * Process a connection notification from a lower-level communication layer.
      *
-     * The default implementation is to signal the @c connect_impulse.
-     *
-     * @param device The device that is connected.
+     * This handler is usually attached to the notification of a lower
+     * communicator. The default implementation is to publish the @c connected
+     * notification.
      */
-    virtual void on_connect(Device& device) {
-        _connect_impulse->pulse(device);
+    virtual void on_connected(const mud::core::message& msg) {
+        ::mud::core::broker::publish(_connected);
     }
 
     /**
      * @brief Handle the disconnection of a lower communication layer.
+     * @param device The device that has closed.
      *
      * @details
-     * Process the signal that the lower-level communication layer has detected
-     * the the connection is closed.
+     * Process a disconnection notification from a lower-level communication
+     * layer.
      *
-     * The default implementation is to signal the @c disconnect_impulse.
-     *
-     * @param device The device that has closed.
+     * This handler is usually attached to the notification of a lower
+     * communicator. The default implementation is to publish the @c
+     * disconnected notification.
      */
-    virtual void on_disconnect(Device& device) {
-        _disconnect_impulse->pulse(device);
+    virtual void on_disconnected(const mud::core::message& msg) {
+        ::mud::core::broker::publish(_disconnected);
     }
 
 private:
-    /** The receive impulse. */
-    receive_impulse_type _receive_impulse;
+    /** The received notification. */
+    mud::core::uuid _received;
 
-    /** The connect impulse. */
-    connect_impulse_type _connect_impulse;
+    /** The connected notification. */
+    mud::core::uuid _connected;
 
-    /** The disconnect impulse. */
-    disconnect_impulse_type _disconnect_impulse;
+    /** The disconnected notification. */
+    mud::core::uuid _disconnected;
 };
 
 /**
@@ -306,6 +279,12 @@ class MUDLIB_PROTOCOLS_API layered_communicator: public communicator<Device>
 {
 public:
     /**
+     * Qualify member names.
+     */
+    using communicator<Device>::attach;
+    using communicator<Device>::detach;
+
+    /**
      * @brief Construct a communicator that is built upon another communicator.
      *
      * @details
@@ -322,12 +301,12 @@ public:
      * @param lower The communicator on the next (lower) level.
      */
     layered_communicator(communicator<Device>& lower) : _lower(lower) {
-        _lower.receive_impulse()->attach(this,
-                &layered_communicator<Device>::on_receive);
-        _lower.connect_impulse()->attach(this,
-                &layered_communicator<Device>::on_connect);
-        _lower.disconnect_impulse()->attach(this,
-                &layered_communicator<Device>::on_disconnect);
+        attach(_lower.received(),
+               &layered_communicator<Device>::on_received);
+        attach(_lower.connected(),
+               &layered_communicator<Device>::on_connected);
+        attach(_lower.disconnected(), 
+               &layered_communicator<Device>::on_disconnected);
     }
 
     /**
@@ -337,6 +316,13 @@ public:
      * @param other The communicator to move the contents from.
      */
     layered_communicator(layered_communicator&& other) = default;
+
+    /**
+     * @brief Destruct a communicator.
+     */
+    virtual ~layered_communicator() {
+        detach();
+    }
 
     /**
      * @brief Initialise a communicator by moving the contents from another
@@ -444,7 +430,7 @@ public:
      *
      * @return The event.
      */
-    virtual const mud::core::event& event() const override {
+    virtual mud::core::event& event() override {
         return _lower.event();
     }
 private:

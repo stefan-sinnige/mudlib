@@ -9,10 +9,8 @@ libmudcore_la_SOURCES = \
     src/event_mechanism.cpp \
     src/handle.cpp \
     src/json.cpp \
-    src/impulse.cpp \
     src/log.cpp \
-    src/notifier.cpp \
-    src/object.cpp \
+    src/message.cpp \
     src/posix/select_mechanism.cpp \
 	src/timer.cpp \
     src/timer_dispatcher.cpp \
@@ -34,9 +32,8 @@ includemudcore_HEADERS = \
     include/mud/core/factory.h \
     include/mud/core/handle.h \
     include/mud/core/json.h \
-    include/mud/core/impulse.h \
     include/mud/core/log.h \
-    include/mud/core/notifier.h \
+    include/mud/core/message.h \
     include/mud/core/object.h \
     include/mud/core/optional.h \
     include/mud/core/poly_map.h \
@@ -49,7 +46,7 @@ includemudcore_HEADERS = \
 libmudcore_la_CPPFLAGS = \
     -I$(srcdir)/include \
     -I$(srcdir)/src \
-	$(PTHREAD_CFLAGS)
+    $(PTHREAD_CFLAGS)
 
 # vi: set ts=4 noexpandtab:
 

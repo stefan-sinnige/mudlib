@@ -7,6 +7,7 @@
 #include <memory>
 #include <mud/core/handle.h>
 #include <mud/core/event_mechanism.h>
+#include <mud/core/object.h>
 #include <mud/core/ns.h>
 #include <thread>
 #if defined(_WIN32)
@@ -24,14 +25,9 @@ BEGIN_MUDLIB_CORE_NS
  * multiplexing of I/O @c handle's. A self-event trick (pipe/UDP socket) is
  * used for self-signalling events.
  */
-class select_mechanism : public event_mechanism
+class select_mechanism : public event_mechanism, public mud::core::object
 {
 public:
-    /**
-     * Definition for an event-handling routine.
-     */
-    typedef std::function<void(void)> event_handler;
-
     /**
      * The types of readiness to examine.
      */
@@ -47,7 +43,7 @@ public:
      * @param timers The timer dispatcher to hold event timers.
      */
     select_mechanism(
-        const std::shared_ptr<mud::core::simple_task_queue>& queue,
+        const std::shared_ptr<mud::core::task_queue<void(void)>>& queue,
         const std::shared_ptr<mud::core::timer_dispatcher>& timers);
 
     /**
@@ -56,18 +52,18 @@ public:
     virtual ~select_mechanism();
 
     /**
-     * Register an event handler with the loop.
+     * Add an event handler with the loop.
      *
-     * @param[in] event  The event to register.
+     * @param[in] event  The event to add.
      */
-    virtual void register_handler(const event& event) override;
+    virtual void add(event&& event) override;
 
     /**
-     * Deregister an event handler from the loop.
+     * Remove an event handler from the loop.
      *
-     * @param[in] event  The event to deregister.
+     * @param[in] event  The event to remove.
      */
-    virtual void deregister_handler(const event& event) override;
+    virtual void remove(const event& event) override;
 
     /**
      * Initiate the mechanism.
@@ -79,6 +75,13 @@ public:
      * Terminate the mechanism.
      */
     virtual void terminate() override;
+
+    /*
+     * @brief The notification to publish when the event-loop has timed out.
+     */
+    const mud::core::uuid& timed_out() const {
+        return _timed_out;
+    }
 
 private:
     /**
@@ -152,6 +155,9 @@ private:
 
     /** The future thread object. */
     std::shared_future<void> _future;
+
+    /** The timed out notification topic */
+    mud::core::uuid _timed_out;
 };
 
 END_MUDLIB_CORE_NS

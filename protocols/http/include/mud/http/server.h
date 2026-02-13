@@ -48,6 +48,8 @@ public:
 
     /**
      * @brief Process an incoming request.
+     * @param req The HTTP request message as received by a client.
+     * @return The HTTP response to return to the client.
      *
      * @details
      * When one of the attached clients have received an HTTP request, the
@@ -57,13 +59,9 @@ public:
      *
      * This function should adhere to a thread-safe execution model as it can
      * be invoked by multiple connected clients simultaneously.
-     *
-     * @param req The HTTP request message as received by a client.
-     * @param resp The HTTP response to be manipulated to return to the client.
      */
-    virtual void on_request(
-            const mud::http::request& req,
-            mud::http::response& resp) = 0;
+    virtual mud::http::response request(
+            const mud::http::request& req);
 
     /**
      * Non-copyable.

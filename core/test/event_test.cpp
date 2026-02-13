@@ -1,4 +1,5 @@
 #include "mud/core/event.h"
+#include "mud/core/object.h"
 #include "mud/test.h"
 #include <future>
 #include <ostream>
@@ -6,7 +7,7 @@
 
 /* clang-format off */
 
-CONTEXT()
+CONTEXT(public mud::core::object)
     /* Constructor initialised for each scenario run */
     context() {
         handle = std::make_shared<mud::core::select_handle>(10);
@@ -14,6 +15,14 @@ CONTEXT()
 
     /* Destructor after each scenario */
     ~context() {
+    }
+
+    /* A handler for the event */
+    void on_event(const mud::core::message&) {
+    }
+
+    /* A handler for the other event */
+    void on_other(const mud::core::message&) {
     }
 
     /* A handle */
@@ -33,17 +42,33 @@ FEATURE("Event")
    */
   DEFINE_GIVEN("An event object", 
       [](context& ctx) {
-        ctx.event = mud::core::event(ctx.handle,
-                mud::core::event::signal_type::READY,
-                [](){ return mud::core::event::return_type::REMOVE; });
+        ctx.event = mud::core::event(mud::core::uuid(), ctx.handle,
+                mud::core::event::signal_type::READY);
+        ctx.attach<context>(ctx.event.topic(), &context::on_event);
       })
-  DEFINE_GIVEN("A copied event object", 
+  DEFINE_GIVEN("An other event object", 
       [](context& ctx) {
-        ctx.other = ctx.event;
+        ctx.other = mud::core::event(mud::core::uuid(), ctx.handle,
+               mud::core::event::signal_type::READY);
+        ctx.attach(ctx.other.topic(), &context::on_other);
       })
-  DEFINE_GIVEN("A moved event object", 
-      [](context& ctx) {
-        ctx.other = std::move(ctx.event);
+  DEFINE_THEN ("The event is valid",
+      [](context& ctx){
+        ASSERT(false, ctx.event.topic().null());
+        ASSERT(true, ctx.event.handle()->valid());
+      })
+  DEFINE_THEN ("The other event is valid",
+      [](context& ctx){
+        ASSERT(false, ctx.other.topic().null());
+        ASSERT(true, ctx.other.handle()->valid());
+      })
+  DEFINE_THEN ("The event is invalid",
+      [](context& ctx){
+        ASSERT(true, ctx.event.topic().null());
+      })
+  DEFINE_THEN ("The other event is invalid",
+      [](context& ctx){
+        ASSERT(true, ctx.other.topic().null());
       })
   END_DEFINES()
 
@@ -56,25 +81,25 @@ FEATURE("Event")
     WHEN ("The type traits are examined", [](context&){})
     THEN ("The type is not default-constructible",
         [](context& ctx) {
-            ASSERT(false, std::is_default_constructible<
+            ASSERT(true, std::is_default_constructible<
                   mud::core::event>::value);
         })
-    THEN ("The type is copy-constructible",
+     AND ("The type copy-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_copy_constructible<
                   mud::core::event>::value);
         })
-    THEN ("The type is move-constructible",
+     AND ("The type is move-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_move_constructible<
                   mud::core::event>::value);
         })
-    THEN ("The type is copy-assignable",
+     AND ("The type copy-assignable",
         [](context& ctx) {
             ASSERT(true, std::is_copy_assignable<
                   mud::core::event>::value);
         })
-    THEN ("The type is move-assignable",
+     AND ("The type is move-assignable",
         [](context& ctx) {
             ASSERT(true, std::is_move_assignable<
                   mud::core::event>::value);
@@ -83,37 +108,16 @@ FEATURE("Event")
     SCENARIO("Event object creation")
       GIVEN("An event object")
       WHEN ("The event object is examined", [](context&){})
-      THEN ("The event valid",
-          [](context& ctx){
-              ASSERT(false, ctx.event.id().null());
-              ASSERT(true, ctx.event.handle()->valid());
-          })
-
-    SCENARIO("Copying an event")
-      GIVEN("An event object")
-      AND  ("A copied event object")
-      WHEN ("The objects are examined", [](context&){})
-      THEN ("The events are considered equal",
-          [](context& ctx){
-              ASSERT(true, ctx.event == ctx.other);
-              ASSERT(true, ctx.event.id() == ctx.other.id());
-              ASSERT(true, ctx.event.handle() == ctx.other.handle());
-          })
+      THEN ("The event is valid")
 
     SCENARIO("Moving an event")
       GIVEN("An event object")
-      AND  ("A moved event object")
-      WHEN ("The objects are examined", [](context&){})
-      THEN ("The moved event is valid",
+      WHEN ("The event is moved to the other event",
           [](context& ctx){
-              ASSERT(false, ctx.other.id().null());
-              ASSERT(true, ctx.other.handle()->valid());
+              ctx.other = std::move(ctx.event);
           })
-      AND  ("The original event is invalid",
-          [](context& ctx){
-              ASSERT(true, ctx.event.id().null());
-              ASSERT(nullptr, ctx.event.handle().get());
-          })
+      THEN ("The event is valid")
+      AND  ("The other event is valid")
 
 END_FEATURE()
 

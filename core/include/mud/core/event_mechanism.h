@@ -22,6 +22,11 @@ class MUDLIB_CORE_API event_mechanism
 {
 public:
     /**
+     * The type of a task that executes an event.
+     */
+    typedef std::packaged_task<void(void)> task_type;
+
+    /**
      * @brief Constructor.
      *
      * @details
@@ -33,7 +38,7 @@ public:
      * @parm timers The timer dispatcher to use.
      */
     event_mechanism(
-            const std::shared_ptr<mud::core::simple_task_queue>& queue,
+            const std::shared_ptr<mud::core::task_queue<void(void)>>& queue,
             const std::shared_ptr<mud::core::timer_dispatcher>& timers);
 
     /**
@@ -42,22 +47,22 @@ public:
     virtual ~event_mechanism() = default;
 
     /**
-     * @brief Register an event handler with the loop.
+     * @brief Add an event handler with the loop.
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event to register.
+     * @param[in] event  The event to add.
      */
-    virtual void register_handler(const event& event) = 0;
+    virtual void add(event&& event) = 0;
 
     /**
-     * @brief Deregister an event handler from the loop.
+     * @brief Remove an event handler from the loop.
      *
      * This is a thread-safe operation.
      *
-     * @param[in] event  The event to deregister.
+     * @param[in] event  The event to remove.
      */
-    virtual void deregister_handler(const event& event) = 0;
+    virtual void remove(const event& event) = 0;
 
     /**
      * Initiate the mechanism on it's own thread.
@@ -106,7 +111,7 @@ protected:
     /**
      * The queue for signaled events.
      */
-    const std::shared_ptr<mud::core::simple_task_queue>& queue() const
+    const std::shared_ptr<mud::core::task_queue<void(void)>>& queue() const
     {
         return _queue;
     }
@@ -121,7 +126,7 @@ protected:
 
 private:
     /** The queue for signaled events. */
-    std::shared_ptr<mud::core::simple_task_queue> _queue;
+    std::shared_ptr<mud::core::task_queue<void(void)>> _queue;
 
     /** The timer dispatcher for timer. */
     std::shared_ptr<mud::core::timer_dispatcher> _timers;
@@ -132,7 +137,7 @@ private:
  */
 typedef mud::core::factory<mud::core::handle::type_t,
                            mud::core::event_mechanism,
-                           const std::shared_ptr<mud::core::simple_task_queue>&,
+                           const std::shared_ptr<mud::core::task_queue<void(void)>>&,
                            const std::shared_ptr<mud::core::timer_dispatcher>&>
     event_mechanism_factory;
 

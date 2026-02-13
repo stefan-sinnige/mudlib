@@ -1,9 +1,16 @@
 #include "mud/http/server.h"
 #include "mud/http/communicator.h"
+#include "remediator.h"
 #include <list>
 #include <memory>
 
 BEGIN_MUDLIB_HTTP_NS
+
+/**
+ * @brief Function pointer to a request handler.
+ */
+typedef std::function<mud::http::response(const mud::http::request&)>
+        request_handler;
 
 /**
  * @brief Connection to a peer connection (HTTP client).
@@ -11,14 +18,6 @@ BEGIN_MUDLIB_HTTP_NS
 class peer: public mud::core::object
 {
 public:
-    /**
-     * @brief The type of the @c impulse when an HTTP request has been received
-     * from the device.
-     */
-    typedef std::shared_ptr<mud::core::impulse<
-                const mud::http::request&, mud::http::response&>>
-            request_impulse_type;
-
     /*
      * @brief Create a new peer connection communicator.
      *
@@ -27,9 +26,10 @@ public:
      *
      * @param socket The socket connected to the peer. The socket shall move
      * its ownership to this instance.
-     * @param func The function to invoke when a request has been received.
+     * @param handler The handler to invoke when an HTTP message has been
+     * received.
      */
-    peer(mud::io::tcp::socket& socket);
+    peer(mud::io::tcp::socket& socket, request_handler handler);
 
     /*
      * @brief Move constructor
@@ -50,43 +50,94 @@ public:
     /**
      * @brief Destructor.
      */
-    virtual ~peer() = default;
-
-    /**
-     * @brief The impulse when a request message has been received.
-     */
-    request_impulse_type request_impulse() {
-        return _request_impulse;
-    }
+    virtual ~peer();
 
 private:
     /** The handler when an request has been received. */
-    void on_request(const mud::http::request& req, mud::http::response& resp);
+    void on_requested(const mud::core::message& msg);
+
+    /** The handler for processing the request and determining a response. */
+    request_handler _handler;
 
     /** The TCP end communicator. */
     std::unique_ptr<mud::io::tcp::communicator> _tcp;
 
     /** The HTTP communicator (server side) */
     std::unique_ptr<mud::http::communicator::server> _http;
-
-    /** The request impulse. */
-    request_impulse_type _request_impulse;
 };
 
-peer::peer(mud::io::tcp::socket& socket)
+peer::peer(mud::io::tcp::socket& socket, request_handler handler)
+    : _handler(handler)
 {
-    _request_impulse = std::make_shared<mud::core::impulse<
-            const mud::http::request&, mud::http::response&>>();
     _tcp = std::make_unique<mud::io::tcp::communicator>();
     _http = std::make_unique<mud::http::communicator::server>(*_tcp);
-    _http->request_impulse()->attach(this, &peer::on_request);
+    attach(_http->received(), &peer::on_requested);
     _http->open(std::move(socket));
 }
 
-void
-peer::on_request(const mud::http::request& req, mud::http::response& resp)
+peer::~peer()
 {
-    _request_impulse->pulse(req, resp);
+    detach();
+}
+
+void
+peer::on_requested(const mud::core::message& msg)
+{
+    // Logging
+    LOG(log);
+    DEBUG(log) << "HTTTP request from "
+               << _http->device().destination_endpoint().address().str() << ":"
+               << _http->device().destination_endpoint().port() << std::endl;
+
+    // Read the HTTP request and get the response
+    request req;
+    response resp;
+    try {
+        // Read the request
+        _http->istr() >> req;
+        if (_http->istr().fail()) {
+            throw std::runtime_error("HTTP connection error");
+        }
+        TRACE(log) << "Message details: " << std::endl << req << std::endl;
+
+        // Generate the response
+        if (_handler) {
+            resp = _handler(req);
+        }
+        else {
+            resp.version(req.version());
+        resp.status_code(mud::http::status_code_e::NotImplemented);
+        resp.reason_phrase(mud::http::reason_phrase_e::NotImplemented);
+        }
+    } catch (...) {
+        resp.version(req.version());
+        resp.status_code(mud::http::status_code_e::BadRequest);
+        resp.reason_phrase(mud::http::reason_phrase_e::BadRequest);
+    }
+
+    // Remediate the response
+    remediator(resp.version().value()).remediate(req, resp);
+
+    // Send the response.
+    DEBUG(log) << "HTTTP response to "
+               << _http->device().destination_endpoint().address().str() << ":"
+               << _http->device().destination_endpoint().port() << std::endl;
+    TRACE(log) << "Message details: " << std::endl << resp << std::endl;
+    _http->ostr() << resp << std::flush;
+
+    // For HTTP/1.0, the server is expected to close the connection. However,
+    // this results in an accumulation of TIME_WAIT sockets on the server which
+    // may render the server to be inoperable (too many open file descriptors
+    // - defined by ulimit). As the socket port number is dynamically assigned
+    // when a connection is established, there is no remedy for this.
+    // It is strongly advised to move the TIME_WAIT towards the client as it can
+    // manage the TIME_WAIT better by reusing the address & port number through
+    // a socket-option (SO_REUSEADDR). The side that initiates the closing of
+    // the connection will need to manage the TIME_WAIT. For HTTP/1.1 the server
+    // will not initiate the close but relies on the client to do so.
+    if (resp.version() == mud::http::version_e::HTTP10) {
+        _http->close();
+    }
 }
 
 /**
@@ -96,17 +147,11 @@ class server::impl: public mud::core::object
 {
 public:
     /**
-     * @brief The type of the @c impulse when an HTTP request has been received
-     * from the device.
-     */
-    typedef std::shared_ptr<mud::core::impulse<
-                const mud::http::request&, mud::http::response&>>
-            request_impulse_type;
-
-    /**
      * Constructor
+     * @param handler The handler to invoke when an HTTP message has been
+     * received.
      */
-    impl();
+    impl(request_handler handler);
 
     /**
      * Destructor
@@ -128,19 +173,9 @@ public:
      */
     const mud::io::tcp::endpoint& endpoint() const;
 
-    /**
-     * @brief The impulse when a request message has been received.
-     */
-    request_impulse_type request_impulse() {
-        return _request_impulse;
-    }
-
 private:
     /** The handler when accepting new connections. */
-    void on_accept(mud::io::tcp::socket&);
-
-    /** The handler when an request has been received. */
-    void on_request(const mud::http::request& req, mud::http::response& resp);
+    void on_accepted(const mud::core::message& msg);
 
     /** The listening endpoint */
     mud::io::tcp::endpoint _endpoint;
@@ -151,19 +186,19 @@ private:
     /** The list of HTTP peer communicators. */
     std::list<peer> _communicators;
 
-    /** The request impulse. */
-    request_impulse_type _request_impulse;
+    /** The handler for processing the request and determining a response. */
+    request_handler _handler;
 };
 
-server::impl::impl()
+server::impl::impl(request_handler handler)
+    : _handler(handler)
 {
-    _request_impulse = std::make_shared<mud::core::impulse<
-            const mud::http::request&, mud::http::response&>>();
-    _acceptor.accept_impulse()->attach(this, &server::impl::on_accept);
+    attach(_acceptor.accepted(), &server::impl::on_accepted);
 }
 
 server::impl::~impl()
 {
+    detach();
     stop();
 }
 
@@ -188,20 +223,14 @@ server::impl::endpoint() const
 }
 
 void
-server::impl::on_accept(mud::io::tcp::socket& socket)
+server::impl::on_accepted(const mud::core::message& msg)
 {
-    // Add a communicator handling this new connection
-    peer comm(socket);
-    comm.request_impulse()->attach(this, &server::impl::on_request);
-    _communicators.push_back(std::move(comm)); 
-}
-
-void
-server::impl::on_request(
-   const mud::http::request& req,
-   mud::http::response& resp)
-{
-    _request_impulse->pulse(req, resp);
+    // Add a peer-communicator handling this new connection
+    auto socket = _acceptor.connection();
+    if (socket.handle()) {
+        peer comm(socket, _handler);
+        _communicators.push_back(std::move(comm)); 
+    }
 }
 
 void
@@ -212,8 +241,8 @@ server::impl_deleter::operator()(server::impl* ptr) const
 
 server::server()
 {
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
-    _impl->request_impulse()->attach(this, &server::on_request);
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(
+        std::bind(&server::request, this, std::placeholders::_1)));
 }
 
 void
@@ -232,6 +261,13 @@ const mud::io::tcp::endpoint&
 server::endpoint() const
 {
     return _impl->endpoint();
+}
+
+mud::http::response
+server::request(const mud::http::request& req)
+{
+    mud::http::response resp;
+    return resp;
 }
 
 END_MUDLIB_HTTP_NS

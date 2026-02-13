@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 #include <mud/core/object.h>
-#include <mud/core/impulse.h>
 #include <mud/core/ns.h>
 
 BEGIN_MUDLIB_CORE_NS
@@ -48,9 +47,36 @@ class MUDLIB_CORE_API timer
 {
 public:
     /**
-     * @brief The type of the @c impulse when a timer has expired.
+     * @brief Message when timers have expired.
+     * @details
+     * This message is a specialisation of @c mud::core::message and is the
+     * message type that is passed on the @c expired notification.
      */
-    typedef std::shared_ptr<mud::core::impulse<void>> expire_impulse_type;
+    class expired_message: public mud::core::message
+    {
+    public:
+        /**
+         * @brief Create a message for an expired timer.
+         * @param topic The expired topic.
+         * @param time_poiint The current time point.
+         */
+        expired_message(const mud::core::uuid& topic,
+                        const std::chrono::system_clock::time_point& time_point)
+            : mud::core::message(topic)
+            , _time_point(time_point)
+        {}
+
+        /**
+         * @brief Return the expiry time point.
+         */
+        const std::chrono::system_clock::time_point& time_point() const {
+            return _time_point;
+        }
+
+    private:
+        /** The time point */
+        std::chrono::system_clock::time_point _time_point;
+    };
 
     /**
      * @brief The type of trigger.
@@ -174,9 +200,9 @@ public:
     std::chrono::system_clock::time_point expiration() const;
 
     /**
-     * @brief The impulse issued when a timer has expired.
+     * @brief The notification topic to publish an @c expired_message to.
      */
-    expire_impulse_type expire_impulse();
+    const mud::core::uuid& expired() const;
 
 private:
     /**
@@ -185,17 +211,20 @@ private:
     friend class timer_dispatcher;
 
     /**
-     * @brief Event handler when a timer has expired.
+     * @brief Notification from the dispatcher when a timer has expired.
      *
      * @details
-     * The handler that is issued when the timer has expired. This shall
-     * invoke any registered impulses and update the expiration timer to the
-     * next interval time point if the timer is an active periodic timer.
+     * The handler that is issued when the timer has expired in the event-loop
+     * through the @c timer_dispatcher. This shall in turn invoke the timer
+     * expired notifications using the @c expired notification topic. The
+     * expiration timer is updated to the next interval time point if the timer
+     * is an active periodic timer.
      *
-     * @param time_point The time-point that the trigger is invoked. Any
-     * calculation is expected to be based off this reference.
+     * @param msg Instance of a @c expired_message that includes the trigger
+     * time-point. Any calculation is expected to be based off this reference
+     * time-point.
      */
-    void on_expire(const std::chrono::system_clock::time_point& time_point);
+    void on_expired(const mud::core::message& msg);
 
     /**
      * Platform specific implementation.

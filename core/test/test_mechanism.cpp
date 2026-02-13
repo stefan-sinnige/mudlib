@@ -61,7 +61,7 @@ mud::core::event_mechanism_factory::registrar<
     _registrar;
 
 test_mechanism::test_mechanism(
-    const std::shared_ptr<mud::core::simple_task_queue>& queue,
+    const std::shared_ptr<mud::core::task_queue<void(void)>>& queue,
     const std::shared_ptr<mud::core::timer_dispatcher>& timers)
   : mud::core::event_mechanism(queue, timers), _running(false)
 {}
@@ -76,22 +76,27 @@ test_mechanism::~test_mechanism()
 }
 
 void
-test_mechanism::register_handler(const mud::core::event& event)
+test_mechanism::add(mud::core::event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
+    LOG(log); 
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
+        INFO(log) << "Removing existing event " << event.topic() << std::endl;
         _events.erase(found);
     }
-    _events.push_back(event);
+    INFO(log) << "Adding event " << event.topic() << std::endl;
+    _events.push_back(std::move(event));
 }
 
 void
-test_mechanism::deregister_handler(const mud::core::event& event)
+test_mechanism::remove(const mud::core::event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
+        LOG(log); 
+        INFO(log) << "Removing event " << event.topic() << std::endl;
         _events.erase(found);
     }
 }
@@ -125,28 +130,37 @@ test_mechanism::loop()
     // Polling all events
     while (_running) {
         _lock.lock();
+
         /* Move all events that need to be triggered to another list */
-        std::list<mud::core::event> triggers;
+        std::list<mud::core::event> triggered;
         auto event_it = _events.begin();
         while (event_it != _events.end()) {
+            auto next_it = std::next(event_it);
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (os_handle_map[handle] == os_handle_signal::READY_TO_READ) {
-                triggers.push_back(*event_it);
-                event_it = _events.erase(event_it);
-            } else {
-                ++event_it;
+                triggered.splice(triggered.end(), _events, event_it);
             }
+            event_it = next_it;
         }
+
         /* Trigger all events as a task that is handled by a task worker. The
          * handler can instruct to register the event again. */
-        for (auto event: triggers) {
-            auto handler = event.handler();
-            mud::core::simple_task task([handler, event, this]() {
-                if (handler() == mud::core::event::return_type::CONTINUE) {
-                    this->register_handler(event);
-                }
-            });
+        event_it = triggered.begin();
+        while (event_it != triggered.end()) {
+            auto task = std::packaged_task<void()>(
+                [this, ev=std::move(*event_it)]() mutable {
+                    LOG(log); 
+                    INFO(log) << "Executing event " << ev.topic()
+                              << std::endl;
+                    ev.publish();
+                    if (::mud::core::broker::size(ev.topic())) {
+                        INFO(log) << "Re-adding event " << ev.topic()
+                                  << std::endl;
+                        add(std::move(ev));
+                    }
+                });
             queue()->push(std::move(task));
+            ++event_it;
         }
         _lock.unlock();
         std::this_thread::yield();

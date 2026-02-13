@@ -2,7 +2,7 @@
 #include "timer_dispatcher.h"
 
 mud::core::event_mechanism::event_mechanism(
-        const std::shared_ptr<mud::core::simple_task_queue>& queue,
+        const std::shared_ptr<mud::core::task_queue<void(void)>>& queue,
         const std::shared_ptr<mud::core::timer_dispatcher>& timers)
     : _queue(queue), _timers(timers)
 {

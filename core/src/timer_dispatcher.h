@@ -2,6 +2,7 @@
 #define _MUDLIB_CORE_TIMER_DISPATCHER_H_
 
 #include "mud/core/event.h"
+#include "mud/core/object.h"
 #include "timer_impl.h"
 #include <chrono>
 #include <memory>
@@ -22,13 +23,13 @@ BEGIN_MUDLIB_CORE_NS
  * timer is started, it shall be made part of the dispatcher. Any timer that is
  * stopped shall be removed from the dispatcher.
  */
-class timer_dispatcher
+class timer_dispatcher: public mud::core::object
 {
 public:
     /**
      * @brief Creation of a timer dispatcher.
      */
-    timer_dispatcher() = default;
+    timer_dispatcher();
 
     /**
      * @brief Destructor.
@@ -58,17 +59,6 @@ public:
     void remove(const std::shared_ptr<mud::core::timer::impl>& timer);
 
     /**
-     * @brief Dispatch the timer triggers.
-     *
-     * @details
-     * Dispatch the triggers to all the timers that have been expired up to
-     * the @c epoch time point.
-     *
-     * @param epoch The time point to use as a base reference for the trigger.
-     */
-    void dispatch(const std::chrono::system_clock::time_point& epoch);
-
-    /**
      * @brief Return the wait duration.
      *
      * @details
@@ -82,9 +72,28 @@ public:
             const std::chrono::system_clock::time_point& epoch);
 
     /**
+     * @brief Dispatch the timer triggers.
+     *
+     * @details
+     * Dispatch the triggers to all the timers that have been expired up to
+     * the @c epoch time point.
+     *
+     * @param epoch The time point to use as a base reference for the trigger.
+     */
+    void dispatch(const std::chrono::system_clock::time_point& epoch);
+
+    /**
      * @brief Return the event to signal when the timer list has changed.
      */
-    mud::core::event event();
+    mud::core::event& changed();
+
+    /**
+     * @brief Handler when one of the timers has expired.
+     * @details
+     * This handler is usually associated to the event-loop implementation. When
+     * invoked, it shall 
+     */
+    void on_expired(const message&);
 
 private:
     /**
@@ -100,6 +109,9 @@ private:
 
     /** The handle to signal of any change in the timer list. */
     mud::core::select_handle::signal _handle;
+
+    /** The event associated to the handle when the timer list has changed. */
+    mud::core::event _changed;
 };
 
 END_MUDLIB_CORE_NS

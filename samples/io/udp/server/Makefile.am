@@ -5,14 +5,12 @@ sample_udp_server_SOURCES = \
 
 sample_udp_server_CPPFLAGS = \
     -I$(srcdir)/../../../../core/include \
-    -I$(srcdir)/../../../../event/include \
     -I$(srcdir)/../../../../io/include \
     -I$(srcdir)/../../../../protocols/include \
     $(PTHREAD_CFLAGS)
 
 sample_udp_server_LDADD = \
     $(srcdir)/../../../../core/libmudcore.la \
-    $(srcdir)/../../../../event/libmudevent.la \
     $(srcdir)/../../../../io/libmudio.la \
     $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 

@@ -20,6 +20,11 @@ class event_loop::impl
 {
 public:
     /**
+     * The type of a task that executes an event.
+     */
+    typedef std::packaged_task<void(void)> task_type;
+
+    /**
      * Default constructor.
      */
     impl();
@@ -35,14 +40,14 @@ public:
     void add_mechanism(mud::core::handle::type_t type);
 
     /**
-     * Register an event handler with the loop.
+     * Add an event handler with the loop.
      */
-    void register_handler(const event& event);
+    void add(event&& event);
 
     /**
-     * Deregister an event handler associated to a handle from the loop.
+     * Remove an event handler associated to a handle from the loop.
      */
-    void deregister_handler(const event& event);
+    void remove(const event& event);
 
     /**
      * Run the loop, waiting for all registered @c handle and invoke the
@@ -71,13 +76,13 @@ private:
     void assert_not_running();
 
     /** The task queue to hold signaled event tasks. */
-    std::shared_ptr<mud::core::simple_task_queue> _queue;
+    std::shared_ptr<mud::core::task_queue<void(void)>> _queue;
 
     /** The timer dispatcher to hold the event timers. */
     std::shared_ptr<mud::core::timer_dispatcher> _timers;
 
     /** The task worker pool to handle signaled event tasks. */
-    mud::core::task_worker_pool<mud::core::simple_task> _pool;
+    mud::core::task_worker_pool<void(void)> _pool;
 
     /** Map of supported event loop mechanisms */
     std::map<mud::core::handle::type_t, std::unique_ptr<event_mechanism>>
@@ -95,7 +100,7 @@ private:
 };
 
 event_loop::impl::impl()
-  : _queue(std::make_shared<mud::core::simple_task_queue>())
+  : _queue(std::make_shared<mud::core::task_queue<void(void)>>())
   , _timers(std::make_shared<mud::core::timer_dispatcher>())
   , _pool(_queue, 2)
   , _running(false)
@@ -121,38 +126,38 @@ event_loop::impl::add_mechanism(mud::core::handle::type_t type)
 }
 
 void
-event_loop::impl::register_handler(const event& event)
+event_loop::impl::add(event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
 
     // Nothing to do for a null event
-    if (event.id().null()) {
+    if (event.topic().null()) {
         return;
     }
 
-    // Register the event with the appropriate mechanism
+    // Add the event with the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
     if (find != _mechanisms.end()) {
-        find->second->register_handler(event);
+        find->second->add(std::move(event));
     } else {
         throw std::invalid_argument("event for unregistered mechanism");
     }
 }
 
 void
-event_loop::impl::deregister_handler(const event& event)
+event_loop::impl::remove(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
 
     // Nothing to do for a null event
-    if (event.id().null()) {
+    if (event.topic().null()) {
         return;
     }
 
-    // Deregister the event from the appropriate mechanism
+    // Remove the event from the appropriate mechanism
     auto find = _mechanisms.find(event.handle()->type());
     if (find != _mechanisms.end()) {
-        find->second->deregister_handler(event);
+        find->second->remove(event);
     }
 }
 
@@ -260,15 +265,15 @@ event_loop::add_mechanism(mud::core::handle::type_t type)
 }
 
 void
-event_loop::register_handler(const event& event)
+event_loop::add(event&& event)
 {
-    _impl->register_handler(event);
+    _impl->add(std::move(event));
 }
 
 void
-event_loop::deregister_handler(const event& event)
+event_loop::remove(const event& event)
 {
-    _impl->deregister_handler(event);
+    _impl->remove(event);
 }
 
 void

@@ -24,7 +24,7 @@ public:
 
 private:
     // The handler when data is ready to be received.
-    void on_receive(mud::io::udp::socket&);
+    void on_received(const mud::core::message& msg);
 
     // The communicator
     mud::io::udp::communicator _communicator;
@@ -33,7 +33,7 @@ private:
 server::server()
 {
     // Open the communication channel
-    _communicator.receive_impulse()->attach(this, &server::on_receive);
+    attach(_communicator.received(), &server::on_received);
 }
 
 server::~server() {}
@@ -51,7 +51,7 @@ server::run(const std::string& host, uint16_t port)
 }
 
 void
-server::on_receive(mud::io::udp::socket& /* unused */)
+server::on_received(const mud::core::message& /* msg */)
 {
     // Receive
     std::string msg;

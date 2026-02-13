@@ -9,13 +9,11 @@ mudui_test_SOURCES = \
 mudui_test_CPPFLAGS = \
     -I$(srcdir)/../include \
     -I$(srcdir)/../../core/include \
-    -I$(srcdir)/../../event/include \
     -I$(srcdir)/../../test/include
 
 mudui_test_LDADD = \
     ../libmudui.la \
     ../../core/libmudcore.la \
-    ../../event/libmudevent.la \
     ../../test/libmudtest.la
 
 # LDADD TODO:

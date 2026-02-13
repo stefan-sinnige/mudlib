@@ -24,7 +24,6 @@ mudhttp_test_CPPFLAGS = \
 mudhttp_test_LDADD = \
     ../libmudhttp.la \
     ../../../io/libmudio.la \
-    ../../../event/libmudevent.la \
     ../../../core/libmudcore.la \
     ../../../test/libmudtest.la \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)

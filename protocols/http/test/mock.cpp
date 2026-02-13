@@ -16,10 +16,10 @@ server::response(const mud::http::response& resp)
     _resp = resp;
 }
 
-void
-server::on_request( const mud::http::request& req, mud::http::response& resp)
+mud::http::response
+server::request(const mud::http::request& req)
 {
-    resp = _resp;
+    return _resp;
 }
 
 /* ======================================================================

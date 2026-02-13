@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <sstream>
+#include <mud/core/event.h>
 #include <mud/core/handle.h>
 
 namespace mock {
@@ -10,11 +11,6 @@ namespace mock {
 class device
 {
 public:
-    /**
-     * @brief Type definition for a callback when something has been received.
-     */
-    typedef std::function<void()> on_ready_read_func;
-
     /**
      * @brief Create a device placeholder.
      *
@@ -80,33 +76,15 @@ public:
     std::shared_ptr<mud::core::handle> handle();
 
     /**
-     * @brief Register a handler when a message is ready to be processed.
-     *
-     * @details
-     * When a message has been received and is ready to be processed by a higher
-     * communicator the registered handler will be invoked. 
-     *
-     * A different mechanism is used here that might be tied to an event-handler
-     * which can passively wait for an event using a @c select, @c poll, or any
-     * other operating system supported method. This is signified by not using
-     * the @c object impulse but a simple callback function.
-     *
-     * @param func The handler function to register.
+     * @brief The event that is triggered on a signal.
      */
-    void on_ready_read_cb(on_ready_read_func func);
-
-    /** 
-     * @brief Return the handler that is registered when a message is ready to
-     * a be processed by a higher communication layer.
-     * @return The registered hander.
-     */
-    on_ready_read_func on_ready_read_cb() const;
+    mud::core::event& signal();
 
     /**
-     * @brief Mock that the device has something to read and invoke the
-     * @c on_ready_read callback.
+     * @brief Mock that the device has something to read.
+     * @details Invoke the hanlder taht there is something to rea.
      */
-    void signal_read();
+    void simulate_signal();
 
 private:
     /** The implementation and its unique reference. */

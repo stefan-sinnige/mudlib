@@ -5,6 +5,7 @@
 #include <map>
 #include <mud/core/handle.h>
 #include <mud/core/event_mechanism.h>
+#include <mud/core/message.h>
 
 /*
  * Simulation of simple OS handle with a state to indicate if there is
@@ -57,17 +58,17 @@ public:
 
     /* Constructor */
     test_mechanism(
-            const std::shared_ptr<mud::core::simple_task_queue>& queue,
+            const std::shared_ptr<mud::core::task_queue<void(void)>>& queue,
             const std::shared_ptr<mud::core::timer_dispatcher>& timers);
 
     /* Destructor */
     ~test_mechanism();
 
-    /* Register handler */
-    void register_handler(const mud::core::event& event) override;
+    /* Add an event */
+    void add(mud::core::event&& event) override;
 
-    /* Deregister handler */
-    void deregister_handler(const mud::core::event& event) override;
+    /* Remove and event */
+    void remove(const mud::core::event& event) override;
 
     /* Initiate */
     std::shared_future<void> initiate() override;

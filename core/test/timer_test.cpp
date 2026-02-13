@@ -2,7 +2,6 @@
 #include "mud/core/event_loop.h"
 #include "timer_dispatcher.h"
 #include "mud/test.h"
-#include <future>
 #include <iomanip>
 #include <ostream>
 #include <type_traits>
@@ -25,7 +24,7 @@ operator<<(std::ostream& ostr, const std::chrono::system_clock::time_point& tp)
 
 /* clang-format off */
 
-CONTEXT_1(mud::core::object)
+CONTEXT(public mud::core::object)
     /* Constructor initialised for each scenario run */
     context() {
         struct tm simulated;
@@ -37,7 +36,7 @@ CONTEXT_1(mud::core::object)
         simulated.tm_sec = 25;              // 25 seconds
         epoch = std::chrono::system_clock::from_time_t(mktime(&simulated));
         notification_count = 0;
-        timer.expire_impulse()->attach(this, &context::on_timer);
+        attach(timer.expired(), &context::on_timer);
     }
 
     /* Destructor after each scenario */
@@ -49,7 +48,7 @@ CONTEXT_1(mud::core::object)
     }
 
     /* The timer notification. */
-    void on_timer() {
+    void on_timer(const mud::core::message&) {
         ++notification_count;
     }
 
@@ -97,7 +96,7 @@ FEATURE("Timer")
           ctx.event_thread = std::thread([]() {
               mud::core::event_loop::global().loop();
           });
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
       })
   DEFINE_WHEN("The timer is examined", [](context& ctx){
   })

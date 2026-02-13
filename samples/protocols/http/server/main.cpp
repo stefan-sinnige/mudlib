@@ -21,9 +21,7 @@ public:
 
 private:
     // The handler an HTTP request has been received
-    void on_request(
-            const mud::http::request& req,
-            mud::http::response& resp) override;
+    mud::http::response request(const mud::http::request& req) override;
 };
 
 server::server() {}
@@ -37,12 +35,11 @@ server::run(const std::string& host, uint16_t port)
     start(endpoint);
 }
 
-void
-server::on_request(
-            const mud::http::request& req,
-            mud::http::response& resp)
+mud::http::response
+server::request(const mud::http::request& req)
 {
     std::cout << "Received request, replying wih response" << std::endl;
+    mud::http::response resp;
     resp.clear();
     resp.version(req.version());
     resp.status_code(mud::http::status_code_e::OK);
@@ -54,6 +51,7 @@ server::on_request(
                         "</html>\r\n";
     resp.field<mud::http::content_length>(reply.size());
     resp.entity_body(reply);
+    return resp;
 }
 
 // ===========================================================================

@@ -18,7 +18,6 @@ mudio_test_CPPFLAGS = \
 
 mudio_test_LDADD = \
     ../libmudio.la \
-    ../../event/libmudevent.la \
     ../../core/libmudcore.la \
     ../../test/libmudtest.la \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)

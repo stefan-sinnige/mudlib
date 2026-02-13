@@ -1,7 +1,6 @@
 #ifndef _MUDLIB_CORE_EVENT_H_
 #define _MUDLIB_CORE_EVENT_H_
 
-#include <functional>
 #include <memory>
 #include <mud/core/handle.h>
 #include <mud/core/uuid.h>
@@ -10,15 +9,30 @@
 BEGIN_MUDLIB_CORE_NS
 
 /**
- * @brief A event that can be signalled.
+ * @brief An event that can be used in an event-loop.
  *
+ * @details
  * An event is an abstraction of anything that can signal a certain condition.
  * This can be any externally triggered action (e.g. the moving of a mouse, the
  * receiving of a web-call from another machine), or some condition internally
  * (a timer or a file being updated).
  *
- * Events can be waited upon by an @c event_loop and an associated handler can
- * be called when such an event has been triggered.
+ * Events are designed to be used by the @c event_loop such that it can be
+ * waited upon and when the condition is met, the event shall be triggered using
+ * the publish/subscribe notification mechanism. Although this can allow
+ * multiple subscribers to be notified, it is expected that only one would
+ * actually access the resource and take appropriate action. For example, when
+ * a TCP socket is triggered that there is some data available on the socket, it
+ * is expected that only subscriber to that event will handle the reading of the
+ * socket.
+ *
+ * As the event is associated to the publish-subscribe mechanism, a particular
+ * event for a certain resource will be identified by its @em topic
+ * identification.
+ *
+ * The event will remain active in the loop as long as there are active
+ * subscribers attached to the event. When there are no subscribers attached,
+ * the event-loop shall remove the event.
  */
 class MUDLIB_CORE_API event
 {
@@ -36,34 +50,22 @@ public:
     };
 
     /**
-     * @brief Return type of the event function.
+     * @brief Create a default, yet unusable, event.
      */
-    enum class return_type
-    {
-        REMOVE = 0,  /**< Remove the registration */
-        CONTINUE = 1 /**< Continue with same registration */
-    };
+    event() : _topic(true) {}
 
     /**
-     * @brief Type definition of the event function
-     */
-    typedef std::function<return_type(void)> function_type;
-
-    /**
-     * @brief Default constructor, creating a null-event.
-     * @details The event is created without any handle, mask or handler and
-     * with a null-ID.
-     */
-    event();
-
-    /**
-     * @brief Constructor, defining an event, the signal and the handler.
-     * @param handle [in] The handle.
+     * @brief Constructor.
+     * @param topic [in] The topic identification associated to this event.
+     * @param handle [in] The handle to a resource.
      * @param mask [in] The signal mask to register.
-     * @param handler [in] The callable handler function
+     * @details
+     * Create an event that is associated to a resource handle and notifies
+     * and subscriber through the notification using the @c topic ID.
      */
-    event(std::shared_ptr<mud::core::handle> handle, signal_type mask,
-          function_type&& handler);
+    event(const mud::core::uuid& topic, 
+          std::shared_ptr<mud::core::handle> handle,
+          signal_type mask);
 
     /**
      * @brief Copy constructor.
@@ -74,13 +76,16 @@ public:
     /**
      * @brief Move constructor.
      * @param rhs The event to move.
+     * @details
+     * Functionally, the same as the copy constructor. The @c rhs remain
+     * unaffected.
      */
-    event(event&& rhs) = default;
+    event(event&& rhs);
 
     /**
      * @brief Destructor.
      */
-    virtual ~event();
+    virtual ~event() = default;
 
     /**
      * @brief Copy assignment.
@@ -91,25 +96,28 @@ public:
     /**
      * @brief Move assignment.
      * @param rhs The event to move.
+     * @details
+     * Functionally, the same as the copy constructor. The @c rhs remain
+     * unaffected.
      */
-    event& operator=(event&& rhs) = default;
+    event& operator=(event&& rhs);
 
     /**
      * @brief Equality operator.
-     * @param[in] rhs The event to compare against.
+     * @param[in] rhs The event to compare against (by ID).
      */
     bool operator==(const event& rhs) const;
 
     /**
      * @brief Inequality operator.
-     * @param[in] rhs The event to compare against.
+     * @param[in] rhs The event to compare against (by ID).
      */
     bool operator!=(const event& rhs) const;
 
     /**
-     * @brief The event ID.
+     * @brief The event topic ID.
      */
-    const mud::core::uuid& id() const;
+    const mud::core::uuid& topic() const;
 
     /**
      * @brief Set the handle to examine.
@@ -128,22 +136,19 @@ public:
     signal_type mask() const;
 
     /**
-     * @brief The function handler.
+     * @brief Publish a notification that the event has triggered.
      */
-    function_type handler() const;
+    void publish() const;
 
 private:
-    /** The event ID. */
-    mud::core::uuid _id;
+    /** The topic ID. */
+    mud::core::uuid _topic;
 
     /** The handle to examine. */
     std::shared_ptr<mud::core::handle> _handle;
 
     /** The signal mask to register */
     signal_type _mask;
-
-    /** The function handler. */
-    function_type _fn;
 };
 
 /**

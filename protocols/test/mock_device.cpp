@@ -32,14 +32,9 @@ public:
     std::shared_ptr<mud::core::handle> handle() const;
 
     /**
-     * Set the on-receive callback handler.
+     * The signal event.
      */
-    void on_ready_read_cb(device::on_ready_read_func func);
-
-    /**
-     * Return the on-receive callback handler.
-     */
-    device::on_ready_read_func on_ready_read_cb() const;
+    mud::core::event& signal();
 
 private:
     /** The input stream. */
@@ -48,17 +43,19 @@ private:
     /** The output stream. */
     std::ostream& _ostr;
 
-    /** The on-receive callback. */
-    device::on_ready_read_func _on_ready_read_cb;
-
     /** The handle */
     std::shared_ptr<mud::core::handle> _handle;
+
+    /** The signalled event */
+    mud::core::event _signal;
 };
 
 device::impl::impl(std::istream& istr, std::ostream& ostr)
-    : _istr(istr), _ostr(ostr), _on_ready_read_cb(nullptr)
+    : _istr(istr), _ostr(ostr)
 {
     _handle = std::make_shared<mud::core::select_handle>(0xBEEF);
+    _signal = mud::core::event(mud::core::uuid(), _handle,
+            mud::core::event::signal_type::READING);
 }
 
 device::impl::~impl()
@@ -83,16 +80,10 @@ device::impl::handle() const
     return _handle;
 }
 
-void
-device::impl::on_ready_read_cb(device::on_ready_read_func func)
+mud::core::event&
+device::impl::signal()
 {
-    _on_ready_read_cb = func;
-}
-
-device::on_ready_read_func
-device::impl::on_ready_read_cb() const
-{
-    return _on_ready_read_cb;
+    return _signal;
 }
 
 device::device()
@@ -146,34 +137,22 @@ device::handle()
     return _impl->handle();
 }
 
-void
-device::on_ready_read_cb(device::on_ready_read_func func)
+mud::core::event&
+device::signal()
 {
     if (!_impl) {
         throw mud::core::not_owner();
     }
-    _impl->on_ready_read_cb(func);
-}
-
-device::on_ready_read_func
-device::on_ready_read_cb() const
-{
-    if (!_impl) {
-        throw mud::core::not_owner();
-    }
-    return _impl->on_ready_read_cb();
+    return _impl->signal();
 }
 
 void
-device::signal_read()
+device::simulate_signal()
 {
     if (!_impl) {
         throw mud::core::not_owner();
     }
-    auto func = _impl->on_ready_read_cb();
-    if (func) {
-        func();
-    }
+    _impl->signal().publish();
 }
 
 void

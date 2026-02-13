@@ -10,7 +10,7 @@ BEGIN_MUDLIB_CORE_NS
 
 /**
  * Spin lock to safely protect the access and update of the timer expiration
- * time point. This is a generic implementation of a sping lock that may be
+ * time point. This is a generic implementation of a spin lock that may be
  * made publicly available in future if C++ is not supplying with one.
  *
  * Spin locks should be used with care to avoid dead locks and long busy waits.
@@ -92,16 +92,18 @@ public:
     std::chrono::system_clock::time_point expiration() const;
 
     /**
-     * @brief The impulse issued when a timer has expired.
+     * Return the expired notification topic.
      */
-    timer::expire_impulse_type expire_impulse() {
-        return _expire_impulse;
+    const mud::core::uuid& expired() const {
+        return _expired;
     }
 
     /**
-     * Handler when the timer is triggered.
+     * Handler when the expired message has been triggered by the timer
+     * dispatcher.
+     * @param time_point The expired timer message.
      */
-    void on_expire(const std::chrono::system_clock::time_point& time_point);
+    void on_expired(const std::chrono::system_clock::time_point& time_point);
 
 private:
     /** The type of the timer */
@@ -116,11 +118,11 @@ private:
     /** The time point for the next expiration trigger. */
     std::chrono::system_clock::time_point _expiration;
 
-    /** The expire impulse.  */
-    timer::expire_impulse_type _expire_impulse;
-
     /** The expiration timer locking mechanism. */
     spin_lock _lock;
+
+    /** The expired notification topic. */
+    mud::core::uuid _expired;
 };
 
 END_MUDLIB_CORE_NS

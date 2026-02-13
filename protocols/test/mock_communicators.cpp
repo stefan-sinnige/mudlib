@@ -14,14 +14,7 @@ void
 end_communicator::open(mock::device&& device)
 {
     _device = std::move(device);
-    _event = mud::core::event(
-        _device.handle(),
-        mud::core::event::signal_type::READY,
-        []() {
-            return mud::core::event::return_type::CONTINUE;
-        });
-    _device.on_ready_read_cb(std::bind(
-        &end_communicator::on_ready_read, this));
+    attach(_device.signal().topic(), &end_communicator::on_signal);
 }
 
 void
@@ -47,16 +40,16 @@ end_communicator::device()
     return _device;
 }
 
-const mud::core::event&
-end_communicator::event() const
+mud::core::event&
+end_communicator::event()
 {
     return _event;
 }
 
 void
-end_communicator::on_ready_read()
+end_communicator::on_signal(const mud::core::message& /* msg */)
 {
-    receive_impulse()->pulse(_device);
+    mud::core::broker::publish(received());
 }
 
 /* ======================================================================
@@ -94,7 +87,7 @@ layer_a_communicator::ostr()
 }
 
 void
-layer_a_communicator::on_receive(mock::device& device)
+layer_a_communicator::on_received(const mud::core::message& msg)
 {
     // Get the layer command
     std::string cmd;
@@ -108,7 +101,7 @@ layer_a_communicator::on_receive(mock::device& device)
     else
     if (cmd == "A_ENVELOPE") {
         // Remaining message handled at an upper communicator
-        receive_impulse()->pulse(device);
+        mud::core::broker::publish(received());
     }
     else {
     }
@@ -149,7 +142,7 @@ layer_b_communicator::ostr()
 }
 
 void
-layer_b_communicator::on_receive(mock::device& device)
+layer_b_communicator::on_received(const mud::core::message& msg)
 {
     // Get the layer command
     std::string cmd;
@@ -163,7 +156,7 @@ layer_b_communicator::on_receive(mock::device& device)
     else
     if (cmd == "B_ENVELOPE") {
         // Remaining message handled at an upper communicator
-        receive_impulse()->pulse(device);
+        mud::core::broker::publish(received());
     }
     else {
     }

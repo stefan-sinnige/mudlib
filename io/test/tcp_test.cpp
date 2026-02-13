@@ -17,7 +17,7 @@
 
 /* clang-format off */
 
-CONTEXT_1(mud::core::object)
+CONTEXT(public mud::core::object)
     // Constructor, executed before each scenario run
     context()
         : send_value(nullptr), recv_value(nullptr)
@@ -31,6 +31,7 @@ CONTEXT_1(mud::core::object)
 
     // Destructor, executed after each scenario run
     ~context() {
+        detach();
         mud::core::event_loop::global().terminate();
         if (thr.joinable())
         {
@@ -41,32 +42,28 @@ CONTEXT_1(mud::core::object)
     }
 
     // The effector when a connection is accepted (server)
-    void on_accept(mud::io::tcp::socket& socket) {
-        server = std::move(socket);
-        {
-            std::lock_guard<std::mutex> lock(accepted_lock);
-            accepted = true;
-        }
+    void on_accepted(const mud::core::message&) {
+        std::lock_guard<std::mutex> lock(accepted_lock);
+        server = acceptor.connection();
+        accepted = true;
         accepted_cv.notify_all();
     }
 
     // The effector when a connection is established (client)
-    void on_connect(mud::io::tcp::socket& socket) {
-        socket.option<bool, mud::io::ip::nonblocking>(false);
-        {
-            std::lock_guard<std::mutex> lock(connected_lock);
-            connected = true;
-        }
-        communicator.receive_impulse()->attach(this, &context::on_receive);
-        communicator.open(std::move(socket));
+    void on_connected(const mud::core::message&) {
+        std::lock_guard<std::mutex> lock(connected_lock);
+        attach(communicator.received(), &context::on_received);
+        communicator.open(std::move(connector.connection()));
+        connected = true;
         connected_cv.notify_all();
     }
 
     // The effector when data is available (client)
-    void on_receive(mud::io::tcp::socket& socket) {
+    void on_received(const mud::core::message&) {
+        // mud::io::tcp::socket& socket) {
         // Read 2 bytes indicating the length
         uint16_t two_bytes;
-        socket.istr().read((char*)&two_bytes, 2);
+        communicator.istr().read((char*)&two_bytes, 2);
         recv_length = mud::core::endian::convert(
                     mud::core::endian::endian_t::big,
                     mud::core::endian::native(),
@@ -77,7 +74,7 @@ CONTEXT_1(mud::core::object)
         memset(recv_value, 0, recv_length);
 
         // Read the data
-        socket.istr().read((char*)recv_value, recv_length);
+        communicator.istr().read((char*)recv_value, recv_length);
         {
             std::lock_guard<std::mutex> lock(received_lock);
             received = true;
@@ -159,12 +156,40 @@ static_sample(mud::io::tcp::socket& socket)
 FEATURE("TCP sockets")
 
   // Pre-defined steps
+  DEFINE_GIVEN("A TCP server",
+    [](context& ctx){
+        std::string localhost("127.0.0.1");
+        ctx.attach(ctx.acceptor.accepted(), &context::on_accepted);
+        ctx.acceptor.open(mud::io::tcp::endpoint(localhost, 52618));
+    })
+  DEFINE_GIVEN("A connected TCP client",
+    [](context& ctx){
+        /* Create a connecting client */
+        std::string localhost("127.0.0.1");
+        ctx.attach(ctx.connector.connected(), &context::on_connected);
+        ctx.connector.open(mud::io::tcp::endpoint(localhost, 52618));
+
+        /* wait for the client to be connected */
+        {
+            std::unique_lock<std::mutex> lock(ctx.connected_lock);
+            ctx.connected_cv.wait_for(lock, std::chrono::milliseconds(10),
+                [&ctx]{ return ctx.connected; });
+            ASSERT(true, ctx.connected);
+        }
+
+        /* Wait for the server to be accepted */
+        {
+            std::unique_lock<std::mutex> lock(ctx.accepted_lock);
+            ctx.accepted_cv.wait_for(lock, std::chrono::milliseconds(10),
+                [&ctx]{ return ctx.accepted; });
+            ASSERT(true, ctx.accepted);
+        }
+    })
   DEFINE_GIVEN("A TCP server is listening for inbound connection",
     [](context& ctx){
         std::string localhost("127.0.0.1");
-        ctx.acceptor.accept_impulse()->attach(&ctx, &context::on_accept);
+        ctx.attach(ctx.acceptor.accepted(), &context::on_accepted);
         ctx.acceptor.open(mud::io::tcp::endpoint(localhost, 52618));
-        mud::core::event_loop::global().register_handler(ctx.acceptor.event());
 
     })
   DEFINE_GIVEN("There is no TCP server listening for inbound connections",
@@ -172,9 +197,8 @@ FEATURE("TCP sockets")
   DEFINE_WHEN("The TCP client connects",
     [](context& ctx){
         std::string localhost("127.0.0.1");
-        ctx.connector.connect_impulse()->attach(&ctx, &context::on_connect);
+        ctx.attach(ctx.connector.connected(), &context::on_connected);
         ctx.connector.open(mud::io::tcp::endpoint(localhost, 52618));
-        mud::core::event_loop::global().register_handler(ctx.connector.event());
     })
   DEFINE_WHEN("The TCP server accepts the connection",
     [](context& ctx){
@@ -247,14 +271,14 @@ FEATURE("TCP sockets")
             ASSERT(true, std::is_default_constructible<
                   mud::io::tcp::acceptor>::value);
         })
-     AND ("The type is move-constructible",
+     AND ("The type is not move-constructible",
         [](context& ctx) {
-            ASSERT(true, std::is_move_constructible<
+            ASSERT(false, std::is_move_constructible<
                   mud::io::tcp::acceptor>::value);
         })
-     AND ("The type is move-assignable",
+     AND ("The type is not move-assignable",
         [](context& ctx) {
-            ASSERT(true, std::is_move_assignable<
+            ASSERT(false, std::is_move_assignable<
                   mud::io::tcp::acceptor>::value);
         })
      AND ("The type is not copy-constructible",
@@ -383,6 +407,11 @@ FEATURE("TCP sockets")
               }
           })
 
+    SCENARIO("Bla")
+      GIVEN("A TCP server")
+        AND("A connected TCP client")
+       WHEN("nothing", [](context& ctx) {})
+       THEN("nothing", [](context& ctx) {})
 END_FEATURE()
 
 /* clang-format on */

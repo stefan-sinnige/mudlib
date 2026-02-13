@@ -6,7 +6,6 @@ sample_http_client_SOURCES = \
 sample_http_client_CPPFLAGS = \
     -UVERSION \
     -I$(srcdir)/../../../../core/include \
-    -I$(srcdir)/../../../../event/include \
     -I$(srcdir)/../../../../io/include \
     -I$(srcdir)/../../../../protocols//include \
     -I$(srcdir)/../../../../protocols/http/include \
@@ -14,7 +13,6 @@ sample_http_client_CPPFLAGS = \
 
 sample_http_client_LDADD = \
     $(srcdir)/../../../../core/libmudcore.la \
-    $(srcdir)/../../../../event/libmudevent.la \
     $(srcdir)/../../../../io/libmudio.la \
     $(srcdir)/../../../../protocols/http/libmudhttp.la \
     $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)

@@ -5,14 +5,12 @@ sample_tcp_client_SOURCES = \
 
 sample_tcp_client_CPPFLAGS = \
     -I$(srcdir)/../../../../core/include \
-    -I$(srcdir)/../../../../event/include \
     -I$(srcdir)/../../../../io/include \
     -I$(srcdir)/../../../../protocols/include \
     $(PTHREAD_CLFAGS)
 
 sample_tcp_client_LDADD = \
     $(srcdir)/../../../../core/libmudcore.la \
-    $(srcdir)/../../../../event/libmudevent.la \
     $(srcdir)/../../../../io/libmudio.la \
     $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 

@@ -20,9 +20,9 @@ public:
     std::istream& istr() override;
     std::ostream& ostr() override;
     mock::device& device() override;
-    const mud::core::event& event() const override;
+    mud::core::event& event() override;
 private:
-    void on_ready_read();
+    void on_signal(const mud::core::message& msg);
     mud::core::event _event;
     mock::device _device;
 };
@@ -44,7 +44,7 @@ public:
     void close() override;
     std::istream& istr() override;
     std::ostream& ostr() override;
-    void on_receive(mock::device&) override;
+    void on_received(const mud::core::message&) override;
 };
 
 /**
@@ -64,7 +64,7 @@ public:
     void close() override;
     std::istream& istr() override;
     std::ostream& ostr() override;
-    void on_receive(mock::device&) override;
+    void on_received(const mud::core::message& msg) override;
 };
 
 } // namespace mock

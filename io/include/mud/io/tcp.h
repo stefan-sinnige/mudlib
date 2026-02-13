@@ -7,9 +7,10 @@
 #include <mud/io/ns.h>
 #include <mud/core/event.h>
 #include <mud/core/object.h>
-#include <mud/core/impulse.h>
 #include <mud/protocols/communicator.h>
+#include <mutex>
 #include <ostream>
+#include <queue>
 #include <string>
 
 BEGIN_MUDLIB_IO_NS
@@ -227,7 +228,7 @@ namespace tcp {
      *
      * The event controller class for opening a listening socket on a local
      * endpoint. When the listening socket registers an incoming connection
-     * from a peer, the event-loop invokes the @c on_accept handler,
+     * from a peer, the event-loop invokes the @c accepted notification,
      * while passing the client socket ownership. Continues listening to
      * other incoming connection requests until destructed.
      */
@@ -235,26 +236,9 @@ namespace tcp {
     {
     public:
         /**
-         * @brief The type of the @c impulse when an new connection has been
-         * accepted.
-         */
-        typedef std::shared_ptr<mud::core::impulse<mud::io::tcp::socket&>>
-                accept_impulse_type;
-
-        /**
          * Constructor.
          */
         acceptor();
-
-        /**
-         * @brief Move constructor.
-         */
-        acceptor(acceptor&& rhs) = default;
-
-        /**
-         * @brief Move assignment.
-         */
-        acceptor& operator=(acceptor&&) = default;
 
         /**
          * Destructor.
@@ -273,10 +257,25 @@ namespace tcp {
          */
         void close();
 
-        /**
-         * @brief Return the connected state.
+        /** 
+         * @brief Return an accepted connection.
+         * @return The socket asscociated to an accepted onnection, or an
+         * invalid socket (the associated handle is a @c nullptr) if there are
+         * no connections available.
          */
-        bool connected() const;
+        tcp::socket connection();
+
+        /**
+         * @brief The notification topic when a connection has been accepted.
+         * @details
+         * When a notification has been triggered that the @c accepted has
+         * accepted a connection, a subscriber to that notfication can invoke
+         * the @c connection function to extract the connected socket.
+         * @return The notification ID.
+         */
+        const mud::core::uuid& accepted() const {
+            return _accepted;
+        }
 
         /**
          * @brief Return the event that should be actioned when the @c Device is
@@ -284,18 +283,13 @@ namespace tcp {
          *
          * @details
          * The event that is returned is to be used by an @c event_loop. The
-         * @c acceptor will invoke the @c accept_impulse when handling the
-         * event and to notify any attached object of the accepted connection.
+         * @c acceptor will publish the @c accepted notification when handling
+         * the event and to notify any attached object of the accepted
+         * connection.
          *
          * @return The event.
          */
-        const mud::core::event& event() const;
-
-        /**
-         * @brief The @c impulse when a new connection has been accepted.
-         * @return The impulse.
-         */
-        accept_impulse_type accept_impulse();
+        mud::core::event& event();
 
         /**
          * Non-copyable.
@@ -303,11 +297,17 @@ namespace tcp {
         acceptor(const acceptor&) = delete;
         acceptor& operator=(const acceptor&) = delete;
 
+        /*
+         * Non-moveable
+         */
+        acceptor(acceptor&& rhs) = delete;
+        acceptor& operator=(acceptor&& rhs) = delete;
+
     private:
         /** Event handler when a peer is connected. */
-        mud::core::event::return_type on_ready_accept();
+        void on_ready_accept(const mud::core::message&);
 
-        /** The connected state */
+        /** The connected state of the listening socket */
         bool _connected;
 
         /** The socket used for listening for incoming connections. */
@@ -316,8 +316,14 @@ namespace tcp {
         /** The accept event. */
         mud::core::event _accept_event;
 
-        /** The accept impulse. */
-        accept_impulse_type _accept_impulse;
+        /** The accepted notification. */
+        mud::core::uuid _accepted;
+
+        /** The mutex to protect the access to the queue. */
+        std::mutex  _mutex;
+
+        /** The queue of accepted connection that are ready to be returned. */
+        std::queue<tcp::socket> _pending;
     };
 
     /**
@@ -331,13 +337,6 @@ namespace tcp {
     class MUDLIB_IO_API connector: public mud::core::object
     {
     public:
-        /**
-         * @brief The type of the @c impulse when an connection has been
-         * established.
-         */
-        typedef std::shared_ptr<mud::core::impulse<mud::io::tcp::socket&>>
-                connect_impulse_type;
-
         /**
          * Constructor.
          */
@@ -356,14 +355,34 @@ namespace tcp {
         /**
          * Destructor.
          */
-        virtual ~connector() = default;
+        virtual ~connector();
 
         /**
          * @brief Open the socket connection to initiate a connection request.
          * @param endpoint The end-point to connect to.
-         * @throw std::system_error
+         * @throw std::system_error if the connection cannot be attempted
+         * @details This connection will be attempted in the background. Once
+         * a connection has been established, it shall invoke the @c connected
+         * notification. The connected socket is accessible through the @c
+         * connection method.
          */
         void open(const endpoint& endpoint);
+
+        /**
+         * @brief Get the socket that has established the connection.
+         * @return The connected socket.
+         */
+        tcp::socket& connection() {
+            return _socket;
+        }
+
+        /**
+         * @brief The notification topic when a connection has been established.
+         * @return The notification ID.
+         */
+        const mud::core::uuid& connected() const {
+            return _connected;
+        }
 
         /**
          * @brief Return the event that should be actioned when the @c Device is
@@ -371,19 +390,13 @@ namespace tcp {
          *
          * @details
          * The event that is returned is to be used by an @c event_loop. The
-         * @c connector will invoke the @c connect_impulse when handling the
-         * event and to notify any attached object of the established
-         * connection.
+         * @c connector will publish on the @c connected notification  when
+         * handling the event and to notify any attached object of the
+         * established connection.
          *
          * @return The event.
          */
-        const mud::core::event& event() const;
-
-        /**
-         * @brief The @c impulse when a new connection has been connected.
-         * @return The impulse.
-         */
-        connect_impulse_type connect_impulse();
+        mud::core::event& event();
 
         /**
          * Non-copyable.
@@ -393,7 +406,7 @@ namespace tcp {
 
     private:
         /** Event handler when a peer has accepted the connection. */
-        mud::core::event::return_type on_ready_connect();
+        void on_ready_connect(const mud::core::message&);
 
         /** The socket to use for accepting connections. */
         tcp::socket _socket;
@@ -401,8 +414,8 @@ namespace tcp {
         /** The connect event. */
         mud::core::event _connect_event;
 
-        /** The connect impulse. */
-        connect_impulse_type _connect_impulse;
+        /** The connected notification. */
+        mud::core::uuid _connected;
     };
 
     /**
@@ -466,11 +479,6 @@ namespace tcp {
         void close() override;
 
         /**
-         * @brief Return the connected state.
-         */
-        bool connected() const;
-
-        /**
          * @brief Get the stream object to read from the socket.
          * @return The stream object.
          */
@@ -499,17 +507,17 @@ namespace tcp {
          *
          * @details
          * The event that is returned is to be used by an @c event_loop to
-         * invoke the @c receive_impulse trigger on the communicator. Any
+         * invoke the @c received ntoficiation on the communicator. Any
          * layered communicator on a higher protocol layer will then be
          * invoked as necessary, based on the message being received.
          *
          * @return The event.
          */
-        virtual const mud::core::event& event() const override;
+        virtual mud::core::event& event() override;
 
     private:
         /** Event handler when there is data available. */
-        mud::core::event::return_type on_ready_receive();
+        void on_ready_receive(const mud::core::message&);
 
         /** The receive event. */
         mud::core::event _receive_event;

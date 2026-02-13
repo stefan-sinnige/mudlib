@@ -14,30 +14,37 @@ event_mechanism_factory::registrar<mud::core::handle::type_t::SELECT,
     _registrar;
 
 select_mechanism::select_mechanism(
-    const std::shared_ptr<mud::core::simple_task_queue>& queue,
+    const std::shared_ptr<mud::core::task_queue<void(void)>>& queue,
     const std::shared_ptr<mud::core::timer_dispatcher>& timers)
-  : mud::core::event_mechanism(queue, timers), _running(false)
+  : mud::core::event_mechanism(queue, timers)
+  , _running(false)
+  , _self_event(mud::core::uuid(), _self.handle(), event::signal_type::READING)
 {
     LOG(log);
 
-    /* Always register the self-event to receive the trigger */
-    _self_event = mud::core::event(
-            _self.handle(), event::signal_type::READING,
-            [&]() {
-                _self.capture();
-                return mud::core::event::return_type::CONTINUE;
-            });
-    _events.push_back(_self_event);
-    INFO(log) << "Registering self-event for select mechanism fd: "
+    /* Attach to the self-event notification. This special event is only used
+     * to break a 'select', for example, when events have been added or
+     * removed. There is no official notification of this event as it would
+     * cause deadlocks. The triggering of this event happens on the same thread
+     * while it holds the mutex lock (see 'demultiplex'. */
+    INFO(log) << "Attaching to self event for select mechanism fd: "
               << mud::core::internal_handle<int>(_self.handle())
-              << " [" << _self_event.id() << "]" << std::endl;
+              << " [" << _self_event.topic() << "]" << std::endl;
+    _events.push_back(std::move(_self_event));
 
-    /* Register the timer change event */
-    mud::core::event timers_ev = timers->event();
-    _events.push_back(timers_ev);
-    INFO(log) << "Registering timers-event for select mechanism fd: "
-              << mud::core::internal_handle<int>(timers_ev.handle())
-              << " [" << timers_ev.id() << "]" << std::endl;
+    /* Add the timer-dispatcher changed event. This event is signalled when
+     * the timer list has changed. */
+    auto& timers_event = timers->changed();
+    INFO(log) << "Attaching to timers-changed event for select mechanism fd:"
+              << mud::core::internal_handle<int>(timers_event.handle())
+              << " [" << timers_event.topic() << "]" << std::endl;
+    _events.push_back(std::move(timers_event));
+
+    /* Attach the event-loop timed-out notification to the timer dispatcher's
+     * on_expired handled as the event-loop timeout is fully associated to the
+     * sorted timers of the timer-dispatcher. */
+    ::mud::core::broker::attach(_timed_out, timers.get(),
+                                &mud::core::timer_dispatcher::on_expired);
 }
 
 select_mechanism::~select_mechanism()
@@ -54,32 +61,32 @@ select_mechanism::~select_mechanism()
 }
 
 void
-select_mechanism::register_handler(const event& event)
+select_mechanism::add(event&& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
     LOG(log);
-    INFO(log) << "Registering event for select mechanism fd: "
+    INFO(log) << "Adding event for select mechanism fd: "
               << mud::core::internal_handle<int>(event.handle())
-              << " [" << event.id() << "]" << std::endl;
+              << " [" << event.topic() << "]" << std::endl;
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
         _events.erase(found);
     }
-    _events.push_back(event);
+    _events.push_back(std::move(event));
     nop();
 }
 
 void
-select_mechanism::deregister_handler(const event& event)
+select_mechanism::remove(const event& event)
 {
     std::lock_guard<std::mutex> lock(_lock);
 
     auto found = std::find(_events.begin(), _events.end(), event);
     if (found != _events.end()) {
         LOG(log);
-        INFO(log) << "Deregistering event from select mechanism fd: "
+        INFO(log) << "Removing event from select mechanism fd: "
                   << mud::core::internal_handle<int>(event.handle())
-                  << " [" << event.id() << "]" << std::endl;
+                  << " [" << event.topic() << "]" << std::endl;
         _events.erase(found);
         nop();
     }
@@ -118,6 +125,7 @@ select_mechanism::loop()
         auto now = std::chrono::system_clock::now();
         std::chrono::milliseconds duration = timers()->wait_duration(now);
         if (duration == std::chrono::milliseconds::max()) {
+            TRACE(log) << "Selecting with no timeout" << std::endl;
             timeout = nullptr;
         }
         else {
@@ -125,6 +133,9 @@ select_mechanism::loop()
                     duration).count();
             tv.tv_usec = (duration.count() % 1000) * 1000;
             timeout = &tv;
+            TRACE(log) << "Selecting with " << tv.tv_sec << "."
+                       << std::setfill('0') << std::setw(6) << tv.tv_usec
+                       << " timeout" << std::endl;
         }
 
         // Wait for the file-descriptors, or timeout.
@@ -142,24 +153,8 @@ select_mechanism::loop()
         }
         else
         if (ret == 0) {
-            // Timeout, meaning that one of the timers has expired. We may be
-            // able to schedule a task to handle timers like so
-            // 
-            //    mud::core::simple_task task([this]() {
-            //        auto now = std::chrono::system_clock::now();
-            //        this->timers()->dispatch(now);
-            //    });
-            //    queue()->push(std::move(task));
-            //
-            // But that would keep on triggering the select call with zero
-            // timeouts until the task is processed and all the expired timers
-            // have been processed. This would then have updated their expiry
-            // to the next time point. This means we would have a number of
-            // duplicate tasks in the queue. Until we have a reliable
-            // mechanism to deal with this, we block the event-loop until those
-            // timers are triggered by executing the dispatch straight away.
-            auto now = std::chrono::system_clock::now();
-            timers()->dispatch(now);
+            // Publish the timeout notification
+            ::mud::core::broker::publish(_timed_out);
         }
 
         // Handle all the file-descriptions that have been signaled.
@@ -201,6 +196,31 @@ select_mechanism::multiplex(fd_set& readfds, fd_set& writefds,
     FD_ZERO(&exceptfds);
     maxfd = -1;
 
+    /* Trace logging of what is triggered */
+    if (SEVERITY() <= mud::core::log::severity_t::trace) {
+        LOG(log);
+        TRACE(log) << "Multiplexing " << _events.size() << " events"
+                   << std::endl;
+        auto it = _events.begin();
+        while (it != _events.end()) {
+            if (it->handle() == nullptr) {
+                TRACE(log) << "Event " << it->topic()
+                           << " has invalid handle" << std::endl;
+            }
+            else {
+                int handle = mud::core::internal_handle<int>(it->handle());
+                TRACE(log) << "Handle " << std::setw(3) << std::setfill(' ')
+                        << handle << ' '
+                        << ((int)(it->mask() & event::signal_type::READING) 
+                           ? 'r' : '-')
+                        << ((int)(it->mask() & event::signal_type::WRITING)
+                           ? 'w' : '-')
+                        << "x " << it->topic() <<  std::endl;
+            }
+            it++;
+        }
+    }
+
     /* Add all registered event handlers */
     for (auto& event : _events) {
         if (event.handle() != nullptr &&
@@ -208,6 +228,7 @@ select_mechanism::multiplex(fd_set& readfds, fd_set& writefds,
                 event::signal_type::READING) {
             int handle = mud::core::internal_handle<int>(event.handle());
             FD_SET(handle, &readfds);
+            FD_SET(handle, &exceptfds);
             if (handle > maxfd) {
                 maxfd = handle;
             }
@@ -217,6 +238,7 @@ select_mechanism::multiplex(fd_set& readfds, fd_set& writefds,
                 event::signal_type::WRITING) {
             int handle = mud::core::internal_handle<int>(event.handle());
             FD_SET(handle, &writefds);
+            FD_SET(handle, &exceptfds);
             if (handle > maxfd) {
                 maxfd = handle;
             }
@@ -228,87 +250,109 @@ void
 select_mechanism::demultiplex(const fd_set& readfds, const fd_set& writefds,
                               const fd_set& exceptfds)
 {
-    LOG(log);
     std::lock_guard<std::mutex> lock(_lock);
+    std::list<event> triggered;
+
+    /* Trace logging of what is triggered */
+    if (SEVERITY() <= mud::core::log::severity_t::trace) {
+        LOG(log);
+        TRACE(log) << "Demultiplexing " << _events.size() << " events"
+                   << std::endl;
+        auto it = _events.begin();
+        while (it != _events.end()) {
+            if (it->handle() == nullptr) {
+                TRACE(log) << "Event " << it->topic()
+                           << " has invalid handle" << std::endl;
+            }
+            else {
+                int handle = mud::core::internal_handle<int>(it->handle());
+                TRACE(log) << "Handle " << std::setw(3) << std::setfill(' ')
+                        << handle << ' '
+                        << ((int)(it->mask() & event::signal_type::READING) &&
+                            FD_ISSET(handle, &readfds) ? 'r' : '-')
+                        << ((int)(it->mask() & event::signal_type::WRITING) &&
+                            FD_ISSET(handle, &writefds) ? 'w' : '-')
+                        << (FD_ISSET(handle, &exceptfds) ? 'x' : '-')
+                        << ' ' << it->topic() <<  std::endl;
+            }
+            it++;
+        }
+    }
 
     /* Check all excepts */
 
     /* Check all reads */
     auto event_it = _events.begin();
     while (event_it != _events.end()) {
-        if (event_it->handle() != nullptr &&
-            (event_it->mask() & event::signal_type::READING) ==
-                event::signal_type::READING) {
+        auto next_it = std::next(event_it);
+        if (event_it->handle() == nullptr) {
+            /* Invalid event, remove it */
+            next_it = _events.erase(event_it);
+        }
+        else
+        if (event::signal_type::READING ==
+            (event_it->mask() & event::signal_type::READING))
+        {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &readfds)) {
                 if (event_it->handle() == _self.handle()) {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
-                    (void)(event_it->handler())();
-                    ++event_it;
+                    _self.capture();
                 } else {
                     /* Any other event is taken off the list and processed as
                      * a task by a task worker. If the handler instructs to
                      * register the same event again, do so. */
-                    INFO(log) << "Triggered read event " << event_it->id()
-                              << std::endl;
-                    auto handler = event_it->handler();
-                    event ev = *event_it;
-                    mud::core::simple_task task([handler, ev, this]() {
-                        LOG(log);
-                        INFO(log) << "Executing event " << ev.id() << std::endl;
-                        if (handler() == event::return_type::CONTINUE) {
-                            this->register_handler(ev);
-                        }
-                    });
-                    queue()->push(std::move(task));
-                    event_it = _events.erase(event_it);
+                    triggered.splice(triggered.end(), _events, event_it);
                 }
-            } else {
-                ++event_it;
             }
-        } else {
-            ++event_it;
         }
+        event_it = next_it;
     }
 
     /* Check all writes */
     event_it = _events.begin();
     while (event_it != _events.end()) {
-        if (event_it->handle() != nullptr &&
-            (event_it->mask() & event::signal_type::WRITING) ==
-                event::signal_type::WRITING) {
+        auto next_it = std::next(event_it);
+        if (event_it->handle() == nullptr) {
+            /* Invalid event, remove it */
+            next_it = _events.erase(event_it);
+        }
+        else
+        if (event::signal_type::WRITING ==
+            (event_it->mask() & event::signal_type::WRITING))
+        {
             int handle = mud::core::internal_handle<int>(event_it->handle());
             if (FD_ISSET(handle, &writefds)) {
                 if (event_it->handle() == _self.handle()) {
                     /* The handle is the 'self' object. Execute it straight
                      * away as it is used only to re-multiplex. */
-                    (void)(event_it->handler())();
-                    ++event_it;
+                    _self.capture();
                 } else {
                     /* Any other event is taken off the list and processed as
                      * a task by a task worker. If the handler instructs to
                      * register the same event again, do so. */
-                    INFO(log) << "Triggered write event " << event_it->id()
-                              << std::endl;
-                    auto handler = event_it->handler();
-                    event ev = *event_it;
-                    mud::core::simple_task task([handler, ev, this]() {
-                        LOG(log);
-                        INFO(log) << "Executing event " << ev.id() << std::endl;
-                        if (handler() == event::return_type::CONTINUE) {
-                            this->register_handler(ev);
-                        }
-                    });
-                    queue()->push(std::move(task));
-                    event_it = _events.erase(event_it);
+                    triggered.splice(triggered.end(), _events, event_it);
                 }
-            } else {
-                ++event_it;
             }
-        } else {
-            ++event_it;
         }
+        event_it = next_it;
+    }
+
+    /* Create tasks for all events that need to be triggered */
+    event_it = triggered.begin();
+    while (event_it != triggered.end()) {
+        auto task = std::packaged_task<void()>(
+            [this, ev=std::move(*event_it)]() mutable {
+                LOG(log);
+                INFO(log) << "Executing event " << ev.topic() << std::endl;
+                ev.publish();
+                if (::mud::core::broker::size(ev.topic())) {
+                    add(std::move(ev));
+                }
+            });
+        queue()->push(std::move(task));
+        ++event_it;
     }
 }
 

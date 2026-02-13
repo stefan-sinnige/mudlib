@@ -46,14 +46,14 @@ namespace _udp {
     {
     public:
         /* Constructor for UDP specific stream-buffer.
-         * @param [in] socket  The associated socket.
          * @param [in] handle  The handle to use.
+         * @param [in] domain  The socket domain.
          * @param [in] source_endpoint  The handle to use.
          * @param [in] bufsize The initial buffer size.
          * @param [in] putbacksize The size of the putback buffer.
          */
-        streambuf(udp::socket& socket,
-                  std::shared_ptr<mud::core::handle> handle,
+        streambuf(std::shared_ptr<mud::core::handle> handle,
+                  basic_socket::domain_t domain,
                   udp::endpoint& source_endpoint,
                   udp::endpoint& destination_endpoint, size_t bufsize = 10,
                   size_t putbacksize = 4);
@@ -63,8 +63,8 @@ namespace _udp {
         ssize_t write(const void* buffer, size_t count) override;
 
     private:
-        /* The reference to the socket. */
-        udp::socket& _socket;
+        /* The socket domain */
+        basic_socket::domain_t _domain;
 
         /* The associated source endpoint */
         udp::endpoint& _source_endpoint;
@@ -73,14 +73,15 @@ namespace _udp {
         udp::endpoint& _destination_endpoint;
     };
 
-    streambuf::streambuf(udp::socket& socket,
-                         std::shared_ptr<mud::core::handle> handle,
+    streambuf::streambuf(std::shared_ptr<mud::core::handle> handle,
+                         basic_socket::domain_t domain,
                          udp::endpoint& source_endpoint,
                          udp::endpoint& destination_endpoint, size_t bufsize,
                          size_t putbacksize)
-      : mud::io::basic_streambuf(handle, bufsize, putbacksize), _socket(socket),
-        _source_endpoint(source_endpoint),
-        _destination_endpoint(destination_endpoint)
+      : mud::io::basic_streambuf(handle, bufsize, putbacksize)
+      , _domain(domain)
+      , _source_endpoint(source_endpoint)
+      , _destination_endpoint(destination_endpoint)
     {}
 
     ssize_t streambuf::read(void* buf, size_t count)
@@ -149,7 +150,7 @@ namespace _udp {
         struct sockaddr_in addr;
         ::memset(&addr, 0, sizeof(sockaddr_in));
         addr.sin_family = static_cast<sa_family_t>(
-            g_domains[static_cast<int>(_socket.domain())]);
+            g_domains[static_cast<int>(_domain)]);
         addr.sin_port = htons(_destination_endpoint.port());
         addr.sin_addr.s_addr = _destination_endpoint.address();
 
@@ -234,7 +235,8 @@ public:
     /**
      * Constructor.
      */
-    impl(udp::socket& socket, std::shared_ptr<mud::core::handle>);
+    impl(std::shared_ptr<mud::core::handle>,
+         basic_socket::domain_t domain);
 
     /**
      * Destructor.
@@ -273,9 +275,6 @@ public:
     std::ostream& ostr(const endpoint& endpoint);
 
 private:
-    /* The reference to the socket. */
-    udp::socket& _socket;
-
     /** Reference to the socket handle. */
     std::shared_ptr<mud::core::handle> _handle;
 
@@ -296,23 +295,24 @@ private:
 
     /** The destination (remote peer) endpoint details. */
     endpoint _destination_endpoint;
+
+    /** The socket domain */
+    basic_socket::domain_t _domain;
 };
 
-udp::socket::impl::impl(udp::socket& socket,
-                        std::shared_ptr<mud::core::handle> handle)
-  : _socket(socket), _handle(handle), _istr(nullptr), _ostr(nullptr)
+udp::socket::impl::impl(
+        std::shared_ptr<mud::core::handle> handle,
+        basic_socket::domain_t domain)
+  : _handle(handle), _istr(nullptr), _ostr(nullptr), _domain(domain)
 {
     /* Create the stream buffers and assign them to the input and output
      * stream objects. */
     _read_buffer = std::unique_ptr<_udp::streambuf>(new _udp::streambuf(
-        _socket, _handle, _source_endpoint, _destination_endpoint, 4096, 16));
+        _handle, _domain, _source_endpoint, _destination_endpoint, 4096, 16));
     _write_buffer = std::unique_ptr<_udp::streambuf>(new _udp::streambuf(
-        _socket, _handle, _source_endpoint, _destination_endpoint, 4096, 16));
+        _handle, _domain, _source_endpoint, _destination_endpoint, 4096, 16));
     _istr.rdbuf(_read_buffer.get());
     _ostr.rdbuf(_write_buffer.get());
-
-    /* Set-up to reuse address to eliminate TIME_WAIT conditions. */
-    _socket.option<bool, mud::io::ip::reuse_address>(true);
 }
 
 udp::socket::impl::~impl() {}
@@ -325,10 +325,10 @@ udp::socket::impl::bind(const endpoint& endpoint)
     socklen_t len = sizeof(addr);
     ::memset(&addr, 0, sizeof(sockaddr_in));
     addr.sin_family = static_cast<sa_family_t>(
-        g_domains[static_cast<int>(_socket.domain())]);
+        g_domains[static_cast<int>(_domain)]);
     addr.sin_port = htons(endpoint.port());
     addr.sin_addr.s_addr = endpoint.address();
-    int sckt = mud::core::internal_handle<int>(_socket.handle());
+    int sckt = mud::core::internal_handle<int>(_handle);
     if (::bind(sckt, (struct sockaddr*)&addr, len) != 0) {
         throw std::system_error(errno, std::system_category(),
                                 "binding UDP endpoint");
@@ -408,7 +408,7 @@ udp::socket::socket()
   : ip::socket(basic_socket::domain_t::INET, basic_socket::type_t::DGRAM,
                basic_socket::protocol_t::INTRINSIC)
 {
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(handle(), domain()));
 }
 
 udp::socket::socket(std::nullptr_t)
@@ -419,7 +419,7 @@ udp::socket::socket(basic_socket::domain_t domain, basic_socket::type_t type,
                     basic_socket::protocol_t protocol)
   : ip::socket(domain, type, protocol)
 {
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(*this, handle()));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl(handle(), domain));
 }
 
 udp::socket::~socket() {}
@@ -487,6 +487,7 @@ udp::communicator::communicator()
 
 udp::communicator::~communicator()
 {
+    detach();
     close();
 }
 
@@ -496,16 +497,17 @@ udp::communicator::open(udp::socket&& socket)
     _connected = true;
     _socket = std::move(socket);
 
-    /* Call the impulse */
-    connect_impulse()->pulse(_socket);
+    /* Set-up to reuse address to eliminate TIME_WAIT conditions. */
+    _socket.option<bool, mud::io::ip::reuse_address>(true);
 
-    /* Create the event */
-    _receive_event = mud::core::event(
-        _socket.handle(), mud::core::event::signal_type::READING,
-        std::bind(&communicator::on_ready_receive, this));
+    /* Publish that a connection has been made. */
+    mud::core::broker::publish(connected());
 
-    /* Register the communicator to the event loop */
-    mud::core::event_loop::global().register_handler(event());
+    /* Create the event and attach it to the event-loop */
+    _receive_event = mud::core::event(mud::core::uuid(),
+        _socket.handle(), mud::core::event::signal_type::READING);
+    attach(_receive_event.topic(), &communicator::on_ready_receive);
+    mud::core::event_loop::global().add(std::move(event()));
 }
 
 void
@@ -513,12 +515,6 @@ udp::communicator::close()
 {
     _connected = false;
     _socket.close();
-}
-
-bool
-udp::communicator::connected() const
-{
-    return _connected;
 }
 
 std::ostream&
@@ -545,8 +541,8 @@ udp::communicator::device()
     return _socket;
 }
 
-const mud::core::event&
-udp::communicator::event() const
+mud::core::event&
+udp::communicator::event()
 {
     return _receive_event;
 }
@@ -563,18 +559,11 @@ udp::communicator::destination_endpoint() const
     return _socket.destination_endpoint();
 }
 
-mud::core::event::return_type
-udp::communicator::on_ready_receive()
+void
+udp::communicator::on_ready_receive(const mud::core::message&)
 {
-    // Call the impulse.
-    receive_impulse()->pulse(_socket);
-
-    // Continue receiving. while the socket is still open
-    if (_socket.handle() != nullptr) {
-        return mud::core::event::return_type::CONTINUE;
-    } else {
-        return mud::core::event::return_type::REMOVE;
-    }
+    // Publish the notification
+    mud::core::broker::publish(received());
 }
 
 void

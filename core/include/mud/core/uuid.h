@@ -101,6 +101,13 @@ public:
     bool operator!=(const uuid_v4& other) const;
 
     /**
+     * @brief Ordering of UUID values.
+     * @param other The UUID to compare against,
+     * @return True if the value is mathematically smaller than @c other.
+     */
+    bool operator<(const uuid_v4& other) const;
+
+    /**
      * @brief Check if the UUID is null.
      *
      * @details

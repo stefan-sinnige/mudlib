@@ -28,9 +28,7 @@ protected:
     /*
      * Handle incoming request.
      */
-    void on_request(
-            const mud::http::request& req,
-            mud::http::response& resp) override;
+    mud::http::response request(const mud::http::request& req) override;
 
 private:
     /* The response to reply with */

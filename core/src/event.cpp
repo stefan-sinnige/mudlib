@@ -1,22 +1,36 @@
 #include <mud/core/event.h>
+#include <mud/core/message.h>
 
 BEGIN_MUDLIB_CORE_NS
 
-event::event()
-  : _id(true)
-{}
+event::event(const mud::core::uuid& topic,
+             std::shared_ptr<mud::core::handle> handle,
+             signal_type mask)
+  : _topic(topic), _handle(handle), _mask(mask)
+{
+}
 
-event::event(std::shared_ptr<mud::core::handle> handle, signal_type mask,
-             function_type&& handler)
-  : _handle(handle), _mask(mask), _fn(handler)
-{}
+event::event(event&& rhs)
+  : _topic(rhs._topic)
+  , _handle(rhs._handle)
+  , _mask(rhs._mask)
+{
+}
 
-event::~event() {}
+event&
+event::operator=(event&& rhs) {
+    if (this != &rhs) {
+        _topic = rhs._topic;
+        _handle = rhs._handle;
+        _mask = rhs._mask;
+    }
+    return *this;
+}
 
 bool
 event::operator==(const event& rhs) const
 {
-    return _id == rhs._id;
+    return _topic == rhs._topic;
 }
 
 bool
@@ -26,9 +40,9 @@ event::operator!=(const event& rhs) const
 }
 
 const mud::core::uuid&
-event::id() const
+event::topic() const
 {
-    return _id;
+    return _topic;
 }
 
 std::shared_ptr<mud::core::handle>
@@ -43,10 +57,11 @@ event::mask() const
     return _mask;
 }
 
-event::function_type
-event::handler() const
+void
+event::publish() const
 {
-    return _fn;
+    ::mud::core::message msg(_topic);
+    ::mud::core::broker::publish(msg);
 }
 
 END_MUDLIB_CORE_NS
