@@ -26,7 +26,7 @@ CONTEXT(public mud::core::object)
         thr = std::thread([]() {
             mud::core::event_loop::global().loop();
         });
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        mud::core::event_loop::global().ready().wait();
     }
 
     // Destructor, executed after each scenario run

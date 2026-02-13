@@ -96,7 +96,7 @@ FEATURE("Timer")
           ctx.event_thread = std::thread([]() {
               mud::core::event_loop::global().loop();
           });
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          mud::core::event_loop::global().ready().wait();
       })
   DEFINE_WHEN("The timer is examined", [](context& ctx){
   })

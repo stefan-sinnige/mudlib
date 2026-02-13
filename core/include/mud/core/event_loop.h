@@ -96,6 +96,13 @@ public:
      */
     virtual void loop();
 
+    /**
+     * @brief Return the synchronisation future when the worker thread has
+     * started.
+     * @return The future that is set when the event-loop has started.
+     */
+    virtual std::shared_future<void> ready() const;
+
     /*
      * @brief Request to terminate the run @c loop.
      * @return The future object returning the result of the @c loop. This
