@@ -73,6 +73,7 @@ Options:
     std::thread event_thread = std::thread([]() {
         mud::core::event_loop::global().loop();
     });
+    mud::core::event_loop::global().ready().wait();
 
     // Create the client to send the request and receive the response.
     mud::http::client client;

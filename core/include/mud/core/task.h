@@ -224,7 +224,7 @@ task_queue<Task>::terminated()
  * queue.
  */
 template<typename Task>
-class task_worker : public std::thread
+class task_worker
 {
 public:
     /**
@@ -254,6 +254,18 @@ public:
     virtual ~task_worker();
 
     /**
+     * @brief Return the synchronisation future when the worker thread has
+     * started.
+     * @return The future that is set when the worker thread has started.
+     */
+    std::shared_future<void> ready() const;
+
+    /**
+     * @brief Wait for the worker to thread to finish execution.
+     */
+    void join();
+
+    /**
      * Non-copyable.
      */
     task_worker(const task_worker&) = delete;
@@ -267,18 +279,44 @@ private:
 
     /** The task queue */
     std::shared_ptr<task_queue<Task>> _queue;
+
+    /** The promise to hold the ready state of the thread. */
+    std::promise<void> _promise;
+
+    /** The future to the ready state promise */
+    std::shared_future<void> _future;
+
+    /** The thread */
+    std::thread _thread;
 };
 
 template<typename Task>
 task_worker<Task>::task_worker(std::shared_ptr<task_queue<Task>> queue)
-  : std::thread(&task_worker::run, this), _queue(queue)
-{}
+    : _queue(queue)
+    , _future(_promise.get_future())
+{
+    _thread = std::thread(&task_worker::run, this);
+}
 
 template<typename Task>
 task_worker<Task>::~task_worker()
 {
-    if (joinable()) {
-        join();
+    join();
+}
+
+template<typename Task>
+std::shared_future<void>
+task_worker<Task>::ready() const
+{
+    return _future;
+}
+
+template<typename Task>
+void
+task_worker<Task>::join()
+{
+    if (_thread.joinable()) {
+        _thread.join();
     }
 }
 
@@ -286,6 +324,7 @@ template<typename Task>
 void
 task_worker<Task>::run()
 {
+    _promise.set_value();
     while (!_queue->terminated()) {
         task_type tsk;
         if (_queue->wait_pop(tsk)) {
@@ -392,6 +431,9 @@ task_worker_pool<Task>::initiate()
             _pool.push_back(std::unique_ptr<task_worker<Task>>(
                 new task_worker<Task>(_queue)));
         }
+        for (auto& worker: _pool) {
+            worker->ready().wait();
+        }
     } catch (...) {
         _queue->terminate();
         throw;
@@ -411,9 +453,7 @@ void
 task_worker_pool<Task>::wait()
 {
     for (auto& worker : _pool) {
-        if (worker->joinable()) {
-            worker->join();
-        }
+        worker->join();
     }
     _pool.clear();
 }

@@ -97,7 +97,7 @@ FEATURE("Event loop")
           ctx.event_thread = std::thread([&ctx]() {
             mud::core::event_loop::global().loop();
           });
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          mud::core::event_loop::global().ready().wait();
       })
   DEFINE_GIVEN("An event is added",
       [](context& ctx) {
@@ -146,7 +146,7 @@ FEATURE("Event loop")
           ctx.event_thread = std::thread([&ctx]() {
             mud::core::event_loop::global().loop();
           });
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          mud::core::event_loop::global().ready().wait();
       })
   DEFINE_THEN ("The event loop is running",
       [](context& ctx) {
