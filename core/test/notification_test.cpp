@@ -21,6 +21,12 @@ public:
         ::mud::core::broker::publish(_topic);
     }
 
+    /* Publish the notification */
+    void publish(const mud::core::message& msg) {
+        ASSERT(_topic.str(), msg.topic().str());
+        ::mud::core::broker::publish(msg);
+    }
+
 private:
     mud::core::uuid _topic;
 };
@@ -31,16 +37,22 @@ public:
     sample_subscriber() = default;
 
     /* Notification handlers */
-    void on_notified(const mud::core::message&) {
+    void on_notified(const mud::core::message& msg) {
         ++_notified_count;
+        _msg = msg;
     }
 
     int notified_count() const {
         return _notified_count;
     }
 
+    const mud::core::message& notification() const {
+        return _msg;
+    }
+
 private:
     int _notified_count = 0;
+    mud::core::message _msg;
 };
 
 /* Test structures for static subscribers */
@@ -370,6 +382,77 @@ FEATURE("Notification")
     WHEN ("The publisher is deleted")
      AND ("The dynamic subscriber is detached")
     THEN("The publisher has no subscriptions")
+
+  SCENARIO("Binary data can be passed with the notification")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("A notification is send with custom data", [](context& ctx) {
+            std::vector<uint8_t> custom;
+            for (uint8_t i = 0; i < 8; ++i) {
+                custom.push_back(i);
+            }
+            mud::core::message msg(ctx._topic);
+            msg.data(custom);
+            ctx._publisher->publish(msg);
+        })
+    THEN ("The subscriber receives the notification with the custom data",
+        [](context& ctx) {
+            ASSERT(1, ctx._subscriber->notified_count());
+            auto custom = ctx._subscriber->notification().data();
+            ASSERT(8, custom.size());
+            for (uint8_t i = 0; i < 8; ++i) {
+                ASSERT(i, custom[i]);
+                    ASSERT(i, custom[i]);
+            }
+        })
+
+  SCENARIO("Integral data can be passed with the notification")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("A notification is send with custom data", [](context& ctx) {
+            uint32_t custom = 0x12345678;
+            mud::core::message msg(ctx._topic);
+            msg.data(custom);
+            ctx._publisher->publish(msg);
+        })
+    THEN ("The subscriber receives the notification with the custom data",
+        [](context& ctx) {
+            ASSERT(1, ctx._subscriber->notified_count());
+            uint32_t custom = ctx._subscriber->notification().data<uint32_t>();
+            ASSERT(0x12345678, custom);
+        })
+
+  SCENARIO("Boolean data can be passed with the notification")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("A notification is send with custom data", [](context& ctx) {
+            bool custom = true;
+            mud::core::message msg(ctx._topic);
+            msg.data(custom);
+            ctx._publisher->publish(msg);
+        })
+    THEN ("The subscriber receives the notification with the custom data",
+        [](context& ctx) {
+            ASSERT(1, ctx._subscriber->notified_count());
+            bool custom = ctx._subscriber->notification().data<bool>();
+            ASSERT(true, custom);
+        })
+
+  SCENARIO("String data can be passed with the notification")
+    GIVEN("A publisher")
+     AND ("A subscriber is attached")
+    WHEN ("A notification is send with custom data", [](context& ctx) {
+            const std::string custom = "Hello World";
+            mud::core::message msg(ctx._topic);
+            msg.data(custom);
+            ctx._publisher->publish(msg);
+        })
+    THEN ("The subscriber receives the notification with the custom data",
+        [](context& ctx) {
+            ASSERT(1, ctx._subscriber->notified_count());
+            std::string custom = ctx._subscriber->notification().data<std::string>();
+            ASSERT("Hello World", custom);
+        })
 
 END_FEATURE()
 
