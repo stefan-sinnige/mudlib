@@ -482,7 +482,7 @@ public:
     virtual ~tee_streambuf() = default;
 
     /**
-     * @brief Write a charcater to the buffer,
+     * @brief Write a character to the buffer,
      * @param ch The character to write
      * @return The character written or EOF on failure.
      */

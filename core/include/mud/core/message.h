@@ -4,6 +4,7 @@
 #include <mud/core/uuid.h>
 #include <mutex>
 #include <map>
+#include <vector>
 
 BEGIN_MUDLIB_CORE_NS
 
@@ -16,10 +17,28 @@ BEGIN_MUDLIB_CORE_NS
  * the group of message this instance belongs to and resembles the topic that
  * a publisher notifies to and a subscriber attaches to. Each message also
  * contains a unique identification itself.
+ *
+ * Custom data can be added to the notification and distributed to all the
+ * subscribers to provide additional information to the notification being
+ * raised. This data can be supplied and retrieved in a myriad of ways, provided
+ * that the publisher and subscriber agree on the format of the custom data for
+ * correct serialisation and deserialisation. These methods can include
+ *  - Using @c std::vector<uint8_t> directly
+ *  - Using @c std::stringstream to use streaming operators and convert it using
+ *    the underlying @c std::string representation and @c std::vector<uint*t>.
+ *    This is the recommended way for multi-value data represented like JSON,
+ *    XML, protobuf or custom class streaming operators.
+ *  - Using the template for single-value data, including @c std::string and
+ *    built-in data-types (numbers and boolean).
  */
 class MUDLIB_CORE_API message
 {
 public:
+    /**
+     * @brief Create an invalid message (null UUID).
+     */
+    message() = default;
+
     /**
      * @brief Create a unique message for a particular topic
      */
@@ -28,9 +47,22 @@ public:
     { }
 
     /**
+     * @brief Copy constructor
+     * @param other The message to copy.
+     */
+    message(const message& other) = default;
+
+    /**
      * @brief Destructor
      */
     virtual ~message() = default;
+
+    /**
+     * @brief Copy assignment.
+     * @param other The message to copy.
+     * @return Reference to this message.
+     */
+    message& operator=(const message& other) = default;
 
     /**
      * @brief Get the message unique identification.
@@ -48,12 +80,89 @@ public:
         return _topic;
     }
 
+    /**
+     * @brief Set the custom data.
+     * @param custom The binary custom data to pass when notifying subscribers.
+     */
+    void data(const std::vector<uint8_t>& custom) {
+        _data = custom;
+    }
+
+    /**
+     * @brief Return the custom data.
+     */
+    const std::vector<uint8_t>& data() const {
+        return _data;
+    }
+
+    /**
+     * @brief Unsupported custom data type conversion
+     */
+    template<typename T>
+    void data(T value) { static_assert(false, "No conversion of this type"); }
+
+    /**
+     * @brief Unsupported custom data type conversion
+     */
+    template<typename T>
+    T data() const { static_assert(false, "No conversion of this type"); }
+
+    /**
+     * @brief Set the custom data as a single integral value.
+     * @tparam T The type of he integral value
+     * @param value The value to set
+     */
+    template<std::integral T>
+    void data(T value) {
+        std::vector<uint8_t> custom(sizeof(T));
+        for (int i = 0; i < sizeof(T); ++i) {
+            custom[i] = (value >> (i*8)) & 0xFF;
+        }
+        _data = custom;
+    }
+
+    /**
+     * @brief Get the custom data as a single integral value.
+     * @tparam T The type of he integral value
+     * @return value The value of the custom data
+     */
+    template<std::integral T>
+    T data() const {
+        T custom = 0;
+        for (int i = 0; i < sizeof(T) && i < _data.size(); ++i) {
+            custom |= (_data[i] << (i*8));
+        }
+        return custom;
+    }
+
+    /**
+     * @brief Set the custom data as a string value.
+     * @param value The value to set
+     */
+    void data(const std::string& str) {
+        _data = std::vector<uint8_t>(str.begin(), str.end());
+    }
+
+    /**
+     * @brief Get the custom data as a string value.
+     * @return value The value of the custom data
+     * @note a copy of the data is created.
+     */
+    template<>
+    std::string data<std::string>() const {
+        std::string str(_data.begin(), _data.end());
+        return str;
+    }
+
 private:
     /** The message unique ID */
     mud::core::uuid _id;
 
     /** The message topic ID */
     mud::core::uuid _topic;
+
+    /** Arbitrary custom data conatiner */
+    std::vector<uint8_t> _data;
 };
 
 /**
