@@ -17,6 +17,7 @@
 #include <mud/core/task.h>
 #include <mud/core/timer.h>
 #include <mud/core/uri.h>
+#include <mud/core/utf.h>
 #include <mud/core/uuid.h>
 
 /* vi: set ai ts=4 expandtab: */

@@ -18,6 +18,7 @@ mudcore_test_SOURCES = \
 	test_mechanism.cpp \
     timer_test.cpp \
     uri_test.cpp \
+    utf_test.cpp \
     uuid_test.cpp
 
 mudcore_test_CPPFLAGS = \

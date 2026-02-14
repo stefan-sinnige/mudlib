@@ -1358,6 +1358,43 @@ Assert(const char* file, int line, std::nullptr_t expected, Y result)
 }
 
 /**
+ * @brief Template class that verifies if two values (result and expected) are
+ *        the same. If they are not the same, and assertion is thrown.
+ *        The check is based on the @c result inequality operation.
+ * @param file [in] The file name.
+ * @param line [in] The line number.
+ * @param expected [in] The expected outcome (vector).
+ * @param result [in] The resulting value to verify.
+ */
+template<typename T>
+bool
+Assert(const char* file, int line,
+       const std::vector<T> expected, const std::vector<T>& result)
+{
+    if (result != expected) {
+        std::stringstream sstr;
+        if (result.size() != expected.size()) {
+            sstr << "  Expected container size: " << expected.size()
+                 << std::endl
+                 << "  Resulted container size: " << result.size();
+        }
+        else {
+            for (size_t i = 0; i < expected.size(); ++i) {
+                if (result[i] != expected[i]) {
+                    sstr << "  Container size is equal but contents differ at "
+                         << i << ":" << std::endl
+                         << "    Expected: " << expected[i] << std::endl
+                         << "    Result  : " << result[i];
+                    break;
+                }
+            }
+        }
+        AssertFailed(file, line, sstr.str());
+    }
+    return true;
+}
+
+/**
  * @brief A factory to hold all the features.
  */
 class MUDLIB_TEST_API _feature_factory

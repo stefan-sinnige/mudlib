@@ -15,6 +15,7 @@ libmudcore_la_SOURCES = \
 	src/timer.cpp \
     src/timer_dispatcher.cpp \
     src/uri.cpp \
+    src/utf.cpp \
     src/uuid.cpp
 
 includemuddir = $(includedir)/mud
@@ -41,6 +42,7 @@ includemudcore_HEADERS = \
     include/mud/core/task.h \
     include/mud/core/timer.h \
     include/mud/core/uri.h \
+    include/mud/core/utf.h \
     include/mud/core/uuid.h
 
 libmudcore_la_CPPFLAGS = \

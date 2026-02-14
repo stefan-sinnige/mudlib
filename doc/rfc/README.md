@@ -10,3 +10,6 @@
     * [Transport Layer  Security (TLS) Protocol Version 1.3](rfc8446.txt)
 * [Uniform Resource Identifier (URI): General Syntax](rfc3986.txt)
 * [The Javascript Object Notation (JSON) Data Interchange Format](rfc8259.txt)
+* Unicode
+    * [UTF-8, an encoding of ISO 10646](rfc3629.txt)
+    * [UTF-16, an encoding of ISO 10646](rfc2781.txt)
