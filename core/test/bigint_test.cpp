@@ -487,6 +487,35 @@ FEATURE("Big Integer")
             ASSERT_THROW(std::overflow_error,
                          std::rethrow_exception(ctx.eptr));
         })
+
+  SCENARIO("Exponentiation of big integers")
+    GIVEN("Two big integer numbers",
+        [](context& ctx) {
+           ctx.op1 = mud::core::bigint(ctx.sample<std::string>("base"));
+           ctx.op2 = mud::core::bigint(ctx.sample<std::string>("exponent"));
+        })
+    WHEN ("When the exponentiation is calculated",
+        [](context& ctx) {
+            ctx.value = exp(ctx.op1, ctx.op2);
+        })
+    THEN ("The result is the arithmetic exponentiation",
+        [](context& ctx) {
+            std::stringstream result;
+            result << ctx.value;
+            ASSERT(ctx.sample<std::string>("result"), result.str());
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("base", "exponent", "result")
+        SAMPLE(   "0",  "0", "1")
+        SAMPLE( "287",  "0", "1")
+        SAMPLE(   "2",  "3", "8")
+        SAMPLE( "257",  "3", "16974593")
+        SAMPLE( "123", "13", "1474913153392179474539944683")
+        SAMPLE("121",  "3", "1771561")
+        SAMPLE("-121",  "3", "-1771561")  // Result negative
+        SAMPLE("-121",  "4", "214358881") // Result positive
+    END_SAMPLES()
+
 END_FEATURE()
 
 /* clang-format on */
