@@ -27,6 +27,7 @@
 #include "mud/core/bigint.h"
 #include "mud/test.h"
 #include <memory>
+#include <ranges>
 #include <type_traits>
 
 /* clang-format off */
@@ -48,6 +49,9 @@ CONTEXT()
 
     /* Big integer values. */
     mud::core::bigint op1, op2;
+
+    /* A saved exception */
+    std::exception_ptr eptr;
 END_CONTEXT()
 
 FEATURE("Big Integer")
@@ -305,6 +309,184 @@ FEATURE("Big Integer")
              "\x00\x00")
     END_SAMPLES()
 
+  SCENARIO("Unary plus and minus on big integers")
+    GIVEN("A big integer",
+        [](context& ctx) {
+            ctx.value = mud::core::bigint(ctx.sample<std::string>("value"));
+        })
+    WHEN ("When the unary operations are applied",
+        [](context& ctx) {
+            for (char op: std::views::reverse(ctx.sample<std::string>("unary")))
+            {
+                if (op == '-') {
+                    ctx.value = -ctx.value;
+                }
+                else
+                if (op == '+') {
+                    ctx.value = +ctx.value;
+                }
+            }
+        })
+    THEN ("The result is the correct applied unary",
+        [](context& ctx) {
+            std::stringstream result;
+            result << ctx.value;
+            ASSERT(ctx.sample<std::string>("result"), result.str());
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("value", "unary", "result")
+        SAMPLE( "123",  "+",  "123")
+        SAMPLE( "123",  "-", "-123")
+        SAMPLE( "123", "+-", "-123")
+        SAMPLE( "123", "-+", "-123")
+        SAMPLE( "123", "--",  "123")
+        SAMPLE("-321",  "+", "-321")
+        SAMPLE("-321",  "-",  "321")
+        SAMPLE("-321", "+-",  "321")
+        SAMPLE("-321", "-+",  "321")
+        SAMPLE("-321", "--", "-321")
+    END_SAMPLES()
+
+  SCENARIO("Subtraction of big integers")
+    GIVEN("Two big integer numbers",
+        [](context& ctx) {
+            ctx.op1 = mud::core::bigint(ctx.sample<std::string>("minuend"));
+            ctx.op2 = mud::core::bigint(ctx.sample<std::string>("subtrahend"));
+        })
+    WHEN ("When the integers are subtracted",
+        [](context& ctx) {
+            ctx.value = ctx.op1 - ctx.op2;
+        })
+    THEN ("The result is the arithmetic difference",
+        [](context& ctx) {
+            std::stringstream result;
+            result << ctx.value;
+            ASSERT(ctx.sample<std::string>("result"), result.str());
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("minuend", "subtrahend", "result")
+        SAMPLE(    "0",    "0",     "0")
+        SAMPLE(  "251",    "8",   "243") // no borrow
+        SAMPLE(  "320",    "1",   "319") // borrow from next byte
+        SAMPLE(  "256",    "1",   "255") // borrow from next byte - to zero
+        SAMPLE("65536",    "1", "65535") // borrow from next byte - ripple
+        SAMPLE( "-658",  "257",  "-915") // Result negative
+        SAMPLE( "-852", "-678",  "-174") // Result negative
+        SAMPLE( "-371", "-587",   "216") // Result positive
+        SAMPLE("92738174616395816581613",
+               "18471465914659125813850",
+               "74266708701736690767763")
+    END_SAMPLES()
+
+  SCENARIO("Multiplication of big integers")
+    GIVEN("Two big integer numbers",
+        [](context& ctx) {
+           ctx.op1 = mud::core::bigint(ctx.sample<std::string>("multiplicant"));
+           ctx.op2 = mud::core::bigint(ctx.sample<std::string>("multiplier"));
+        })
+    WHEN ("When the integers are subtracted",
+        [](context& ctx) {
+            ctx.value = ctx.op1 * ctx.op2;
+        })
+    THEN ("The result is the arithmetic multiplication",
+        [](context& ctx) {
+            std::stringstream result;
+            result << ctx.value;
+            ASSERT(ctx.sample<std::string>("result"), result.str());
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("multiplicant", "multiplier", "result")
+        SAMPLE(    "0",    "0",      "0")
+        SAMPLE(   "87",    "0",      "0")
+        SAMPLE(    "0",   "98",      "0")
+        SAMPLE(  "283",  "271",  "76693")
+        SAMPLE(  "271",  "283",  "76693")
+        SAMPLE( "-138",   "52",  "-7176") // Result negatuve
+        SAMPLE(  "203",  "-73", "-14819") // Result negative
+        SAMPLE( "-267",  "-47",  "12549") // Result positive
+        SAMPLE("92738174616395816581613",
+               "18471465914659125813850",
+               "1713010031414461476338455832797372993570740050")
+    END_SAMPLES()
+
+  SCENARIO("Division of big integers (quotient)")
+    GIVEN("Two big integer numbers",
+        [](context& ctx) {
+           ctx.op1 = mud::core::bigint(ctx.sample<std::string>("dividend"));
+           ctx.op2 = mud::core::bigint(ctx.sample<std::string>("divisor"));
+        })
+    WHEN ("When the integers are divided",
+        [](context& ctx) {
+            ctx.value = ctx.op1 / ctx.op2;
+        })
+    THEN ("The result is the arithmetic division with a quotient part",
+        [](context& ctx) {
+            std::stringstream result;
+            result << ctx.value;
+            ASSERT(ctx.sample<std::string>("result"), result.str());
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("dividend", "divisor", "result")
+        SAMPLE(    "0",  "871",      "0")
+        SAMPLE(  "657",  "761",      "0")
+        SAMPLE( "1980",   "83",     "23")
+        SAMPLE( "3395",   "35",     "97")
+        SAMPLE( "-257",    "5",    "-51") // Result negative
+        SAMPLE(  "684",  "-13",    "-52") // Result negative
+        SAMPLE("92738174616395816581613",
+               "18471465914659125813850",
+               "5")
+    END_SAMPLES()
+
+  SCENARIO("Division of big integers (remainder)")
+    GIVEN("Two big integer numbers",
+        [](context& ctx) {
+           ctx.op1 = mud::core::bigint(ctx.sample<std::string>("dividend"));
+           ctx.op2 = mud::core::bigint(ctx.sample<std::string>("divisor"));
+        })
+    WHEN ("When the integers are divided",
+        [](context& ctx) {
+            ctx.value = ctx.op1 % ctx.op2;
+        })
+    THEN ("The result is the arithmetic division with a remainder part",
+        [](context& ctx) {
+            std::stringstream result;
+            result << ctx.value;
+            ASSERT(ctx.sample<std::string>("result"), result.str());
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("dividend", "divisor", "result")
+        SAMPLE(    "0",  "871",      "0")
+        SAMPLE(  "657",  "761",    "657")
+        SAMPLE( "1980",   "83",     "71")
+        SAMPLE( "3395",   "35",      "0")
+        SAMPLE( "-257",    "5",      "2") // Result positive
+        SAMPLE(  "684",  "-13",      "8") // Result positive
+        SAMPLE("92738174616395816581613",
+               "18471465914659125813850",
+               "380845043100187512363")
+    END_SAMPLES()
+
+  SCENARIO("Division by zero raises exception")
+    GIVEN("Two big integers with one of them 0",
+        [](context& ctx) {
+           ctx.op1 = 192;
+           ctx.op2 = 0;
+        })
+    WHEN ("The integer division is a division by zero",
+        [](context& ctx) {
+            try {
+                ctx.value = ctx.op1 / ctx.op2;
+            }
+            catch (...) {
+                ctx.eptr = std::current_exception();
+            }
+        })
+    THEN ("A std::overflow_error exception is raised",
+        [](context& ctx) {
+            ASSERT_THROW(std::overflow_error,
+                         std::rethrow_exception(ctx.eptr));
+        })
 END_FEATURE()
 
 /* clang-format on */

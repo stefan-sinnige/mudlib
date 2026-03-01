@@ -492,26 +492,46 @@ bigint
 bigint::ripple_adder(const bigint& lhs, const bigint& rhs)
 {
     bigint result;
+
+    // Ensure the addent is the smallest one (A+B = B+A | A, B > 0)
     const bigint* augend = &lhs;
     const bigint* addend = &rhs;
+    if (lhs < rhs) {
+        augend = &rhs;
+        addend = &lhs;
+    }
 
     // Allocate the size of the result, which is the highest number of bits of
     // the augend and addend, plus 1 (carry).
-    result.resize((std::max(augend->bits(), addend->bits()) - 1)/8 + 1);
+    result.resize((augend->bits() + 1 - 1)/8 + 1);
 
     // Perform ripple carry addition for each byte, starting with LSB
     const uint8_t *augend_ptr = &(augend->_value[augend->_size-1]);
     const uint8_t *addend_ptr = &(addend->_value[addend->_size-1]);
+    const uint8_t *addend_end = &(addend->_value[0]);
+    const uint8_t *result_end = &(result._value[0]);
     uint8_t *result_ptr = &(result._value[result._size-1]);
     uint8_t c_in = 0;
     uint8_t c_out = 0;
-    while (true) {
-        uint16_t sum = *augend_ptr + *addend_ptr + c_in;
-        *result_ptr = sum & 0x00FF;
-        c_out = (sum & 0x0100) ? 1 : 0;
-        c_in = c_out;
-        if (addend_ptr == addend->_value) {
-            break;
+    while (result_ptr >= result_end) {
+        if (addend_ptr >= addend_end) {
+            // Still have values in addend to add
+            uint16_t sum = *augend_ptr + *addend_ptr + c_in;
+            *result_ptr = sum & 0x00FF;
+            c_out = (sum & 0x0100) ? 1 : 0;
+            c_in = c_out;
+        }
+        else
+        if (c_in) {
+            // No more values in addend but still have a carry
+            uint16_t sum = *augend_ptr + c_in;
+            *result_ptr = sum & 0x00FF;
+            c_out = (sum & 0x0100) ? 1 : 0;
+            c_in = c_out;
+        }
+        else {
+            // Nothing more to add, just copy the augend
+            *result_ptr = *augend_ptr;
         }
         --augend_ptr, --addend_ptr, --result_ptr;
     }
@@ -532,16 +552,30 @@ bigint::ripple_subtractor(const bigint& lhs, const bigint& rhs)
     // Perform ripple borrow subtraction for each byte, starting with LSB
     const uint8_t *minuend_ptr = &(minuend->_value[minuend->_size-1]);
     const uint8_t *subtrahend_ptr = &(subtrahend->_value[subtrahend->_size-1]);
+    const uint8_t *subtrahend_end = &(subtrahend->_value[0]);
+    const uint8_t *result_end = &(result._value[0]);
     uint8_t *result_ptr = &(result._value[result._size-1]);
     uint8_t b_in = 0;
     uint8_t b_out = 0;
-    while (true) {
-        uint16_t diff = 0x0100 + *minuend_ptr - *subtrahend_ptr - b_in;
-        *result_ptr = diff & 0x00FF;
-        b_out = ((diff & 0x0100) == 0x0000) ? 1 : 0;
-        b_in = b_out;
-        if (subtrahend_ptr == subtrahend->_value) {
-            break;
+    while (result_ptr >= result_end) {
+        if (subtrahend_ptr >= subtrahend_end) {
+            // Still have values in subtrahend to subtract
+            uint16_t diff = 0x0100 + *minuend_ptr - *subtrahend_ptr - b_in;
+            *result_ptr = diff & 0x00FF;
+            b_out = ((diff & 0x0100) == 0x0000) ? 1 : 0;
+            b_in = b_out;
+        }
+        else
+        if (b_in) {
+            // Still have values in subtrahend to subtract
+            uint16_t diff = 0x0100 + *minuend_ptr - b_in;
+            *result_ptr = diff & 0x00FF;
+            b_out = ((diff & 0x0100) == 0x0000) ? 1 : 0;
+            b_in = b_out;
+        }
+        else {
+            // Nothing more to subract, just copy the minuend
+            *result_ptr = *minuend_ptr;
         }
         --minuend_ptr, --subtrahend_ptr, --result_ptr;
     }
@@ -551,38 +585,41 @@ bigint::ripple_subtractor(const bigint& lhs, const bigint& rhs)
 bigint
 bigint::multiply(const bigint& lhs, const bigint& rhs)
 {
-    bigint result;
-    if (lhs > rhs) {
-        result = long_multiply(lhs, rhs);
-    }
-    else {
-        result = long_multiply(rhs, lhs);
-    }
+    bigint result = long_multiply(lhs, rhs);
     result._positive = ((lhs._positive && rhs._positive) ||
                         (!lhs._positive && !rhs._positive));
     return result;
 }
 
 bigint
-bigint::long_multiply(const bigint& multiplicant, const bigint& multiplier)
+bigint::long_multiply(const bigint& lhs, const bigint& rhs)
 {
+    // Ensure the multiplier is the smallest one (A*B = B*A)
+    const bigint* multiplicant = &lhs;
+    const bigint* multiplier = &rhs;
+    if (lhs < rhs) {
+        multiplicant = &rhs;
+        multiplier = &lhs;
+    }
+
     // Reserve the resulting size to avoid multiple resizing
     bigint result;
-    result.resize((multiplicant.bits() * 2 - 1)/8 + 1);
+    auto new_size = (multiplicant->bits() * 2 - 1)/8 + 1;
+    result.resize(new_size);
 
     // Copy the multiplicant that safely can be shifted without multiple
     // resizing operations. After every bit is examined from the multiplier,
     // this value will be shifted by one.
-    bigint partial = multiplicant;
-    partial.resize((multiplicant.bits() + multiplier.bits() - 1)/8 + 1);
+    bigint partial = *multiplicant;
+    partial.resize(new_size);
 
     // Loop over every bit in the multiplier, from LSB to MSB. If the LSB is one
     // then add the partial value. Then shift the partial value to the left and
     // examine the next bit in the multiplier.
-    for (ssize_t index = multiplier._size - 1; index >=0 ; --index) {
+    for (ssize_t index = multiplier->_size - 1; index >=0 ; --index) {
         uint8_t mask = 0x01;
         for (size_t bit = 0; bit < 8; ++bit) {
-            if (multiplier._value[index] & mask) {
+            if (multiplier->_value[index] & mask) {
                 result += partial;
             }
             mask <<= 1;
@@ -596,7 +633,15 @@ bool
 bigint::divide_modulo(const bigint& lhs, const bigint& rhs,
                       bigint& quotient, bigint& remainder)
 {
-    bool result = long_divide_modulo(lhs, rhs, quotient, remainder);
+    // Ensure to operate on positive numbers. Adjustment on sign will be done
+    // afterwards.
+    bigint dividend = lhs;
+    bigint divisor = rhs;
+    dividend._positive = true;
+    divisor._positive = true;
+
+    // Perform division and calculate both quotient and remainder.
+    bool result = long_divide_modulo(dividend, divisor, quotient, remainder);
     if (result) {
         remainder._positive = true;
         quotient._positive = ((lhs._positive && rhs._positive) ||
@@ -745,6 +790,60 @@ bigint::shift_right(const bigint& value, std::size_t pos)
     }
 
     return result;
+}
+
+mud::core::bigint
+operator+(const mud::core::bigint& value)
+{
+    return value;
+}
+
+mud::core::bigint
+operator-(const mud::core::bigint& value)
+{
+    bigint result = value;
+    result._positive = !value._positive;
+    return result;
+}
+
+mud::core::bigint
+operator+(const mud::core::bigint& lhs, const mud::core::bigint& rhs)
+{
+    return mud::core::bigint::add(lhs, rhs);
+}
+
+mud::core::bigint
+operator-(const mud::core::bigint& lhs, const mud::core::bigint& rhs)
+{
+    return mud::core::bigint::subtract(lhs, rhs);
+}
+
+mud::core::bigint
+operator*(const mud::core::bigint& lhs, const mud::core::bigint& rhs)
+{
+    return mud::core::bigint::multiply(lhs, rhs);
+}
+
+mud::core::bigint
+operator/(const mud::core::bigint& lhs, const mud::core::bigint& rhs)
+{
+    mud::core::bigint quotient;
+    mud::core::bigint remainder;
+    if (! mud::core::bigint::divide_modulo(lhs, rhs, quotient, remainder)) {
+        throw std::overflow_error("divide by zero");
+    }
+    return quotient;
+}
+
+mud::core::bigint
+operator%(const mud::core::bigint& lhs, const mud::core::bigint& rhs)
+{
+    mud::core::bigint quotient;
+    mud::core::bigint remainder;
+    if (! mud::core::bigint::divide_modulo(lhs, rhs, quotient, remainder)) {
+        throw std::overflow_error("divide by zero");
+    }
+    return remainder;
 }
 
 std::ostream&

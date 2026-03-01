@@ -382,6 +382,18 @@ private:
     bool _positive;
 
     /* Friends */
+    friend mud::core::bigint operator+(const mud::core::bigint& b);
+    friend mud::core::bigint operator-(const mud::core::bigint& b);
+    friend mud::core::bigint operator+(const mud::core::bigint& lhs,
+                                       const mud::core::bigint& rhs);
+    friend mud::core::bigint operator-(const mud::core::bigint& lhs,
+                                       const mud::core::bigint& rhs);
+    friend mud::core::bigint operator*(const mud::core::bigint& lhs,
+                                       const mud::core::bigint& rhs);
+    friend mud::core::bigint operator/(const mud::core::bigint& lhs,
+                                       const mud::core::bigint& rhs);
+    friend mud::core::bigint operator%(const mud::core::bigint& lhs,
+                                       const mud::core::bigint& rhs);
     friend std::ostream& operator<<(std::ostream& ostr, const bigint& b);
 };
 
@@ -418,6 +430,72 @@ bigint::bigint(T value)
         *(dst++) = byte;
     }
 }
+
+/**
+ * @brief Arithmetic unary plus (promotion)
+ * @param value The integer value.
+ * @return The integer value.
+ */
+mud::core::bigint
+operator+(const mud::core::bigint& value);
+
+/**
+ * @brief Arithmetic unary minus (negation)
+ * @param value The integer value.
+ * @return The negated representation of @c value.
+ */
+mud::core::bigint
+operator-(const mud::core::bigint& value);
+
+/**
+ * @brief Arithmetic addition
+ * @param lhs The augend
+ * @param rhs The addend
+ * @return The sum of @c lhs and @c rhs
+ * Based on the @c lhs and @c rhs, the most performant option is chosen.
+ */
+mud::core::bigint
+operator+(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
+
+/**
+ * @brief Arithmetic subtraction
+ * @param lhs The minuend
+ * @param rhs The subtrahend
+ * @return The difference of @c lhs and @c rhs
+ * Based on the @c lhs and @c rhs, the most performant option is chosen.
+ */
+mud::core::bigint
+operator-(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
+
+/**
+ * @brief Arithmetic multiplication
+ * @param lhs The multiplicant
+ * @param rhs The multiplier
+ * @return The multiplication of @c lhs and @c rhs
+ * Based on the @c lhs and @c rhs, the most performant option is chosen.
+ */
+mud::core::bigint
+operator*(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
+
+/**
+ * @brief Arithmetic division
+ * @param lhs The divident
+ * @param rhs The divisor
+ * @return The quotient of @c lhs divided by @c rhs
+ * Based on the @c lhs and @c rhs, the most performant option is chosen.
+ */
+mud::core::bigint
+operator/(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
+
+/**
+ * @brief Arithmetic remainder
+ * @param lhs The divident
+ * @param rhs The divisor
+ * @return The remainder of @c lhs divided by @c rhs
+ * Based on the @c lhs and @c rhs, the most performant option is chosen.
+ */
+mud::core::bigint
+operator%(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
 
 /**
  * @brief Output a @c bigint to an output stream.
