@@ -395,6 +395,8 @@ private:
     friend mud::core::bigint operator%(const mud::core::bigint& lhs,
                                        const mud::core::bigint& rhs);
     friend std::ostream& operator<<(std::ostream& ostr, const bigint& b);
+    friend mud::core::bigint exp(const mud::core::bigint& base,
+                                 const mud::core::bigint& exponent);
 };
 
 template<std::signed_integral T>
@@ -496,6 +498,15 @@ operator/(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
  */
 mud::core::bigint
 operator%(const mud::core::bigint& lhs, const mud::core::bigint& rhs);
+
+/**
+ * @brief Exponentiation
+ * @param lhs The base
+ * @param rhs The exponent
+ * @return The exponentiation of @c base to the power of @c exponent.
+ */
+mud::core::bigint
+exp(const mud::core::bigint& base, const mud::core::bigint& exponent);
 
 /**
  * @brief Output a @c bigint to an output stream.

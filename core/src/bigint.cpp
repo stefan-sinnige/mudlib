@@ -846,6 +846,41 @@ operator%(const mud::core::bigint& lhs, const mud::core::bigint& rhs)
     return remainder;
 }
 
+mud::core::bigint
+exp(const mud::core::bigint& base, const mud::core::bigint& exponent)
+{
+    // If exponent is negative, return a zero.
+    if (exponent.neg()) {
+        return 0;
+    }
+
+    // Perform exponentiation by squaring, where each next bit in the exponent
+    // sequence represents the square of the previous bit
+    //    a^(2^b) = a^(2^(b-1))^2
+    // For example, the 3'rd bit (2^3=8) is expressed as
+    //    a^8 = (a^4)^2
+    // where a^4 has been calculated prior.
+    bool positive = true;
+    mud::core::bigint result = 1;
+    mud::core::bigint squared = base;
+    squared._positive = true;
+    size_t exponent_bits = exponent.bits();
+    for (size_t bit = 0; bit < exponent_bits; ++bit) {
+        uint8_t mask = (0x01 << (bit % 8));
+        if (exponent._value[exponent._size - bit/8 -1] & mask) {
+            if (bit == 0 && base.neg()) {
+                // Exponent is odd and the base is negative means that the
+                // result will be negative
+                positive = false;
+            }
+            result *= squared;
+        }
+        squared *= squared;
+    }
+    result._positive = positive;
+    return result;
+}
+
 std::ostream&
 operator<<(std::ostream& ostr, const bigint& b)
 { 
