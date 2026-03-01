@@ -27,6 +27,7 @@
 #ifndef _MUDLIB_CORE_H_
 #define _MUDLIB_CORE_H_
 
+#include <mud/core/bigint.h>
 #include <mud/core/endian.h>
 #include <mud/core/event.h>
 #include <mud/core/event_loop.h>

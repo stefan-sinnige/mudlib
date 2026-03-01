@@ -29,6 +29,7 @@ SUBDIRS = . test
 lib_LTLIBRARIES = libmudcore.la
 
 libmudcore_la_SOURCES = \
+    src/bigint.cpp \
     src/endian.cpp \
 	src/event.cpp \
     src/event_loop.cpp \
@@ -51,6 +52,7 @@ includemud_HEADERS = \
 includemudcoredir = $(includedir)/mud/core
 includemudcore_HEADERS = \
     include/mud/core/ns.h \
+    include/mud/core/bigint.h \
     include/mud/core/endian.h \
     include/mud/core/event.h \
     include/mud/core/event_loop.h \

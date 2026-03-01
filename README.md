@@ -19,6 +19,8 @@ _miscere utile dulci_ that captures this principle. Abbreviated to MUD,
 is the project name that is being uses as the basis for naming various
 projects by the same Author.
 
+## Overview
+
 The MUD library is a private project that aims at self-development of software
 engineering. It is a general purpose application framework library that
 conceptualises various aspects and technologies of application development. A
