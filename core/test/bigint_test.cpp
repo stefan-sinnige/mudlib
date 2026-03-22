@@ -27,7 +27,7 @@
 #include "mud/core/bigint.h"
 #include "mud/test.h"
 #include <memory>
-#include <ranges>
+#include <string>
 #include <type_traits>
 
 /* clang-format off */
@@ -316,13 +316,14 @@ FEATURE("Big Integer")
         })
     WHEN ("When the unary operations are applied",
         [](context& ctx) {
-            for (char op: std::views::reverse(ctx.sample<std::string>("unary")))
+            std::string unary = ctx.sample<std::string>("unary");
+            for (auto op = unary.rbegin(); op != unary.rend(); ++op)
             {
-                if (op == '-') {
+                if (*op == '-') {
                     ctx.value = -ctx.value;
                 }
                 else
-                if (op == '+') {
+                if (*op == '+') {
                     ctx.value = +ctx.value;
                 }
             }

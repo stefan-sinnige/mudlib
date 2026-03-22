@@ -27,6 +27,7 @@
 #include "mud/core/log.h"
 #include "mud/core/internal/log.h"
 #include <chrono>
+#include <cstring>
 #include <ctime>
 #include <cxxabi.h>
 #include <fstream>

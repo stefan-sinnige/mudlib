@@ -28,9 +28,9 @@
 #define _MUDLIB_CORE_UTF_H_
 
 #include <mud/core/ns.h>
-#include <array>
 #include <string>
 #include <cstdint>
+#include <vector>
 
 BEGIN_MUDLIB_CORE_NS
 

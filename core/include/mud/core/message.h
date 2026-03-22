@@ -28,8 +28,11 @@
 #define _MUDLIB_CORE_MESSAGE_H_
 
 #include <mud/core/uuid.h>
+#include <functional>
 #include <mutex>
 #include <map>
+#include <memory>
+#include <string>
 #include <vector>
 
 BEGIN_MUDLIB_CORE_NS
@@ -122,18 +125,6 @@ public:
     }
 
     /**
-     * @brief Unsupported custom data type conversion
-     */
-    template<typename T>
-    void data(T value) { static_assert(false, "No conversion of this type"); }
-
-    /**
-     * @brief Unsupported custom data type conversion
-     */
-    template<typename T>
-    T data() const { static_assert(false, "No conversion of this type"); }
-
-    /**
      * @brief Set the custom data as a single integral value.
      * @tparam T The type of he integral value
      * @param value The value to set
@@ -161,24 +152,19 @@ public:
         return custom;
     }
 
+#if not defined(__GNUC__) or defined(__clang__)
     /**
-     * @brief Set the custom data as a string value.
-     * @param value The value to set
+     * @brief Unsupported custom data type conversion
      */
-    void data(const std::string& str) {
-        _data = std::vector<uint8_t>(str.begin(), str.end());
-    }
+    template<typename T>
+    void data(T value) { static_assert(false, "No conversion of this type"); }
 
     /**
-     * @brief Get the custom data as a string value.
-     * @return value The value of the custom data
-     * @note a copy of the data is created.
+     * @brief Unsupported custom data type conversion
      */
-    template<>
-    std::string data<std::string>() const {
-        std::string str(_data.begin(), _data.end());
-        return str;
-    }
+    template<typename T>
+    T data() const { static_assert(false, "No conversion of this type"); }
+#endif
 
 private:
     /** The message unique ID */

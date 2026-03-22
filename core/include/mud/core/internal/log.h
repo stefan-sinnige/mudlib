@@ -27,9 +27,10 @@
 #ifndef _MUDLIB_CORE_PRIVATE_LOG_H_
 #define _MUDLIB_CORE_PRIVATE_LOG_H_
 
+#include <mud/core/log.h>
+#include <memory>
 #include <iostream>
 #include <typeinfo>
-#include <mud/core/log.h>
 
 BEGIN_MUDLIB_CORE_NS
 

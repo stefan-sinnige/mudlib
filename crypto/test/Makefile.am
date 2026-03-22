@@ -24,12 +24,27 @@
 # ++ end-license-description ++
 #
 
-# Define the subfolders and the order in which they are to be built.
-SUBDIRS = test core crypto xml html io protocols samples doc
+check_PROGRAMS = mudcrypto_test
+TESTS = $(check_PROGRAMS)
 
-# Package config
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = mudlib.pc
+mudcrypto_test_SOURCES = \
+    main.cpp \
+    aes_test.cpp \
+    padding_test.cpp \
+    types_test.cpp
+
+mudcrypto_test_CPPFLAGS = \
+    -I$(srcdir)/../src \
+    -I$(srcdir)/../include \
+	-I$(srcdir)/../../core/include \
+	-I$(srcdir)/../../test/include \
+	$(PTHREAD_CFLAGS)
+
+mudcrypto_test_LDADD = \
+    ../libmudcrypto.la \
+    ../../core/libmudcore.la \
+    ../../test/libmudtest.la \
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 

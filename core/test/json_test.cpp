@@ -199,8 +199,21 @@ FEATURE("JSON")
         })
     THEN ("The JSON value is correctly formed",
         [](context& ctx) {
-            auto expected = ctx.sample<mud::core::json>("value");
-            ASSERT(true, expected == ctx.json);
+            if (ctx.json.type() == mud::core::json::type_t::decimal) {
+                /* Precision might be lost, only look at a number of decimals */
+                std::stringstream expected;
+                std::stringstream result;
+                expected << std::setprecision(15)
+                         << ctx.sample<mud::core::json>("value").decimal();
+                result   << std::setprecision(15)
+                         << ctx.json.decimal();
+                ASSERT(expected.str(), result.str());
+
+            }
+            else {
+                auto expected = ctx.sample<mud::core::json>("value");
+                ASSERT(true, expected == ctx.json);
+            }
          })
     SAMPLES(std::string, mud::core::json)
          HEADINGS("text", "value")
@@ -265,7 +278,15 @@ FEATURE("JSON")
             ASSERT(true, arr[0] == 1001);
             ASSERT(true, arr[1] == false);
             ASSERT(true, arr[2] == "Hello World");
-            ASSERT(true, arr[3] == 3.14159);
+            /* Precision might be lost, only look at a number of decimals, so
+             * we cannot truly rely on the following amongst platforms
+             *    ASSERT(true, arr[3] == 3.14159);
+             */
+            std::stringstream expected;
+            std::stringstream result;
+            expected << std::setprecision(6) << 3.14159;
+            result   << std::setprecision(6) << arr[3].decimal();
+            ASSERT(expected.str(), result.str());
         })
 
   SCENARIO("An empty JSON object can be read")
@@ -304,7 +325,15 @@ FEATURE("JSON")
             ASSERT(true, obj["integer"] == 1001);
             ASSERT(true, obj["boolean"] == false);
             ASSERT(true, obj["string"] == "Hello World");
-            ASSERT(true, obj["decimal"] == 3.14159);
+            /* Precision might be lost, only look at a number of decimals, so
+             * we cannot truly rely on the following amongst platforms
+             *    ASSERT(true, obj["decimal"] == 3.14159);
+             */
+            std::stringstream expected;
+            std::stringstream result;
+            expected << std::setprecision(6) << 3.14159;
+            result   << std::setprecision(6) << obj["decimal"].decimal();
+            ASSERT(expected.str(), result.str());
          })
 
   SCENARIO("Various basic JSON values can be written")

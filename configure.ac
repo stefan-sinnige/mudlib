@@ -81,6 +81,7 @@ AM_CONDITIONAL([MANUAL], [test "x$enable_manual" = "xyes"])
 AC_CONFIG_FILES([
     Makefile
     core/Makefile core/test/Makefile
+    crypto/Makefile crypto/test/Makefile
     doc/Makefile
     html/Makefile html/test/Makefile
     html/src/entities_scanner_generator/Makefile

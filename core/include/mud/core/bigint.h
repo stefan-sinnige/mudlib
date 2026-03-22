@@ -29,6 +29,7 @@
 
 #include <mud/core/ns.h>
 #include <compare>
+#include <cstring>
 #include <iostream>
 
 BEGIN_MUDLIB_CORE_NS

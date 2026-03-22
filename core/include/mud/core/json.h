@@ -30,6 +30,7 @@
 #include <mud/core/ns.h>
 #include <map>
 #include <string>
+#include <variant>
 #include <vector>
 
 BEGIN_MUDLIB_CORE_NS
@@ -118,22 +119,15 @@ public:
      * @brief Create an integer JSON value.
      * @param i The integer value to use.
      */
-    json(int8_t i) : _value((int64_t)i) {}
-    json(int16_t i) : _value((int64_t)i) {}
-    json(int32_t i) : _value(i) {}
-    json(int64_t i) : _value(i) {}
-    json(uint8_t i) : _value((int64_t)i) {}
-    json(uint16_t i) : _value((int64_t)i) {}
-    json(uint32_t i) : _value((int64_t)i) {}
-    json(uint64_t i) : _value((int64_t)i) {}
+    template<std::integral T>
+    json(T i) : _value(static_cast<int64_t>(i)) {}
 
     /**
      * @brief Create a decimal or scientific floating-point number.
      * @param d The number value to use.
      */
-    json(float d) : _value((long double)d) {}
-    json(double d) : _value((long double)d) {}
-    json(long double d) : _value(d) {}
+    template<std::floating_point T>
+    json(T i) : _value(static_cast<long double>(i)) {}
 
     /**
      * @brief Create a boolean value.

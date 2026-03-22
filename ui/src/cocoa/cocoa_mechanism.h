@@ -81,7 +81,8 @@ namespace cocoa {
         std::atomic_bool _running;
         std::promise<void> _promise;
         std::shared_future<void> _future;
-        mud::core::atomic_bool_handle::signal _terminate_signal;
+        // Standard C++ mutex / condition-variable instead of this:
+        // mud::core::atomic_bool_handle::signal _terminate_signal;
         std::map<int, std::function<void(void)>> _handlers;
     };
 

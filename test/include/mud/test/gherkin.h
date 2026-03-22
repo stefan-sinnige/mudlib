@@ -31,6 +31,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <mud/test/exception.h>
 #include <mud/test/ns.h>
 #include <sstream>
