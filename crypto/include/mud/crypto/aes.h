@@ -46,12 +46,6 @@ BEGIN_MUDLIB_CRYPTO_NS
 class basic_aes : public basic_algorithm
 {
 public:
-    /** The block size */
-    static constexpr size_t block_size = 16;
-
-    /** The name of the algorithm */
-    static constexpr std::string_view name = "AES";
-
     /**
      * @brief Constructor.
      * @param key_size
@@ -61,8 +55,18 @@ public:
     /**
      * @brief Return the algorithm specifications.
      */
-    constexpr std::string_view specs() const override { return name; }
+    constexpr std::string_view specs() const override { return "AES"; }
 
+    /**
+     * @brief Return the block-size used by the algorithm.
+     */
+    size_t block_size() const override { return 16; }
+     
+    /**
+     * @brief Return the key-size used by the algorithm.
+     */
+    size_t key_size() const override { return _key_size; }
+     
     /**
      * @brief Encrypt plain-text into cipher-text.
      * @param input The input block (ie plain text).
@@ -207,12 +211,6 @@ template<size_t KeySize>
 class MUDLIB_CRYPTO_API aes: public basic_aes
 {
 public:
-    /** The algorithm key-size */
-    static constexpr size_t key_size = KeySize;
-
-    /** The algorithm block-size */
-    static constexpr size_t block_size = basic_aes::block_size;;
-
     /**
      * @brief Constructor
      */

@@ -59,17 +59,8 @@ CONTEXT()
     /* Generic multi-key aes */
     mud::crypto::basic_aes* aes = nullptr;
 
-    /* The AES key */
-    mud::crypto::key_t key;
-
-    /* The AES initial vector */
-    mud::crypto::iv_t iv;
-
-    /* The AES counter */
-    mud::crypto::counter_t counter;
-
-    /* The AES nonce */
-    mud::crypto::nonce_t nonce;
+    /* The AES keying material */
+    mud::crypto::material_t material;
 
     /* The input block */
     mud::crypto::data_t input;
@@ -82,6 +73,10 @@ CONTEXT()
 
     /* The ciphertext */
     mud::crypto::data_t ciphertext;
+
+    /* A text stream */
+    std::stringstream text_stream;
+
 END_CONTEXT()
 
 FEATURE("AES")
@@ -122,16 +117,17 @@ FEATURE("AES")
 
   SCENARIO("Basic AES block cipher can encrypt one block")
     GIVEN("An AES block cipher with a key and plaintext", [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.aes = new mud::crypto::basic_aes(ctx.key.size()*8);
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.aes = new mud::crypto::basic_aes(ctx.material.key().size()*8);
         })
     WHEN ("The plaintext is AES encrypted", [](context& ctx) {
-            ctx.input = ctx.to_data(ctx.sample<std::string>("plaintext"));
-            ctx.aes->encrypt(ctx.input, ctx.output, ctx.key);
+          ctx.input = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.aes->encrypt(ctx.input, ctx.output, ctx.material.key());
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.output));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.output));
         })
     SAMPLES(size_t, std::string, std::string, std::string)
         HEADINGS("keysize", "key", "plaintext", "ciphertext")
@@ -151,16 +147,17 @@ FEATURE("AES")
 
   SCENARIO("Basic AES block cipher can decrypt one block")
     GIVEN("An AES block cipher with a key and plaintext", [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.aes = new mud::crypto::basic_aes(ctx.key.size()*8);
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.aes = new mud::crypto::basic_aes(ctx.material.key().size()*8);
         })
     WHEN ("The ciphertext is AES decrypted", [](context& ctx) {
-            ctx.input = ctx.to_data(ctx.sample<std::string>("ciphertext"));
-            ctx.aes->decrypt(ctx.input, ctx.output, ctx.key);
+          ctx.input = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.aes->decrypt(ctx.input, ctx.output, ctx.material.key());
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.output));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.output));
         })
     SAMPLES(size_t, std::string, std::string, std::string)
         HEADINGS("keysize", "key", "ciphertext", "plaintext")
@@ -181,17 +178,17 @@ FEATURE("AES")
   SCENARIO("AES-128 ECB can encrypt with an example vector")
     GIVEN("An AES-128 ECB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_ECB aes_128_ecb(ctx.key);
-            aes_128_ecb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
+          aes_128_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "plaintext", "ciphertext")
@@ -209,13 +206,13 @@ FEATURE("AES")
   SCENARIO("AES-192 ECB can encrypt with an example vector")
     GIVEN("An AES-192 ECB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_192_ECB aes_192_ecb(ctx.key);
-            aes_192_ecb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_192_ECB aes_192_ecb(ctx.material);
+          aes_192_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
             ASSERT(ctx.sample<std::string>("ciphertext"),
@@ -238,17 +235,17 @@ FEATURE("AES")
   SCENARIO("AES-256 ECB can encrypt with an example vector")
     GIVEN("An AES-256 ECB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_256_ECB aes_256_ecb(ctx.key);
-            aes_256_ecb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_256_ECB aes_256_ecb(ctx.material);
+          aes_256_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "plaintext", "ciphertext")
@@ -267,13 +264,13 @@ FEATURE("AES")
   SCENARIO("AES-128 CBC can encrypt with an example vector")
     GIVEN("An AES-128 CBC with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
+            mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+            mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+            ctx.material = mud::crypto::material_t(key, iv);
             ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CBC aes_128_cbc(ctx.key, ctx.iv);
-            aes_128_cbc.padding(mud::crypto::basic_padding::type_t::none);
+            mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
             aes_128_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
@@ -297,18 +294,18 @@ FEATURE("AES")
   SCENARIO("AES-192 CBC can encrypt with an example vector")
     GIVEN("An AES-192 CBC with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_192_CBC aes_192_cbc(ctx.key, ctx.iv);
-            aes_192_cbc.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_192_CBC aes_192_cbc(ctx.material);
+          aes_192_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -328,18 +325,18 @@ FEATURE("AES")
   SCENARIO("AES-256 CBC can encrypt with an example vector")
     GIVEN("An AES-256 CBC with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_256_CBC aes_256_cbc(ctx.key, ctx.iv);
-            aes_256_cbc.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_256_CBC aes_256_cbc(ctx.material);
+          aes_256_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -359,14 +356,14 @@ FEATURE("AES")
   SCENARIO("AES-128 CFB can encrypt with an example vector")
     GIVEN("An AES-128 CFB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CFB aes_128_cfb(ctx.key, ctx.iv);
-            aes_128_cfb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
+          aes_128_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
             ASSERT(ctx.sample<std::string>("ciphertext"),
@@ -389,18 +386,18 @@ FEATURE("AES")
   SCENARIO("AES-192 CFB can encrypt with an example vector")
     GIVEN("An AES-192 CFB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_192_CFB aes_192_cfb(ctx.key, ctx.iv);
-            aes_192_cfb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_192_CFB aes_192_cfb(ctx.material);
+          aes_192_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -420,18 +417,18 @@ FEATURE("AES")
   SCENARIO("AES-256 CFB can encrypt with an example vector")
     GIVEN("An AES-256 CFB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_256_CFB aes_256_cfb(ctx.key, ctx.iv);
-            aes_256_cfb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_256_CFB aes_256_cfb(ctx.material);
+          aes_256_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -451,18 +448,19 @@ FEATURE("AES")
   SCENARIO("AES-128 CTR can encrypt with an example vector")
     GIVEN("An AES-128 CTR with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CTR aes_128_ctr(ctx.key, ctx.counter);
-            aes_128_ctr.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
+          aes_128_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "plaintext", "ciphertext")
@@ -481,18 +479,19 @@ FEATURE("AES")
   SCENARIO("AES-192 CTR can encrypt with an example vector")
     GIVEN("An AES-192 CTR with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_192_CTR aes_192_ctr(ctx.key, ctx.counter);
-            aes_192_ctr.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_192_CTR aes_192_ctr(ctx.material);
+          aes_192_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "plaintext", "ciphertext")
@@ -512,18 +511,19 @@ FEATURE("AES")
   SCENARIO("AES-256 CTR can encrypt with an example vector")
     GIVEN("An AES-256 CTR with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_256_CTR aes_256_ctr(ctx.key, ctx.counter);
-            aes_256_ctr.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_256_CTR aes_256_ctr(ctx.material);
+          aes_256_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "plaintext", "ciphertext")
@@ -543,17 +543,17 @@ FEATURE("AES")
   SCENARIO("AES-128 ECB can decrypt with an example vector")
     GIVEN("An AES-128 ECB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_ECB aes_128_ecb(ctx.key);
-            aes_128_ecb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
+          aes_128_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "ciphertext", "plaintext")
@@ -571,17 +571,17 @@ FEATURE("AES")
   SCENARIO("AES-192 ECB can decrypt with an example vector")
     GIVEN("An AES-192 ECB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The plaintext is decrypted", [](context& ctx) {
-            mud::crypto::AES_192_ECB aes_192_ecb(ctx.key);
-            aes_192_ecb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_192_ECB aes_192_ecb(ctx.material);
+          aes_192_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "ciphertext", "plaintext")
@@ -600,17 +600,17 @@ FEATURE("AES")
   SCENARIO("AES-256 ECB can decrypt with an example vector")
     GIVEN("An AES-256 ECB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The plaintext is decrypted", [](context& ctx) {
-            mud::crypto::AES_256_ECB aes_256_ecb(ctx.key);
-            aes_256_ecb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_256_ECB aes_256_ecb(ctx.material);
+          aes_256_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "ciphertext", "plaintext")
@@ -629,18 +629,18 @@ FEATURE("AES")
   SCENARIO("AES-128 CBC can decrypt with an example vector")
     GIVEN("An AES-128 CBC with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_CBC aes_128_cbc(ctx.key, ctx.iv);
-            aes_128_cbc.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
+          aes_128_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -659,18 +659,18 @@ FEATURE("AES")
   SCENARIO("AES-192 CBC can decrypt with an example vector")
     GIVEN("An AES-192 CBC with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_192_CBC aes_192_cbc(ctx.key, ctx.iv);
-            aes_192_cbc.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_192_CBC aes_192_cbc(ctx.material);
+          aes_192_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -690,18 +690,18 @@ FEATURE("AES")
   SCENARIO("AES-256 CBC can decrypt with an example vector")
     GIVEN("An AES-256 CBC with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_256_CBC aes_256_cbc(ctx.key, ctx.iv);
-            aes_256_cbc.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_256_CBC aes_256_cbc(ctx.material);
+          aes_256_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -721,18 +721,18 @@ FEATURE("AES")
   SCENARIO("AES-128 CFB can decrypt with an example vector")
     GIVEN("An AES-128 CFB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_CFB aes_128_cfb(ctx.key, ctx.iv);
-            aes_128_cfb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
+          aes_128_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -751,18 +751,18 @@ FEATURE("AES")
   SCENARIO("AES-192 CFB can decrypt with an example vector")
     GIVEN("An AES-192 CFB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_192_CFB aes_192_cfb(ctx.key, ctx.iv);
-            aes_192_cfb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_192_CFB aes_192_cfb(ctx.material);
+          aes_192_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -782,18 +782,18 @@ FEATURE("AES")
   SCENARIO("AES-256 CFB can decrypt with an example vector")
     GIVEN("An AES-256 CFB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_256_CFB aes_256_cfb(ctx.key, ctx.iv);
-            aes_256_cfb.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_256_CFB aes_256_cfb(ctx.material);
+          aes_256_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -813,18 +813,19 @@ FEATURE("AES")
   SCENARIO("AES-128 CTR can decrypt with an example vector")
     GIVEN("An AES-128 CTR with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_CTR aes_128_ctr(ctx.key, ctx.counter);
-            aes_128_ctr.padding(mud::crypto::basic_padding::type_t::none);
-            aes_128_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
+          aes_128_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "ciphertext", "plaintext")
@@ -843,18 +844,19 @@ FEATURE("AES")
   SCENARIO("AES-192 CTR can decrypt with an example vector")
     GIVEN("An AES-192 CTR with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_192_CTR aes_192_ctr(ctx.key, ctx.counter);
-            aes_192_ctr.padding(mud::crypto::basic_padding::type_t::none);
-            aes_192_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_192_CTR aes_192_ctr(ctx.material);
+          aes_192_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "ciphertext", "plaintext")
@@ -874,18 +876,19 @@ FEATURE("AES")
   SCENARIO("AES-256 CTR can decrypt with an example vector")
     GIVEN("An AES-256 CTR with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_256_CTR aes_256_ctr(ctx.key, ctx.counter);
-            aes_256_ctr.padding(mud::crypto::basic_padding::type_t::none);
-            aes_256_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_256_CTR aes_256_ctr(ctx.material);
+          aes_256_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "ciphertext", "plaintext")
@@ -902,19 +905,21 @@ FEATURE("AES")
                "f69f2445df4f9b17ad2b417be66c3710")
     END_SAMPLES()
 
-  SCENARIO("AES ECB can encrypt with padding (default)")
+  SCENARIO("AES ECB can encrypt with padding")
     GIVEN("An AES-128 ECB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.material.padding(mud::crypto::padding_t::pkcs7);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_ECB aes_128_ecb(ctx.key);
-            aes_128_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
+          aes_128_ecb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "plaintext", "ciphertext")
@@ -946,20 +951,22 @@ FEATURE("AES")
                "a254be88e037ddd9d79fb6411c3f9df8")
     END_SAMPLES()
 
-  SCENARIO("AES CBC can encrypt with padding (default)")
+  SCENARIO("AES CBC can encrypt with padding")
     GIVEN("An AES-128 CBC with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.padding(mud::crypto::padding_t::pkcs7);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CBC aes_128_cbc(ctx.key, ctx.iv);
-            aes_128_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
+          aes_128_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -996,20 +1003,21 @@ FEATURE("AES")
                "55e21d7100b988ffec32feeafaf23538")
     END_SAMPLES()
 
-  SCENARIO("AES CFB can encrypt without padding (default)")
+  SCENARIO("AES CFB can encrypt without padding")
     GIVEN("An AES-128 CFB with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CFB aes_128_cfb(ctx.key, ctx.iv);
-            aes_128_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
+          aes_128_cfb.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -1045,20 +1053,22 @@ FEATURE("AES")
                "c8a64537a0b3a93fcde3cdad9f1ce58b")
     END_SAMPLES()
 
-  SCENARIO("AES CTR can encrypt without padding (default)")
+  SCENARIO("AES CTR can encrypt without padding")
     GIVEN("An AES-128 CTR with keying material and plaintext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CTR aes_128_ctr(ctx.key, ctx.counter);
-            aes_128_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
+          aes_128_ctr.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "plaintext", "ciphertext")
@@ -1094,19 +1104,21 @@ FEATURE("AES")
                "9806f66b7970fdff8617187bb9fffdff")
     END_SAMPLES()
 
-  SCENARIO("AES ECB can decrypt with padding (default)")
+  SCENARIO("AES ECB can decrypt with padding")
     GIVEN("An AES-128 ECB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.material.padding(mud::crypto::padding_t::pkcs7);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_ECB aes_128_ecb(ctx.key);
-            aes_128_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
+          aes_128_ecb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("key", "ciphertext", "plaintext")
@@ -1138,20 +1150,22 @@ FEATURE("AES")
                "ae2d8a571e03ac9c9eb76fac45af8e51")
     END_SAMPLES()
 
-  SCENARIO("AES CBC can decrypt with padding (default)")
+  SCENARIO("AES CBC can decrypt with padding")
     GIVEN("An AES-128 CBC with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.padding(mud::crypto::padding_t::pkcs7);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_CBC aes_128_cbc(ctx.key, ctx.iv);
-            aes_128_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
+          aes_128_cbc.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -1188,20 +1202,21 @@ FEATURE("AES")
                "ae2d8a571e03ac9c9eb76fac45af8e51")
     END_SAMPLES()
 
-  SCENARIO("AES CFB can decrypt without padding (default)")
+  SCENARIO("AES CFB can decrypt without padding")
     GIVEN("An AES-128 CFB with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
+          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_CFB aes_128_cfb(ctx.key, ctx.iv);
-            aes_128_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
+          aes_128_cfb.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "ciphertext", "plaintext")
@@ -1237,20 +1252,22 @@ FEATURE("AES")
                "ae2d8a571e03ac9c9eb76fac45af8e51")
     END_SAMPLES()
 
-  SCENARIO("AES CTR can decrypt without padding (default)")
+  SCENARIO("AES CTR can decrypt without padding")
     GIVEN("An AES-128 CTR with keying material and ciphertext",
         [](context& ctx) {
-            ctx.key = ctx.to_data(ctx.sample<std::string>("key"));
-            ctx.counter = ctx.to_data(ctx.sample<std::string>("counter"));
-            ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
+                "counter"));
+          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
-            mud::crypto::AES_128_CTR aes_128_ctr(ctx.key, ctx.counter);
-            aes_128_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
+          mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
+          aes_128_ctr.decrypt(ctx.ciphertext, ctx.plaintext);
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("plaintext"),
-                   ctx.to_string(ctx.plaintext));
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "counter", "ciphertext", "plaintext")
@@ -1282,6 +1299,190 @@ FEATURE("AES")
                "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
                "874d6191b620e3261bef6864990db6ce"
                "9806f66b7970fdff8617187bb9fffdff",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af8e51")
+    END_SAMPLES()
+
+  SCENARIO("AES without padding can encrypt with an ostream")
+    GIVEN("An AES-128 ECB with keying material and plaintext stream",
+        [](context& ctx) {
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+        })
+    WHEN ("The plaintext is encrypted", [](context& ctx) {
+          mud::crypto::AES_128_ECB aes(ctx.material);
+          std::ostream ostr(aes.sbuf(ctx.text_stream.rdbuf()));
+          uint8_t* cptr = ctx.plaintext.data();
+          uint8_t* eptr = cptr + ctx.plaintext.size();
+          while (cptr < eptr) {
+              if (!ostr.put((char)*cptr++)) {
+                  break;
+              }
+          }
+          aes.sbuf()->close();
+          std::string str = ctx.text_stream.str();
+          ctx.ciphertext = mud::crypto::data_t((const uint8_t*)str.data(),
+                                               str.size());
+        })
+    THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("ciphertext"),
+                   ctx.to_string(ctx.ciphertext));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("key", "plaintext", "ciphertext")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af8e51"
+               "30c81c46a35ce411e5fbc1191a0a52ef"
+               "f69f2445df4f9b17ad2b417be66c3710",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "f5d3d58503b9699de785895a96fdbaaf"
+               "43b1cd7f598ece23881b00e3ed030688"
+               "7b0c785e27e8ad3f8223207104725dd4")
+    END_SAMPLES()
+
+  SCENARIO("AES without padding can decrypt with an istream")
+    GIVEN("An AES-128 ECB with keying material and ciphertext stream",
+        [](context& ctx) {
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.text_stream.str(std::string((const char*)ctx.ciphertext.data(),
+                                          ctx.ciphertext.size()));
+        })
+    WHEN ("The ciphertext is decrypted", [](context& ctx) {
+          mud::crypto::AES_128_ECB aes(ctx.material);
+          std::istream istr(aes.sbuf(ctx.text_stream.rdbuf()));
+          uint8_t ch;
+          while (istr.get((char&)ch)) {
+              ctx.plaintext.append(mud::crypto::data_t(&ch, 1));
+          }
+          aes.sbuf()->close();
+        })
+    THEN ("The plaintext contains the decrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("key", "ciphertext", "plaintext")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "f5d3d58503b9699de785895a96fdbaaf"
+               "43b1cd7f598ece23881b00e3ed030688"
+               "7b0c785e27e8ad3f8223207104725dd4",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af8e51"
+               "30c81c46a35ce411e5fbc1191a0a52ef"
+               "f69f2445df4f9b17ad2b417be66c3710")
+    END_SAMPLES()
+
+  SCENARIO("AES with padding can encrypt with an ostream")
+    GIVEN("An AES-128 ECB with keying material and plaintext stream",
+        [](context& ctx) {
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.material.padding(mud::crypto::padding_t::pkcs7);
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+        })
+    WHEN ("The plaintext is encrypted", [](context& ctx) {
+          mud::crypto::AES_128_ECB aes(ctx.material);
+          std::ostream ostr(aes.sbuf(ctx.text_stream.rdbuf()));
+          uint8_t* cptr = ctx.plaintext.data();
+          uint8_t* eptr = cptr + ctx.plaintext.size();
+          while (cptr < eptr) {
+              if (!ostr.put((char)*cptr++)) {
+                  break;
+              }
+          }
+          aes.sbuf()->close();
+          std::string str = ctx.text_stream.str();
+          ctx.ciphertext = mud::crypto::data_t((const uint8_t*)str.data(),
+                                               str.size());
+        })
+    THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("ciphertext"),
+                   ctx.to_string(ctx.ciphertext));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("key", "plaintext", "ciphertext")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "9e197020026bcdee188eeda4d2d83c4e")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "b23dd7754aaa5b9ffe7d3cc5e7bbd386")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "73e15c314562a5fe796655a9dfc43c5b")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af8e",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "5d569b5e2c7bac7313ad79f359798fe6")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af8e51",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "f5d3d58503b9699de785895a96fdbaaf"
+               "a254be88e037ddd9d79fb6411c3f9df8")
+    END_SAMPLES()
+
+  SCENARIO("AES with padding can decrypt with an istream")
+    GIVEN("An AES-128 ECB with keying material and ciphertext stream",
+        [](context& ctx) {
+          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
+          ctx.material = mud::crypto::material_t(key);
+          ctx.material.padding(mud::crypto::padding_t::pkcs7);
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.text_stream.str(std::string((const char*)ctx.ciphertext.data(),
+                                          ctx.ciphertext.size()));
+        })
+    WHEN ("The ciphertext is decrypted", [](context& ctx) {
+          mud::crypto::AES_128_ECB aes(ctx.material);
+          std::istream istr(aes.sbuf(ctx.text_stream.rdbuf()));
+          uint8_t ch;
+          while (istr.get((char&)ch)) {
+              ctx.plaintext.append(mud::crypto::data_t(&ch, 1));
+          }
+          aes.sbuf()->close();
+        })
+    THEN ("The plaintext contains the decrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("key", "ciphertext", "plaintext")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "9e197020026bcdee188eeda4d2d83c4e",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "b23dd7754aaa5b9ffe7d3cc5e7bbd386",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "73e15c314562a5fe796655a9dfc43c5b",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "5d569b5e2c7bac7313ad79f359798fe6",
+               "6bc1bee22e409f96e93d7e117393172a"
+               "ae2d8a571e03ac9c9eb76fac45af8e")
+        SAMPLE("2b7e151628aed2a6abf7158809cf4f3c",
+               "3ad77bb40d7a3660a89ecaf32466ef97"
+               "f5d3d58503b9699de785895a96fdbaaf"
+               "a254be88e037ddd9d79fb6411c3f9df8",
                "6bc1bee22e409f96e93d7e117393172a"
                "ae2d8a571e03ac9c9eb76fac45af8e51")
     END_SAMPLES()

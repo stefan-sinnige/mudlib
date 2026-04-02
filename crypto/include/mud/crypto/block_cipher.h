@@ -28,10 +28,12 @@
 #define _MUDLIB_CRYPTO_BLOCK_CIPHER_H_
 
 #include <sstream>
+#include <streambuf>
 #include <string_view>
 #include <mud/crypto/ns.h>
 #include <mud/crypto/padding.h>
 #include <mud/crypto/types.h>
+#include <mud/core/factory.h>
 
 BEGIN_MUDLIB_CRYPTO_NS
 
@@ -52,6 +54,16 @@ public:
     virtual constexpr std::string_view specs() const = 0;
 
     /**
+     * @brief Return the block size used by the algortihm.
+     */
+    virtual size_t block_size() const = 0;
+
+    /**
+     * @brief Return the key size used by the algortihm.
+     */
+    virtual size_t key_size() const = 0;
+
+    /**
      * @brief Encrypt plain text into cipher text using a key.
      * @param in The input block (ie plain text).
      * @param out The output block (ie cipher text).
@@ -69,7 +81,7 @@ public:
 };
 
 /**
- * @brief An inteface for a block cipher operating mode.
+ * @brief An interface for a block cipher operating mode.
  * @details
  * The functions for an algortihm block cipher mode. The operating mode defines
  * how keys and block ciphers are used when multiple blocks are required. This
@@ -97,19 +109,33 @@ public:
     virtual constexpr std::string_view specs() const = 0;
 
     /**
-     * @brief Set the block size
-     */
-    void block_size(size_t size) { _block_size = size; }
-
-    /**
      * @brief Get the block size
      */
     size_t block_size() const { return _block_size; }
 
     /**
+     * @brief Get the encryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    virtual direction_t encryption_direction() const = 0;
+
+    /**
+     * @brief Get the decryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    virtual direction_t decryption_direction() const = 0;
+
+    /**
      * @brief Retrieve the next block for processing.
      * @param bptr The pointer to the start of the block
      * @param bend The pointer past the end of all data
+     * @param eof  Flag to indicate that there is no more data
      * @return The block to be processed.
      * @details
      * A data block is assembled from the input data pointers and is to be of a
@@ -118,7 +144,7 @@ public:
      * Default implementation copies the @c block_size amount of bytes from
      * @c bptr to the data block to be returned.
      */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* end);
+    virtual data_t next(const uint8_t* bptr, const uint8_t* bend, bool eof);
 
     /**
      * @brief Prelude a block for encryption.
@@ -169,35 +195,22 @@ public:
     virtual data_t postlude_decrypt(const data_t& output);
 
     /**
-     * @brief Return the key for the next block operation.
-     * @details
-     * Based on the implementation of the mode, the key may be modified during
-     * the preparation of each block operations.
+     * @brief Return the keying material.
      */
-    key_t& key() { return _key; }
-    const key_t& key() const { return _key; }
-
-    /**
-     * @brief Set the padding type.
-     * @param type The padding type to apply.
-     */
-    void padding(basic_padding::type_t type);
-
-    /**
-     * @brief Return the padding mode.
-     */
-    basic_padding::type_t padding() const;
+    const material_t& keying() const { return _keying; }
 
 protected:
     /**
      * @brief Create basic mode.
-     * @param key The key.
+     * @param keying The keying material.
      * @details
      * Create the basic-mode with PCKS#7 padding.
      */
-    basic_mode(size_t block_size, const key_t& key)
+    basic_mode(size_t block_size, const material_t& keying)
         : _block_size(block_size)
-        , _key(key)
+        , _keying(keying)
+        , _padder(padding_factory::instance().create(
+                _keying.padding(), _block_size))
     {};
 
     /**
@@ -211,8 +224,8 @@ private:
     /** The block size */
     size_t _block_size;
 
-    /** The key */
-    key_t _key;
+    /** The keying material */
+    material_t _keying;
 
     /** The padding algorithm */
     std::unique_ptr<basic_padding> _padder;
@@ -226,44 +239,45 @@ private:
 class MUDLIB_CRYPTO_API ecb: public basic_mode
 {
 public:
-    /** The name of the mode */
-    static constexpr std::string_view name = "ECB";
-
-    /** The direction for encryption and decryption. */
-    static constexpr direction_t encryption_direction = direction_t::forward;
-    static constexpr direction_t decryption_direction = direction_t::reverse;
-
     /**
      * @brief Create an ECB mode.
      * @param block_size The block size.
-     * @param key The key.
+     * @param keying The keying material.
      */
-    ecb(size_t block_size, const key_t& key);
-
-    /**
-     * @brief ECB modes do not use an initialisation vector.
-     */
-    ecb(size_t, const key_t&, const iv_t&) = delete;
-
-    /**
-     * @brief ECB modes do not use a counter.
-     */
-    ecb(size_t, const key_t&, const counter_t&) = delete;
-
-    /**
-     * @brief ECB modes do not use a nonce and counter.
-     */
-    ecb(size_t, const key_t&, const nonce_t&, const counter_t&) = delete;
+    ecb(size_t block_size, const material_t& keying);
 
     /**
      * @brief Return the mode specifications.
      */
-    constexpr std::string_view specs() const override { return name; }
+    constexpr std::string_view specs() const override { return "ECB"; }
+
+    /**
+     * @brief Get the encryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t encryption_direction() const override {
+        return direction_t::forward;
+    }
+
+    /**
+     * @brief Get the decryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t decryption_direction() const override {
+        return direction_t::reverse;
+    }
 
     /**
      * @brief Retrieve the next block for processing.
      * @param bptr The pointer to the start of the block
      * @param bend The pointer past the end of all data
+     * @param eof  Flag to indicate that there is no more data
      * @return The block to be processed.
      * @details
      * A data block is assembled from the input data pointers and is to be of a
@@ -272,7 +286,8 @@ public:
      * Default implementation copies the @c block_size amount of bytes from
      * @c bptr to the data block to be returned.
      */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* end) override;
+    virtual data_t next(const uint8_t* bptr, const uint8_t* bend,
+                        bool eof) override;
 
     /**
      * @brief Prelude a block for encryption.
@@ -318,11 +333,8 @@ public:
     virtual data_t postlude_decrypt(const data_t& output) override;
 
 private:
-    /** Flag to indicate that a final block is to be processed. */
-    bool _final;
-
-    /** Flag to indicate there is no more data */
-    bool _eos;
+    /** The number of times block padding is applied. */
+    size_t _pad;
 };
 
 /**
@@ -333,45 +345,45 @@ private:
 class MUDLIB_CRYPTO_API cbc: public basic_mode
 {
 public:
-    /** The name of the mode */
-    static constexpr std::string_view name = "CBC";
-
-    /** The direction for encryption and decryption. */
-    static constexpr direction_t encryption_direction = direction_t::forward;
-    static constexpr direction_t decryption_direction = direction_t::reverse;
-
-    /**
-     * @brief CBC mode needs additional parameters.
-     */
-    cbc(size_t, const key_t&) = delete;
-
     /**
      * @brief Create a CBC mode.
      * @param block_size The block size.
-     * @param key The key.
-     * @param iv The initialisation vector.
+     * @param keying The keying material.
      */
-    cbc(size_t block_size, const key_t& key, const iv_t& iv);
-
-    /**
-     * @brief CBC modes do not use a counter.
-     */
-    cbc(size_t, const key_t&, const counter_t&) = delete;
-
-    /**
-     * @brief CBC modes do not use a nonce and counter.
-     */
-    cbc(size_t, const key_t&, const nonce_t&, const counter_t&) = delete;
+    cbc(size_t block_size, const material_t& keying);
 
     /**
      * @brief Return the mode specifications.
      */
-    constexpr std::string_view specs() const override { return name; }
+    constexpr std::string_view specs() const override { return "CBC"; }
+
+    /**
+     * @brief Get the encryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t encryption_direction() const override {
+        return direction_t::forward;
+    }
+
+    /**
+     * @brief Get the decryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t decryption_direction() const override {
+        return direction_t::reverse;
+    }
 
     /**
      * @brief Retrieve the next block for processing.
      * @param bptr The pointer to the start of the block
      * @param bend The pointer past the end of all data
+     * @param eof  Flag to indicate that there is no more data
      * @return The block to be processed.
      * @details
      * A data block is assembled from the input data pointers and is to be of a
@@ -380,7 +392,8 @@ public:
      * Default implementation copies the @c block_size amount of bytes from
      * @c bptr to the data block to be returned.
      */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* end) override;
+    virtual data_t next(const uint8_t* bptr, const uint8_t* bend,
+                        bool eof) override;
 
     /**
      * @brief Prelude a block for encryption.
@@ -435,11 +448,8 @@ private:
     /** The temporary cipher block */
     data_t _tmp;
 
-    /** Flag to indicate that a final block is to be processed. */
-    bool _final;
-
-    /** Flag to indicate there is no more data */
-    bool _eos;
+    /** The number of times block padding is applied. */
+    size_t _pad;
 };
 
 /**
@@ -450,45 +460,45 @@ private:
 class MUDLIB_CRYPTO_API cfb: public basic_mode
 {
 public:
-    /** The name of the mode */
-    static constexpr std::string_view name = "CFB";
-
-    /** The direction for encryption and decryption. */
-    static constexpr direction_t encryption_direction = direction_t::forward;
-    static constexpr direction_t decryption_direction = direction_t::forward;
-
-    /**
-     * @brief CFB mode needs additional parameters.
-     */
-    cfb(size_t, const key_t&) = delete;
-
     /**
      * @brief Create a CFB mode.
      * @param block_size The block size.
-     * @param key The key.
-     * @param iv The initialisation vector.
+     * @param keying The keying material.
      */
-    cfb(size_t block_size, const key_t& key, const iv_t& iv);
-
-    /**
-     * @brief CFB modes do not use a counter.
-     */
-    cfb(size_t, const key_t&, const counter_t&) = delete;
-
-    /**
-     * @brief CFB modes do not use a nonce and counter.
-     */
-    cfb(size_t, const key_t&, const nonce_t&, const counter_t&) = delete;
+    cfb(size_t block_size, const material_t& keying);
 
     /**
      * @brief Return the mode specifications.
      */
-    constexpr std::string_view specs() const override { return name; }
+    constexpr std::string_view specs() const override { return "CFB"; }
+
+    /**
+     * @brief Get the encryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t encryption_direction() const override {
+        return direction_t::forward;
+    }
+
+    /**
+     * @brief Get the decryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t decryption_direction() const override {
+        return direction_t::forward;
+    }
 
     /**
      * @brief Retrieve the next block for processing.
      * @param bptr The pointer to the start of the block
      * @param bend The pointer past the end of all data
+     * @param eof  Flag to indicate that there is no more data
      * @return The block to be processed.
      * @details
      * A data block is assembled from the input data pointers and is to be of a
@@ -497,7 +507,8 @@ public:
      * Default implementation copies the @c block_size amount of bytes from
      * @c bptr to the data block to be returned.
      */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* end) override;
+    virtual data_t next(const uint8_t* bptr, const uint8_t* bend,
+                        bool eof) override;
 
     /**
      * @brief Prelude a block for encryption.
@@ -560,40 +571,39 @@ private:
 class MUDLIB_CRYPTO_API ctr: public basic_mode
 {
 public:
-    /** The name of the mode */
-    static constexpr std::string_view name = "CTR";
-
-    /** The direction for encryption and decryption. */
-    static constexpr direction_t encryption_direction = direction_t::forward;
-    static constexpr direction_t decryption_direction = direction_t::forward;
-
     /**
-     * @brief CTR mode needs additional parameters.
-     */
-    ctr(size_t, const key_t& k) = delete;
-
-    /**
-     * @brief CTR modes do not use an initialisation vector.
-     */
-    ctr(size_t, const key_t&, const iv_t&) = delete;
-
-    /**
-     * @brief CTR modes.
+     * @brief Create a CTR mode.
      * @param block_size The block size.
-     * @param key The key.
-     * @param counter The initial counter
+     * @param keying The keying material.
      */
-    ctr(size_t block_size, const key_t&, const counter_t& counter);
-
-    /**
-     * @brief CTR modes do not use a nonce and counter.
-     */
-    ctr(size_t, const key_t&, const nonce_t&, const counter_t&) = delete;
+    ctr(size_t block_size, const material_t& keying);
 
     /**
      * @brief Return the mode specifications.
      */
-    constexpr std::string_view specs() const override { return name; }
+    constexpr std::string_view specs() const override { return "CTR"; }
+
+    /**
+     * @brief Get the encryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t encryption_direction() const override {
+        return direction_t::forward;
+    }
+
+    /**
+     * @brief Get the decryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t decryption_direction() const override {
+        return direction_t::forward;
+    }
 
     /**
      * @brief Prelude a block for encryption.
@@ -646,6 +656,150 @@ private:
 };
 
 /**
+ * @brief Stream buffer to apply block-cipher operations.
+ */
+class MUDLIB_CRYPTO_API block_cipher_streambuf: public std::streambuf
+{
+public:
+    /**
+     * @brief Create a streambuffer using a block-cipher.
+     * @param chain The chained stream buffer.
+     * @param algo The block cipher algorithm.
+     * @param mode The block cipher mode.
+     * @details
+     * Using the @c chain stream-buffer for reading and writing encrypted data,
+     * the @block_cipher_streambuf is a filtering steram buffer applying in-line
+     * encryption adn decryption as specified by the @c algo block cipher
+     * algorithm and @c mode of oepration.
+     */
+    block_cipher_streambuf(std::streambuf* chain,
+            basic_algorithm& algo, basic_mode& mode);
+
+    /**
+     * @brief Destructors
+     * Close and destruct this stream buffer, but not the chained stream buffer.
+     */
+    virtual ~block_cipher_streambuf();
+
+    /**
+     * @brief Explicitely close the stream buffer.
+     * @details
+     * When the stream buffer is closed it shall no longer be usable. For an
+     * output stream, this will mark the end of the encrypted data stream and
+     * any remaining data shall be padded (optional) and synchronised with the
+     * chained stream buffer.
+     */
+    void close();
+
+protected:
+    /**
+     * @brief Reading characters from the associated input sequence while
+     * decrypting.
+     * @return The value pointed to by the @c gptr or @c traits::eof() if no
+     * more data is available.
+     */
+    int underflow() override;
+
+    /**
+     * @brief Writing characters to the associated input sequence while
+     * encrypting.
+     * @param ch The character to store.
+     * @return The value @c ch or @c traits::eof() on error.
+     */
+    int overflow(int c) override;
+
+    /**
+     * @brief Synchronise the buffer with the character sequence.
+     * @return @c 0 upon success, or @c -1 on failure.
+     */
+    int sync() override;
+
+private:
+    /** The next stream buffer */
+    std::streambuf* _chain;
+
+    /** The cipher algorithm */
+    basic_algorithm& _algorithm;
+
+    /** The blockcipher mode */
+    basic_mode& _mode;
+
+    /** The buffer size (excluding put-back area) */
+    const size_t _bufsize;
+
+    /** The putback size */
+    const size_t _putbacksize;
+
+    /** The buffer */
+    char* _buffer;
+
+    /** Flag to indicate that the stream has reached the end */
+    bool _eof;
+};
+
+/**
+ * @brief An interface for a block cipher mode.
+ * @details
+ * The functions for a block cipher.
+ */
+class MUDLIB_CRYPTO_API basic_block_cipher
+{
+public:
+    /**
+     * @brief Destructor.
+     */
+    virtual ~basic_block_cipher() = default;
+
+    /**
+     * @brief Return the block cipher specifications.
+     */
+    virtual std::string specs() const = 0;
+
+    /**
+     * @brief Encrypt plain text into cipher text.
+     * @param in The input block (ie plain text).
+     * @param out The output block (ie cipher text).
+     * @param key The algorithm key.
+     */
+    virtual void encrypt(const data_t& plain, data_t& cipher) = 0;
+
+    /**
+     * @brief Decrypt cipher text into plain text.
+     * @param in The input block (ie cipher text).
+     * @param out The output block (ie plain text).
+     * @param key The algorithm key.
+     */
+    virtual void decrypt(const data_t& cipher, data_t& plain) = 0;
+
+    /**
+     * @brief Create and return a filtering stream buffer for block cipher
+     * cryptography.
+     * @param chain The chained stream buffer.
+     * @details
+     * The stream buffer can be used in conjunction with any @c std::istream
+     * to decrypt of @c std::ostream to encrypt data while performing the
+     * streaming operators. The @c chain stream buffer is used to access the
+     * encrypted data.
+     *
+     * If the stream buffer has already been created, then a pointer to that
+     * stream-buffer will be returned.
+     *
+     * @note: on an @c std::ostream deleting the @c block_cipher will mark the
+     * end of the encryption and the final data might be subject to padding.
+     *
+     * @note: on a @c std::istream, reading the end-of-file marks the end of the
+     * decryption and the final data may be subject to unpadding.
+     */
+    virtual block_cipher_streambuf* sbuf(std::streambuf* chain) = 0;
+
+    /**
+     * @brief Return the associated stream buffer.
+     * @return A pointer to the previously created stream-buffer or @c nullptr.
+     */
+    virtual block_cipher_streambuf* sbuf() const = 0;
+};
+
+/**
  * @brief A block-cipher is a cryptographic algorithm that operates on a fixed
  * length of bits.
  * @tparam Algorithm The block cipher algorithm type.
@@ -659,9 +813,16 @@ private:
  * protocol can be built. The operating mode defines how the output of one
  * block can be fed into the system to enhance the security of the overall
  * cryptographic protocol.
+ *
+ * Encyrption and decryption of data using @c block_cipher can be accomplished
+ * in two manners:
+ *  - Using @c encrypt and @c decrypt on pre-determined plain and cipher texts
+ *  - Using the @c sbuf stream buffer in association with an @c std::istream
+ *    (for decryption) and @c std::ostream (for encryption) on plain and cipher
+ *    texts as they are streamed.
  */
 template<typename Algorithm, typename Mode>
-class block_cipher
+class block_cipher : public basic_block_cipher
 {
 public:
     /** The type of block cipher algorithm */
@@ -670,120 +831,89 @@ public:
     /** The algorithm oeprating mode type */
     typedef Mode mode_t;
 
-    /** The block-size as defined by the @c algorithm_t */
-    inline static constexpr size_t block_size = Algorithm::block_size;
-
-    /** The key-size as defined by the @c algorithm_t */
-    inline static constexpr size_t key_size = Algorithm::key_size;
-
-    /** The name of the @c algorithm_t */
-    inline static constexpr std::string_view algorithm_name = Algorithm::name;
-
-    /** The name of the @c mode_t */
-    inline static constexpr std::string_view mode_name = Mode::name;
-
     /**
      * @brief Create a block cipher.
-     * @param key The key to use.
-     * @details
-     * Create a block cipher whose operating mode does not require additional
-     * parameters.
+     * @param keying The keying material.
      */
-    block_cipher(const key_t& key);
+    block_cipher(const material_t& keying);
 
     /**
-     * @brief Create a block cipher.
-     * @param key The key to use.
-     * @param iv The initialisation vector.
-     * @details
-     * Create a block cipher whose operating mode requires an initialisation
-     * vector.
+     * @brief Destruct a block cipher.
      */
-    block_cipher(const key_t& k, const iv_t& iv);
-
-    /**
-     * @brief Create a block cipher.
-     * @param counter The initial counter
-     * @details
-     * Create a block cipher whose operating mode requires a initial counter.
-     */
-    block_cipher(const key_t& k, const counter_t& counter);
-
-    /**
-     * @brief Create a block cipher.
-     * @param key The key to use.
-     * @param nonce The nonce.
-     * @param counter The counter.
-     * @details
-     * Create a block cipher whose operating mode requires a nonce and a
-     * counter.
-     */
-    block_cipher(const key_t& key, const nonce_t& nonce,
-                 const counter_t& counter);
+    virtual ~block_cipher();
 
     /**
      * @brief Return the block cipher specifications.
      */
-    std::string specs() const;
+    std::string specs() const override;
 
     /**
-     * @brief Encrypt plain text into cipher text using a key.
+     * @brief Encrypt plain text into cipher text.
      * @param in The input block (ie plain text).
      * @param out The output block (ie cipher text).
      * @param key The algorithm key.
      */
-    void encrypt(const data_t& plain, data_t& cipher);
+    void encrypt(const data_t& plain, data_t& cipher) override;
 
     /**
-     * @brief Decrypt cipher text into plain text using a key.
+     * @brief Decrypt cipher text into plain text.
      * @param in The input block (ie cipher text).
      * @param out The output block (ie plain text).
      * @param key The algorithm key.
      */
-    void decrypt(const data_t& cipher, data_t& plain);
+    void decrypt(const data_t& cipher, data_t& plain) override;
 
     /**
-     * @brief Set the padding type.
-     * @param type The padding type to apply.
+     * @brief Create and return a filtering stream buffer for block cipher
+     * cryptography.
+     * @param chain The chained stream buffer.
      * @details
-     * Overrides the default padding type of the underlying mode.
+     * The stream buffer can be used in conjunction with any @c std::istream
+     * to decrypt of @c std::ostream to encrypt data while performing the
+     * streaming operators. The @c chain stream buffer is used to access the
+     * encrypted data.
+     *
+     * If the stream buffer has already been created, then a pointer to that
+     * stream-buffer will be returned.
+     *
+     * @note: on an @c std::ostream deleting the @c block_cipher will mark the
+     * end of the encryption and the final data might be subject to padding.
+     *
+     * @note: on a @c std::istream, reading the end-of-file marks the end of the
+     * decryption and the final data may be subject to unpadding.
      */
-    void padding(basic_padding::type_t type) { _mode.padding(type); }
+    block_cipher_streambuf* sbuf(std::streambuf* chain) override;
 
     /**
-     * @brief Return the padding type.
+     * @brief Return the associated stream buffer.
+     * @return A pointer to the previously created stream-buffer or @c nullptr.
      */
-    basic_padding::type_t padding() const { return _mode.padding(); }
+    block_cipher_streambuf* sbuf() const override { return _sbuf; }
 
 private:
+    /** The cipher algorithm */
     algorithm_t _algorithm;
+
+    /** The blockcipher mode */
     mode_t _mode;
+
+    /** The stream buffer */
+    block_cipher_streambuf* _sbuf = nullptr;
+
+    /** Friend classes */
+    friend class block_cipher_streambuf;
 };
 
 template<typename Algorithm, typename Mode>
-block_cipher<Algorithm, Mode>::block_cipher(const key_t& key)
-    : _mode(block_size, key)
+block_cipher<Algorithm, Mode>::block_cipher(const material_t& keying)
+    : _mode(_algorithm.block_size(), keying)
 {
 }
 
 template<typename Algorithm, typename Mode>
-block_cipher<Algorithm, Mode>::block_cipher(const key_t& key, const iv_t& iv)
-    : _mode(block_size, key, iv)
+block_cipher<Algorithm, Mode>::~block_cipher()
 {
-}
-
-template<typename Algorithm, typename Mode>
-block_cipher<Algorithm, Mode>::block_cipher(const key_t& key,
-        const counter_t& counter)
-    : _mode(block_size, key, counter)
-{
-}
-
-template<typename Algorithm, typename Mode>
-block_cipher<Algorithm, Mode>::block_cipher(const key_t& key,
-        const nonce_t& nonce, const counter_t& counter)
-    : _mode(block_size, key, nonce, counter)
-{
+    delete _sbuf;
 }
 
 template<typename Algorithm, typename Mode>
@@ -794,8 +924,12 @@ block_cipher<Algorithm, Mode>::encrypt(const data_t& plain, data_t& cipher)
     auto* bptr = plain.data();
     auto* bend = plain.data() + plain.size();
     while (true) {
+        /* Determine if we have reached the end. The final block might be
+         * smaller than the block size or zero. */
+        bool eof = (bptr > bend) || (bend - bptr) < _algorithm.block_size();
+
         /* Prelude the next block for encryption */
-        auto input = _mode.next(bptr, bend);
+        auto input = _mode.next(bptr, bend, eof);
         input = _mode.prelude_encrypt(input);
         if (input.size() == 0) {
             break;
@@ -803,29 +937,33 @@ block_cipher<Algorithm, Mode>::encrypt(const data_t& plain, data_t& cipher)
 
         /* Perform the encryption */
         data_t output;
-        if (_mode.encryption_direction == basic_mode::direction_t::forward) {
-            _algorithm.encrypt(input, output, _mode.key());
+        if (_mode.encryption_direction() == basic_mode::direction_t::forward) {
+            _algorithm.encrypt(input, output, _mode.keying().key());
         }
         else {
-            _algorithm.decrypt(input, output, _mode.key());
+            _algorithm.decrypt(input, output, _mode.keying().key());
         }
 
         /* Postlude the result */
         output = _mode.postlude_encrypt(output);
         cipher.append(output);
-        bptr += block_size;
+        bptr += _algorithm.block_size();
     }
 }
 
 template<typename Algorithm, typename Mode>
 void
-block_cipher<Algorithm, Mode>::decrypt(const data_t& plain, data_t& cipher)
+block_cipher<Algorithm, Mode>::decrypt(const data_t& cipher, data_t& plain)
 {
-    auto* bptr = plain.data();
-    auto* bend = plain.data() + plain.size();
+    auto* bptr = cipher.data();
+    auto* bend = cipher.data() + cipher.size();
     while (true) {
+        /* Determine if we have reached the end. The final block might be a
+         * full sized block containing padding. */
+        bool eof = (bptr >= bend) || (bend - bptr) <= _algorithm.block_size();
+
         /* Prelude the next block for decryption */
-        auto input = _mode.next(bptr, bend);
+        auto input = _mode.next(bptr, bend, eof);
         input = _mode.prelude_decrypt(input);
         if (input.size() == 0) {
             break;
@@ -833,17 +971,17 @@ block_cipher<Algorithm, Mode>::decrypt(const data_t& plain, data_t& cipher)
 
         /* Perform the decryption */
         data_t output;
-        if (_mode.decryption_direction == basic_mode::direction_t::forward) {
-            _algorithm.encrypt(input, output, _mode.key());
+        if (_mode.decryption_direction() == basic_mode::direction_t::forward) {
+            _algorithm.encrypt(input, output, _mode.keying().key());
         }
         else {
-            _algorithm.decrypt(input, output, _mode.key());
+            _algorithm.decrypt(input, output, _mode.keying().key());
         }
 
         /* Postlude the result */
         output = _mode.postlude_decrypt(output);
-        cipher.append(output);
-        bptr += block_size;
+        plain.append(output);
+        bptr += _algorithm.block_size();
     }
 }
 
@@ -852,9 +990,29 @@ std::string
 block_cipher<Algorithm, Mode>::specs() const
 {
     std::stringstream sstr;
-    sstr << _algorithm.specs() << '-' << key_size << '-' << _mode.specs();
+    sstr << _algorithm.specs() << '-'
+         << _algorithm.key_size() << '-'
+         << _mode.specs();
     return sstr.str();
 }
+
+template<typename Algorithm, typename Mode>
+block_cipher_streambuf*
+block_cipher<Algorithm, Mode>::sbuf(std::streambuf* chain)
+{
+    if (_sbuf == nullptr) {
+        _sbuf = new block_cipher_streambuf(chain, _algorithm, _mode);
+    }
+    return _sbuf;
+}
+
+/**
+ * @brief Factory for block-ciphers, idnexed by cipher specification.
+ */
+typedef ::mud::core::factory<std::string,
+                             mud::crypto::basic_block_cipher,
+                             mud::crypto::material_t>
+        block_cipher_factory;
 
 END_MUDLIB_CRYPTO_NS
 

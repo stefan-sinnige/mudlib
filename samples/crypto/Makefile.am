@@ -24,8 +24,18 @@
 # ++ end-license-description ++
 #
 
-# Define the subfolders and the order in which they are to be built.
-SUBDIRS = crypto io protocols xml
+bin_PROGRAMS = crypto
+
+crypto_SOURCES = \
+    main.cpp
+
+crypto_CPPFLAGS = \
+    -I$(srcdir)/../../core/include \
+    -I$(srcdir)/../../crypto/include
+
+crypto_LDADD = \
+    $(srcdir)/../../crypto/libmudcrypto.la \
+    $(srcdir)/../../core/libmudcore.la
 
 # vi: set ts=4 noexpandtab:
 

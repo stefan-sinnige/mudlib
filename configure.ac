@@ -93,6 +93,7 @@ AC_CONFIG_FILES([
     protocols/tls/Makefile protocols/tls/test/Makefile
     samples/Makefile
     samples/core/log/Makefile
+    samples/crypto/Makefile
     samples/io/Makefile
     samples/io/tcp/Makefile
     samples/io/tcp/client/Makefile

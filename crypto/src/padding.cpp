@@ -35,7 +35,7 @@ BEGIN_MUDLIB_CRYPTO_NS
  * None padding
  * ========================================================================== */
 
-padding_factory::registrar<basic_padding::type_t::none,
+padding_factory::registrar<padding_t::none,
                            none_padding> _none_registrar;
 
 /* ==========================================================================
@@ -43,7 +43,7 @@ padding_factory::registrar<basic_padding::type_t::none,
  * ========================================================================== */
 
 pkcs7_padding::pkcs7_padding(size_t block_size)
-    : basic_padding(basic_padding::type_t::pkcs7, block_size)
+    : basic_padding(padding_t::pkcs7, block_size)
 {
 }
 
@@ -96,7 +96,7 @@ pkcs7_padding::unpad(const data_t& data) const
     return data_t(data.data(), data.size() - pad_size);
 }
 
-padding_factory::registrar<basic_padding::type_t::pkcs7,
+padding_factory::registrar<padding_t::pkcs7,
                            pkcs7_padding> _pkcs7_registrar;
 
 END_MUDLIB_CRYPTO_NS

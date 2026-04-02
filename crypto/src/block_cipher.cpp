@@ -26,6 +26,7 @@
 
 #include "mud/crypto/block_cipher.h"
 #include "mud/crypto/exception.h"
+#include <cstring>
 
 #include <iostream>
 
@@ -36,7 +37,7 @@ BEGIN_MUDLIB_CRYPTO_NS
  * ========================================================================== */
 
 data_t
-basic_mode::next(const uint8_t* bptr, const uint8_t* bend)
+basic_mode::next(const uint8_t* bptr, const uint8_t* bend, bool eof)
 {
     if (bend > bptr) {
         if (bend - bptr >= block_size()) {
@@ -71,18 +72,6 @@ basic_mode::postlude_decrypt(const data_t& output)
     return output;
 }
 
-void
-basic_mode::padding(basic_padding::type_t type)
-{
-    _padder = padding_factory::instance().create(type, _block_size);
-}
-
-basic_padding::type_t
-basic_mode::padding() const
-{
-    return _padder->type();
-}
-
 /* ==========================================================================
  * ECB mode
  *
@@ -112,36 +101,30 @@ basic_mode::padding() const
  *
  * ========================================================================== */
 
-ecb::ecb(size_t block_size, const key_t& key)
-    : basic_mode(block_size, key)
-    , _final(false)
-    , _eos(false)
+ecb::ecb(size_t block_size, const material_t& keying)
+    : basic_mode(block_size, keying)
+    , _pad(0)
 {
-    padding(basic_padding::type_t::pkcs7);
 }
 
 data_t
-ecb::next(const uint8_t* bptr, const uint8_t* bend)
+ecb::next(const uint8_t* bptr, const uint8_t* bend, bool eof)
 {
-    if (bptr > bend) {
-        _eos = true;
-        return data_t(0);
+    if (eof) {
+        ++_pad;
     }
-    if (bend - bptr <= block_size()) {
-        _final = true;
-    }
-    return basic_mode::next(bptr, bend);
+    return basic_mode::next(bptr, bend, eof);
 }
 
 data_t
 ecb::prelude_encrypt(const data_t& input)
 {
-    if (_eos) {
-        return data_t(0);
-    }
     if (input.size() < block_size()) {
-        if (_final) {
+        if (_pad == 1) {
             return padder().pad(input);
+        }
+        else {
+            return data_t(0);
         }
     }
     return input;
@@ -162,8 +145,9 @@ ecb::prelude_decrypt(const data_t& input)
 data_t
 ecb::postlude_decrypt(const data_t& output)
 {
-    if (_final) {
-        return padder().unpad(output);
+    if (_pad) {
+        data_t tmp = padder().unpad(output);
+        return tmp;
     }
     return output;
 }
@@ -203,41 +187,35 @@ ecb::postlude_decrypt(const data_t& output)
  *
  * ========================================================================== */
 
-cbc::cbc(size_t block_size, const key_t& key, const iv_t& iv)
-    : basic_mode(block_size, key)
-    , _iv(iv)
+cbc::cbc(size_t block_size, const material_t& keying)
+    : basic_mode(block_size, keying)
+    , _iv(keying.iv())
     , _previous(_iv)
-    , _final(false)
-    , _eos(false)
+    , _pad(0)
 {
-    padding(basic_padding::type_t::pkcs7);
+    if (_iv.size() != block_size) {
+        throw size_error("CBC initial vector not equal to block-size");
+    }
 }
 
 data_t
-cbc::next(const uint8_t* bptr, const uint8_t* bend)
+cbc::next(const uint8_t* bptr, const uint8_t* bend, bool eof)
 {
-    if (_iv.size() != block_size()) {
-        throw size_error("CBC initial vector not equal to block-size");
+    if (eof) {
+        ++_pad;
     }
-    if (bptr > bend) {
-        _eos = true;
-        return data_t(0);
-    }
-    if (bend - bptr <= block_size()) {
-        _final = true;
-    }
-    return basic_mode::next(bptr, bend);
+    return basic_mode::next(bptr, bend, eof);
 }
 
 data_t
 cbc::prelude_encrypt(const data_t& input)
 {
-    if (_eos) {
-        return data_t(0);
-    }
     if (input.size() < block_size()) {
-        if (_final) {
+        if (_pad == 1) {
             return data_t(padder().pad(input)) ^ _previous;
+        }
+        else {
+            return data_t(0);
         }
     }
     return input ^ _previous;
@@ -261,7 +239,7 @@ data_t
 cbc::postlude_decrypt(const data_t& output)
 {
     auto result = output ^ _previous;
-    if (_final) {
+    if (_pad) {
         return padder().unpad(result);
     }
     _previous = _tmp;
@@ -307,21 +285,20 @@ cbc::postlude_decrypt(const data_t& output)
  * CFB mode does not need padding.
  * ========================================================================== */
 
-cfb::cfb(size_t block_size, const key_t& key, const iv_t& iv)
-    : basic_mode(block_size, key)
-    , _iv(iv)
+cfb::cfb(size_t block_size, const material_t& keying)
+    : basic_mode(block_size, keying)
+    , _iv(keying.iv())
     , _previous(_iv)
 {
-    padding(basic_padding::type_t::none);
+    if (_iv.size() != block_size) {
+        throw size_error("CFB initial vector not equal to block-size");
+    }
 }
 
 data_t
-cfb::next(const uint8_t* bptr, const uint8_t* bend)
+cfb::next(const uint8_t* bptr, const uint8_t* bend, bool eof)
 {
-    if (_iv.size() != block_size()) {
-        throw size_error("CFB initial vector not equal to block-size");
-    }
-    return basic_mode::next(bptr, bend);
+    return basic_mode::next(bptr, bend, eof);
 }
 
 data_t
@@ -395,11 +372,13 @@ cfb::postlude_decrypt(const data_t& output)
  * CTR mode does not need padding.
  * ========================================================================== */
 
-ctr::ctr(size_t block_size, const key_t& key, const counter_t& counter)
-    : basic_mode(block_size, key)
-    , _counter(counter)
+ctr::ctr(size_t block_size, const material_t& keying)
+    : basic_mode(block_size, keying)
+    , _counter(keying.counter())
 {
-    padding(basic_padding::type_t::none);
+    if (_counter.size() != block_size) {
+        throw size_error("CTR counter size not equal to block-size");
+    }
 }
 
 data_t
@@ -436,6 +415,168 @@ ctr::postlude_decrypt(const data_t& output)
     return _text ^ output;
 }
 
+
+/* ==========================================================================
+ * The block cipher stream buffer.
+ * ========================================================================== */
+
+block_cipher_streambuf::block_cipher_streambuf(
+        std::streambuf* chain,
+        basic_algorithm& algo, basic_mode& mode)
+    : _chain(chain)
+    , _algorithm(algo)
+    , _mode(mode)
+    , _bufsize(mode.block_size())
+    , _putbacksize(4)
+    , _eof(false)
+{
+    /* Allocate the data structure */
+    _buffer = new char[_bufsize + _putbacksize];
+
+    /* Set the get area pointers for reading */
+    setg(_buffer + _putbacksize, _buffer + _putbacksize,
+         _buffer + _putbacksize);
+
+    /* Set the put area pointers for writing */
+    setp(_buffer, _buffer + (_bufsize - 1));
+}
+
+block_cipher_streambuf::~block_cipher_streambuf()
+{
+    close();
+    delete[] _buffer;
+}
+
+void
+block_cipher_streambuf::close()
+{
+    _eof = true;
+    sync();
+}
+
+int
+block_cipher_streambuf::underflow()
+{
+    /* Is there still data ready in the buffer. */
+    if (gptr() < egptr()) {
+        return traits_type::to_int_type(*gptr());
+    }
+
+    /* Read new block using the buffer itself as temporary storage */
+    int nread = 0;
+    while (nread < _mode.block_size()) {
+        int nr = _chain->sgetn(_buffer + _putbacksize + nread,
+                               _mode.block_size() - nread);
+        if (nr <= 0) {
+            break;
+        }
+        nread += nr;
+    }
+    if (nread <= 0) {
+        return traits_type::eof();
+    }
+
+    /* Check if there is more deta */
+    _eof = _chain->sgetc() == traits_type::eof();
+
+    /* Decrypt the block */
+    data_t output;
+    auto input = _mode.next((const uint8_t*)_buffer + _putbacksize,
+                            (const uint8_t*)_buffer + _putbacksize + nread,
+                            _eof);
+    input = _mode.prelude_decrypt(input);
+    if (input.size() == 0) {
+        return traits_type::eof();
+    }
+    if (_mode.decryption_direction() == basic_mode::direction_t::forward) {
+        _algorithm.encrypt(input, output, _mode.keying().key());
+    }
+    else {
+        _algorithm.decrypt(input, output, _mode.keying().key());
+    }
+    output = _mode.postlude_decrypt(output);
+
+    /* Move the decrypted block to the stream buffer */
+    memcpy(_buffer + _putbacksize, output.data(), output.size());
+
+    /* Reset the get buffer pointers with the number of characters read. */
+    setg(_buffer + _putbacksize, _buffer + _putbacksize,
+         _buffer + _putbacksize + output.size());
+
+    /* Check if there is no more data (a full block of padding was unpad) */
+    if (gptr() == egptr()) {
+        return traits_type::eof();
+    }
+    return traits_type::to_int_type(*gptr());
+}
+
+int
+block_cipher_streambuf::overflow(int c)
+{
+    /* Insert the character into the buffer */
+    if (c != traits_type::eof()) {
+        *pptr() = c;
+        pbump(1);
+    }
+
+    /* Encrypt the block */
+    if (sync() != 0) {
+        return traits_type::eof();
+    }
+    return c;
+}
+
+int
+block_cipher_streambuf::sync()
+{
+    /* Encrypt the block */
+    data_t output;
+    auto input = _mode.next((const uint8_t*)pbase(), 
+                            (const uint8_t*)pptr(),
+                            _eof);
+    input = _mode.prelude_encrypt(input);
+    if (input.size() == 0) {
+        return -1;
+    }
+    if (_mode.encryption_direction() == basic_mode::direction_t::forward) {
+        _algorithm.encrypt(input, output, _mode.keying().key());
+    }
+    else {
+        _algorithm.decrypt(input, output, _mode.keying().key());
+    }
+    output = _mode.postlude_encrypt(output);
+
+    /* Write the block */
+    int nwritten = 0;
+    while (nwritten < output.size()) {
+        int nr = _chain->sputn((const char*)output.data() + nwritten,
+                               output.size() - nwritten);
+        if (nr <= 0) {
+            break;
+        }
+        nwritten += nr;
+    }
+    if (nwritten <= 0) {
+        return -1;
+    }
+
+    /* Reset the put area pointers for writing */
+    setp(_buffer, _buffer + (_bufsize - 1));
+    return 0;
+}
+
 END_MUDLIB_CRYPTO_NS
+
+/* ==========================================================================
+ * Block cipher Factory
+ * ========================================================================== */
+
+template<>
+mud::crypto::block_cipher_factory&
+mud::crypto::block_cipher_factory::instance()
+{
+    static mud::crypto::block_cipher_factory _instance;
+    return _instance;
+}
 
 /* vi: set ai ts=4 expandtab: */

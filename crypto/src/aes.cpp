@@ -27,6 +27,8 @@
 #include "mud/core/endian.h"
 #include "mud/core/log.h"
 #include "mud/crypto/aes.h"
+#include "mud/crypto/exception.h"
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 
@@ -376,6 +378,9 @@ basic_aes::decrypt(const data_t& input, data_t& output, const key_t& key)
 std::vector<uint32_t>
 basic_aes::key_expansion(const key_t& key)
 {
+    if (key.size()*8 != _key_size) {
+        throw size_error("size of key is not equal to AES key-size");
+    }
     std::vector<uint32_t> w(4*(_Nr+1));
     uint8_t i = 0;
     while (i <= _Nk - 1) {
@@ -693,6 +698,36 @@ basic_aes::gfmul(uint8_t x, uint8_t y)
 }
 
 #endif /* MUL_TABLES */
+
+/* Block-cipher factory registrations */
+
+block_cipher_factory::registrar<AES_128_ECB>
+        _aes_128_ecb_registrar("AES-128-ECB");
+block_cipher_factory::registrar<AES_192_ECB>
+        _aes_192_ecb_registrar("AES-192-ECB");
+block_cipher_factory::registrar<AES_256_ECB>
+        _aes_256_ecb_registrar("AES-256-ECB");
+
+block_cipher_factory::registrar<AES_128_CBC>
+        _aes_128_cbc_registrar("AES-128-CBC");
+block_cipher_factory::registrar<AES_192_CBC>
+        _aes_192_cbc_registrar("AES-192-CBC");
+block_cipher_factory::registrar<AES_256_CBC>
+        _aes_256_cbc_registrar("AES-256-CBC");
+
+block_cipher_factory::registrar<AES_128_CFB>
+        _aes_128_cfb_registrar("AES-128-CFB");
+block_cipher_factory::registrar<AES_192_CFB>
+        _aes_192_cfb_registrar("AES-192-CFB");
+block_cipher_factory::registrar<AES_256_CFB>
+        _aes_256_cfb_registrar("AES-256-CFB");
+
+block_cipher_factory::registrar<AES_128_CTR>
+        _aes_128_ctr_registrar("AES-128-CTR");
+block_cipher_factory::registrar<AES_192_CTR>
+        _aes_192_ctr_registrar("AES-192-CTR");
+block_cipher_factory::registrar<AES_256_CTR>
+        _aes_256_ctr_registrar("AES-256-CTR");
 
 END_MUDLIB_CRYPTO_NS
 

@@ -51,15 +51,7 @@ class MUDLIB_CRYPTO_API basic_padding
 {
 public:
     /**
-    * @brief The suported padding types.
-    */
-    enum class type_t {
-        none,
-        pkcs7
-    };
-
-    /**
-     * @brief Destructir
+     * @brief Destructor
      */
     virtual ~basic_padding() = default;
 
@@ -90,20 +82,20 @@ public:
     /**
      * @brief Return the padding type.
      */
-    type_t type() const { return _type; }
+    padding_t type() const { return _type; }
 
 protected:
     /**
      * @brief Constructor defining the padding type.
      * @param type The padding type.
      */
-    basic_padding(type_t type, size_t block_size)
+    basic_padding(padding_t type, size_t block_size)
         : _type(type), _block_size(block_size)
     {}
 
 private:
     /** The padding type */
-    type_t _type;
+    padding_t _type;
 
     /** The block size */
     size_t _block_size;
@@ -124,7 +116,7 @@ public:
      * @brief Construct the no-padding algorithm.
      */
     none_padding(size_t block_size = 0)
-        : basic_padding(basic_padding::type_t::none, block_size)
+        : basic_padding(padding_t::none, block_size)
     {}
 
     /**
@@ -210,7 +202,7 @@ public:
 /**
  * @brief The factory of padding algorithms.
  */
-typedef ::mud::core::factory<mud::crypto::basic_padding::type_t,
+typedef ::mud::core::factory<mud::crypto::padding_t,
                              mud::crypto::basic_padding,
                              size_t>
         padding_factory;

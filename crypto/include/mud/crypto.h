@@ -29,6 +29,7 @@
 
 #include <mud/crypto/aes.h>
 #include <mud/crypto/block_cipher.h>
+#include <mud/crypto/exception.h>
 #include <mud/crypto/padding.h>
 #include <mud/crypto/types.h>
 

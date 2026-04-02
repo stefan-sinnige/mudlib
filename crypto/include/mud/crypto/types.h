@@ -193,10 +193,22 @@ class MUDLIB_CRYPTO_API key_t : public data_t
 {
 public:
     /**
-     * @brief Inherit all @c block constructors.
+     * @brief Inherit all @c data_t constructors.
      */
     using data_t::data_t;
     using data_t::operator=;
+
+    /**
+     * @brief Copy construct from a @c data_t object.
+     * @param rhs The data to copy from.
+     */
+    key_t(const data_t& rhs): data_t(rhs) {}
+
+    /**
+     * @brief Move construct fro ma @c data_t objectt.
+     * @param rhs The data to move from.
+     */
+    key_t(data_t&& rhs): data_t(rhs) {}
 };
 
 /**
@@ -214,10 +226,22 @@ class MUDLIB_CRYPTO_API iv_t : public data_t
 {
 public:
     /**
-     * @brief Inherit all @c block constructors.
+     * @brief Inherit all @c data_t constructors.
      */
     using data_t::data_t;
     using data_t::operator=;
+
+    /**
+     * @brief Copy construct from a @c data_t object.
+     * @param rhs The data to copy from.
+     */
+    iv_t(const data_t& rhs): data_t(rhs) {}
+
+    /**
+     * @brief Move construct fro ma @c data_t objectt.
+     * @param rhs The data to move from.
+     */
+    iv_t(data_t&& rhs): data_t(rhs) {}
 };
 
 /**
@@ -233,10 +257,22 @@ class MUDLIB_CRYPTO_API nonce_t : public data_t
 {
 public:
     /**
-     * @brief Inherit all @c block constructors.
+     * @brief Inherit all @c data_t constructors.
      */
     using data_t::data_t;
     using data_t::operator=;
+
+    /**
+     * @brief Copy construct from a @c data_t object.
+     * @param rhs The data to copy from.
+     */
+    nonce_t(const data_t& rhs): data_t(rhs) {}
+
+    /**
+     * @brief Move construct fro ma @c data_t objectt.
+     * @param rhs The data to move from.
+     */
+    nonce_t(data_t&& rhs): data_t(rhs) {}
 };
 
 /**
@@ -252,10 +288,22 @@ class MUDLIB_CRYPTO_API counter_t : public data_t
 {
 public:
     /**
-     * @brief Inherit all @c block constructors.
+     * @brief Inherit all @c data_t constructors.
      */
     using data_t::data_t;
     using data_t::operator=;
+
+    /**
+     * @brief Copy construct from a @c data_t object.
+     * @param rhs The data to copy from.
+     */
+    counter_t(const data_t& rhs): data_t(rhs) {}
+
+    /**
+     * @brief Move construct fro ma @c data_t objectt.
+     * @param rhs The data to move from.
+     */
+    counter_t(data_t&& rhs): data_t(rhs) {}
 
     /**
      * @brief Constructing a counter of a certain size.
@@ -269,6 +317,170 @@ public:
      * @return reference to this object after the increment has been applied.
      */
     counter_t& operator++();
+};
+
+/**
+ * @brief The type of padding.
+ */
+enum class padding_t {
+    none,
+    pkcs7
+};
+
+/**
+ * @brief Keying material container.
+ * @details
+ * The keying material is a combination of various types that the underlying
+ * cipher operations require. If a cipher operation requires certain keying
+ * material that is not supplied or is incorrect, an exception shall be raised.
+ */
+class MUDLIB_CRYPTO_API material_t
+{
+public:
+    /**
+     * @brief Create no keying material.
+     */
+    material_t() = default;
+
+    /**
+     * @brief Create a keying material combination.
+     * @param key The key.
+     */
+    material_t(const key_t& key)
+        : _key(key)
+    {}
+
+    /**
+     * @brief Create a keying material combination.
+     * @param key The key.
+     * @param iv The initialisation vector.
+     */
+    material_t(const key_t& key, const iv_t& iv)
+        : _key(key)
+        , _iv(iv)
+    {}
+
+    /**
+     * @brief Create a keying material combination.
+     * @param key The key.
+     * @param counter The initial counter.
+     */
+    material_t(const key_t& key, const counter_t& counter)
+        : _key(key)
+        , _counter(counter)
+    {}
+
+    /**
+     * @brief Create a keying material combination.
+     * @param key The key.
+     * @param nonce The nonce.
+     * @param counter The initial counter.
+     */
+    material_t(const key_t& key, const nonce_t& nonce, const counter_t& counter)
+        : _key(key)
+        , _nonce(nonce)
+        , _counter(counter)
+    {}
+
+    /**
+     * @brief Copy constructor.
+     * @param rhs The material to copy from.
+     */
+    material_t(const material_t& rhs) = default;
+
+    /**
+     * @brief Move constructor.
+     * @param rhs The material to move from.
+     */
+    material_t(material_t&& rhs) = default;
+
+    /**
+     * @brief Copy assignment.
+     * @param rhs The material to copy from.
+     */
+    material_t& operator=(const material_t& rhs) = default;
+
+    /**
+     * @brief Move assignment.
+     * @param rhs The material to move from.
+     */
+    material_t& operator=(material_t&& rhs) = default;
+
+    /**
+     * @brief Destructor.
+     */
+    ~material_t() = default;
+
+    /**
+     * @brief Set the key.
+     * @param value The key value.
+     */
+    void key(const data_t& value) {  _key = value; }
+
+    /**
+     * @brief Return the key.
+     */
+    const key_t& key() const { return _key; }
+
+    /**
+     * @brief Set the initial vector.
+     * @param value The initial vector value.
+     */
+    void iv(const data_t& value) {  _iv = value; }
+
+    /**
+     * @brief Return the initial vector.
+     */
+    const iv_t& iv() const { return _iv; }
+
+    /**
+     * @brief Set the nonce.
+     * @param value The nonce value.
+     */
+    void nonce(const data_t& value) {  _nonce = value; }
+
+    /**
+     * @brief Return the nonce.
+     */
+    const nonce_t& nonce() const { return _nonce; }
+
+    /**
+     * @brief Set the counter.
+     * @param value The counter value.
+     */
+    void counter(const data_t& value) {  _counter = value; }
+
+    /**
+     * @brief Return the counter.
+     */
+    const counter_t& counter() const { return _counter; }
+
+    /**
+     * @brief Set the padding type.
+     * @param value The padding type.
+     */
+    void padding(padding_t value) {  _padding = value; }
+
+    /**
+     * @brief Return the padding type.
+     */
+    padding_t padding() const { return _padding; }
+
+private:
+    /** The key */
+    key_t _key;
+
+    /** The initialisation vector */
+    iv_t _iv;
+
+    /** The nonce. */
+    nonce_t _nonce;
+
+    /** The counter. */
+    counter_t _counter;
+
+    /** The padding type. */
+    padding_t _padding = padding_t::none;
 };
 
 END_MUDLIB_CRYPTO_NS
