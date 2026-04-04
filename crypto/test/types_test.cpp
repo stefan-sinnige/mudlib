@@ -55,14 +55,19 @@ CONTEXT()
         return sstr.str();
     }
 
-    /* A data object */
-    mud::crypto::data_t text;
+    /* Data objects */
+    mud::crypto::data_t lhs;
+    mud::crypto::data_t rhs;
+    mud::crypto::data_t result;
+
+    /* A position */
+    size_t pos;
 
     /* A counter object */
     mud::crypto::counter_t counter;
 END_CONTEXT()
 
-FEATURE("Basic Types")
+FEATURE("Cryptographic Types")
   END_DEFINES()
 
   /*
@@ -97,6 +102,172 @@ FEATURE("Basic Types")
             ASSERT(true, std::is_move_assignable<
                   mud::crypto::data_t>::value);
         })
+
+  SCENARIO("A data object can be padded to the begin")
+    GIVEN("A data object", [](context& ctx) {
+            ctx.result = ctx.to_data(ctx.sample<std::string>("data"));
+        })
+    WHEN ("Tha object is padded to the begin", [](context& ctx) {
+            size_t sz = ctx.sample<size_t>("size");
+            uint8_t val = ctx.sample<uint8_t>("value");
+            ctx.result.pad_begin(sz, val);
+        })
+    THEN ("The result is the padded", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, size_t, uint8_t, std::string)
+        HEADINGS("data", "size", "value", "result")
+        SAMPLE(            "", 4, 0x00,     "00000000")
+        SAMPLE(        "dead", 4, 0x00,     "0000dead")
+        SAMPLE(        "dead", 4, 0x3b,     "3b3bdead")
+        SAMPLE(    "deadbeef", 4, 0x00,     "deadbeef")
+        SAMPLE("babedeadbeef", 4, 0x00, "babedeadbeef")
+    END_SAMPLES()
+
+  SCENARIO("A data object can be padded to the end")
+    GIVEN("A data object", [](context& ctx) {
+            ctx.result = ctx.to_data(ctx.sample<std::string>("data"));
+        })
+    WHEN ("Tha object is padded to the end", [](context& ctx) {
+            size_t sz = ctx.sample<size_t>("size");
+            uint8_t val = ctx.sample<uint8_t>("value");
+            ctx.result.pad_end(sz, val);
+        })
+    THEN ("The result is the padded", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, size_t, uint8_t, std::string)
+        HEADINGS("data", "size", "value", "result")
+        SAMPLE(            "", 4, 0x00,     "00000000")
+        SAMPLE(        "dead", 4, 0x00,     "dead0000")
+        SAMPLE(        "dead", 4, 0x3b,     "dead3b3b")
+        SAMPLE(    "deadbeef", 4, 0x00,     "deadbeef")
+        SAMPLE("babedeadbeef", 4, 0x00, "babedeadbeef")
+    END_SAMPLES()
+
+  SCENARIO("A data object can be bit-wise OR'd")
+    GIVEN("Two data objects", [](context& ctx) {
+            ctx.lhs = ctx.to_data(ctx.sample<std::string>("lhs"));
+            ctx.rhs = ctx.to_data(ctx.sample<std::string>("rhs"));
+        })
+    WHEN ("The objects are OR'd", [](context& ctx) {
+            ctx.result = ctx.lhs | ctx.rhs;
+        })
+    THEN ("The result is the OR'd result", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("lhs", "rhs", "result")
+        SAMPLE("00000000",     "deadbeef", "deadbeef")
+        SAMPLE("deadbeef",     "00000000", "deadbeef")
+        SAMPLE("dead0000",     "0000beef", "deadbeef")
+        SAMPLE("dead0000", "0000beef1234", "deadbeef")
+    END_SAMPLES()
+
+  SCENARIO("A data object can be bit-wise AND'd")
+    GIVEN("Two data objects", [](context& ctx) {
+            ctx.lhs = ctx.to_data(ctx.sample<std::string>("lhs"));
+            ctx.rhs = ctx.to_data(ctx.sample<std::string>("rhs"));
+        })
+    WHEN ("The objects are AND'd", [](context& ctx) {
+            ctx.result = ctx.lhs & ctx.rhs;
+        })
+    THEN ("The result is the AND'd result", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("lhs", "rhs", "result")
+        SAMPLE("dead0000",     "0000beef", "00000000")
+        SAMPLE("deadbeef",     "babecafe", "9aac8aee")
+        SAMPLE("deadbeef", "babecafe1234", "9aac8aee")
+    END_SAMPLES()
+
+  SCENARIO("A data object can be bit-wise XOR'd")
+    GIVEN("Two data objects", [](context& ctx) {
+            ctx.lhs = ctx.to_data(ctx.sample<std::string>("lhs"));
+            ctx.rhs = ctx.to_data(ctx.sample<std::string>("rhs"));
+        })
+    WHEN ("The objects are XOR'd", [](context& ctx) {
+            ctx.result = ctx.lhs ^ ctx.rhs;
+        })
+    THEN ("The result is the XOR'd result", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, std::string, std::string)
+        HEADINGS("lhs", "rhs", "result")
+        SAMPLE("dead0000",     "0000beef", "deadbeef")
+        SAMPLE("deadbeef",     "babecafe", "64137411")
+        SAMPLE("deadbeef", "babecafe1234", "64137411")
+    END_SAMPLES()
+
+  SCENARIO("A data object can be bit-wise shifted-left")
+    GIVEN("Two data objects", [](context& ctx) {
+            ctx.lhs = ctx.to_data(ctx.sample<std::string>("lhs"));
+            ctx.pos = ctx.sample<size_t>("pos");
+        })
+    WHEN ("The objects are shifted", [](context& ctx) {
+            ctx.result = ctx.lhs << ctx.pos;
+        })
+    THEN ("The result is the shifted", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, size_t, std::string)
+        HEADINGS("lhs", "pos", "result")
+        SAMPLE("deadbeef",  0, "deadbeef")
+        SAMPLE("deadbeef",  1, "bd5b7dde")
+        SAMPLE("deadbeef",  2, "7ab6fbbc")
+        SAMPLE("deadbeef",  3, "f56df778")
+        SAMPLE("deadbeef",  4, "eadbeef0")
+        SAMPLE("deadbeef",  8, "adbeef00")
+        SAMPLE("deadbeef",  9, "5b7dde00")
+        SAMPLE("deadbeef", 10, "b6fbbc00")
+        SAMPLE("deadbeef", 11, "6df77800")
+        SAMPLE("deadbeef", 12, "dbeef000")
+        SAMPLE("deadbeef", 16, "beef0000")
+        SAMPLE("deadbeef", 27, "78000000")
+        SAMPLE("deadbeef", 28, "f0000000")
+        SAMPLE("deadbeef", 31, "80000000")
+        SAMPLE("deadbeef", 32, "00000000")
+        SAMPLE("deadbeef", 64, "00000000")
+    END_SAMPLES()
+
+  SCENARIO("A data object can be bit-wise shifted-right")
+    GIVEN("Two data objects", [](context& ctx) {
+            ctx.lhs = ctx.to_data(ctx.sample<std::string>("lhs"));
+            ctx.pos = ctx.sample<size_t>("pos");
+        })
+    WHEN ("The objects are shifted", [](context& ctx) {
+            ctx.result = ctx.lhs >> ctx.pos;
+        })
+    THEN ("The result is the shifted", [](context& ctx) {
+            ASSERT(ctx.sample<std::string>("result"),
+                   ctx.to_string(ctx.result));
+        })
+    SAMPLES(std::string, size_t, std::string)
+        HEADINGS("lhs", "pos", "result")
+        SAMPLE("deadbeef",  0, "deadbeef")
+        SAMPLE("deadbeef",  1, "6f56df77")
+        SAMPLE("deadbeef",  2, "37ab6fbb")
+        SAMPLE("deadbeef",  3, "1bd5b7dd")
+        SAMPLE("deadbeef",  4, "0deadbee")
+        SAMPLE("deadbeef",  8, "00deadbe")
+        SAMPLE("deadbeef",  9, "006f56df")
+        SAMPLE("deadbeef", 10, "0037ab6f")
+        SAMPLE("deadbeef", 11, "001bd5b7")
+        SAMPLE("deadbeef", 12, "000deadb")
+        SAMPLE("deadbeef", 16, "0000dead")
+        SAMPLE("deadbeef", 27, "0000001b")
+        SAMPLE("deadbeef", 28, "0000000d")
+        SAMPLE("deadbeef", 31, "00000001")
+        SAMPLE("deadbeef", 32, "00000000")
+        SAMPLE("deadbeef", 64, "00000000")
+    END_SAMPLES()
 
   SCENARIO("A counter object can be incremented")
     GIVEN("An counter object initialised with a value", [](context& ctx) {

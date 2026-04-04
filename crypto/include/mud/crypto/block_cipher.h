@@ -64,20 +64,22 @@ public:
     virtual size_t key_size() const = 0;
 
     /**
-     * @brief Encrypt plain text into cipher text using a key.
+     * @brief Forward cipher (typically encrypt) plain text into cipher text
+     * using a key.
      * @param in The input block (ie plain text).
      * @param out The output block (ie cipher text).
      * @param key The algorithm key.
      */
-    virtual void encrypt(const data_t& in, data_t& out, const key_t& key) = 0;
+    virtual void forward(const data_t& in, data_t& out, const key_t& key) = 0;
 
     /**
-     * @brief Decrypt cipher text into plain text using a key.
+     * @brief Inverse cipher (typycailly decrypt) text into plain text using a
+     * key.
      * @param in The input block (ie cipher text).
      * @param out The output block (ie plain text).
      * @param key The algorithm key.
      */
-    virtual void decrypt(const data_t& in, data_t& out, const key_t& key) = 0;
+    virtual void inverse(const data_t& in, data_t& out, const key_t& key) = 0;
 };
 
 /**
@@ -86,6 +88,27 @@ public:
  * The functions for an algortihm block cipher mode. The operating mode defines
  * how keys and block ciphers are used when multiple blocks are required. This
  * would commonly use some form of feedback and initial vectors.
+ *
+ * Most of the modes follow a similar implementation. As the operations occur
+ * on cipher and plain text blocks, algorithm follow
+ * @code
+ *   while data available
+ *       block ← next-block()
+ *       input ← prelude(block)
+ *       output ← algorithm-cipher(input)
+ *       block ← postlude(output)
+ * @endcode
+ * Each interation would retrieve the @em next data block to be processed (plain
+ * or cipher text). This data may need to be processed before any @em cipher
+ * operation, during a @em prelude step. After the @em cipher operation, a
+ * similar action may need to be taken at the @em postlude step. The result is
+ * the processed block (plain or cipher text). It is the specific mode that
+ * defines these particular sub-action. The @em cipher operation is the specific
+ * block cipher algorithm.
+ *
+ * All operations defined are operating on a block of data (plain or cipher
+ * text). The implementation of the mode defines the state between the
+ * subsequent block operations.
  */
 class MUDLIB_CRYPTO_API basic_mode
 {
@@ -94,13 +117,13 @@ public:
      * @brief The cipher to use for encryption and decryption. 
      * @details
      * A forward cipher is usually used for encryption from plain text into
-     * cipher text. A reverse cipher is usually used for decryption of the
-     * cipher text back into plain text. Some modes use the forward cipher
-     * both for encryption and decryption.
+     * cipher text. An inverse cipher is usually used for decryption of the
+     * cipher text back into plain text. Some modes use one cipher type for both
+     * encryption and decryption.
      */
     enum class direction_t {
         forward,
-        reverse
+        inverse
     };
 
     /**
@@ -111,7 +134,7 @@ public:
     /**
      * @brief Get the block size
      */
-    size_t block_size() const { return _block_size; }
+    size_t block_size() const { return _algorithm.block_size(); }
 
     /**
      * @brief Get the encryption direction.
@@ -132,22 +155,81 @@ public:
     virtual direction_t decryption_direction() const = 0;
 
     /**
-     * @brief Retrieve the next block for processing.
-     * @param bptr The pointer to the start of the block
-     * @param bend The pointer past the end of all data
-     * @param eof  Flag to indicate that there is no more data
-     * @return The block to be processed.
-     * @details
-     * A data block is assembled from the input data pointers and is to be of a
-     * specified block-size. The block returned might be empty if there is no
-     * more data available (@c bptr >= @c bend).
-     * Default implementation copies the @c block_size amount of bytes from
-     * @c bptr to the data block to be returned.
+     * @brief Return the keying material.
      */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* bend, bool eof);
+    const material_t& keying() const { return _keying; }
 
     /**
-     * @brief Prelude a block for encryption.
+     * @brief Encrypt plain text block into cipher text.
+     * @param in The input block (ie plain text).
+     * @param out The output block (ie cipher text).
+     * @param final Flag to indicate that this is the final block.
+     */
+    virtual void encrypt(const data_t& plain, data_t& cipher, bool final);
+
+    /**
+     * @brief Decrypt cipher text block into plain text.
+     * @param in The input block (ie cipher text).
+     * @param out The output block (ie plain text).
+     * @param final Flag to indicate that this is the final block.
+     */
+    virtual void decrypt(const data_t& cipher, data_t& plain, bool final);
+
+    /**
+     * @brief Return the authentication tag.
+     * @details
+     * In case of authenticated encryption, return the authentication tag,
+     * otherwise return a zero length buffer. The tag should only be valid after
+     * the final block have been processed.
+     */
+    virtual data_t authentication_tag() const { return data_t(0); }
+
+protected:
+    /**
+     * @brief Create basic mode.
+     * @param keying The keying material.
+     * @param algorithm The block-cipher algorithm.
+     * @details
+     * Create the basic-mode with PCKS#7 padding.
+     */
+    basic_mode(const material_t& keying, basic_algorithm& algorithm)
+        : _keying(keying)
+        , _padder(padding_factory::instance().create(
+                _keying.padding(), _algorithm.block_size()))
+        , _algorithm(algorithm)
+    {};
+
+    /**
+     * @brief Return the padding algorithm.
+     */
+    const basic_padding& padder() const {
+        return *_padder;
+    }
+
+    /**
+     * @brief Return the block-cipher algorithm.
+     */
+    basic_algorithm& algorithm() const {
+        return _algorithm;
+    }
+
+    /**
+     * @brief Flag to indicate this is the final block.
+     */
+    bool final() const { return _final; }
+
+    /**
+     * @brief Return the next block for a cipher operation.
+     * @param input The new data block (plain or cipher text).
+     * @return The block to be processed.
+     * @details
+     * The @c input data block is the next block of data (plain or cipher text)
+     * to be processed. The default implementation is to return the same data.
+     */
+    virtual data_t next(const data_t& input);
+
+    /**
+     * @brief Preprocess a block for encryption.
      * @param input The block to be encrypted.
      * @return The block to be encrypted.
      * @details
@@ -159,7 +241,7 @@ public:
     virtual data_t prelude_encrypt(const data_t& input);
 
     /**
-     * @brief Postlude a block after encryption.
+     * @brief Postprocess a block after encryption.
      * @param output The encrypted block.
      * @return The final encrypted block
      * @details
@@ -171,7 +253,7 @@ public:
     virtual data_t postlude_encrypt(const data_t& output);
 
     /**
-     * @brief Prelude a block for decryption.
+     * @brief Preprocess a block for decryption.
      * @param input The block to be decrypted.
      * @return The block to be decrypted.
      * @details
@@ -183,7 +265,7 @@ public:
     virtual data_t prelude_decrypt(const data_t& input);
 
     /**
-     * @brief Postlude a block after decryption.
+     * @brief Postprocess a block after decryption.
      * @param output The decrypted block.
      * @return The final decrypted block
      * @details
@@ -194,41 +276,18 @@ public:
      */
     virtual data_t postlude_decrypt(const data_t& output);
 
-    /**
-     * @brief Return the keying material.
-     */
-    const material_t& keying() const { return _keying; }
-
-protected:
-    /**
-     * @brief Create basic mode.
-     * @param keying The keying material.
-     * @details
-     * Create the basic-mode with PCKS#7 padding.
-     */
-    basic_mode(size_t block_size, const material_t& keying)
-        : _block_size(block_size)
-        , _keying(keying)
-        , _padder(padding_factory::instance().create(
-                _keying.padding(), _block_size))
-    {};
-
-    /**
-     * @brief Return the padding algorithm.
-     */
-    const basic_padding& padder() const {
-        return *_padder;
-    }
-
 private:
-    /** The block size */
-    size_t _block_size;
-
     /** The keying material */
     material_t _keying;
 
+    /** The algorithm */
+    basic_algorithm& _algorithm;
+
     /** The padding algorithm */
     std::unique_ptr<basic_padding> _padder;
+
+    /** Flag to indicate the processing of the final block. */
+    bool _final = false;
 };
 
 /**
@@ -241,10 +300,10 @@ class MUDLIB_CRYPTO_API ecb: public basic_mode
 public:
     /**
      * @brief Create an ECB mode.
-     * @param block_size The block size.
      * @param keying The keying material.
+     * @param algorithm The block-cipher algorithm.
      */
-    ecb(size_t block_size, const material_t& keying);
+    ecb(const material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -270,24 +329,8 @@ public:
      * for encryption and @c reverse for decryption.
      */
     direction_t decryption_direction() const override {
-        return direction_t::reverse;
+        return direction_t::inverse;
     }
-
-    /**
-     * @brief Retrieve the next block for processing.
-     * @param bptr The pointer to the start of the block
-     * @param bend The pointer past the end of all data
-     * @param eof  Flag to indicate that there is no more data
-     * @return The block to be processed.
-     * @details
-     * A data block is assembled from the input data pointers and is to be of a
-     * specified block-size. The block returned might be empty if there is no
-     * more data available (@c bptr >= @c bend).
-     * Default implementation copies the @c block_size amount of bytes from
-     * @c bptr to the data block to be returned.
-     */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* bend,
-                        bool eof) override;
 
     /**
      * @brief Prelude a block for encryption.
@@ -333,8 +376,8 @@ public:
     virtual data_t postlude_decrypt(const data_t& output) override;
 
 private:
-    /** The number of times block padding is applied. */
-    size_t _pad;
+    /** Flag to indicate that padding of the final block had been applied. */
+    bool _padded = false;
 };
 
 /**
@@ -347,10 +390,10 @@ class MUDLIB_CRYPTO_API cbc: public basic_mode
 public:
     /**
      * @brief Create a CBC mode.
-     * @param block_size The block size.
      * @param keying The keying material.
+     * @param algorithm The block-cipher algorithm.
      */
-    cbc(size_t block_size, const material_t& keying);
+    cbc(const material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -376,24 +419,8 @@ public:
      * for encryption and @c reverse for decryption.
      */
     direction_t decryption_direction() const override {
-        return direction_t::reverse;
+        return direction_t::inverse;
     }
-
-    /**
-     * @brief Retrieve the next block for processing.
-     * @param bptr The pointer to the start of the block
-     * @param bend The pointer past the end of all data
-     * @param eof  Flag to indicate that there is no more data
-     * @return The block to be processed.
-     * @details
-     * A data block is assembled from the input data pointers and is to be of a
-     * specified block-size. The block returned might be empty if there is no
-     * more data available (@c bptr >= @c bend).
-     * Default implementation copies the @c block_size amount of bytes from
-     * @c bptr to the data block to be returned.
-     */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* bend,
-                        bool eof) override;
 
     /**
      * @brief Prelude a block for encryption.
@@ -448,8 +475,8 @@ private:
     /** The temporary cipher block */
     data_t _tmp;
 
-    /** The number of times block padding is applied. */
-    size_t _pad;
+    /** Flag to indicate that padding of the final block had been applied. */
+    bool _padded = false;
 };
 
 /**
@@ -462,10 +489,10 @@ class MUDLIB_CRYPTO_API cfb: public basic_mode
 public:
     /**
      * @brief Create a CFB mode.
-     * @param block_size The block size.
      * @param keying The keying material.
+     * @param algorithm The block-cipher algorithm.
      */
-    cfb(size_t block_size, const material_t& keying);
+    cfb(const material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -493,22 +520,6 @@ public:
     direction_t decryption_direction() const override {
         return direction_t::forward;
     }
-
-    /**
-     * @brief Retrieve the next block for processing.
-     * @param bptr The pointer to the start of the block
-     * @param bend The pointer past the end of all data
-     * @param eof  Flag to indicate that there is no more data
-     * @return The block to be processed.
-     * @details
-     * A data block is assembled from the input data pointers and is to be of a
-     * specified block-size. The block returned might be empty if there is no
-     * more data available (@c bptr >= @c bend).
-     * Default implementation copies the @c block_size amount of bytes from
-     * @c bptr to the data block to be returned.
-     */
-    virtual data_t next(const uint8_t* bptr, const uint8_t* bend,
-                        bool eof) override;
 
     /**
      * @brief Prelude a block for encryption.
@@ -573,10 +584,10 @@ class MUDLIB_CRYPTO_API ctr: public basic_mode
 public:
     /**
      * @brief Create a CTR mode.
-     * @param block_size The block size.
      * @param keying The keying material.
+     * @param algorithm The block-cipher algorithm.
      */
-    ctr(size_t block_size, const material_t& keying);
+    ctr(const material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -653,6 +664,160 @@ private:
 
     /** The text block */
     data_t _text;
+};
+
+/**
+ * @brief Galois Counter Mode (GCM) mode
+ * @details
+ * By default, no padding is applied.
+ */
+class MUDLIB_CRYPTO_API gcm: public basic_mode
+{
+public:
+    /**
+     * @brief Create a GCM mode.
+     * @param keying The keying material.
+     * @param algorithm The block-cipher algorithm.
+     */
+    gcm(const material_t& keying, basic_algorithm& algorithm);
+
+    /**
+     * @brief Return the mode specifications.
+     */
+    constexpr std::string_view specs() const override { return "GCM"; }
+
+    /**
+     * @brief Get the encryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t encryption_direction() const override {
+        return direction_t::forward;
+    }
+
+    /**
+     * @brief Get the decryption direction.
+     * @details
+     * Block cipher operation modes may use different different @em direction
+     * of the undelrying block-cipher algorithm than the standard @c forward
+     * for encryption and @c reverse for decryption.
+     */
+    direction_t decryption_direction() const override {
+        return direction_t::forward;
+    }
+
+    /**
+     * @brief Prelude a block for encryption.
+     * @param input The block to be encrypted.
+     * @return The block to be encrypted.
+     * @details
+     * Perform any prelude action before encrypting the @c input block. This may
+     * alter the mode's internal state and may alter the block to be encrypted.
+     */
+    virtual data_t prelude_encrypt(const data_t& input) override;
+
+    /**
+     * @brief Postlude a block after encryption.
+     * @param output The encrypted block.
+     * @return The final encrypted block
+     * @details
+     * Perform any postlude action after encryption. This may alter the  mode's
+     * insternal state and may alter the output block as well. Returns any
+     * possible altered output block.
+     */
+    virtual data_t postlude_encrypt(const data_t& output) override;
+
+    /**
+     * @brief Prelude a block for decryption.
+     * @param input The block to be decrypted.
+     * @return The block to be decrypted.
+     * @details
+     * Perform any prelude action before decrypting the @c input block. This may
+     * alter the mode's internal state and may alter the block to be decrypted.
+     */
+    virtual data_t prelude_decrypt(const data_t& input) override;
+
+    /**
+     * @brief Postlude a block after decryption.
+     * @param output The decrypted block.
+     * @return The final decrypted block
+     * @details
+     * Perform any postlude action after encryption. This may alter the  mode's
+     * insternal state and may alter the output block as well. Returns any
+     * possible altered output block.
+     */
+    virtual data_t postlude_decrypt(const data_t& output) override;
+
+    /**
+     * @brief Return the authentication tag.
+     * @details
+     * In case of authenticated encryption, return the authentication tag,
+     * otherwise return a zero length buffer. The tag should only be valid after
+     * the final block have been processed.
+     */
+    virtual data_t authentication_tag() const override;
+
+private:
+    /**
+     * @brief Calculate the authentication tag.
+     */
+    void authenticate();
+
+    /**
+     * @brief Calculate the hash of a block of data.
+     * @param h The hash key
+     * @param a The additional data
+     * @param c The cipher text
+     * @return The calculated hash value
+     * @details
+     * The hashing function is typically invoked in two manners:
+     *   - Initial as @f$ X_0 = ghash(H, \{\}, IV) @f$
+     *   _ For each cipher block as @f X_m = ghash(H, X_{m-1}, C_m) @f$
+     * The hash function is calculated as the multiplication in GF(2^128) of
+     * the hash-key and the XOR of the previous hash and cipher block.
+     */
+    data_t ghash(const data_t& h, const data_t& a, const data_t& c);
+
+    /**
+     * @brief Multiplication in GF(2^128).
+     * @param x The left operand of the multiplication
+     * @param y The right  operand of the multiplication (hash key).
+     * @return The GF multiplication value of X·Y.
+     * @details
+     * The multiplication in the Galois Field GF(2^128) with
+     *     x^128 + x^7 + x^ 2 + x + 1
+     * as irreducible polynomial.
+     */
+    data_t mult(const data_t& x, const data_t& y);
+
+    /** The hash-key */
+    data_t _H;
+
+    /** The counter */
+    counter_t _Y;
+
+    /** The previously calculated hash value */
+    data_t _X;
+
+    /** The Encrypted Y0 used for the authentication tag */
+    data_t _E_Y0;
+
+    /** The hash index */
+    ssize_t _X_i = -1;
+
+    /** The counter index */
+    ssize_t _Y_i = -1;
+
+    /** The text block */
+    data_t _text;
+
+    /** The total size of cipher text in bytes */
+    size_t _len_C = 0;
+
+    /** The authentication tag */
+    data_t _tag;
 };
 
 /**
@@ -772,6 +937,15 @@ public:
     virtual void decrypt(const data_t& cipher, data_t& plain) = 0;
 
     /**
+     * @brief Return the authentication tag.
+     * @details
+     * In case of authenticated encryption, return the authentication tag,
+     * otherwise return a zero length buffer. The tag should only be valid after
+     * the final block have been processed.
+     */
+    virtual data_t authentication_tag() const = 0;
+
+    /**
      * @brief Create and return a filtering stream buffer for block cipher
      * cryptography.
      * @param chain The chained stream buffer.
@@ -864,6 +1038,15 @@ public:
     void decrypt(const data_t& cipher, data_t& plain) override;
 
     /**
+     * @brief Return the authentication tag.
+     * @details
+     * In case of authenticated encryption, return the authentication tag,
+     * otherwise return a zero length buffer. The tag should only be valid after
+     * the final block have been processed.
+     */
+    data_t authentication_tag() const override;
+
+    /**
      * @brief Create and return a filtering stream buffer for block cipher
      * cryptography.
      * @param chain The chained stream buffer.
@@ -906,7 +1089,7 @@ private:
 
 template<typename Algorithm, typename Mode>
 block_cipher<Algorithm, Mode>::block_cipher(const material_t& keying)
-    : _mode(_algorithm.block_size(), keying)
+    : _mode(keying, _algorithm)
 {
 }
 
@@ -924,30 +1107,24 @@ block_cipher<Algorithm, Mode>::encrypt(const data_t& plain, data_t& cipher)
     auto* bptr = plain.data();
     auto* bend = plain.data() + plain.size();
     while (true) {
-        /* Determine if we have reached the end. The final block might be
-         * smaller than the block size or zero. */
-        bool eof = (bptr > bend) || (bend - bptr) < _algorithm.block_size();
+        /* Get the next block of data. */
+        size_t sz = bend - bptr < _algorithm.block_size()
+                  ? bend - bptr : _algorithm.block_size();
+        data_t input = data_t(bptr, sz);
 
-        /* Prelude the next block for encryption */
-        auto input = _mode.next(bptr, bend, eof);
-        input = _mode.prelude_encrypt(input);
-        if (input.size() == 0) {
+        /* Check if this is the final block */
+        bool final = ((bend - bptr) <= _algorithm.block_size());
+
+        /* Encrypt and append the output */
+        data_t output;
+        _mode.encrypt(input, output, final);
+        cipher.append(output);
+        if (output.size() == 0) {
             break;
         }
 
-        /* Perform the encryption */
-        data_t output;
-        if (_mode.encryption_direction() == basic_mode::direction_t::forward) {
-            _algorithm.encrypt(input, output, _mode.keying().key());
-        }
-        else {
-            _algorithm.decrypt(input, output, _mode.keying().key());
-        }
-
-        /* Postlude the result */
-        output = _mode.postlude_encrypt(output);
-        cipher.append(output);
-        bptr += _algorithm.block_size();
+        /* Next */
+        bptr += sz;
     }
 }
 
@@ -955,33 +1132,28 @@ template<typename Algorithm, typename Mode>
 void
 block_cipher<Algorithm, Mode>::decrypt(const data_t& cipher, data_t& plain)
 {
+    plain.clear();
     auto* bptr = cipher.data();
     auto* bend = cipher.data() + cipher.size();
     while (true) {
-        /* Determine if we have reached the end. The final block might be a
-         * full sized block containing padding. */
-        bool eof = (bptr >= bend) || (bend - bptr) <= _algorithm.block_size();
+        /* Get the next block of data. */
+        size_t sz = bend - bptr < _algorithm.block_size()
+                  ? bend - bptr : _algorithm.block_size();
+        data_t input = data_t(bptr, sz);
 
-        /* Prelude the next block for decryption */
-        auto input = _mode.next(bptr, bend, eof);
-        input = _mode.prelude_decrypt(input);
-        if (input.size() == 0) {
+        /* Check if this is the final block */
+        bool final = ((bend - bptr) <= _algorithm.block_size());
+
+        /* Decrypt and append the output */
+        data_t output;
+        _mode.decrypt(input, output, final);
+        plain.append(output);
+        if (output.size() == 0) {
             break;
         }
 
-        /* Perform the decryption */
-        data_t output;
-        if (_mode.decryption_direction() == basic_mode::direction_t::forward) {
-            _algorithm.encrypt(input, output, _mode.keying().key());
-        }
-        else {
-            _algorithm.decrypt(input, output, _mode.keying().key());
-        }
-
-        /* Postlude the result */
-        output = _mode.postlude_decrypt(output);
-        plain.append(output);
-        bptr += _algorithm.block_size();
+        /* Next */
+        bptr += sz;
     }
 }
 
@@ -994,6 +1166,13 @@ block_cipher<Algorithm, Mode>::specs() const
          << _algorithm.key_size() << '-'
          << _mode.specs();
     return sstr.str();
+}
+
+template<typename Algorithm, typename Mode>
+data_t
+block_cipher<Algorithm, Mode>::authentication_tag() const
+{
+    return _mode.authentication_tag();
 }
 
 template<typename Algorithm, typename Mode>

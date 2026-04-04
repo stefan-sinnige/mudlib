@@ -74,6 +74,9 @@ CONTEXT()
     /* The ciphertext */
     mud::crypto::data_t ciphertext;
 
+    /* The authentication tag */
+    mud::crypto::data_t tag;
+
     /* A text stream */
     std::stringstream text_stream;
 
@@ -117,13 +120,12 @@ FEATURE("AES")
 
   SCENARIO("Basic AES block cipher can encrypt one block")
     GIVEN("An AES block cipher with a key and plaintext", [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.aes = new mud::crypto::basic_aes(ctx.material.key().size()*8);
         })
     WHEN ("The plaintext is AES encrypted", [](context& ctx) {
           ctx.input = ctx.to_data(ctx.sample<std::string>("plaintext"));
-          ctx.aes->encrypt(ctx.input, ctx.output, ctx.material.key());
+          ctx.aes->forward(ctx.input, ctx.output, ctx.material.key());
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
           ASSERT(ctx.sample<std::string>("ciphertext"),
@@ -147,13 +149,12 @@ FEATURE("AES")
 
   SCENARIO("Basic AES block cipher can decrypt one block")
     GIVEN("An AES block cipher with a key and plaintext", [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.aes = new mud::crypto::basic_aes(ctx.material.key().size()*8);
         })
     WHEN ("The ciphertext is AES decrypted", [](context& ctx) {
           ctx.input = ctx.to_data(ctx.sample<std::string>("ciphertext"));
-          ctx.aes->decrypt(ctx.input, ctx.output, ctx.material.key());
+          ctx.aes->inverse(ctx.input, ctx.output, ctx.material.key());
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
           ASSERT(ctx.sample<std::string>("plaintext"),
@@ -178,8 +179,7 @@ FEATURE("AES")
   SCENARIO("AES-128 ECB can encrypt with an example vector")
     GIVEN("An AES-128 ECB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -206,8 +206,7 @@ FEATURE("AES")
   SCENARIO("AES-192 ECB can encrypt with an example vector")
     GIVEN("An AES-192 ECB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -235,8 +234,7 @@ FEATURE("AES")
   SCENARIO("AES-256 ECB can encrypt with an example vector")
     GIVEN("An AES-256 ECB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -264,18 +262,17 @@ FEATURE("AES")
   SCENARIO("AES-128 CBC can encrypt with an example vector")
     GIVEN("An AES-128 CBC with keying material and plaintext",
         [](context& ctx) {
-            mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-            mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-            ctx.material = mud::crypto::material_t(key, iv);
-            ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
-            mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
-            aes_128_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
+          mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
+          aes_128_cbc.encrypt(ctx.plaintext, ctx.ciphertext);
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
-            ASSERT(ctx.sample<std::string>("ciphertext"),
-                   ctx.to_string(ctx.ciphertext));
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
         })
     SAMPLES(std::string, std::string, std::string, std::string)
         HEADINGS("key", "iv", "plaintext", "ciphertext")
@@ -294,9 +291,8 @@ FEATURE("AES")
   SCENARIO("AES-192 CBC can encrypt with an example vector")
     GIVEN("An AES-192 CBC with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -325,9 +321,8 @@ FEATURE("AES")
   SCENARIO("AES-256 CBC can encrypt with an example vector")
     GIVEN("An AES-256 CBC with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -356,9 +351,8 @@ FEATURE("AES")
   SCENARIO("AES-128 CFB can encrypt with an example vector")
     GIVEN("An AES-128 CFB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -386,9 +380,8 @@ FEATURE("AES")
   SCENARIO("AES-192 CFB can encrypt with an example vector")
     GIVEN("An AES-192 CFB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -417,9 +410,8 @@ FEATURE("AES")
   SCENARIO("AES-256 CFB can encrypt with an example vector")
     GIVEN("An AES-256 CFB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -448,10 +440,8 @@ FEATURE("AES")
   SCENARIO("AES-128 CTR can encrypt with an example vector")
     GIVEN("An AES-128 CTR with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -479,10 +469,8 @@ FEATURE("AES")
   SCENARIO("AES-192 CTR can encrypt with an example vector")
     GIVEN("An AES-192 CTR with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -511,10 +499,8 @@ FEATURE("AES")
   SCENARIO("AES-256 CTR can encrypt with an example vector")
     GIVEN("An AES-256 CTR with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -540,11 +526,298 @@ FEATURE("AES")
                "dfc9c58db67aada613c2dd08457941a6")
     END_SAMPLES()
 
+  SCENARIO("AES-128 GCM can encrypt with an example vector")
+    GIVEN("An AES-128 GCM with keying material and plaintext",
+        [](context& ctx) {
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+        })
+    WHEN ("The plaintext is encrypted", [](context& ctx) {
+          mud::crypto::AES_128_GCM aes_128_gcm(ctx.material);
+          aes_128_gcm.encrypt(ctx.plaintext, ctx.ciphertext);
+          ctx.tag = aes_128_gcm.authentication_tag();
+        })
+    THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
+        })
+    AND  ("The authentication tag is calculated", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("tag"),
+                 ctx.to_string(ctx.tag));
+        })
+    SAMPLES(std::string, std::string, std::string, std::string, std::string,
+            std::string)
+        HEADINGS("key", "iv", "aad", "plaintext", "ciphertext", "tag")
+        SAMPLE("00000000000000000000000000000000",  // Test Case 1
+               "000000000000000000000000",
+               "",
+               "",
+               "",
+               "58e2fccefa7e3061367f1d57a4e7455a")
+        SAMPLE("00000000000000000000000000000000",  // Test Case 2
+               "000000000000000000000000",
+               "",
+               "00000000000000000000000000000000",
+               "0388dace60b6a392f328c2b971b2fe78",
+               "ab6e47d42cec13bdf53a67b21257bddf")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 3
+               "cafebabefacedbaddecaf888",
+               "",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b391aafd255",
+               "42831ec2217774244b7221b784d0d49c"
+               "e3aa212f2c02a4e035c17e2329aca12e"
+               "21d514b25466931c7d8f6a5aac84aa05"
+               "1ba30b396a0aac973d58e091473f5985",
+               "4d5c2af327cd64a62cf35abd2ba6fab4")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 4
+               "cafebabefacedbaddecaf888",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "42831ec2217774244b7221b784d0d49c"
+               "e3aa212f2c02a4e035c17e2329aca12e"
+               "21d514b25466931c7d8f6a5aac84aa05"
+               "1ba30b396a0aac973d58e091",
+               "5bc94fbc3221a5db94fae95ae7121a47")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 5
+               "cafebabefacedbad",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "61353b4c2806934a777ff51fa22a4755"
+               "699b2a714fcdc6f83766e5f97b6c7423"
+               "73806900e49f24b22b097544d4896b42"
+               "4989b5e1ebac0f07c23f4598",
+               "3612d2e79e3b0785561be14aaca2fccb")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 6
+               "9313225df88406e555909c5aff5269aa"
+               "6a7a9538534f7da1e4c303d2a318a728"
+               "c3c0c95156809539fcf0e2429a6b5254"
+               "16aedbf5a0de6a57a637b39b",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "8ce24998625615b603a033aca13fb894"
+               "be9112a5c3a211a8ba262a3cca7e2ca7"
+               "01e4a9a4fba43c90ccdcb281d48c7c6f"
+               "d62875d2aca417034c34aee5",
+               "619cc5aefffe0bfa462af43c1699d050")
+    END_SAMPLES()
+
+  SCENARIO("AES-192 GCM can encrypt with an example vector")
+    GIVEN("An AES-192 GCM with keying material and plaintext",
+        [](context& ctx) {
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+        })
+    WHEN ("The plaintext is encrypted", [](context& ctx) {
+          mud::crypto::AES_192_GCM aes_192_gcm(ctx.material);
+          aes_192_gcm.encrypt(ctx.plaintext, ctx.ciphertext);
+          ctx.tag = aes_192_gcm.authentication_tag();
+        })
+    THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
+        })
+    AND  ("The authentication tag is calculated", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("tag"),
+                 ctx.to_string(ctx.tag));
+        })
+    SAMPLES(std::string, std::string, std::string, std::string, std::string,
+            std::string)
+        HEADINGS("key", "iv", "aad", "plaintext", "ciphertext", "tag")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 7
+               "0000000000000000",
+               "000000000000000000000000",
+               "",
+               "",
+               "",
+               "cd33b28ac773f74ba00ed1f312572435")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 8
+               "0000000000000000",
+               "000000000000000000000000",
+               "",
+               "00000000000000000000000000000000",
+               "98e7247c07f0fe411c267e4384b0f600",
+               "2ff58d80033927ab8ef4d4587514f0fb")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 9
+               "feffe9928665731c",
+               "cafebabefacedbaddecaf888",
+               "",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b391aafd255",
+               "3980ca0b3c00e841eb06fac4872a2757"
+               "859e1ceaa6efd984628593b40ca1e19c"
+               "7d773d00c144c525ac619d18c84a3f47"
+               "18e2448b2fe324d9ccda2710acade256",
+               "9924a7c8587336bfb118024db8674a14")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 10
+               "feffe9928665731c",
+               "cafebabefacedbaddecaf888",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "3980ca0b3c00e841eb06fac4872a2757"
+               "859e1ceaa6efd984628593b40ca1e19c"
+               "7d773d00c144c525ac619d18c84a3f47"
+               "18e2448b2fe324d9ccda2710",
+               "2519498e80f1478f37ba55bd6d27618c")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 11 
+               "feffe9928665731c",
+               "cafebabefacedbad",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "0f10f599ae14a154ed24b36e25324db8"
+               "c566632ef2bbb34f8347280fc4507057"
+               "fddc29df9a471f75c66541d4d4dad1c9"
+               "e93a19a58e8b473fa0f062f7",
+               "65dcc57fcf623a24094fcca40d3533f8")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 12 
+               "feffe9928665731c",
+               "9313225df88406e555909c5aff5269aa"
+               "6a7a9538534f7da1e4c303d2a318a728"
+               "c3c0c95156809539fcf0e2429a6b5254"
+               "16aedbf5a0de6a57a637b39b",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "d27e88681ce3243c4830165a8fdcf9ff"
+               "1de9a1d8e6b447ef6ef7b79828666e45"
+               "81e79012af34ddd9e2f037589b292db3"
+               "e67c036745fa22e7e9b7373b",
+               "dcf566ff291c25bbb8568fc3d376a6d9")
+    END_SAMPLES()
+
+  SCENARIO("AES-256 GCM can encrypt with an example vector")
+    GIVEN("An AES-256 GCM with keying material and plaintext",
+        [](context& ctx) {
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
+          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+        })
+    WHEN ("The plaintext is encrypted", [](context& ctx) {
+          mud::crypto::AES_256_GCM aes_256_gcm(ctx.material);
+          aes_256_gcm.encrypt(ctx.plaintext, ctx.ciphertext);
+          ctx.tag = aes_256_gcm.authentication_tag();
+        })
+    THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("ciphertext"),
+                 ctx.to_string(ctx.ciphertext));
+        })
+    AND  ("The authentication tag is calculated", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("tag"),
+                 ctx.to_string(ctx.tag));
+        })
+    SAMPLES(std::string, std::string, std::string, std::string, std::string,
+            std::string)
+        HEADINGS("key", "iv", "aad", "plaintext", "ciphertext", "tag")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 13
+               "00000000000000000000000000000000",
+               "000000000000000000000000",
+               "",
+               "",
+               "",
+               "530f8afbc74536b9a963b4f1c4cb738b")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 14
+               "00000000000000000000000000000000",
+               "000000000000000000000000",
+               "",
+               "00000000000000000000000000000000",
+               "cea7403d4d606b6e074ec5d3baf39d18",
+               "d0d1c8a799996bf0265b98b5d48ab919")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 15
+               "feffe9928665731c6d6a8f9467308308",
+               "cafebabefacedbaddecaf888",
+               "",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b391aafd255",
+               "522dc1f099567d07f47f37a32a84427d"
+               "643a8cdcbfe5c0c97598a2bd2555d1aa"
+               "8cb08e48590dbb3da7b08b1056828838"
+               "c5f61e6393ba7a0abcc9f662898015ad",
+               "b094dac5d93471bdec1a502270e3cc6c")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 16
+               "feffe9928665731c6d6a8f9467308308",
+               "cafebabefacedbaddecaf888",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "522dc1f099567d07f47f37a32a84427d"
+               "643a8cdcbfe5c0c97598a2bd2555d1aa"
+               "8cb08e48590dbb3da7b08b1056828838"
+               "c5f61e6393ba7a0abcc9f662",
+               "76fc6ece0f4e1768cddf8853bb2d551b")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 17 
+               "feffe9928665731c6d6a8f9467308308",
+               "cafebabefacedbad",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "c3762df1ca787d32ae47c13bf19844cb"
+               "af1ae14d0b976afac52ff7d79bba9de0"
+               "feb582d33934a4f0954cc2363bc73f78"
+               "62ac430e64abe499f47c9b1f",
+               "3a337dbf46a792c45e454913fe2ea8f2")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 17 
+               "feffe9928665731c6d6a8f9467308308",
+               "9313225df88406e555909c5aff5269aa"
+               "6a7a9538534f7da1e4c303d2a318a728"
+               "c3c0c95156809539fcf0e2429a6b5254"
+               "16aedbf5a0de6a57a637b39b",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "5a8def2f0c9e53f1f75d7853659e2a20"
+               "eeb2b22aafde6419a058ab4f6f746bf4"
+               "0fc0c3b780f244452da3ebf1c5d82cde"
+               "a2418997200ef82e44ae7e3f",
+               "a44a8266ee1c8eb0c8b5d4cf5ae9f19a")
+    END_SAMPLES()
+
   SCENARIO("AES-128 ECB can decrypt with an example vector")
     GIVEN("An AES-128 ECB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -571,8 +844,7 @@ FEATURE("AES")
   SCENARIO("AES-192 ECB can decrypt with an example vector")
     GIVEN("An AES-192 ECB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The plaintext is decrypted", [](context& ctx) {
@@ -600,8 +872,7 @@ FEATURE("AES")
   SCENARIO("AES-256 ECB can decrypt with an example vector")
     GIVEN("An AES-256 ECB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The plaintext is decrypted", [](context& ctx) {
@@ -629,9 +900,8 @@ FEATURE("AES")
   SCENARIO("AES-128 CBC can decrypt with an example vector")
     GIVEN("An AES-128 CBC with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -659,9 +929,8 @@ FEATURE("AES")
   SCENARIO("AES-192 CBC can decrypt with an example vector")
     GIVEN("An AES-192 CBC with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -690,9 +959,8 @@ FEATURE("AES")
   SCENARIO("AES-256 CBC can decrypt with an example vector")
     GIVEN("An AES-256 CBC with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -721,9 +989,8 @@ FEATURE("AES")
   SCENARIO("AES-128 CFB can decrypt with an example vector")
     GIVEN("An AES-128 CFB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -751,9 +1018,8 @@ FEATURE("AES")
   SCENARIO("AES-192 CFB can decrypt with an example vector")
     GIVEN("An AES-192 CFB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -782,9 +1048,8 @@ FEATURE("AES")
   SCENARIO("AES-256 CFB can decrypt with an example vector")
     GIVEN("An AES-256 CFB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -813,10 +1078,8 @@ FEATURE("AES")
   SCENARIO("AES-128 CTR can decrypt with an example vector")
     GIVEN("An AES-128 CTR with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -844,10 +1107,8 @@ FEATURE("AES")
   SCENARIO("AES-192 CTR can decrypt with an example vector")
     GIVEN("An AES-192 CTR with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -876,10 +1137,8 @@ FEATURE("AES")
   SCENARIO("AES-256 CTR can decrypt with an example vector")
     GIVEN("An AES-256 CTR with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -905,11 +1164,298 @@ FEATURE("AES")
                "f69f2445df4f9b17ad2b417be66c3710")
     END_SAMPLES()
 
+  SCENARIO("AES-128 GCM can decrypt with an example vector")
+    GIVEN("An AES-128 GCM with keying material and ciphertext",
+        [](context& ctx) {
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+        })
+    WHEN ("The ciphertext is decrypted", [](context& ctx) {
+          mud::crypto::AES_128_GCM aes_128_gcm(ctx.material);
+          aes_128_gcm.decrypt(ctx.ciphertext, ctx.plaintext);
+          ctx.tag = aes_128_gcm.authentication_tag();
+        })
+    THEN ("The plaintext contains the decrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
+        })
+    AND  ("The authentication tag is calculated", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("tag"),
+                 ctx.to_string(ctx.tag));
+        })
+    SAMPLES(std::string, std::string, std::string, std::string, std::string,
+            std::string)
+        HEADINGS("key", "iv", "aad", "ciphertext", "plaintext", "tag")
+        SAMPLE("00000000000000000000000000000000",  // Test Case 1
+               "000000000000000000000000",
+               "",
+               "",
+               "",
+               "58e2fccefa7e3061367f1d57a4e7455a")
+        SAMPLE("00000000000000000000000000000000",  // Test Case 2
+               "000000000000000000000000",
+               "",
+               "0388dace60b6a392f328c2b971b2fe78",
+               "00000000000000000000000000000000",
+               "ab6e47d42cec13bdf53a67b21257bddf")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 3
+               "cafebabefacedbaddecaf888",
+               "",
+               "42831ec2217774244b7221b784d0d49c"
+               "e3aa212f2c02a4e035c17e2329aca12e"
+               "21d514b25466931c7d8f6a5aac84aa05"
+               "1ba30b396a0aac973d58e091473f5985",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b391aafd255",
+               "4d5c2af327cd64a62cf35abd2ba6fab4")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 4
+               "cafebabefacedbaddecaf888",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "42831ec2217774244b7221b784d0d49c"
+               "e3aa212f2c02a4e035c17e2329aca12e"
+               "21d514b25466931c7d8f6a5aac84aa05"
+               "1ba30b396a0aac973d58e091",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "5bc94fbc3221a5db94fae95ae7121a47")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 5
+               "cafebabefacedbad",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "61353b4c2806934a777ff51fa22a4755"
+               "699b2a714fcdc6f83766e5f97b6c7423"
+               "73806900e49f24b22b097544d4896b42"
+               "4989b5e1ebac0f07c23f4598",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "3612d2e79e3b0785561be14aaca2fccb")
+        SAMPLE("feffe9928665731c6d6a8f9467308308",  // Test Case 6
+               "9313225df88406e555909c5aff5269aa"
+               "6a7a9538534f7da1e4c303d2a318a728"
+               "c3c0c95156809539fcf0e2429a6b5254"
+               "16aedbf5a0de6a57a637b39b",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "8ce24998625615b603a033aca13fb894"
+               "be9112a5c3a211a8ba262a3cca7e2ca7"
+               "01e4a9a4fba43c90ccdcb281d48c7c6f"
+               "d62875d2aca417034c34aee5",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "619cc5aefffe0bfa462af43c1699d050")
+    END_SAMPLES()
+
+  SCENARIO("AES-192 GCM can decrypt with an example vector")
+    GIVEN("An AES-192 GCM with keying material and ciphertext",
+        [](context& ctx) {
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+        })
+    WHEN ("The ciphertext is decrypted", [](context& ctx) {
+          mud::crypto::AES_192_GCM aes_192_gcm(ctx.material);
+          aes_192_gcm.decrypt(ctx.ciphertext, ctx.plaintext);
+          ctx.tag = aes_192_gcm.authentication_tag();
+        })
+    THEN ("The plaintext contains the decrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
+        })
+    AND  ("The authentication tag is calculated", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("tag"),
+                 ctx.to_string(ctx.tag));
+        })
+    SAMPLES(std::string, std::string, std::string, std::string, std::string,
+            std::string)
+        HEADINGS("key", "iv", "aad", "ciphertext", "plaintext", "tag")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 7
+               "0000000000000000",
+               "000000000000000000000000",
+               "",
+               "",
+               "",
+               "cd33b28ac773f74ba00ed1f312572435")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 8
+               "0000000000000000",
+               "000000000000000000000000",
+               "",
+               "98e7247c07f0fe411c267e4384b0f600",
+               "00000000000000000000000000000000",
+               "2ff58d80033927ab8ef4d4587514f0fb")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 9
+               "feffe9928665731c",
+               "cafebabefacedbaddecaf888",
+               "",
+               "3980ca0b3c00e841eb06fac4872a2757"
+               "859e1ceaa6efd984628593b40ca1e19c"
+               "7d773d00c144c525ac619d18c84a3f47"
+               "18e2448b2fe324d9ccda2710acade256",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b391aafd255",
+               "9924a7c8587336bfb118024db8674a14")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 10
+               "feffe9928665731c",
+               "cafebabefacedbaddecaf888",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "3980ca0b3c00e841eb06fac4872a2757"
+               "859e1ceaa6efd984628593b40ca1e19c"
+               "7d773d00c144c525ac619d18c84a3f47"
+               "18e2448b2fe324d9ccda2710",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "2519498e80f1478f37ba55bd6d27618c")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 11 
+               "feffe9928665731c",
+               "cafebabefacedbad",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "0f10f599ae14a154ed24b36e25324db8"
+               "c566632ef2bbb34f8347280fc4507057"
+               "fddc29df9a471f75c66541d4d4dad1c9"
+               "e93a19a58e8b473fa0f062f7",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "65dcc57fcf623a24094fcca40d3533f8")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 12 
+               "feffe9928665731c",
+               "9313225df88406e555909c5aff5269aa"
+               "6a7a9538534f7da1e4c303d2a318a728"
+               "c3c0c95156809539fcf0e2429a6b5254"
+               "16aedbf5a0de6a57a637b39b",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "d27e88681ce3243c4830165a8fdcf9ff"
+               "1de9a1d8e6b447ef6ef7b79828666e45"
+               "81e79012af34ddd9e2f037589b292db3"
+               "e67c036745fa22e7e9b7373b",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "dcf566ff291c25bbb8568fc3d376a6d9")
+    END_SAMPLES()
+
+  SCENARIO("AES-256 GCM can decrypt with an example vector")
+    GIVEN("An AES-256 GCM with keying material and ciphertext",
+        [](context& ctx) {
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
+          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+        })
+    WHEN ("The ciphertext is decrypted", [](context& ctx) {
+          mud::crypto::AES_256_GCM aes_256_gcm(ctx.material);
+          aes_256_gcm.decrypt(ctx.ciphertext, ctx.plaintext);
+          ctx.tag = aes_256_gcm.authentication_tag();
+        })
+    THEN ("The plaintext contains the decrypted data", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("plaintext"),
+                 ctx.to_string(ctx.plaintext));
+        })
+    AND  ("The authentication tag is calculated", [](context& ctx) {
+          ASSERT(ctx.sample<std::string>("tag"),
+                 ctx.to_string(ctx.tag));
+        })
+    SAMPLES(std::string, std::string, std::string, std::string, std::string,
+            std::string)
+        HEADINGS("key", "iv", "aad", "ciphertext", "plaintext", "tag")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 13
+               "00000000000000000000000000000000",
+               "000000000000000000000000",
+               "",
+               "",
+               "",
+               "530f8afbc74536b9a963b4f1c4cb738b")
+        SAMPLE("00000000000000000000000000000000"   // Test Case 14
+               "00000000000000000000000000000000",
+               "000000000000000000000000",
+               "",
+               "cea7403d4d606b6e074ec5d3baf39d18",
+               "00000000000000000000000000000000",
+               "d0d1c8a799996bf0265b98b5d48ab919")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 15
+               "feffe9928665731c6d6a8f9467308308",
+               "cafebabefacedbaddecaf888",
+               "",
+               "522dc1f099567d07f47f37a32a84427d"
+               "643a8cdcbfe5c0c97598a2bd2555d1aa"
+               "8cb08e48590dbb3da7b08b1056828838"
+               "c5f61e6393ba7a0abcc9f662898015ad",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b391aafd255",
+               "b094dac5d93471bdec1a502270e3cc6c")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 16
+               "feffe9928665731c6d6a8f9467308308",
+               "cafebabefacedbaddecaf888",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "522dc1f099567d07f47f37a32a84427d"
+               "643a8cdcbfe5c0c97598a2bd2555d1aa"
+               "8cb08e48590dbb3da7b08b1056828838"
+               "c5f61e6393ba7a0abcc9f662",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "76fc6ece0f4e1768cddf8853bb2d551b")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 17 
+               "feffe9928665731c6d6a8f9467308308",
+               "cafebabefacedbad",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "c3762df1ca787d32ae47c13bf19844cb"
+               "af1ae14d0b976afac52ff7d79bba9de0"
+               "feb582d33934a4f0954cc2363bc73f78"
+               "62ac430e64abe499f47c9b1f",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "3a337dbf46a792c45e454913fe2ea8f2")
+        SAMPLE("feffe9928665731c6d6a8f9467308308"   // Test Case 17 
+               "feffe9928665731c6d6a8f9467308308",
+               "9313225df88406e555909c5aff5269aa"
+               "6a7a9538534f7da1e4c303d2a318a728"
+               "c3c0c95156809539fcf0e2429a6b5254"
+               "16aedbf5a0de6a57a637b39b",
+               "feedfacedeadbeeffeedfacedeadbeef"
+               "abaddad2",
+               "5a8def2f0c9e53f1f75d7853659e2a20"
+               "eeb2b22aafde6419a058ab4f6f746bf4"
+               "0fc0c3b780f244452da3ebf1c5d82cde"
+               "a2418997200ef82e44ae7e3f",
+               "d9313225f88406e5a55909c5aff5269a"
+               "86a7a9531534f7da2e4c303d8a318a72"
+               "1c3c0c95956809532fcf0e2449a6b525"
+               "b16aedf5aa0de657ba637b39",
+               "a44a8266ee1c8eb0c8b5d4cf5ae9f19a")
+    END_SAMPLES()
+
   SCENARIO("AES ECB can encrypt with padding")
     GIVEN("An AES-128 ECB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
@@ -954,9 +1500,8 @@ FEATURE("AES")
   SCENARIO("AES CBC can encrypt with padding")
     GIVEN("An AES-128 CBC with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
@@ -1006,9 +1551,8 @@ FEATURE("AES")
   SCENARIO("AES CFB can encrypt without padding")
     GIVEN("An AES-128 CFB with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -1056,10 +1600,8 @@ FEATURE("AES")
   SCENARIO("AES CTR can encrypt without padding")
     GIVEN("An AES-128 CTR with keying material and plaintext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -1107,8 +1649,7 @@ FEATURE("AES")
   SCENARIO("AES ECB can decrypt with padding")
     GIVEN("An AES-128 ECB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
@@ -1153,9 +1694,8 @@ FEATURE("AES")
   SCENARIO("AES CBC can decrypt with padding")
     GIVEN("An AES-128 CBC with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
@@ -1205,9 +1745,8 @@ FEATURE("AES")
   SCENARIO("AES CFB can decrypt without padding")
     GIVEN("An AES-128 CFB with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::iv_t iv = ctx.to_data(ctx.sample<std::string>("iv"));
-          ctx.material = mud::crypto::material_t(key, iv);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -1255,10 +1794,8 @@ FEATURE("AES")
   SCENARIO("AES CTR can decrypt without padding")
     GIVEN("An AES-128 CTR with keying material and ciphertext",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          mud::crypto::counter_t counter = ctx.to_data(ctx.sample<std::string>(
-                "counter"));
-          ctx.material = mud::crypto::material_t(key, counter);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
@@ -1306,8 +1843,7 @@ FEATURE("AES")
   SCENARIO("AES without padding can encrypt with an ostream")
     GIVEN("An AES-128 ECB with keying material and plaintext stream",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
@@ -1345,8 +1881,7 @@ FEATURE("AES")
   SCENARIO("AES without padding can decrypt with an istream")
     GIVEN("An AES-128 ECB with keying material and ciphertext stream",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
           ctx.text_stream.str(std::string((const char*)ctx.ciphertext.data(),
                                           ctx.ciphertext.size()));
@@ -1380,8 +1915,7 @@ FEATURE("AES")
   SCENARIO("AES with padding can encrypt with an ostream")
     GIVEN("An AES-128 ECB with keying material and plaintext stream",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
           ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
         })
@@ -1437,8 +1971,7 @@ FEATURE("AES")
   SCENARIO("AES with padding can decrypt with an istream")
     GIVEN("An AES-128 ECB with keying material and ciphertext stream",
         [](context& ctx) {
-          mud::crypto::key_t key = ctx.to_data(ctx.sample<std::string>("key"));
-          ctx.material = mud::crypto::material_t(key);
+          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
           ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
           ctx.text_stream.str(std::string((const char*)ctx.ciphertext.data(),

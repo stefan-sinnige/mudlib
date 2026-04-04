@@ -26,7 +26,9 @@
 
 #include "mud/crypto/exception.h"
 #include "mud/crypto/types.h"
+#include <algorithm>
 #include <iomanip>
+#include <stdexcept>
 #include <cstring>
 #include <cctype>
 
@@ -59,6 +61,149 @@ data_t::append(const data_t& data)
 {
     reserve(size() + data.size());
     insert(end(), data.begin(), data.end());
+}
+
+void
+data_t::pad_begin(size_t sz, uint8_t val)
+{
+    if (size() >= sz) {
+        return;
+    }
+    insert(begin(), sz - size(), val);
+}
+
+void
+data_t::pad_end(size_t sz, uint8_t val)
+{
+    if (size() >= sz) {
+        return;
+    }
+    insert(end(), sz - size(), val);
+}
+
+uint8_t
+data_t::operator[](size_t n) const
+{
+    return std::vector<uint8_t>::operator[](n);
+}
+
+uint8_t&
+data_t::operator[](size_t n)
+{
+    return std::vector<uint8_t>::operator[](n);
+}
+
+data_t&
+data_t::operator|=(const data_t& rhs)
+{
+    if (size() > rhs.size()) {
+        throw size_error("right operand too small");
+    }
+    auto sptr = rhs.data();
+    auto dptr = data();
+    auto eptr = data() + size();
+    while (dptr < eptr) {
+        *dptr++ |= *sptr++;
+    }
+    return *this;
+}
+
+data_t&
+data_t::operator&=(const data_t& rhs)
+{
+    if (size() > rhs.size()) {
+        throw size_error("right operand too small");
+    }
+    auto sptr = rhs.data();
+    auto dptr = data();
+    auto eptr = data() + size();
+    while (dptr < eptr) {
+        *dptr++ &= *sptr++;
+    }
+    return *this;
+}
+
+data_t&
+data_t::operator^=(const data_t& rhs)
+{
+    if (size() > rhs.size()) {
+        throw size_error("right operand too small");
+    }
+    auto sptr = rhs.data();
+    auto dptr = data();
+    auto eptr = data() + size();
+    while (dptr < eptr) {
+        *dptr++ ^= *sptr++;
+    }
+    return *this;
+}
+
+data_t&
+data_t::operator<<=(size_t pos)
+{
+    // Shifting more than the size leaves a zero'ed buffer.
+    if (pos >= size()*8) {
+        std::fill(begin(), end(), 0);
+        return *this;
+    }
+
+    // Calculate the number of bytes and remaining bits to shift.
+    size_t bytes = pos / 8;
+    size_t bits = pos % 8;
+
+    // Shift whole bytes first
+    if (bytes != 0) {
+        for (int index = 0; index < (size() - bytes); ++index) {
+            (*this)[index] = (*this)[index + bytes];
+        }
+        for (int index = size() - bytes; index < size(); ++index) {
+            (*this)[index] = 0;
+        }
+    }   
+    
+    // Shift the remaining bits, and carry-over a mask of the MSB bits from next
+    // byte.
+    for (int index = 0; index < size(); ++index) {
+        (*this)[index] <<= bits;
+        if (index < (size() - 1)) {
+            (*this)[index] |= (*this)[index+1] >> (8-bits);
+        }
+    }
+    return *this;
+}
+
+data_t&
+data_t::operator>>=(size_t pos)
+{
+    // Shifting more than the size leaves a zero'ed buffer.
+    if (pos >= size()*8) {
+        std::fill(begin(), end(), 0);
+        return *this;
+    }
+
+    // Calculate the number of bytes and remaining bits to shift.
+    size_t bytes = pos / 8;
+    size_t bits = pos % 8;
+
+    // Shift whole bytes first
+    if (bytes != 0) {
+        for (int index = (size() - 1); index >= 0; --index) {
+            (*this)[index] = (*this)[index - bytes];
+        }
+        for (int index = 0; index < bytes; ++index) {
+            (*this)[index] = 0;
+        }
+    }   
+    
+    // Shift the remaining bits, and carry-over a mask of the LSB bits from the
+    // previous byte.
+    for (int index = (size() - 1); index >= 0; --index) {
+        (*this)[index] >>= bits;
+        if (index > 0) {
+            (*this)[index] |= (*this)[index-1] << (8-bits);
+        }
+    }
+    return *this;
 }
 
 std::ostream&
@@ -133,18 +278,42 @@ operator>>(std::istream& istr, data_t& d)
 }
 
 data_t
+operator|(const data_t& lhs, const data_t& rhs)
+{
+    data_t result = lhs;
+    result |= rhs;
+    return result;
+}
+
+data_t
+operator&(const data_t& lhs, const data_t& rhs)
+{
+    data_t result = lhs;
+    result &= rhs;
+    return result;
+}
+
+data_t
 operator^(const data_t& lhs, const data_t& rhs)
 {
-    if (lhs.size() > rhs.size()) {
-        throw size_error("second operand in XOR is smaller than first");
-    }
     data_t result = lhs;
-    auto sptr = rhs.data();
-    auto dptr = result.data();
-    auto eptr = result.data() + result.size();
-    while (dptr < eptr) {
-        *dptr++ ^= *sptr++;
-    }
+    result ^= rhs;
+    return result;
+}
+
+data_t
+operator<<(const data_t& lhs, size_t pos)
+{
+    data_t result = lhs;
+    result <<= pos;
+    return result;
+}
+
+data_t
+operator>>(const data_t& lhs, size_t pos)
+{
+    data_t result = lhs;
+    result >>= pos;
     return result;
 }
 
