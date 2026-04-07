@@ -137,6 +137,28 @@ public:
     void append(const data_t& data);
 
     /**
+     * @brief Pad data at the begin.
+     * @param sz The total size of the data after padding.
+     * @param val The value of each padded byte.
+     * @details
+     * If the total size of the buffer is smaller than @c sz, the buffer will
+     * be padded at the start of the buffer such that the total size will be @c
+     * sz bytes. Each padded byte will have a value equal to @c val.
+     */
+    void pad_begin(size_t sz, uint8_t val = 0x00);
+
+    /**
+     * @brief Pad data at the end.
+     * @param sz The total size of the data after padding.
+     * @param val The value of each padded byte.
+     * @details
+     * If the total size of the buffer is smaller than @c sz, the buffer will
+     * be padded at the end of the buffer such that the total size will be @c sz
+     * bytes. Each padded byte will have a value equal to @c val.
+     */
+    void pad_end(size_t sz, uint8_t val = 0x00);
+
+    /**
      * @brief Return the size of the byte storage.
      * @return The size of the storage.
      */
@@ -149,11 +171,59 @@ public:
     uint8_t* data() { return std::vector<uint8_t>::data(); }
     const uint8_t* data() const { return std::vector<uint8_t>::data(); }
 
+    /**
+     * @brief Return the byte at the n-th position.
+     * @param n The byte position (0 to size-1) to return, where 0 is the left
+     * most position.
+     * @return The byte at the position.
+     */
+    uint8_t operator[](size_t n) const;
+    uint8_t& operator[](size_t n);
+
+    /**
+     * @brief Bit-wise OR assignment on equal sized blocks.
+     * @param rhs The data to OR with.
+     * @return The reference to this object.
+     */
+    data_t& operator|=(const data_t& rhs);
+
+    /**
+     * @brief Bit-wise AND assignment on equal sized blocks.
+     * @param rhs The data to AND with.
+     * @return The reference to this object.
+     */
+    data_t& operator&=(const data_t& rhs);
+
+    /**
+     * @brief Bit-wise XOR assignment on equal sized blocks.
+     * @param rhs The data to XOR with.
+     * @return The reference to this object.
+     */
+    data_t& operator^=(const data_t& rhs);
+
+    /**
+     * @brief Bit-wise left-shift assignment.
+     * @param pos The amount of bits to shift.
+     * @return The reference to this object.
+     */
+    data_t& operator<<=(size_t pos);
+
+    /**
+     * @brief Bit-wise right-shift assignment.
+     * @param pos The amount of bits to shift.
+     * @return The reference to this object.
+     */
+    data_t& operator>>=(size_t pos);
+
 private:
     /** Friend operations */
     friend std::ostream& operator<<(std::ostream& ostr, const data_t& data);
     friend std::istream& operator>>(std::istream& istr, data_t& data);
+    friend data_t operator|(const data_t& lhs, const data_t& rhs);
+    friend data_t operator&(const data_t& lhs, const data_t& rhs);
     friend data_t operator^(const data_t& lhs, const data_t& rhs);
+    friend data_t operator<<(const data_t& lhs, size_t pos);
+    friend data_t operator>>(const data_t& lhs, size_t pos);
 };
 
 /**
@@ -173,6 +243,28 @@ std::ostream& operator<<(std::ostream& ostr, const data_t& data);
 std::istream& operator>>(std::istream& istr, const data_t& data);
 
 /**
+ * @brief Bitwise OR on two equal sized data blocks.
+ * @param lhs The first data block
+ * @param rhs The second data block
+ * @return The result of the OR of @c lhs with @c rhs.
+ * @details
+ * Note that @c lhs should be smaller or equal to @c rhs, the result is always
+ * the same size as @c lhs.
+ */
+data_t operator|(const data_t& lhs, const data_t& rhs);
+
+/**
+ * @brief Bitwise AND on two equal sized data blocks.
+ * @param lhs The first data block
+ * @param rhs The second data block
+ * @return The result of the AND of @c lhs with @c rhs.
+ * @details
+ * Note that @c lhs should be smaller or equal to @c rhs, the result is always
+ * the same size as @c lhs.
+ */
+data_t operator&(const data_t& lhs, const data_t& rhs);
+
+/**
  * @brief Bitwise XOR on two equal sized data blocks.
  * @param lhs The first data block
  * @param rhs The second data block
@@ -182,6 +274,22 @@ std::istream& operator>>(std::istream& istr, const data_t& data);
  * the same size as @c lhs.
  */
 data_t operator^(const data_t& lhs, const data_t& rhs);
+
+/**
+ * @brief Bitwise shift left.
+ * @param lhs The data to shift.
+ * @param pos The amount of bits to shift.
+ * @return The shifted result.
+ */
+data_t operator<<(const data_t& lhs, size_t pos);
+
+/**
+ * @brief Bitwise shift right.
+ * @param lhs The data to shift.
+ * @param pos The amount of bits to shift.
+ * @return The shifted result.
+ */
+data_t operator>>(const data_t& lhs, size_t pos);
 
 /**
  * @brief Cryptographic key.
@@ -341,7 +449,7 @@ public:
      * @brief Create no keying material.
      */
     material_t() = default;
-
+#if 0
     /**
      * @brief Create a keying material combination.
      * @param key The key.
@@ -381,7 +489,7 @@ public:
         , _nonce(nonce)
         , _counter(counter)
     {}
-
+#endif
     /**
      * @brief Copy constructor.
      * @param rhs The material to copy from.
@@ -415,7 +523,7 @@ public:
      * @brief Set the key.
      * @param value The key value.
      */
-    void key(const data_t& value) {  _key = value; }
+    void key(const key_t& value) {  _key = value; }
 
     /**
      * @brief Return the key.
@@ -426,7 +534,7 @@ public:
      * @brief Set the initial vector.
      * @param value The initial vector value.
      */
-    void iv(const data_t& value) {  _iv = value; }
+    void iv(const iv_t& value) {  _iv = value; }
 
     /**
      * @brief Return the initial vector.
@@ -437,7 +545,7 @@ public:
      * @brief Set the nonce.
      * @param value The nonce value.
      */
-    void nonce(const data_t& value) {  _nonce = value; }
+    void nonce(const nonce_t& value) {  _nonce = value; }
 
     /**
      * @brief Return the nonce.
@@ -448,12 +556,23 @@ public:
      * @brief Set the counter.
      * @param value The counter value.
      */
-    void counter(const data_t& value) {  _counter = value; }
+    void counter(const counter_t& value) {  _counter = value; }
 
     /**
      * @brief Return the counter.
      */
     const counter_t& counter() const { return _counter; }
+
+    /**
+     * @brief Set the additional authenticated data.
+     * @param value The additional authenticated value.
+     */
+    void aad(const data_t& value) {  _aad = value; }
+
+    /**
+     * @brief Return the additional authenticated data.
+     */
+    const data_t& aad() const { return _aad; }
 
     /**
      * @brief Set the padding type.
@@ -478,6 +597,9 @@ private:
 
     /** The counter. */
     counter_t _counter;
+
+    /** The additional authenticated data. */
+    data_t _aad;
 
     /** The padding type. */
     padding_t _padding = padding_t::none;

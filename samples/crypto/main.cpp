@@ -64,6 +64,7 @@ With OPTIONS:
     -i, --iv <HEX>            Specify a hexadecimal initial vector.
     -n, --nonce <HEX>         Specify a hexadecimal nonce.
     -c, --counter <HEX>       Specify a hexadecimal counter.
+    -a, --aad <HEX>           Specify a hexadecimal additional auth data
     -p, --padding <TYPE>      The type of padding, defaults to 'none'. See
                               'list' for a complete list of supported padding.
     -b, --block-cipher <TYPE> The block-cipher type. See 'list' for a complete
@@ -167,6 +168,14 @@ parse_cmd(int argc, char** argv)
                 return 1;
             }
             g_material.counter(data);
+        }
+        else
+        if (strcmp(*argv, "-a") == 0 || strcmp(*argv, "--aad") == 0) {
+            mud::crypto::data_t data;
+            if (parse_hex(option, --argc, ++argv, data) != 0) {
+                return 1;
+            }
+            g_material.aad(data);
         }
         else
         if (strcmp(*argv, "-b") == 0 || strcmp(*argv, "--block-cipher") == 0) {
@@ -323,7 +332,7 @@ decrypt()
         /* Copy all data from input to output */
         *g_ostr << istr.rdbuf();
 
-        /* Close an output file stream */
+        /* Close an input file stream */
         block_cipher->sbuf()->close();
         if (g_istr != &std::cin) {
             delete g_istr;

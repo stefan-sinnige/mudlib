@@ -37,11 +37,11 @@ using endian_t = mud::core::endian::endian_t;
 
 /**
  * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purpososes.
+ * it for development purposes.
  */
 #define AES_LOGGING false
 #if AES_LOGGING
-    #warning "CAUTION: AES Logging is enabled"
+    #warning "CAUTION: AES logging is enabled"
 #else
     #undef LOG
     #undef TRACE
@@ -332,9 +332,10 @@ basic_aes::basic_aes(size_t key_size)
 }
 
 void
-basic_aes::encrypt(const data_t& input, data_t& output, const key_t& key)
+basic_aes::forward(const data_t& input, data_t& output, const key_t& key)
 {
     LOG(log);
+    TRACE(log) << "Forward Cipher()" << std::endl;
     std::vector<uint32_t> w = key_expansion(key);
     uint32_t* round_keys = w.data();
     basic_aes::state state(input);
@@ -354,10 +355,10 @@ basic_aes::encrypt(const data_t& input, data_t& output, const key_t& key)
 }
 
 void
-basic_aes::decrypt(const data_t& input, data_t& output, const key_t& key)
+basic_aes::inverse(const data_t& input, data_t& output, const key_t& key)
 {
     LOG(log);
-    TRACE(log) << "Decipher()" << std::endl;
+    TRACE(log) << "Inverse Cipher()" << std::endl;
     std::vector<uint32_t> w = key_expansion(key);
     uint32_t* round_keys = w.data();
     basic_aes::state state(input);
@@ -728,6 +729,13 @@ block_cipher_factory::registrar<AES_192_CTR>
         _aes_192_ctr_registrar("AES-192-CTR");
 block_cipher_factory::registrar<AES_256_CTR>
         _aes_256_ctr_registrar("AES-256-CTR");
+
+block_cipher_factory::registrar<AES_128_GCM>
+        _aes_128_gcm_registrar("AES-128-GCM");
+block_cipher_factory::registrar<AES_192_GCM>
+        _aes_192_gcm_registrar("AES-192-GCM");
+block_cipher_factory::registrar<AES_256_GCM>
+        _aes_256_gcm_registrar("AES-256-GCM");
 
 END_MUDLIB_CRYPTO_NS
 

@@ -68,21 +68,21 @@ public:
     size_t key_size() const override { return _key_size; }
      
     /**
-     * @brief Encrypt plain-text into cipher-text.
+     * @brief Forward cipher (typically encrypt) plain-text into cipher-text.
      * @param input The input block (ie plain text).
      * @param output The output block (ie cipher text).
      * @param key The key buffer
      */
-    void encrypt(const data_t& input, data_t& output,
+    void forward(const data_t& input, data_t& output,
                  const key_t& key) override;
 
     /**
-     * @brief Decrypt cipher-text into plain-text.
+     * @brief Reverse cipher (typically decrypt) cipher-text into plain-text.
      * @param input The input block (ie cipher text).
      * @param output The output block (ie plain text).
      * @param key The key buffer
      */
-    void decrypt(const data_t& input, data_t& output,
+    void inverse(const data_t& input, data_t& output,
                  const key_t& key) override;
 
 private:
@@ -250,6 +250,13 @@ typedef block_cipher<aes<256>, cfb> AES_256_CFB;
 typedef block_cipher<aes<128>, ctr> AES_128_CTR;
 typedef block_cipher<aes<192>, ctr> AES_192_CTR;
 typedef block_cipher<aes<256>, ctr> AES_256_CTR;
+
+/**
+ * @brief AES encryption with GCM mode.
+ */
+typedef block_cipher<aes<128>, gcm> AES_128_GCM;
+typedef block_cipher<aes<192>, gcm> AES_192_GCM;
+typedef block_cipher<aes<256>, gcm> AES_256_GCM;
 
 END_MUDLIB_CRYPTO_NS
 
