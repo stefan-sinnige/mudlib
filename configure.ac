@@ -92,6 +92,7 @@ AC_CONFIG_FILES([
     protocols/soap/Makefile protocols/soap/test/Makefile
     protocols/tls/Makefile protocols/tls/test/Makefile
     samples/Makefile
+    samples/core/bicalc/Makefile
     samples/core/log/Makefile
     samples/crypto/Makefile
     samples/io/Makefile
