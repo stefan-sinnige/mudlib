@@ -32,6 +32,7 @@
 #include <mud/crypto/exception.h>
 #include <mud/crypto/padding.h>
 #include <mud/crypto/types.h>
+#include <mud/crypto/x25519.h>
 
 /* vi: set ai ts=4 expandtab: */
 

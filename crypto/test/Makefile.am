@@ -31,7 +31,8 @@ mudcrypto_test_SOURCES = \
     main.cpp \
     aes_test.cpp \
     padding_test.cpp \
-    types_test.cpp
+    types_test.cpp \
+	x25519_test.cpp
 
 mudcrypto_test_CPPFLAGS = \
     -I$(srcdir)/../src \
