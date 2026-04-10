@@ -436,6 +436,28 @@ enum class padding_t {
 };
 
 /**
+ * @brief Cryptographic random number.
+ * @details
+ * A cryptographic random number using a non-deterministic uniform random bit
+ * generator (e.g. a hardware device).
+ */
+class MUDLIB_CRYPTO_API random_t : public data_t
+{
+public:
+    /**
+     * @brief Inherit all @c data_t constructors.
+     */
+    using data_t::data_t;
+    using data_t::operator=;
+
+    /**
+     * @brief Construct a random sequence of data.
+     * @param sz The size of the sequence.
+     */
+    random_t(size_t sz);
+};
+
+/**
  * @brief Keying material container.
  * @details
  * The keying material is a combination of various types that the underlying

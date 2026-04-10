@@ -28,6 +28,7 @@
 #include "mud/crypto/types.h"
 #include <algorithm>
 #include <iomanip>
+#include <random>
 #include <stdexcept>
 #include <cstring>
 #include <cctype>
@@ -341,6 +342,32 @@ counter_t::operator++()
         incr = value >> 8;
     }
     return *this;
+}
+
+random_t::random_t(size_t sz)
+    : data_t(sz)
+{
+    std::random_device rd;
+    if (rd.max() >= UINT32_MAX) {
+        /* Get random values as 32-bit values. */
+        uint32_t value = rd();
+        for (int i = 0; i < size() / 4; ++i) {
+            *((uint32_t*)(data() + 4*i)) = value;
+            value = rd();
+        }
+        for (int b = 0; b < size() % 4; ++b) {
+            *(data() + (size() / 4)*4 + b) = *(((uint8_t*)&value) + b);
+        }
+    }
+    else {
+        /* Get random values as 8-bit values which is likely to be less
+         * performant due to a call to the random device for each byte. */
+        uint8_t value = rd();
+        for (int b = 0; b < size(); ++b) {
+            *(data() + b) = value;
+            value = rd();
+        }
+    }
 }
 
 END_MUDLIB_CRYPTO_NS

@@ -32,7 +32,8 @@ libmudcrypto_la_SOURCES = \
     src/aes.cpp \
     src/block_cipher.cpp \
     src/padding.cpp \
-    src/types.cpp
+    src/types.cpp \
+    src/x25519.cpp
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
