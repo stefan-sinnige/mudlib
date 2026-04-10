@@ -110,7 +110,7 @@ FEATURE("X25519")
     })
     SAMPLES(std::string, std::string)
         HEADINGS("private", "public")
-        SAMPLE("a8ababababababababababababababab"
+        SAMPLE("a8ababababababababababababababab"    // pycurve25519
                "ababababababababababababababab6b",
                "e3712d851a0e5d79b831c5e34ab22b41"
                "a198171de209b8b8faca23a11c624859")
@@ -118,7 +118,7 @@ FEATURE("X25519")
                "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcd4d",
                "b5bea823d9c9ff576091c54b7c596c0a"
                "e296884f0e150290e88455d7fba6126f")
-        SAMPLE("77076d0a7318a57d3c16c17251b26645"
+        SAMPLE("77076d0a7318a57d3c16c17251b26645"    // RFC-7748
                "df4c2f87ebc0992ab177fba51db92c2a",
                "8520f0098930a754748b7ddcb43ef75a"
                "0dbf3a0d26381af4eba4a98eaa9b4e6a")
@@ -126,6 +126,14 @@ FEATURE("X25519")
                "6f3bb1292618b6fd1c2f8b27ff88e0eb",
                "de9edb7d7b7dc1b4d35b61c2ece43537"
                "3f8343c85b78674dadfc7e146f882b4f")
+        SAMPLE("202122232425262728292a2b2c2d2e2f"    // tls13.xargs.org
+               "303132333435363738393a3b3c3d3e3f",
+               "358072d6365880d1aeea329adf912138"
+               "3851ed21a28e3b75e965d0d2cd166254")
+        SAMPLE("909192939495969798999a9b9c9d9e9f"
+               "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+               "9fd7ad6dcff4298dd3f96d5b1b2af910"
+               "a0535b1488d7f8fabb349a982880b615")
     END_SAMPLES()
 
   SCENARIO("Keys can be exchanged successfully")
@@ -148,12 +156,24 @@ FEATURE("X25519")
         })
     SAMPLES(std::string, std::string, std::string)
         HEADINGS("private-a", "private-b", "shared")
-        SAMPLE("77076d0a7318a57d3c16c17251b26645"
+        SAMPLE("a8ababababababababababababababab"    // pycurve25519
+               "ababababababababababababababab6b",
+               "c8cdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+               "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcd4d",
+               "235101b705734aae8d4c2d9d0f1baf90"
+               "bbb2a8c233d831a80d43815bb47ead10")
+        SAMPLE("77076d0a7318a57d3c16c17251b26645"    // RFC-7748
                "df4c2f87ebc0992ab177fba51db92c2a",
                "5dab087e624a8a4b79e17f8b83800ee6"
                "6f3bb1292618b6fd1c2f8b27ff88e0eb",
                "4a5d9d5ba4ce2de1728e3bf480350f25"
                "e07e21c947d19e3376f09b3c1e161742")
+        SAMPLE("202122232425262728292a2b2c2d2e2f"    // tls13.xargs.org
+               "303132333435363738393a3b3c3d3e3f",
+               "909192939495969798999a9b9c9d9e9f"
+               "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+               "df4a291baa1eb7cfa6934b29b474baad"
+               "2697e29f1f920dcc77c8a0a088447624")
     END_SAMPLES()
 
 END_FEATURE()
