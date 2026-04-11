@@ -923,7 +923,6 @@ block_cipher_streambuf::block_cipher_streambuf(
 
 block_cipher_streambuf::~block_cipher_streambuf()
 {
-    close();
     delete[] _buffer;
 }
 

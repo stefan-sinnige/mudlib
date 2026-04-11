@@ -37,6 +37,7 @@
 
 mud::crypto::material_t g_material;
 const char* g_block_cipher = nullptr;
+const char* g_hash = nullptr;
 std::istream* g_istr = &std::cin;
 std::ostream* g_ostr = &std::cout;
 
@@ -44,6 +45,7 @@ enum class command_t {
     none,
     encrypt,
     decrypt,
+    hash,
     list
 } g_command = command_t::none;
 
@@ -56,6 +58,7 @@ Usage: sample_crypto [COMMAND] [OPTIONS]
 With COMMAND:
     encrypt              Encrypt plaintext into ciphertext
     decrypt              Decrypt ciphertext into plaintext
+    hash                 Generate a hash
     list                 List supported cryptographic operations
 
 With OPTIONS:
@@ -65,10 +68,12 @@ With OPTIONS:
     -n, --nonce <HEX>         Specify a hexadecimal nonce.
     -c, --counter <HEX>       Specify a hexadecimal counter.
     -a, --aad <HEX>           Specify a hexadecimal additional auth data
-    -p, --padding <TYPE>      The type of padding, defaults to 'none'. See
+    -P, --padding <TYPE>      The type of padding, defaults to 'none'. See
                               'list' for a complete list of supported padding.
-    -b, --block-cipher <TYPE> The block-cipher type. See 'list' for a complete
+    -B, --block-cipher <TYPE> The block-cipher type. See 'list' for a complete
                               list of supported ciphers.
+    -H, -hash<TYPE>           The hash type. See 'list' for a complete list of
+                              supported hashes.
     -I, --input <TYPE>        The input, either a file name or '-' for console
                               input. Defaults to '-'.
     -O, --output <TYPE>       The output, either a file name or '-' for console
@@ -127,6 +132,10 @@ parse_cmd(int argc, char** argv)
         g_command = command_t::decrypt;
     }
     else
+    if (strcmp(*argv, "hash") == 0) {
+        g_command = command_t::hash;
+    }
+    else
     if (strcmp(*argv, "list") == 0) {
         g_command = command_t::list;
     }
@@ -178,7 +187,7 @@ parse_cmd(int argc, char** argv)
             g_material.aad(data);
         }
         else
-        if (strcmp(*argv, "-b") == 0 || strcmp(*argv, "--block-cipher") == 0) {
+        if (strcmp(*argv, "-B") == 0 || strcmp(*argv, "--block-cipher") == 0) {
             --argc, ++argv;
             if (check_argument(option, argc) != 0) {
                 return 1;
@@ -186,7 +195,15 @@ parse_cmd(int argc, char** argv)
             g_block_cipher = *argv;
         }
         else
-        if (strcmp(*argv, "-p") == 0 || strcmp(*argv, "--padding") == 0) {
+        if (strcmp(*argv, "-H") == 0 || strcmp(*argv, "--hash") == 0) {
+            --argc, ++argv;
+            if (check_argument(option, argc) != 0) {
+                return 1;
+            }
+            g_hash = *argv;
+        }
+        else
+        if (strcmp(*argv, "-P") == 0 || strcmp(*argv, "--padding") == 0) {
             --argc, ++argv;
             if (check_argument(option, argc) != 0) {
                 return 1;
@@ -259,6 +276,12 @@ list()
     auto block_ciphers = mud::crypto::block_cipher_factory::instance().keys();
     std::sort(block_ciphers.begin(), block_ciphers.end());
     for (auto& key: mud::crypto::block_cipher_factory::instance().keys()) {
+        std::cout << "  " << key << std::endl;
+    }
+    std::cout << "Hashes:" << std::endl;
+    auto hashes = mud::crypto::hash_factory::instance().keys();
+    std::sort(hashes.begin(), hashes.end());
+    for (auto& key: mud::crypto::hash_factory::instance().keys()) {
         std::cout << "  " << key << std::endl;
     }
     std::cout << "Padding:" << std::endl;
@@ -350,6 +373,51 @@ decrypt()
 }
 
 /* =========================================================================
+ * Hash
+ * ========================================================================= */
+
+int
+hash()
+{
+    if (g_hash == nullptr) {
+        std::cerr << "No hash specified" << std::endl;
+        return 1;
+    }
+
+    /* Hash the input */
+    try {
+        /* Create the hash */
+        auto hash = mud::crypto::hash_factory::instance().create(g_hash);
+
+        /* Assign it to the input stream for on the fly decryption */
+        std::istream istr(hash->sbuf(g_istr->rdbuf()));
+
+        /* Read all input data and ignore it. The hash is calculated as the
+         * stream is read. */
+        char c;
+        while (istr.get(c)) ;
+
+        /* Close an input file stream */
+        hash->sbuf()->close();
+        if (g_istr != &std::cin) {
+            delete g_istr;
+        }
+
+        /* Output the hash */
+        *g_ostr << hash->hash() << std::endl;
+    }
+    catch (std::invalid_argument& ex) {
+        std::cerr << "Unknown hash '" << g_hash << "'"
+                  << std::endl;
+        return 1;
+    }
+    catch (mud::crypto::size_error& ex) {
+        std::cerr << "Error: " << ex.what() << std::endl;
+    }
+    return 0;
+}
+
+/* =========================================================================
  * Main
  * ========================================================================= */
 
@@ -369,6 +437,8 @@ main(int argc, char** argv)
             return encrypt();
         case command_t::decrypt:
             return decrypt();
+        case command_t::hash:
+            return hash();
         case command_t::none:
         default:
             break;

@@ -833,7 +833,7 @@ public:
      * @param mode The block cipher mode.
      * @details
      * Using the @c chain stream-buffer for reading and writing encrypted data,
-     * the @block_cipher_streambuf is a filtering steram buffer applying in-line
+     * the @block_cipher_streambuf is a filtering stream buffer applying in-line
      * encryption adn decryption as specified by the @c algo block cipher
      * algorithm and @c mode of oepration.
      */
@@ -1186,7 +1186,7 @@ block_cipher<Algorithm, Mode>::sbuf(std::streambuf* chain)
 }
 
 /**
- * @brief Factory for block-ciphers, idnexed by cipher specification.
+ * @brief Factory for block-ciphers, indexed by cipher specification.
  */
 typedef ::mud::core::factory<std::string,
                              mud::crypto::basic_block_cipher,

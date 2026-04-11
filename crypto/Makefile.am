@@ -31,7 +31,10 @@ lib_LTLIBRARIES = libmudcrypto.la
 libmudcrypto_la_SOURCES = \
     src/aes.cpp \
     src/block_cipher.cpp \
+    src/hash.cpp \
+    src/keccak.cpp \
     src/padding.cpp \
+    src/sha.cpp \
     src/types.cpp \
     src/x25519.cpp
 
@@ -44,8 +47,11 @@ includemudcrypto_HEADERS = \
     include/mud/crypto/ns.h \
     include/mud/crypto/aes.h \
     include/mud/crypto/block_cipher.h \
+    include/mud/crypto/hash.h \
     include/mud/crypto/padding.h \
-    include/mud/crypto/types.h
+    include/mud/crypto/sha.h \
+    include/mud/crypto/types.h \
+    include/mud/crypto/x25519.h
 
 
 libmudcrypto_la_CPPFLAGS = \
