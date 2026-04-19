@@ -38,7 +38,7 @@ using endian_t = mud::core::endian::endian_t;
  * Internal logging is disabled for seurity reasons and performance. Only enable
  * it for development purposes.
  */
-#define X25519_LOGGING true
+#define X25519_LOGGING false
 #if X25519_LOGGING
     #warning "CAUTION: X25519 logging is enabled"
 #else

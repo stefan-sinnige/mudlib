@@ -30,7 +30,9 @@
 #include <mud/crypto/aes.h>
 #include <mud/crypto/block_cipher.h>
 #include <mud/crypto/exception.h>
+#include <mud/crypto/hash.h>
 #include <mud/crypto/padding.h>
+#include <mud/crypto/sha.h>
 #include <mud/crypto/types.h>
 #include <mud/crypto/x25519.h>
 

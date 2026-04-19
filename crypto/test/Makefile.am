@@ -31,6 +31,7 @@ mudcrypto_test_SOURCES = \
     main.cpp \
     aes_test.cpp \
     padding_test.cpp \
+    sha_test.cpp \
     types_test.cpp \
 	x25519_test.cpp
 
