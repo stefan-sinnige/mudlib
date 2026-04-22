@@ -3,7 +3,7 @@
 * Cryptography
     * [Elliptic Curves for Security](rfc/rfc7748.txt)
     * SHA-0, SHA-1 and SHA-2 [NIST FIPS 180-4](https://web.archive.org/web/20161126003357/https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)
-    * SHA-3 [ NIST FIS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)
+    * SHA-3 and SHAKE [NIST FIPS 202](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf)
 * HTTP
     * [Hypertext Transfer Protocol -- HTTP/1.0](rfc/rfc1945.txt)
     * [HTTP Semantics](rfc/rfc9110.txt)

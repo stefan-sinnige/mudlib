@@ -463,6 +463,8 @@ public:
  * The keying material is a combination of various types that the underlying
  * cipher operations require. If a cipher operation requires certain keying
  * material that is not supplied or is incorrect, an exception shall be raised.
+ *
+ * Not all material is required for any cipher operation.
  */
 class MUDLIB_CRYPTO_API material_t
 {
@@ -471,47 +473,7 @@ public:
      * @brief Create no keying material.
      */
     material_t() = default;
-#if 0
-    /**
-     * @brief Create a keying material combination.
-     * @param key The key.
-     */
-    material_t(const key_t& key)
-        : _key(key)
-    {}
 
-    /**
-     * @brief Create a keying material combination.
-     * @param key The key.
-     * @param iv The initialisation vector.
-     */
-    material_t(const key_t& key, const iv_t& iv)
-        : _key(key)
-        , _iv(iv)
-    {}
-
-    /**
-     * @brief Create a keying material combination.
-     * @param key The key.
-     * @param counter The initial counter.
-     */
-    material_t(const key_t& key, const counter_t& counter)
-        : _key(key)
-        , _counter(counter)
-    {}
-
-    /**
-     * @brief Create a keying material combination.
-     * @param key The key.
-     * @param nonce The nonce.
-     * @param counter The initial counter.
-     */
-    material_t(const key_t& key, const nonce_t& nonce, const counter_t& counter)
-        : _key(key)
-        , _nonce(nonce)
-        , _counter(counter)
-    {}
-#endif
     /**
      * @brief Copy constructor.
      * @param rhs The material to copy from.
@@ -607,6 +569,49 @@ public:
      */
     padding_t padding() const { return _padding; }
 
+    /**
+     * @brief Set the block size in bits.
+     * @param bits The block-size.
+     * Cryptographic operations often operate on a certain block of data, whose
+     * size is indicated by the block size. This may only need to be defined if
+     * the operation does not use a fixed block-size.
+     */
+    void block_size(size_t bits) { _block_size = bits; }
+
+    /**
+     * @brief Get the block size in bits.
+     */
+    size_t block_size() const { return _block_size; }
+
+    /**
+     * @brief Set the word size in bits.
+     * @param bits The word-size.
+     * Cryptographic operations may use a concept of a 'word' which usually
+     * indicates a certain a fixed-length sequence of bytes in a certain endian
+     * representation.
+     */
+    void word_size(size_t bits) { _word_size = bits; }
+
+    /**
+     * @brief Get the word size in bits.
+     */
+    size_t word_size() const { return _word_size; }
+
+    /**
+     * @brief Set the digest size in bits.
+     * @param bits The digest-size.
+     * Cryptographic hashing operations create a digest (hash) of a certain
+     * pre-determined size. Many cryptographics hashing algorithms produce a
+     * fixed size. This may only need to be defined if te operation may produce
+     * a variable digest size.
+     */
+    void digest_size(size_t value) { _digest_size = value; }
+
+    /**
+     * @brief Get the digest size in bits.
+     */
+    size_t digest_size() const { return _digest_size; }
+
 private:
     /** The key */
     key_t _key;
@@ -625,6 +630,15 @@ private:
 
     /** The padding type. */
     padding_t _padding = padding_t::none;
+
+    /** The block size. */
+    size_t _block_size = 0;
+
+    /** The word size. */
+    size_t _word_size = 0;
+
+    /** The digest size. */
+    size_t _digest_size = 0;
 };
 
 END_MUDLIB_CRYPTO_NS

@@ -60,6 +60,11 @@ BEGIN_MUDLIB_CRYPTO_NS
  * The basic hash.
  * ========================================================================== */
 
+basic_hash::basic_hash(const material_t& hashing)
+    : _hashing(hashing)
+{
+}
+
 basic_hash::~basic_hash()
 {
     delete _sbuf;

@@ -35,6 +35,7 @@ libmudcrypto_la_SOURCES = \
     src/keccak.cpp \
     src/padding.cpp \
     src/sha.cpp \
+    src/shake.cpp \
     src/types.cpp \
     src/x25519.cpp
 
@@ -50,6 +51,7 @@ includemudcrypto_HEADERS = \
     include/mud/crypto/hash.h \
     include/mud/crypto/padding.h \
     include/mud/crypto/sha.h \
+    include/mud/crypto/shake.h \
     include/mud/crypto/types.h \
     include/mud/crypto/x25519.h
 

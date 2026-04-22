@@ -36,6 +36,7 @@
 #include "mud/core/log.h"
 #include "mud/core/endian.h"
 #include "mud/crypto/exception.h"
+#include <algorithm>
 #include <bit>
 #include <cstring>
 
@@ -103,10 +104,11 @@ TRACE_STATE(const uint64_t S[5][5], bool little_endian = true)
 #endif
 }
 
-keccak::keccak(size_t digest_bit_size)
+keccak::keccak(size_t capacity, size_t digest_bit_size, delimited_suffix_t d)
     : _digest_size(digest_bit_size/8)
-    , _capacity(_digest_size * 2)
+    , _capacity(capacity/8)
     , _rate(200 - _capacity)
+    , _d(d)
 {
     /* Initialise the zero state */
     memset(_S, 0, sizeof(_S));
@@ -145,7 +147,10 @@ void
 keccak::close()
 {
     /* Add padding to the final block */
-    _M[_M_sz] ^= 0x06;
+    _M[_M_sz] ^= static_cast<uint8_t>(_d);
+    if ((static_cast<uint8_t>(_d) & 0x80) != 0 && (_M_sz == (_rate - 1))) {
+        computate();
+    }
     _M[_rate-1] ^= 0x80;
           
     /* Finalise the hash */
@@ -284,7 +289,19 @@ void
 keccak::finalise()
 {
     _hash = data_t(_digest_size);
-    memcpy(_hash.data(), _S, _digest_size);
+
+    /* Squeeze up to the rate size. If more is needed, perform another state
+     * permutation. */
+    size_t offset = 0;
+    while (offset < _digest_size) {
+        size_t sz = std::min(_rate, _digest_size - offset);
+        memcpy(_hash.data() + offset, _S, sz);
+        offset += sz;
+        if (offset < _digest_size) {
+            computate();
+        }
+    }
+    //memcpy(_hash.data(), _S, _digest_size);
 }
 
 END_MUDLIB_CRYPTO_NS

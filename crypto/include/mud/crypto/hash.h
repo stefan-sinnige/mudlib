@@ -72,9 +72,16 @@ public:
     virtual size_t hash_size() const = 0;
 
     /**
-     * @brief Default constructor initialises the hash.
+     * @brief Default constructor initialises the hash, using default hashing
+     * material.
      */
     basic_hash() = default;
+
+    /**
+     * @brief Default constructor initialises the hash.
+     * @brief hashing The hashing material.
+     */
+    basic_hash(const material_t& hashing);
 
     /**
      * @brief Not copyable
@@ -118,6 +125,11 @@ public:
     virtual const data_t& hash() const = 0;
 
     /**
+     * @brief Return the hashing material.
+     */
+    const material_t& hashing() const { return _hashing; }
+
+    /**
      * @brief Create and return a filtering stream buffer for calculating hash
      * values.
      * @param chain The chained stream buffer.
@@ -137,6 +149,9 @@ public:
 private:
     /* The stream buffer */
     hash_streambuf* _sbuf = nullptr;
+
+    /* The hashing material */
+    material_t _hashing;
 };
 
 /**
@@ -216,7 +231,8 @@ private:
  * @brief Factory for hashes, indexed by the hash specification.
  */
 typedef ::mud::core::factory<std::string,
-                             mud::crypto::basic_hash>
+                             mud::crypto::basic_hash,
+                             mud::crypto::material_t>
         hash_factory;
 
 END_MUDLIB_CRYPTO_NS
