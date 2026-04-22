@@ -590,7 +590,6 @@ FEATURE("SHA")
         ctx.algorithm->close();
     })
     THEN("The SHA is generated", [](context& ctx) {
-        std::cout << ctx.algorithm->hash() << std::endl;
         ASSERT("42ec62ab686554e2ed44e60e918fe13daf52cc84",
                ctx.to_string(ctx.algorithm->hash()));
     })

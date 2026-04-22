@@ -48,14 +48,13 @@ class MUDLIB_CRYPTO_API sha_algorithm : public basic_hash
 public:
     /**
      * @brief Construct a SHA algorithm
-     * @param message_size The maximum message size (bits).
      * @param block_size The block size to operate on (bits).
      * @param word_size The word size (bits), for example @c 32 or @c 64.
      * @param digest_size The digest size (bits).
      * @throw mud::crypto::crypto_error if the combination of parameters yields
      * an unsupported algorithm.
      */
-    sha_algorithm(size_t message_size, size_t block_size, size_t word_size, size_t digest_size);
+    sha_algorithm(size_t block_size, size_t word_size, size_t digest_size);
 
     /**
      * @brief Return the hash specifications.
@@ -102,10 +101,6 @@ private:
 
 /**
  * @brief The SHA digest.
- * @tparam MessageSize The maximum message bit size (2^MessageSize). A value of
- *         @c 0 indicates that there is no maximum size. Typical values are
- *         @c 0, @c 64
- * and @c 128.
  * @tparam BlockSize The hash block size in bits. Typical values are @c 512 and
  *         @c 1024.
  * @tparam WordSize The size of a word in bits. Typical values are @c 32 and
@@ -142,8 +137,7 @@ private:
  *    std::cout << "SHA-256 hash: " << hash.digest() << std::endl;
  * @endcode
  */
-template<size_t MessageSize, size_t BlockSize, size_t WordSize,
-         size_t DigestSize>
+template<size_t BlockSize, size_t WordSize, size_t DigestSize>
 class MUDLIB_CRYPTO_API sha : public sha_algorithm
 {
 public:
@@ -151,12 +145,25 @@ public:
      * @brief Construct a SHA-2 based calculator.
      */
     sha();
+
+    /**
+     * @brief Construct a SHA-2 based calculator.
+     * @param hashing The hashing material.
+     */
+    sha(const material_t& hashing);
 };
 
-template<size_t MessageSize, size_t BlockSize, size_t WordSize,
+template<size_t BlockSize, size_t WordSize,
          size_t DigestSize>
-sha<MessageSize, BlockSize, WordSize, DigestSize>::sha()
-    : sha_algorithm(MessageSize, BlockSize, WordSize, DigestSize)
+sha<BlockSize, WordSize, DigestSize>::sha()
+    : sha_algorithm(BlockSize, WordSize, DigestSize)
+{
+}
+
+template<size_t BlockSize, size_t WordSize,
+         size_t DigestSize>
+sha<BlockSize, WordSize, DigestSize>::sha(const material_t& /* hashing */)
+    : sha_algorithm(BlockSize, WordSize, DigestSize)
 {
 }
 
@@ -165,57 +172,57 @@ sha<MessageSize, BlockSize, WordSize, DigestSize>::sha()
  *
  * @note This digest is no longer considered to be cryptographically secure.
  */
-typedef sha<64, 512, 32, 160> sha_1;
+typedef sha<512, 32, 160> sha_1;
 
 /**
  * @brief SHA-224 digist.
  */
-typedef sha<64, 512, 32, 224> sha_224;
+typedef sha<512, 32, 224> sha_224;
 
 /**
  * @brief SHA-256 digist.
  */
-typedef sha<64, 512, 32, 256> sha_256;
+typedef sha<512, 32, 256> sha_256;
 
 /**
  * @brief SHA-384 digist.
  */
-typedef sha<128, 1024, 64, 384> sha_384;
+typedef sha<1024, 64, 384> sha_384;
 
 /**
  * @brief SHA-512 digist.
  */
-typedef sha<128, 1024, 64, 512> sha_512;
+typedef sha<1024, 64, 512> sha_512;
 
 /**
  * @brief SHA-512/224 digist.
  */
-typedef sha<128, 1024, 64, 224> sha_512_224;
+typedef sha<1024, 64, 224> sha_512_224;
 
 /**
  * @brief SHA-512/256 digist.
  */
-typedef sha<128, 1024, 64, 256> sha_512_256;
+typedef sha<1024, 64, 256> sha_512_256;
 
 /**
  * @brief SHA3-224
  */
-typedef sha<0, 1152, 64, 224> sha3_224;
+typedef sha<1152, 64, 224> sha3_224;
 
 /**
  * @brief SHA3-256
  */
-typedef sha<0, 1088, 64, 256> sha3_256;
+typedef sha<1088, 64, 256> sha3_256;
 
 /**
  * @brief SHA3-384
  */
-typedef sha<0, 832, 64, 384> sha3_384;
+typedef sha<832, 64, 384> sha3_384;
 
 /**
  * @brief SHA3-512
  */
-typedef sha<0, 576, 64, 512> sha3_512;
+typedef sha<576, 64, 512> sha3_512;
 
 END_MUDLIB_CRYPTO_NS
 

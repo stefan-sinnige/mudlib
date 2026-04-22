@@ -63,17 +63,18 @@ With COMMAND:
 
 With OPTIONS:
     -h, --help                Show this help.
-    -k, --key <HEX>           Specify a hexadecimal key.
-    -i, --iv <HEX>            Specify a hexadecimal initial vector.
-    -n, --nonce <HEX>         Specify a hexadecimal nonce.
-    -c, --counter <HEX>       Specify a hexadecimal counter.
-    -a, --aad <HEX>           Specify a hexadecimal additional auth data
+    -K, --key <HEX>           Specify a hexadecimal key.
+    -I, --iv <HEX>            Specify a hexadecimal initial vector.
+    -N, --nonce <HEX>         Specify a hexadecimal nonce.
+    -C, --counter <HEX>       Specify a hexadecimal counter.
+    -A, --aad <HEX>           Specify a hexadecimal additional auth data
     -P, --padding <TYPE>      The type of padding, defaults to 'none'. See
                               'list' for a complete list of supported padding.
     -B, --block-cipher <TYPE> The block-cipher type. See 'list' for a complete
                               list of supported ciphers.
     -H, -hash<TYPE>           The hash type. See 'list' for a complete list of
                               supported hashes.
+    -D, --digest-size <BITS>  The digest output size (XOF) in bits.
     -I, --input <TYPE>        The input, either a file name or '-' for console
                               input. Defaults to '-'.
     -O, --output <TYPE>       The output, either a file name or '-' for console
@@ -147,7 +148,7 @@ parse_cmd(int argc, char** argv)
     // Optional
     while (--argc && *(++argv)[0] == '-') {
         const char* option = *argv;
-        if (strcmp(*argv, "-k") == 0 || strcmp(*argv, "--key") == 0) {
+        if (strcmp(*argv, "-K") == 0 || strcmp(*argv, "--key") == 0) {
             mud::crypto::data_t data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
@@ -155,7 +156,7 @@ parse_cmd(int argc, char** argv)
             g_material.key(data);
         }
         else
-        if (strcmp(*argv, "-i") == 0 || strcmp(*argv, "--iv") == 0) {
+        if (strcmp(*argv, "-I") == 0 || strcmp(*argv, "--iv") == 0) {
             mud::crypto::data_t data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
@@ -163,7 +164,7 @@ parse_cmd(int argc, char** argv)
             g_material.iv(data);
         }
         else
-        if (strcmp(*argv, "-n") == 0 || strcmp(*argv, "--nonce") == 0) {
+        if (strcmp(*argv, "-N") == 0 || strcmp(*argv, "--nonce") == 0) {
             mud::crypto::data_t data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
@@ -171,7 +172,7 @@ parse_cmd(int argc, char** argv)
             g_material.nonce(data);
         }
         else
-        if (strcmp(*argv, "-c") == 0 || strcmp(*argv, "--counter") == 0) {
+        if (strcmp(*argv, "-C") == 0 || strcmp(*argv, "--counter") == 0) {
             mud::crypto::data_t data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
@@ -179,7 +180,7 @@ parse_cmd(int argc, char** argv)
             g_material.counter(data);
         }
         else
-        if (strcmp(*argv, "-a") == 0 || strcmp(*argv, "--aad") == 0) {
+        if (strcmp(*argv, "-A") == 0 || strcmp(*argv, "--aad") == 0) {
             mud::crypto::data_t data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
@@ -220,6 +221,14 @@ parse_cmd(int argc, char** argv)
                           << "padding '" << *argv << "'" << std::endl;
                 return 1;
             }
+        }
+        else
+        if (strcmp(*argv, "-D") == 0 || strcmp(*argv, "--digest-size") == 0) {
+            --argc, ++argv;
+            if (check_argument(option, argc) != 0) {
+                return 1;
+            }
+            g_material.digest_size(atoi(*argv));
         }
         else
         if (strcmp(*argv, "-I") == 0 || strcmp(*argv, "--input") == 0) {
@@ -387,7 +396,8 @@ hash()
     /* Hash the input */
     try {
         /* Create the hash */
-        auto hash = mud::crypto::hash_factory::instance().create(g_hash);
+        auto hash = mud::crypto::hash_factory::instance().
+                    create(g_hash, g_material);
 
         /* Assign it to the input stream for on the fly decryption */
         std::istream istr(hash->sbuf(g_istr->rdbuf()));

@@ -1098,18 +1098,6 @@ sha_algorithm::sha_2_impl<uint64_t>::Sigma_1(uint64_t x)
  * SHA-3 algorithm
  * ========================================================================== */
 
-/* Keccak Round Constants */
-const uint64_t sha3_rc[24] = {
-    0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
-    0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
-    0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
-    0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
-    0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
-    0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
-    0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
-    0x8000000000008080, 0x0000000080000001, 0x8000000080008008
-};
-
 class sha_algorithm::sha_3_impl: public sha_algorithm::impl
 {
 public:
@@ -1158,7 +1146,8 @@ private:
 };
 
 sha_algorithm::sha_3_impl::sha_3_impl(size_t digest_bit_size)
-    : _keccak(digest_bit_size)
+    : _keccak(2*digest_bit_size, digest_bit_size,
+              keccak::delimited_suffix_t::sha3)
 {
     switch (digest_bit_size) {
         case 224:
@@ -1210,8 +1199,8 @@ sha_algorithm::sha_3_impl::hash_size() const
  * SHA Algorithm
  * ========================================================================== */
 
-sha_algorithm::sha_algorithm(size_t message_size, size_t block_size,
-        size_t word_size, size_t digest_size)
+sha_algorithm::sha_algorithm(size_t block_size, size_t word_size,
+                             size_t digest_size)
 {
     if (word_size == 32) {
         if ((block_size == 512) &&

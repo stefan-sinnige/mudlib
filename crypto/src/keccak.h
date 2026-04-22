@@ -36,10 +36,21 @@ class keccak
 {
 public:
     /**
-     * @brief Constructor.
-     * @param digest_bit_size The size of the digest in bits.
+     * Delimiter suffix values
      */
-    keccak(size_t digest_bit_size);
+    enum class delimited_suffix_t {
+        sha3   = 0x06,
+        shake  = 0x1f,
+        cshake = 0x04
+    };
+
+    /**
+     * @brief Constructor.
+     * @param capacity The capacity in bits.
+     * @param digest_bit_size The size of the digest in bits.
+     * @param d The delimited suffix (padding)
+     */
+    keccak(size_t capacity, size_t digest_bit_size, delimited_suffix_t d);
 
     /**
      * @brief Destructor.
@@ -88,6 +99,9 @@ private:
 
     /* The rate (block-size) in bytes */
     size_t _rate;
+
+    /** The delimited suffix */
+    delimited_suffix_t _d;
 
     /* State 5x5xWord (1600-bit) */
     uint64_t _S[5][5];
