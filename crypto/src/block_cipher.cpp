@@ -35,8 +35,8 @@ using mud::core::endian;
 using endian_t = mud::core::endian::endian_t;
 
 /**
- * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purposes.
+ * Internal logging is disabled for security reasons and performance. Only
+ * enable it for development purposes.
  */
 #define BLOCK_CIPHER_LOGGING false
 #if BLOCK_CIPHER_LOGGING
@@ -185,7 +185,7 @@ basic_mode::postlude_decrypt(const data_t& output)
  *
  * ========================================================================== */
 
-ecb::ecb(const material_t& keying, basic_algorithm& algorithm)
+ecb::ecb(const cipher_material_t& keying, basic_algorithm& algorithm)
     : basic_mode(keying, algorithm)
 {
     LOG(log);
@@ -285,7 +285,7 @@ ecb::postlude_decrypt(const data_t& output)
  *
  * ========================================================================== */
 
-cbc::cbc(const material_t& keying, basic_algorithm& algorithm)
+cbc::cbc(const cipher_material_t& keying, basic_algorithm& algorithm)
     : basic_mode(keying, algorithm)
     , _iv(keying.iv())
     , _previous(_iv)
@@ -401,7 +401,7 @@ cbc::postlude_decrypt(const data_t& output)
  * CFB mode does not need padding.
  * ========================================================================== */
 
-cfb::cfb(const material_t& keying, basic_algorithm& algorithm)
+cfb::cfb(const cipher_material_t& keying, basic_algorithm& algorithm)
     : basic_mode(keying, algorithm)
     , _iv(keying.iv())
     , _previous(_iv)
@@ -503,7 +503,7 @@ cfb::postlude_decrypt(const data_t& output)
  * CTR mode does not need padding.
  * ========================================================================== */
 
-ctr::ctr(const material_t& keying, basic_algorithm& algorithm)
+ctr::ctr(const cipher_material_t& keying, basic_algorithm& algorithm)
     : basic_mode(keying, algorithm)
     , _counter(keying.counter())
 {
@@ -640,7 +640,7 @@ ctr::postlude_decrypt(const data_t& output)
  * GCM mode does not need padding.
  * ========================================================================== */
 
-gcm::gcm(const material_t& keying, basic_algorithm& algorithm)
+gcm::gcm(const cipher_material_t& keying, basic_algorithm& algorithm)
     : basic_mode(keying, algorithm)
     , _X(data_t(block_size()))
 {

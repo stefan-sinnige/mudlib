@@ -62,9 +62,14 @@ public:
     virtual std::string specs() const override;
 
     /**
-     * @brief Return the hash size.
+     * @brief Return the hash size (in bytes).
      */
     virtual size_t hash_size() const override;
+
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    virtual size_t block_size() const override;
 
     /**
      * @brief Update the hash with a chunk of binary input data.
@@ -82,7 +87,22 @@ public:
      */
     virtual const data_t& hash() const override;
 
+    /**
+     * @brief Reset the hashing algorithm.
+     * @param hashing The hashing material.
+     */
+    virtual void reset(const hash_material_t& hashing) override;
+
 private:
+    /* Block-size */
+    size_t _block_size;
+
+    /* Word-size */
+    size_t _word_size;
+
+    /* Digest-size */
+    size_t _digest_size;
+
     /**
      * Implementation
      */
@@ -150,7 +170,7 @@ public:
      * @brief Construct a SHA-2 based calculator.
      * @param hashing The hashing material.
      */
-    sha(const material_t& hashing);
+    sha(const hash_material_t& hashing);
 };
 
 template<size_t BlockSize, size_t WordSize,
@@ -162,7 +182,7 @@ sha<BlockSize, WordSize, DigestSize>::sha()
 
 template<size_t BlockSize, size_t WordSize,
          size_t DigestSize>
-sha<BlockSize, WordSize, DigestSize>::sha(const material_t& /* hashing */)
+sha<BlockSize, WordSize, DigestSize>::sha(const hash_material_t& /* hashing */)
     : sha_algorithm(BlockSize, WordSize, DigestSize)
 {
 }

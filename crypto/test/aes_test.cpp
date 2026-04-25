@@ -60,7 +60,7 @@ CONTEXT()
     mud::crypto::basic_aes* aes = nullptr;
 
     /* The AES keying material */
-    mud::crypto::material_t material;
+    mud::crypto::cipher_material_t material;
 
     /* The input block */
     mud::crypto::data_t input;

@@ -82,6 +82,12 @@ data_t::pad_end(size_t sz, uint8_t val)
     insert(end(), sz - size(), val);
 }
 
+void
+data_t::resize(size_t sz)
+{
+    std::vector<uint8_t>::resize(sz, 0x00);
+}
+
 uint8_t
 data_t::operator[](size_t n) const
 {

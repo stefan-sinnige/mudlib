@@ -44,8 +44,8 @@ using mud::core::endian;
 using endian_t = mud::core::endian::endian_t;
 
 /**
- * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purposes.
+ * Internal logging is disabled for security reasons and performance. Only
+ * enable it for development purposes.
  */
 #define KECCAK_LOGGING false
 #if KECCAK_LOGGING 
@@ -301,7 +301,6 @@ keccak::finalise()
             computate();
         }
     }
-    //memcpy(_hash.data(), _S, _digest_size);
 }
 
 END_MUDLIB_CRYPTO_NS

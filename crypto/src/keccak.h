@@ -77,6 +77,11 @@ public:
      */
     size_t hash_size() const { return _hash.size(); }
 
+    /**
+     * @brief Return the calculated hash size.
+     */
+    size_t block_size() const { return _rate; }
+
 private:
     /**
      * @brief Computate the hash on the pre-processed fixed sized message block.

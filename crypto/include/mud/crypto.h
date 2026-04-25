@@ -31,6 +31,9 @@
 #include <mud/crypto/block_cipher.h>
 #include <mud/crypto/exception.h>
 #include <mud/crypto/hash.h>
+#include <mud/crypto/hkdf.h>
+#include <mud/crypto/kdf.h>
+#include <mud/crypto/mac.h>
 #include <mud/crypto/padding.h>
 #include <mud/crypto/sha.h>
 #include <mud/crypto/shake.h>
