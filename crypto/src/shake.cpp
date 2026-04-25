@@ -36,8 +36,8 @@ using mud::core::endian;
 using endian_t = mud::core::endian::endian_t;
 
 /**
- * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purposes.
+ * Internal logging is disabled for security reasons and performance. Only
+ * enable it for development purposes.
  */
 #define SHAKE_LOGGING false
 #if SHAKE_LOGGING 
@@ -102,6 +102,11 @@ public:
      */
     size_t hash_size() const;
 
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    size_t block_size() const;
+
 private:
     /**
      * @brief Computate the hash on the pre-processed fixed sized message block.
@@ -164,19 +169,22 @@ shake_algorithm::impl::hash_size() const
     return _keccak.hash_size();
 }
 
+size_t
+shake_algorithm::impl::block_size() const
+{
+    return _keccak.block_size();
+}
+
 /* ==========================================================================
- * SHA Algorithm
+ * SHAKE Algorithm
  * ========================================================================== */
 
 shake_algorithm::shake_algorithm(size_t capacity, size_t digest_bit_size)
+    : _capacity(capacity)
+    , _digest_bit_size(digest_bit_size)
 {
-    if (capacity == 256 || capacity == 512) {
-        _impl = std::unique_ptr<impl, impl_deleter>(
-                new impl(capacity, digest_bit_size));
-    }
-    if (!_impl) {
-        throw crypto_error("Unsupported SHAKE function");
-    }
+    hash_material_t dummy;
+    reset(dummy);
 }
 
 std::string
@@ -189,6 +197,12 @@ size_t
 shake_algorithm::hash_size() const
 {
     return _impl->hash_size();
+}
+
+size_t
+shake_algorithm::block_size() const
+{
+    return _impl->block_size();
 }
 
 void
@@ -207,6 +221,18 @@ const data_t&
 shake_algorithm::hash() const
 {
     return _impl->hash();
+}
+
+void
+shake_algorithm::reset(const hash_material_t& /* hashing */)
+{
+    if (_capacity == 256 || _capacity == 512) {
+        _impl = std::unique_ptr<impl, impl_deleter>(
+                new impl(_capacity, _digest_bit_size));
+    }
+    if (!_impl) {
+        throw crypto_error("Unsupported SHAKE function");
+    }
 }
 
 /* Hash Factory Registrations */

@@ -35,8 +35,8 @@ using mud::core::endian;
 using endian_t = mud::core::endian::endian_t;
 
 /**
- * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purposes.
+ * Internal logging is disabled for security reasons and performance. Only
+ * enable it for development purposes.
  */
 #define X25519_LOGGING false
 #if X25519_LOGGING

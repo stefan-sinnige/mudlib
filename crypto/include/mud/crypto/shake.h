@@ -61,9 +61,14 @@ public:
     virtual std::string specs() const override;
 
     /**
-     * @brief Return the hash size.
+     * @brief Return the hash size (in bytes).
      */
     virtual size_t hash_size() const override;
+
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    virtual size_t block_size() const override;
 
     /**
      * @brief Update the hash with a chunk of binary input data.
@@ -81,7 +86,19 @@ public:
      */
     virtual const data_t& hash() const override;
 
+    /**
+     * @brief Reset the hashing algorithm.
+     * @param hashing The hashing material.
+     */
+    virtual void reset(const hash_material_t& hashing) override;
+
 private:
+    /* Capacity */
+    size_t _capacity;
+
+    /* Digest bit size */
+    size_t _digest_bit_size;
+
     /**
      * Implementation
      */
@@ -142,7 +159,7 @@ public:
      * The @digest_size (in bits) is required to be defined in the @c hashing
      * material.
      */
-    shake(const material_t& hashing);
+    shake(const hash_material_t& hashing);
 };
 
 template<size_t Capacity>
@@ -152,7 +169,7 @@ shake<Capacity>::shake(size_t digest_bit_size)
 }
 
 template<size_t Capacity>
-shake<Capacity>::shake(const material_t& hashing)
+shake<Capacity>::shake(const hash_material_t& hashing)
     : shake_algorithm(Capacity, hashing.digest_size())
 {
 }

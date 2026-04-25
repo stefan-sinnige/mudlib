@@ -67,9 +67,14 @@ public:
     virtual std::string specs() const = 0;
 
     /**
-     * @brief Return the hash size.
+     * @brief Return the hash size (in bytes).
      */
     virtual size_t hash_size() const = 0;
+
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    virtual size_t block_size() const = 0;
 
     /**
      * @brief Default constructor initialises the hash, using default hashing
@@ -81,7 +86,7 @@ public:
      * @brief Default constructor initialises the hash.
      * @brief hashing The hashing material.
      */
-    basic_hash(const material_t& hashing);
+    basic_hash(const hash_material_t& hashing);
 
     /**
      * @brief Not copyable
@@ -127,16 +132,21 @@ public:
     /**
      * @brief Return the hashing material.
      */
-    const material_t& hashing() const { return _hashing; }
+    const hash_material_t& hashing() const { return _hashing; }
+
+    /**
+     * @brief Reset the hashing algorithm.
+     * @param hashing The hashing material.
+     */
+    virtual void reset(const hash_material_t& hashing) = 0;
 
     /**
      * @brief Create and return a filtering stream buffer for calculating hash
      * values.
      * @param chain The chained stream buffer.
      * @details
-     * The stream buffer can be used in conjunction with any @c std::istream
-     * to decrypt of @c std::ostream to calculate the hash value while the
-     * data is streamed.
+     * The stream buffer can be used in conjunction with any @c std::stream
+     * to calculate the hash value while the data is streamed.
      */
     virtual hash_streambuf* sbuf(std::streambuf* chain);
 
@@ -151,7 +161,7 @@ private:
     hash_streambuf* _sbuf = nullptr;
 
     /* The hashing material */
-    material_t _hashing;
+    hash_material_t _hashing;
 };
 
 /**
@@ -232,7 +242,7 @@ private:
  */
 typedef ::mud::core::factory<std::string,
                              mud::crypto::basic_hash,
-                             mud::crypto::material_t>
+                             mud::crypto::hash_material_t>
         hash_factory;
 
 END_MUDLIB_CRYPTO_NS

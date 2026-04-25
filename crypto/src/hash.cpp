@@ -29,8 +29,8 @@
 #include "mud/crypto/exception.h"
 
 /**
- * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purposes.
+ * Internal logging is disabled for security reasons and performance. Only
+ * enable it for development purposes.
  */
 #define HASH_LOGGING false
 #if HASH_LOGGING 
@@ -60,7 +60,7 @@ BEGIN_MUDLIB_CRYPTO_NS
  * The basic hash.
  * ========================================================================== */
 
-basic_hash::basic_hash(const material_t& hashing)
+basic_hash::basic_hash(const hash_material_t& hashing)
     : _hashing(hashing)
 {
 }

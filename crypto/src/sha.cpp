@@ -36,8 +36,8 @@ using mud::core::endian;
 using endian_t = mud::core::endian::endian_t;
 
 /**
- * Internal logging is disabled for seurity reasons and performance. Only enable
- * it for development purposes.
+ * Internal logging is disabled for security reasons and performance. Only
+ * enable it for development purposes.
  */
 #define SHA_LOGGING false
 #if SHA_LOGGING 
@@ -104,6 +104,11 @@ public:
      * @brief Return the hash size (in bytes).
      */
     virtual size_t hash_size() const = 0;
+
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    virtual size_t block_size() const = 0;
 };
 
 void
@@ -138,24 +143,24 @@ public:
      * The word size (in bytes) is the size of a word. The message block is
      * treated as an array of (big-endian) words of this size.
      */
-    static constexpr size_t word_size = 4;
+    static constexpr size_t word_sz = 4;
 
     /**
      * The block size (in bytes) in the size of a message block over which the
      * hash-value is calculated on.
      */
-    static constexpr size_t block_size = 64;
+    static constexpr size_t block_sz = 64;
 
     /**
      * The length size (in bytes) is the size of the total message length (in
      * bits) that is at the end of the final padded block.
      */
-    static constexpr size_t length_size = 8;
+    static constexpr size_t length_sz = 8;
 
     /**
      * The digest size (in bytes).
      */
-    static constexpr size_t digest_size = 20;
+    static constexpr size_t digest_sz = 20;
 
     /**
      * @brief Constructor.
@@ -185,7 +190,12 @@ public:
     /**
      * @brief Return the hash size (in bytes).
      */
-    size_t hash_size() const override { return digest_size; }
+    size_t hash_size() const override { return digest_sz; }
+
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    size_t block_size() const override { return block_sz; }
 
 private:
     /**
@@ -270,7 +280,7 @@ sha_algorithm::sha_1_impl::update(const data_t& chunk)
     auto sz = chunk.size();
     while (sz > 0) {
         /* Fill up (part of) the block */
-        size_t available = (block_size - _M_sz);
+        size_t available = (block_sz - _M_sz);
         size_t copy = (sz > available ? available : sz);
         memcpy(&_M[_M_sz], src, copy);
         sz -= copy;
@@ -278,7 +288,7 @@ sha_algorithm::sha_1_impl::update(const data_t& chunk)
         _M_sz += copy;
 
         /* If the block is full, computate it. */
-        if (_M_sz == block_size) {
+        if (_M_sz == block_sz) {
             computate();
         }
     }
@@ -318,19 +328,19 @@ sha_algorithm::sha_1_impl::pad()
     }
     if (_pad_state == pad_state_t::start) {
         /* Fill the message block up with zero's. */
-        memset(&_M[_M_sz], 0, block_size - _M_sz);
+        memset(&_M[_M_sz], 0, block_sz - _M_sz);
     } 
-    if (_M_sz > (block_size - length_size)) {
+    if (_M_sz > (block_sz - length_sz)) {
         /* No space left to hold the length. We need an additional block. */
-        _M_sz = block_size;
+        _M_sz = block_sz;
         return false;
     }
     else {
         /* Add the 64-bit message length in big-endian at the end */
         _pad_state = pad_state_t::length;
-        *(uint64_t*)(&_M[block_size - 8]) = endian::convert(
+        *(uint64_t*)(&_M[block_sz - 8]) = endian::convert(
                 endian::native(), endian_t::big, _l);
-        _M_sz = block_size;
+        _M_sz = block_sz;
         return true;
     }
 }
@@ -345,21 +355,21 @@ sha_algorithm::sha_1_impl::finalise()
     }
 
     /* As the H array is correctly byte-oriented, we can just do a byte copy */
-    _hash = data_t(digest_size);
-    memcpy(_hash.data(), H, digest_size);
+    _hash = data_t(digest_sz);
+    memcpy(_hash.data(), H, digest_sz);
 }
 
 void
 sha_algorithm::sha_1_impl::computate()
 {
     /* Expect only a full message block */
-    if (_M_sz != block_size) {
+    if (_M_sz != block_sz) {
         throw mud::crypto::size_error("unfulfilled SHA message-block");
     }
 
     /* Display the initial hash value for the first block */
     LOG(log);
-    if (_l <= block_size) {
+    if (_l <= block_sz) {
         TRACE(log) << "Initial hash value:" << std::endl;
         for (int i = 0; i < 5; ++i) {
             TRACE(log) << "  H[" << std::dec << i << "] = " << std::hex
@@ -597,19 +607,19 @@ public:
      * The word size (in bytes) is the size of a word. The message block is
      * treated as an array of (big-endian) words of this size.
      */
-    static constexpr size_t word_size = sizeof(word_type_t);
+    static constexpr size_t word_sz = sizeof(word_type_t);
 
     /**
      * The block size (in bytes) in the size of a message block over which the
      * hash-value is calculated on.
      */
-    static constexpr size_t block_size = word_size*16;
+    static constexpr size_t block_sz = word_sz*16;
 
     /**
      * The length size (in bytes) is the size of the total message length (in
      * bits) that is at the end of the final padded block.
      */
-    static constexpr size_t length_size = word_size*2;
+    static constexpr size_t length_sz = word_sz*2;
 
     /**
      * @brief Constructor
@@ -646,6 +656,11 @@ public:
      * @brief Return the hash size (in bytes).
      */
     size_t hash_size() const override { return _digest_size; }
+
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    size_t block_size() const override { return block_sz; }
 
 private:
     /**
@@ -722,7 +737,7 @@ template<>
 sha_algorithm::sha_2_impl<uint32_t>::sha_2_impl(size_t digest_bit_size)
     : _digest_size(digest_bit_size / 8)
 {
-    _M = new uint8_t[block_size];
+    _M = new uint8_t[block_sz];
     if (digest_bit_size == 224) {
         _specs = "SHA-224";
         _K = sha_32_k;
@@ -741,7 +756,7 @@ template<>
 sha_algorithm::sha_2_impl<uint64_t>::sha_2_impl(size_t digest_bit_size)
     : _digest_size(digest_bit_size / 8)
 {
-    _M = new uint8_t[block_size];
+    _M = new uint8_t[block_sz];
     if (digest_bit_size == 224) {
         _specs = "SHA-512/224";
         _K = sha_64_k;
@@ -795,7 +810,7 @@ sha_algorithm::sha_2_impl<WordType>::update(const data_t& chunk)
     auto sz = chunk.size();
     while (sz > 0) {
         /* Fill up (part of) the block */
-        size_t available = (block_size - _M_sz);
+        size_t available = (block_sz - _M_sz);
         size_t copy = (sz > available ? available : sz);
         memcpy(&_M[_M_sz], src, copy);
         sz -= copy;
@@ -803,7 +818,7 @@ sha_algorithm::sha_2_impl<WordType>::update(const data_t& chunk)
         _M_sz += copy;
 
         /* If the block is full, computate it. */
-        if (_M_sz == block_size) {
+        if (_M_sz == block_sz) {
             computate();
         }
     }
@@ -849,23 +864,23 @@ sha_algorithm::sha_2_impl<WordType>::pad()
     }
     if (_pad_state == pad_state_t::start) {
         /* Fill the message block up with zero's. */
-        memset(&_M[_M_sz], 0, block_size - _M_sz);
+        memset(&_M[_M_sz], 0, block_sz - _M_sz);
     } 
-    if (_M_sz > (block_size - length_size)) {
+    if (_M_sz > (block_sz - length_sz)) {
         /* No space left to hold the length. We need an additional block. */
-        _M_sz = block_size;
+        _M_sz = block_sz;
         return false;
     }
     else {
         /* Add the message length in big-endian at the end */
         _pad_state = pad_state_t::length;
-        if (length_size == 16) {
-            *(uint64_t*)(&_M[block_size - 16]) = endian::convert(
+        if (length_sz == 16) {
+            *(uint64_t*)(&_M[block_sz - 16]) = endian::convert(
                     endian::native(), endian_t::big, _l.high);
         }
-        *(uint64_t*)(&_M[block_size - 8]) = endian::convert(
+        *(uint64_t*)(&_M[block_sz - 8]) = endian::convert(
                 endian::native(), endian_t::big, _l.low);
-        _M_sz = block_size;
+        _M_sz = block_sz;
         return true;
     }
 }
@@ -874,17 +889,17 @@ void
 sha_algorithm::sha_2_impl<WordType>::computate()
 {
     /* Expect only a full message block */
-    if (_M_sz != block_size) {
+    if (_M_sz != block_sz) {
         throw mud::crypto::size_error("unfulfilled SHA message-block");
     }
 
     /* Display the initial hash value for the first block */
     LOG(log);
-    if (_l.high == 0 && _l.low <= block_size) {
+    if (_l.high == 0 && _l.low <= block_sz) {
         TRACE(log) << "Initial hash value:" << std::endl;
-        for (int i = 0; i < sizeof(_H)/word_size; ++i) {
+        for (int i = 0; i < sizeof(_H)/word_sz; ++i) {
             TRACE(log) << "  H[" << std::dec << i << "] = " << std::hex
-                       << std::setfill('0') << std::setw(word_size*2)
+                       << std::setfill('0') << std::setw(word_sz*2)
                        << _H[i] << std::endl;
         }
     }
@@ -894,7 +909,7 @@ sha_algorithm::sha_2_impl<WordType>::computate()
     word_type_t W[17];
     for (t = 0; t <= 15; ++t) {
         W[t] = endian::convert(endian_t::big, endian::native(),
-                               *(word_type_t*)(&_M[t*word_size]));
+                               *(word_type_t*)(&_M[t*word_sz]));
     }
 
     /* Display the block contents */
@@ -903,7 +918,7 @@ sha_algorithm::sha_2_impl<WordType>::computate()
         TRACE(log) << "  W["
                    << std::dec << std::setfill(' ') << std::setw(2) << i
                    << "] = " << std::hex
-                   << std::setfill('0') << std::setw(word_size*2)
+                   << std::setfill('0') << std::setw(word_sz*2)
                    << W[i] << std::endl;
     }
 
@@ -948,7 +963,7 @@ sha_algorithm::sha_2_impl<WordType>::computate()
         a = T_1 + T_2;
 
         /* Log the result */
-        if (word_size == 4) {
+        if (word_sz == 4) {
             if (t == 0) {
                 TRACE(log) << "          A        B        C        D"
                            << "        E        F        G        H"
@@ -1001,7 +1016,7 @@ sha_algorithm::sha_2_impl<WordType>::computate()
     TRACE(log) << "Hash value:" << std::endl;
     for (int i = 0; i < 8; ++i) {
         TRACE(log) << "H[" << std::dec << i << "] = " << std::hex
-                   << std::setfill('0') << std::setw(word_size*2)
+                   << std::setfill('0') << std::setw(word_sz*2)
                    << _H[i] << std::endl;
     }
 
@@ -1132,6 +1147,11 @@ public:
      */
     size_t hash_size() const override;
 
+    /**
+     * @brief Return the block size (in bytes).
+     */
+    size_t block_size() const override;
+
 private:
     /**
      * @brief Computate the hash on the pre-processed fixed sized message block.
@@ -1195,46 +1215,24 @@ sha_algorithm::sha_3_impl::hash_size() const
     return _keccak.hash_size();
 }
 
+size_t
+sha_algorithm::sha_3_impl::block_size() const
+{
+    return _keccak.block_size();
+}
+
 /* ==========================================================================
  * SHA Algorithm
  * ========================================================================== */
 
 sha_algorithm::sha_algorithm(size_t block_size, size_t word_size,
                              size_t digest_size)
+    : _block_size(block_size)
+    , _word_size(word_size)
+    , _digest_size(digest_size)
 {
-    if (word_size == 32) {
-        if ((block_size == 512) &&
-            (digest_size == 160)) {
-            _impl = std::unique_ptr<impl, impl_deleter>(
-                new sha_1_impl());
-        }
-        else
-        if ((block_size == 512) &&
-            (digest_size == 224 || digest_size == 256)) {
-            _impl = std::unique_ptr<impl, impl_deleter>(
-                new sha_2_impl<uint32_t>(digest_size));
-        }
-    }
-    else
-    if (word_size == 64) {
-        if ((block_size == 1024) &&
-            (digest_size == 224 || digest_size == 256 ||
-             digest_size == 384 || digest_size == 512)) {
-            _impl = std::unique_ptr<impl, impl_deleter>(
-                new sha_2_impl<uint64_t>(digest_size));
-        }
-        else
-        if ((block_size == 1152 && digest_size == 224) ||
-            (block_size == 1088 && digest_size == 256) ||
-            (block_size == 832  && digest_size == 384) ||
-            (block_size == 576  && digest_size == 512)) {
-            _impl = std::unique_ptr<impl, impl_deleter>(
-                new sha_3_impl(digest_size));
-        }
-    }
-    if (!_impl) {
-        throw crypto_error("Unsupported SHA function");
-    }
+    hash_material_t dummy;
+    reset(dummy);
 }
 
 std::string
@@ -1247,6 +1245,12 @@ size_t
 sha_algorithm::hash_size() const
 {
     return _impl->hash_size();
+}
+
+size_t
+sha_algorithm::block_size() const
+{
+    return _impl->block_size();
 }
 
 void
@@ -1265,6 +1269,44 @@ const data_t&
 sha_algorithm::hash() const
 {
     return _impl->hash();
+}
+
+void
+sha_algorithm::reset(const hash_material_t& /* hashing */)
+{
+    if (_word_size == 32) {
+        if ((_block_size == 512) &&
+            (_digest_size == 160)) {
+            _impl = std::unique_ptr<impl, impl_deleter>(
+                new sha_1_impl());
+        }
+        else
+        if ((_block_size == 512) &&
+            (_digest_size == 224 || _digest_size == 256)) {
+            _impl = std::unique_ptr<impl, impl_deleter>(
+                new sha_2_impl<uint32_t>(_digest_size));
+        }
+    }
+    else
+    if (_word_size == 64) {
+        if ((_block_size == 1024) &&
+            (_digest_size == 224 || _digest_size == 256 ||
+             _digest_size == 384 || _digest_size == 512)) {
+            _impl = std::unique_ptr<impl, impl_deleter>(
+                new sha_2_impl<uint64_t>(_digest_size));
+        }
+        else
+        if ((_block_size == 1152 && _digest_size == 224) ||
+            (_block_size == 1088 && _digest_size == 256) ||
+            (_block_size == 832  && _digest_size == 384) ||
+            (_block_size == 576  && _digest_size == 512)) {
+            _impl = std::unique_ptr<impl, impl_deleter>(
+                new sha_3_impl(_digest_size));
+        }
+    }
+    if (!_impl) {
+        throw crypto_error("Unsupported SHA function");
+    }
 }
 
 /* SHA Factory Registrations */

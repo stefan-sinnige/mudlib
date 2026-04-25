@@ -32,7 +32,11 @@ libmudcrypto_la_SOURCES = \
     src/aes.cpp \
     src/block_cipher.cpp \
     src/hash.cpp \
+    src/hmac.cpp \
+    src/hkdf.cpp \
     src/keccak.cpp \
+    src/kdf.cpp \
+    src/mac.cpp \
     src/padding.cpp \
     src/sha.cpp \
     src/shake.cpp \
@@ -49,6 +53,10 @@ includemudcrypto_HEADERS = \
     include/mud/crypto/aes.h \
     include/mud/crypto/block_cipher.h \
     include/mud/crypto/hash.h \
+    include/mud/crypto/hkdf.h \
+    include/mud/crypto/hmac.h \
+    include/mud/crypto/kdf.h \
+    include/mud/crypto/mac.h \
     include/mud/crypto/padding.h \
     include/mud/crypto/sha.h \
     include/mud/crypto/shake.h \

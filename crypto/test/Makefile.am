@@ -30,6 +30,8 @@ TESTS = $(check_PROGRAMS)
 mudcrypto_test_SOURCES = \
     main.cpp \
     aes_test.cpp \
+    kdf_test.cpp \
+    mac_test.cpp \
     padding_test.cpp \
     sha_test.cpp \
     shake_test.cpp \

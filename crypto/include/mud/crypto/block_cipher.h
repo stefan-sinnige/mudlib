@@ -157,7 +157,7 @@ public:
     /**
      * @brief Return the keying material.
      */
-    const material_t& keying() const { return _keying; }
+    const cipher_material_t& keying() const { return _keying; }
 
     /**
      * @brief Encrypt plain text block into cipher text.
@@ -192,7 +192,7 @@ protected:
      * @details
      * Create the basic-mode with PCKS#7 padding.
      */
-    basic_mode(const material_t& keying, basic_algorithm& algorithm)
+    basic_mode(const cipher_material_t& keying, basic_algorithm& algorithm)
         : _keying(keying)
         , _padder(padding_factory::instance().create(
                 _keying.padding(), _algorithm.block_size()))
@@ -278,7 +278,7 @@ protected:
 
 private:
     /** The keying material */
-    material_t _keying;
+    cipher_material_t _keying;
 
     /** The algorithm */
     basic_algorithm& _algorithm;
@@ -303,7 +303,7 @@ public:
      * @param keying The keying material.
      * @param algorithm The block-cipher algorithm.
      */
-    ecb(const material_t& keying, basic_algorithm& algorithm);
+    ecb(const cipher_material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -393,7 +393,7 @@ public:
      * @param keying The keying material.
      * @param algorithm The block-cipher algorithm.
      */
-    cbc(const material_t& keying, basic_algorithm& algorithm);
+    cbc(const cipher_material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -492,7 +492,7 @@ public:
      * @param keying The keying material.
      * @param algorithm The block-cipher algorithm.
      */
-    cfb(const material_t& keying, basic_algorithm& algorithm);
+    cfb(const cipher_material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -587,7 +587,7 @@ public:
      * @param keying The keying material.
      * @param algorithm The block-cipher algorithm.
      */
-    ctr(const material_t& keying, basic_algorithm& algorithm);
+    ctr(const cipher_material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -679,7 +679,7 @@ public:
      * @param keying The keying material.
      * @param algorithm The block-cipher algorithm.
      */
-    gcm(const material_t& keying, basic_algorithm& algorithm);
+    gcm(const cipher_material_t& keying, basic_algorithm& algorithm);
 
     /**
      * @brief Return the mode specifications.
@@ -1009,7 +1009,7 @@ public:
      * @brief Create a block cipher.
      * @param keying The keying material.
      */
-    block_cipher(const material_t& keying);
+    block_cipher(const cipher_material_t& keying);
 
     /**
      * @brief Destruct a block cipher.
@@ -1088,7 +1088,7 @@ private:
 };
 
 template<typename Algorithm, typename Mode>
-block_cipher<Algorithm, Mode>::block_cipher(const material_t& keying)
+block_cipher<Algorithm, Mode>::block_cipher(const cipher_material_t& keying)
     : _mode(keying, _algorithm)
 {
 }
@@ -1190,7 +1190,7 @@ block_cipher<Algorithm, Mode>::sbuf(std::streambuf* chain)
  */
 typedef ::mud::core::factory<std::string,
                              mud::crypto::basic_block_cipher,
-                             mud::crypto::material_t>
+                             mud::crypto::cipher_material_t>
         block_cipher_factory;
 
 END_MUDLIB_CRYPTO_NS
