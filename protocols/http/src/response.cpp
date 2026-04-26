@@ -24,7 +24,7 @@
  * ++ end-license-description ++
  */
 
-#include "mud/http/response.h"
+#include "mud/protocols/http/response.h"
 
 BEGIN_MUDLIB_HTTP_NS
 

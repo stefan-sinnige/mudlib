@@ -28,7 +28,7 @@
 #define _MUDLIB_TLS_SERVER_H_
 
 #include <memory>
-#include <mud/tls/ns.h>
+#include <mud/protocols/tls/ns.h>
 #include <mud/io/tcp.h>
 
 BEGIN_MUDLIB_TLS_NS
@@ -44,10 +44,8 @@ class MUDLIB_TLS_API server
 public:
     /**
      * @brief Constructor of an new TLS server.
-     * @param[in] event_loop The event-loop to register the listening socket to.
      */
-    server(
-        mud::event::event_loop& event_loop = mud::event::event_loop::global());
+    server();
 
     /**
      * @brief Destructor.

@@ -24,8 +24,8 @@
  * ++ end-license-description ++
  */
 
-#include "mud/http/message.h"
-#include "mud/http/chunk.h"
+#include "mud/protocols/http/message.h"
+#include "mud/protocols/http/chunk.h"
 #include "tokenise.h"
 #include <stdexcept>
 

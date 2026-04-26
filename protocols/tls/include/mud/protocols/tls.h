@@ -24,12 +24,13 @@
  * ++ end-license-description ++
  */
 
-#ifndef _MUDLIB_SOAP_H_
-#define _MUDLIB_SOAP_H_
+#ifndef _MUDLIB_TLS_H_
+#define _MUDLIB_TLS_H_
 
-#include <mud/soap/message.h>
-#include <mud/soap/ns.h>
+#include <mud/protocols/tls/client.h>
+#include <mud/protocols/tls/message.h>
+#include <mud/protocols/tls/ns.h>
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_SOAP_H_ */
+#endif /* _MUDLIB_TLS_H_ */

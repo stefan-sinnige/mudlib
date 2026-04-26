@@ -26,9 +26,9 @@
 
 #include <iostream>
 #include <mud/core/event_loop.h>
-#include <mud/http/request.h>
-#include <mud/http/response.h>
-#include <mud/http/server.h>
+#include <mud/protocols/http/request.h>
+#include <mud/protocols/http/response.h>
+#include <mud/protocols/http/server.h>
 #include <string.h>
 
 // ===========================================================================

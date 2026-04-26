@@ -25,8 +25,8 @@
  */
 
 #include "mud/core/event_loop.h"
-#include "mud/http/client.h"
-#include "mud/http/server.h"
+#include "mud/protocols/http/client.h"
+#include "mud/protocols/http/server.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
 #include "mock.h"

@@ -24,8 +24,8 @@
  * ++ end-license-description ++
  */
 
-#include "mud/http/client.h"
-#include "mud/http/communicator.h"
+#include "mud/protocols/http/client.h"
+#include "mud/protocols/http/communicator.h"
 #include "remediator.h"
 #include <memory>
 
@@ -75,7 +75,7 @@ private:
     /** The handler when a connection has been established */
     void on_connected(const mud::core::message& msg);
 
-    /** The handler when a connection has been established */
+    /** The handler when a connection has been terminated */
     void on_disconnected(const mud::core::message& msg);
 
     /** The handler when a message has been received */

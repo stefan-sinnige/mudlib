@@ -33,20 +33,20 @@ libmudsoap_la_SOURCES = \
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
-    include/mud/soap.h
+    include/mud/protocols/soap.h
 
 includemudsoapdir = $(includedir)/mud/soap
 includemudsoap_HEADERS = \
-    include/mud/soap/message.h \
-    include/mud/soap/ns.h
+    include/mud/protocols/soap/message.h \
+    include/mud/protocols/soap/ns.h
 
 libmudsoap_la_CPPFLAGS = \
     -UVERSION \
     -I$(srcdir) \
     -I$(srcdir)/include \
-	-I$(srcdir)/../include \
-	-I$(srcdir)/../../core/include \
-	-I$(srcdir)/../../xml/include
+    -I$(srcdir)/../include \
+    -I$(srcdir)/../../core/include \
+    -I$(srcdir)/../../xml/include
 
 # vi: set ts=4 noexpandtab:
 

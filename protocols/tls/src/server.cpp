@@ -24,7 +24,7 @@
  * ++ end-license-description ++
  */
 
-#include "mud/tls/server.h"
+#include "mud/protocols/tls/server.h"
 #include <list>
 #include <memory>
 #include <mutex>
@@ -36,10 +36,8 @@ class server::communicator : public mud::io::tcp::communicator
 public:
     /**
      * @brief Constructor.
-     * @param[in] event_loop  The event-loop to register the socket to.
      */
-    communicator(
-        mud::event::event_loop& event_loop = mud::event::event_loop::global());
+    communicator();
 
     /**
      * @brief Move constructor.
@@ -68,31 +66,29 @@ private:
     /**
      * Generic TCP receive handler.
      */
-    void on_receive();
+    void on_received(const mud::core::message& msg);
 };
 
-server::communicator::communicator(mud::event::event_loop& event_loop)
-  : mud::io::tcp::communicator(event_loop)
+server::communicator::communicator()
 {
-    mud::io::tcp::communicator::on_receive(
-        std::bind(&server::communicator::on_receive, this));
+    // TODO: attach(...)
 }
 
 void
-server::communicator::on_receive()
+server::communicator::on_received(const mud::core::message& msg)
 {
 }
 
 /**
  * @brief Implementation of the TLS Server.
  */
-class server::impl
+class server::impl: public mud::core::object
 {
 public:
     /**
      * Constructor
      */
-    impl(mud::event::event_loop& event_loop);
+    impl();
 
     /**
      * Destructor
@@ -110,9 +106,6 @@ public:
     void stop();
 
 private:
-    /** The event-loop */
-    mud::event::event_loop& _event_loop;
-
     /** The TCP acceptor to listen for incoming connections */
     mud::io::tcp::acceptor _acceptor;
 
@@ -120,18 +113,17 @@ private:
     std::list<server::communicator> _communicators;
 
     /** The handler when accepting new connections. */
-    void on_accept(mud::io::tcp::socket&&);
+    void on_accepted(const mud::core::message& msg);
 };
 
-server::impl::impl(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop), _acceptor(_event_loop)
+server::impl::impl()
 {
-    _acceptor.on_accept(
-        std::bind(&server::impl::on_accept, this, std::placeholders::_1));
+    attach(_acceptor.accepted(),  &server::impl::on_accepted);
 }
 
 server::impl::~impl()
 {
+    detach();
     stop();
 }
 
@@ -149,8 +141,15 @@ server::impl::stop()
 }
 
 void
-server::impl::on_accept(mud::io::tcp::socket&& socket)
+server::impl::on_accepted(const mud::core::message& msg)
 {
+    // Add a peer-communicator handling this new connection
+    auto socket = _acceptor.connection();
+    if (socket.handle()) {
+        // TODO:
+        // peer comm(socket, _handler);
+        // _communicators.push_back(std::move(comm));
+    }
 }
 
 void
@@ -159,9 +158,9 @@ server::impl_deleter::operator()(server::impl* ptr) const
     delete ptr;
 }
 
-server::server(mud::event::event_loop& event_loop)
+server::server()
 {
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(event_loop));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
 END_MUDLIB_TLS_NS

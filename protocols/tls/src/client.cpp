@@ -24,7 +24,7 @@
  * ++ end-license-description ++
  */
 
-#include "mud/tls/client.h"
+#include "mud/protocols/tls/client.h"
 #include <memory>
 
 BEGIN_MUDLIB_TLS_NS
@@ -34,10 +34,8 @@ class client::communicator : public mud::io::tcp::communicator
 public:
     /**
      * @brief Constructor.
-     * @param[in] event_loop  The event-loop to register the socket to.
      */
-    communicator(mud::event::event_loop& event_loop =
-                                            mud::event::event_loop::global());
+    communicator();
 
     /**
      * @brief Move constructor.
@@ -66,31 +64,29 @@ private:
     /**
      * Generic TCP receive handler.
      */
-    void on_receive();
+    void on_received(const mud::core::message& msg);
 };
 
-client::communicator::communicator(mud::event::event_loop& event_loop)
-  : mud::io::tcp::communicator(event_loop)
+client::communicator::communicator()
 {
-    mud::io::tcp::communicator::on_receive(
-        std::bind(&client::communicator::on_receive, this));
+    // TODO: attach(..)
 }
 
 void
-client::communicator::on_receive()
+client::communicator::on_received(const mud::core::message& msg)
 {
 }
 
 /**
  * @brief Implementation of the TLS Client.
  */
-class client::impl
+class client::impl: public mud::core::object
 {
 public:
     /**
      * Constructor
      */
-    impl(mud::event::event_loop& event_loop);
+    impl();
 
     /**
      * Destructor
@@ -98,9 +94,6 @@ public:
     ~impl();
 
 private:
-    /** The event-loop */
-    mud::event::event_loop& _event_loop;
-
     /** The connector that establishes a connection */
     mud::io::tcp::connector _connector;
 
@@ -108,23 +101,30 @@ private:
     client::communicator _communicator;
 
     /** The handler when a connection has been established */
-    void on_connect(mud::io::tcp::socket&&);
+    void on_connected(const mud::core::message& msg);
+
+    /** The handler when a connection has been terminated */
+    void on_disconnected(const mud::core::message& msg);
 };
 
-client::impl::impl(mud::event::event_loop& event_loop)
-  : _event_loop(event_loop), _connector(_event_loop),
-    _communicator(_event_loop)
+client::impl::impl()
 {
-    _connector.on_connect(
-        std::bind(&client::impl::on_connect, this, std::placeholders::_1));
+    attach(_connector.connected(), &client::impl::on_connected);
+    // TODO: attach(_connector.disconnected(), &client::impl::on_disconnected);
 }
 
 client::impl::~impl() {}
 
 void
-client::impl::on_connect(mud::io::tcp::socket&& socket)
+client::impl::on_connected(const mud::core::message& msg)
 {
-    _communicator.open(std::move(socket));
+    // TODO
+}
+
+void
+client::impl::on_disconnected(const mud::core::message& msg)
+{
+    // TODO
 }
 
 void
@@ -133,9 +133,9 @@ client::impl_deleter::operator()(client::impl* ptr) const
     delete ptr;
 }
 
-client::client(mud::event::event_loop& event_loop)
+client::client()
 {
-    _impl = std::unique_ptr<impl, impl_deleter>(new impl(event_loop));
+    _impl = std::unique_ptr<impl, impl_deleter>(new impl());
 }
 
 END_MUDLIB_TLS_NS

@@ -27,7 +27,7 @@
 #ifndef _MUDLIB_SOAP_MESSAGE_H_
 #define _MUDLIB_SOAP_MESSAGE_H_
 
-#include <mud/soap/ns.h>
+#include <mud/protocols/soap/ns.h>
 #include <mud/xml/document.h>
 #include <iostream>
 #include <string>

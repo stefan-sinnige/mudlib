@@ -27,8 +27,8 @@
 #ifndef _MUDLIB_HTTP_MOCK_H_
 #define _MUDLIB_HTTP_MOCK_H_
 
-#include "mud/http/client.h"
-#include "mud/http/server.h"
+#include "mud/protocols/http/client.h"
+#include "mud/protocols/http/server.h"
 #include "mud/io/tcp.h"
 #include "mud/test.h"
 

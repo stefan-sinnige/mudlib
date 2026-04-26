@@ -39,20 +39,19 @@ mudhttp_test_SOURCES = \
 
 mudhttp_test_CPPFLAGS = \
     -UVERSION \
-	-I$(srcdir)/../include \
-	-I$(srcdir)/../../include \
-	-I$(srcdir)/../../../io/include \
-	-I$(srcdir)/../../../event/include \
-	-I$(srcdir)/../../../core/include \
-	-I$(srcdir)/../../../test/include \
-	$(PTHREAD_CFLAGS)
+    -I$(srcdir)/../include \
+    -I$(srcdir)/../../include \
+    -I$(srcdir)/../../../io/include \
+    -I$(srcdir)/../../../core/include \
+    -I$(srcdir)/../../../test/include \
+    $(PTHREAD_CFLAGS)
 
 mudhttp_test_LDADD = \
     ../libmudhttp.la \
     ../../../io/libmudio.la \
     ../../../core/libmudcore.la \
     ../../../test/libmudtest.la \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+    $(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 
 # vi: set ts=4 noexpandtab:
 
