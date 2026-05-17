@@ -47,6 +47,11 @@ class factory;
 
 /**
  * @brief Template class to create a generic factory by enumeration key.
+ * @tparam AbstractKey The type of the key to refer to a unique object type in
+ * the factory
+ * @tparam AbstractClass The class type of the objects from the factory
+ * @tparam Args The (optional) arguments to pass when creating an object from
+ * the factory.
  *
  * The factory template creates concrete instances of an abstract class. The
  * concrete instance to create is defined by a value of an abstract key.

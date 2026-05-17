@@ -44,14 +44,30 @@ AX_PTHREAD()
 
 # Limit the lex/yacc only to flex and bison (not using AC_PROG_YACC/AC_PROG_LEX)
 # as we're using bison/flex specific directives.
-AC_CHECK_PROGS(FLEX, flex)
-AC_MSG_CHECKING([$BISON version])
+AC_ARG_WITH([flex],
+    [AS_HELP_STRING([--with-flex=PATH],[location of the flex binary])])
+AS_IF([test "x$with_flex" = x],
+    [AC_CHECK_PROGS(FLEX, flex)],
+    [AC_MSG_CHECKING([for $with_flex])
+     AS_IF([test -x $with_flex],
+           [AC_MSG_RESULT([yes])
+            FLEX=$with_flex],
+           [AC_MSG_RESULT([no])])])
+AC_MSG_CHECKING([$FLEX version])
 FLEX_VERSION=$("$FLEX" --version | head -1 | rev | cut -d ' ' -f 1 | rev)
 AX_COMPARE_VERSION([$FLEX_VERSION], [ge], [2.6],[],[
     AC_MSG_ERROR([$FLEX_VERSION found, should be at least 2.6])])
 AC_MSG_RESULT($FLEX_VERSION)
 
-AC_CHECK_PROGS(BISON, bison)
+AC_ARG_WITH([bison],
+    [AS_HELP_STRING([--with-bison=PATH],[location of the bison binary])])
+AS_IF([test "x$with_bison" = x],
+    [AC_CHECK_PROGS(BISON, bison)],
+    [AC_MSG_CHECKING([for $with_bison])
+     AS_IF([test -x $with_bison],
+           [AC_MSG_RESULT([yes])
+            BISON=$with_bison],
+           [AC_MSG_RESULT([no])])])
 AC_MSG_CHECKING([$BISON version])
 BISON_VERSION=$("$BISON" --version | head -1 | rev | cut -d ' ' -f 1 | rev)
 AX_COMPARE_VERSION([$BISON_VERSION], [ge], [3.8],[],[
@@ -59,22 +75,38 @@ AX_COMPARE_VERSION([$BISON_VERSION], [ge], [3.8],[],[
 AC_MSG_RESULT($BISON_VERSION)
 
 # Documentation programs
-#    * Add a '--enable-manual' option to build the manual (PDF)
-AC_ARG_ENABLE([manual],
-  [AS_HELP_STRING([--enable-manual],
-                  [Enable generation of a manual. Default is disabled.])],
-  [enable_manual="yes"],
-  [enable_manual="no"])
-AS_IF([test "x$enable_manual" = "xyes"],[
-    AC_CHECK_PROG([PDFLATEX], [pdflatex], [pdflatex], [no])
-    AC_CHECK_PROG([BIBER], [biber], [biber], [no])
-    AS_IF([test "x$PDFLATEX" = "xno"], [
-        AC_MSG_WARN([Building of manual disabled as pdflatex is not found])
-        enable_manual="no"])
-    AS_IF([test "x$BIBER" = "xno"], [
-        AC_MSG_WARN([Building of manual disabled as biber is not found])
-        enable_manual="no"])])
-AM_CONDITIONAL([MANUAL], [test "x$enable_manual" = "xyes"])
+#    * Add a '--enable-html' option to build the HTML packages. Only enable it
+#      if required binaries are found.
+AC_ARG_WITH([muddoc],
+    [AS_HELP_STRING([--with-muddoc=PATH],[location of the muddoc binary])])
+AC_ARG_WITH([xsltproc],
+    [AS_HELP_STRING([--with-xsltproc=PATH],[location of the xsltproc binary])])
+AC_ARG_ENABLE([html],
+  [AS_HELP_STRING([--enable-html],
+                  [enable generation of HTML documenatation])],
+  [enable_html="yes"],
+  [enable_html="no"])
+AS_IF([test "x$enable_html" = "xyes"],[
+    AS_IF([test "x$with_muddoc" = x],
+        [AC_CHECK_PROGS(MUDDOC, muddoc)],
+        [AC_MSG_CHECKING([for $with_muddoc])
+         AS_IF([test -x $with_muddoc],
+               [AC_MSG_RESULT([yes])
+                MUDDOC=$with_muddoc],
+               [AC_MSG_RESULT([no])])])
+    AS_IF([test "x$with_xsltproc" = x],
+        [AC_CHECK_PROGS(XSLTPROC, xsltproc)],
+        [AC_MSG_CHECKING([for $with_xsltproc])
+         AS_IF([test -x $with_xsltproc],
+               [AC_MSG_RESULT([yes])
+                XSLTPROC=$with_xsltproc],
+               [AC_MSG_RESULT([no])])])
+    AS_IF([test "x$MUDDOC" = "x" -o "x$XSLTPROC" = "x" ],[
+        AC_MSG_WARN([Building of HTML documentation is disabled])
+        enable_html="no"])])
+    # MUDDOC_CXX_FLAGS=
+    AC_SUBST([MUDDOC_CXX_FLAGS])
+AM_CONDITIONAL([HTML], [test "x$enable_html" = "xyes"])
 
 # Create the configuration files. Note that the UI related library and sample
 # is not included.

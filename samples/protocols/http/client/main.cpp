@@ -31,9 +31,9 @@
 #include <vector>
 #include <mud/core/event_loop.h>
 #include <mud/core/uri.h>
-#include <mud/http/client.h>
-#include <mud/http/request.h>
-#include <mud/http/response.h>
+#include <mud/protocols/http/client.h>
+#include <mud/protocols/http/request.h>
+#include <mud/protocols/http/response.h>
 
 // ===========================================================================
 // Main

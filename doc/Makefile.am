@@ -24,7 +24,77 @@
 # ++ end-license-description ++
 #
 
-# Conditionally build the documentation
-doxygen:
+if HTML
+    MUDDOC_HTML = muddoc-html
+else
+    MUDDOC_HTML =
+endif
+
+# HTML directories
+refdir = html/reference
+
+# noinst_SCRIPTS = $(MUDDOC_HTML)
+
+# Define the mud components that hold all the header files to generate the
+# documentation for.
+COMPONENTS = \
+	core \
+	crypto \
+	html \
+	io \
+	protocols \
+	protocols/http \
+	protocols/soap \
+	protocols/tls \
+	test \
+	xml
+
+# As muddoc is llvm-based, it operates as a c++ compiler and would require the
+# same C++ compiler options. All the source-folders would act as include paths
+# and are derived from the component name.
+muddoc_html_CPPFLAGS = $(patsubst %,-I$(top_srcdir)/%/include,$(COMPONENTS))
+
+# Search for all the header files to generate HTML documentation for
+muddoc_html_SOURCES = $(foreach dir,$(COMPONENTS),$(shell find $(top_srcdir)/$(dir)/include -type f -name "*h" | sed 's|$(top_srcdir)/$(dir)/||'))
+
+# All static HTML files
+static_html = \
+    $(refdir)/highlight.js \
+	$(refdir)/mudlib.css \
+	$(refdir)/mud-small.png
+
+# All generated HTML files
+gen_html = $(patsubst include/%.h,$(refdir)/%.html,$(muddoc_html_SOURCES))
+
+# All the HTML data (generated and static)
+html_DATA = $(static_html) $(gen_html)
+
+# Generate dynamic makefile-rules for each source-directory
+define generate_html
+$(refdir)/mud/$(1).html: $(top_srcdir)/$(1)/include/mud/$(1).h
+	@echo "Generating $$@"
+	@$(MKDIR_P) $$(@D)
+	@$(srcdir)/scripts/html-index.sh $$? | \
+	    $(XSLTPROC) \
+	        --stringparam header-file $$(patsubst $(refdir)/%.html,%.h,$$@) \
+	        $(srcdir)/html-index.xsl - > $$@
+
+$(refdir)/mud/$(1)/%.html: $(top_srcdir)/$(1)/include/mud/$(1)/%.h
+	@echo "Generating $$@"
+	@$(MKDIR_P) $$(@D)
+	@$(MUDDOC) $$? \
+	    -- \
+	    $(MUDDOC_CXX_FLAGS) \
+	    $(CXXFLAGS) $(CPPFLAGS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	    $(muddoc_html_CPPFLAGS) | \
+	    $(XSLTPROC) \
+	        --stringparam header-file $$(patsubst $(refdir)/%.html,%.h,$$@) \
+	        $(srcdir)/html.xsl - > $$@
+endef
+$(foreach dir,$(COMPONENTS),$(eval $(call generate_html,$(dir))))
+
+# Clean all generated HTML
+clean-local:
+	rm -f $(gen_html)
 
 # vi: set ai ts=4 noexpandtab: 

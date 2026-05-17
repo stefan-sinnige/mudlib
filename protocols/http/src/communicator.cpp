@@ -24,7 +24,7 @@
  * ++ end-license-description ++
  */
 
-#include "mud/http/communicator.h"
+#include "mud/protocols/http/communicator.h"
 
 BEGIN_MUDLIB_HTTP_NS
 

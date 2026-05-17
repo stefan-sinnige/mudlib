@@ -24,9 +24,9 @@
  * ++ end-license-description ++
  */
 
-#include "mud/http/message.h"
-#include "mud/http/request.h"
-#include "mud/http/response.h"
+#include "mud/protocols/http/message.h"
+#include "mud/protocols/http/request.h"
+#include "mud/protocols/http/response.h"
 #include "mud/test.h"
 #include <sstream>
 #include <string>

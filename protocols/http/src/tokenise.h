@@ -26,8 +26,8 @@
 
 #include <iostream>
 #include <string>
-#include "mud/http/request.h"
-#include "mud/http/response.h"
+#include "mud/protocols/http/request.h"
+#include "mud/protocols/http/response.h"
 
 BEGIN_MUDLIB_HTTP_NS
 

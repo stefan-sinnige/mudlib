@@ -24,7 +24,7 @@
  * ++ end-license-description ++
  */
 
-#include "mud/soap/message.h"
+#include "mud/protocols/soap/message.h"
 #include "mud/test.h"
 #include <sstream>
 #include <string>

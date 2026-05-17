@@ -24,7 +24,7 @@
  * ++ end-license-description ++
  */
 
-#include "mud/tls/message.h"
+#include "mud/protocols/tls/message.h"
 #include "mud/test.h"
 #include <sstream>
 #include <string>

@@ -35,21 +35,21 @@ libmudtls_la_SOURCES = \
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
-    include/mud/tls.h
+    include/mud/protocols/tls.h
 
 includemudtlsdir = $(includedir)/mud/tls
 includemudtls_HEADERS = \
-    include/mud/tls/client.h \
-    include/mud/tls/message.h \
-    include/mud/tls/server.h
+    include/mud/protocols/tls/client.h \
+    include/mud/protocols/tls/message.h \
+    include/mud/protocols/tls/server.h
 
 libmudtls_la_CPPFLAGS = \
     -UVERSION \
     -I$(srcdir) \
     -I$(srcdir)/include \
-	-I$(srcdir)/../../io/include \
-	-I$(srcdir)/../../event/include \
-	-I$(srcdir)/../../core/include
+    -I$(srcdir)/../include \
+    -I$(srcdir)/../../io/include \
+    -I$(srcdir)/../../core/include
 
 # vi: set ts=4 noexpandtab:
 

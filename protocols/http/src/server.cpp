@@ -24,8 +24,8 @@
  * ++ end-license-description ++
  */
 
-#include "mud/http/server.h"
-#include "mud/http/communicator.h"
+#include "mud/protocols/http/server.h"
+#include "mud/protocols/http/communicator.h"
 #include "remediator.h"
 #include <list>
 #include <memory>

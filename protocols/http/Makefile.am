@@ -42,28 +42,27 @@ libmudhttp_la_SOURCES = \
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
-    include/mud/http.h
+    include/mud/protocols/http.h
 
 includemudhttpdir = $(includedir)/mud/http
 includemudhttp_HEADERS = \
-    include/mud/http/chunk.h \
-    include/mud/http/client.h \
-    include/mud/http/communicator.h \
-    include/mud/http/field.h \
-    include/mud/http/message.h \
-    include/mud/http/ns.h \
-    include/mud/http/request.h \
-    include/mud/http/response.h \
-    include/mud/http/server.h
+    include/mud/protocols/http/chunk.h \
+    include/mud/protocols/http/client.h \
+    include/mud/protocols/http/communicator.h \
+    include/mud/protocols/http/field.h \
+    include/mud/protocols/http/message.h \
+    include/mud/protocols/http/ns.h \
+    include/mud/protocols/http/request.h \
+    include/mud/protocols/http/response.h \
+    include/mud/protocols/http/server.h
 
 libmudhttp_la_CPPFLAGS = \
     -UVERSION \
     -I$(srcdir) \
     -I$(srcdir)/include \
-	-I$(srcdir)/../include \
-	-I$(srcdir)/../../io/include \
-	-I$(srcdir)/../../event/include \
-	-I$(srcdir)/../../core/include
+    -I$(srcdir)/../include \
+    -I$(srcdir)/../../io/include \
+    -I$(srcdir)/../../core/include
 
 # vi: set ts=4 noexpandtab:
 

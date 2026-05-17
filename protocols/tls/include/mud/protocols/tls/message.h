@@ -24,61 +24,73 @@
  * ++ end-license-description ++
  */
 
-#ifndef _MUDLIB_HTTP_CLIENT_H_
-#define _MUDLIB_HTTP_CLIENT_H_
+#ifndef _MUDLIB_TLS_MESSAGE_H_
+#define _MUDLIB_TLS_MESSAGE_H_
 
-#include <future>
-#include <mud/http/ns.h>
-#include <mud/http/request.h>
-#include <mud/http/response.h>
-#include <mud/io/tcp.h>
+#include <iostream>
+#include <mud/protocols/tls/ns.h>
 
-BEGIN_MUDLIB_HTTP_NS
+BEGIN_MUDLIB_TLS_NS
 
 /**
- * @brief The client part of an HTTP connection pair. The client connects
- * to a server, sends a request and waits for a response.
- * This conforms with
+ * @brief The definition of an TLS message. This conforms with
  *    RFC 1945: Section 4, 5 and 6
  */
-class MUDLIB_HTTP_API client
+class MUDLIB_TLS_API message
 {
 public:
     /**
-     * @brief Constructor of an new HTTP client.
+     * The TLS message type
      */
-    client();
+    enum class type
+    {
+    };
 
     /**
-     * @brief Destructor.
+     * Copy constructor.
      */
-    virtual ~client() = default;
+    message(const message& rhs) = default;
 
     /**
-     * @brief Send a request and receive the response.
-     * @param[in] endpoint The endpoint to connect to.
-     * @param[in] req The request message.
-     * @return A future to the reponse message.
+     * Destructor.
      */
-    std::future<mud::http::response> request(
-        const mud::io::tcp::endpoint& endpoint, const mud::http::request& req);
+    virtual ~message() = default;
 
     /**
-     * Non-copyable.
+     * Assign an TLS mesage.
+     * @param[in] rhs The message details to copy.
+     * @return Reference to this message.
      */
-    client(const client&) = delete;
-    client& operator=(const client&) = delete;
+    message& operator=(const message& rhs) = default;
+
+    /**
+     * The message type.
+     */
+    message::type type() const;
+
+protected:
+    /**
+     * Construction of a message of a certain type.
+     */
+    message(enum message::type);
 
 private:
-    /** Implementation */
-    class impl;
-    struct impl_deleter
-    {
-        void operator()(impl*) const;
-    };
-    std::unique_ptr<impl, impl_deleter> _impl;
+    /**
+     * Data members
+     */
+    enum message::type _type;
 };
 
-END_MUDLIB_HTTP_NS
+/** Read an TLS message from an input stream. */
+std::istream&
+operator>>(std::istream&, message&);
 
-#endif /* _MUDLIB_HTTP_CLIENT_H_ */
+/** Write an TLS message to an output stream. */
+std::ostream&
+operator<<(std::ostream&, const message&);
+
+END_MUDLIB_TLS_NS
+
+/* vi: set ai ts=4 expandtab: */
+
+#endif /* _MUDLIB_TLS_MESSAGE_H_ */

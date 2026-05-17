@@ -28,7 +28,7 @@
 #define _MUDLIB_TLS_CLIENT_H_
 
 #include <future>
-#include <mud/tls/ns.h>
+#include <mud/protocols/tls/ns.h>
 #include <mud/io/tcp.h>
 
 BEGIN_MUDLIB_TLS_NS
@@ -44,10 +44,8 @@ class MUDLIB_TLS_API client
 public:
     /**
      * @brief Constructor of an new TLS client.
-     * @param[in] event_loop The event-loop to register the TCP socket to.
      */
-    client(
-        mud::event::event_loop& event_loop = mud::event::event_loop::global());
+    client();
 
     /**
      * @brief Destructor.

@@ -36,22 +36,25 @@ BEGIN_MUDLIB_CRYPTO_NS
  * @brief Key-Exchange algorithm using Elliptic-Curve 25519.
  * @details
  * The Curve is an elliptic curve define by the Montgomory Curve
- *     @f$ y^2 = x^3 + 486662*x^2 + x @f$
- * and all operations are in the prime finite field modulo @f$ 2^255 - 19 @f$.
+ * @code
+ *     y^2 = x^3 + 486662*x^2 + x
+ * @endcode
+ * and all operations are in the prime finite field modulo @c 2^255-19 .
  * This curve and its constants are defined to ensure a secure and efficient
  * mechanism to create public/private key-pairs and exchanging public keying
  * materials.
  *
  * The key-exchange requires each side to generate a (random) 32-byte secret key
- * @f$ k_{a} @f$ that is only known to them. This number is multiplied by base
- * point 9 (generally known as @f$ G @f$) on the curve to create the public key
- * @f$ k_{a} \cdot G @f$ which is sent to the peer. The peer performs the same
- * action using its own generated private key and sends @f$ k_{b} \cdot G @f$.
+ * @c k(a) that is only known to them. This number is multiplied by base point 9
+ * (generally known as @c G) on the curve to create the public key
+ * @c k(a)*G which is sent to the peer. The peer performs the same action using
+ * its own generated private key and sends @ck(b)*G .
  * Each side can then derive their shared secret key without transmitting this
  * key. The shared key is calculated by multiplying the private key with the
  * peer's public key as
- * @f$ k_{a} \cdot ( k_{b} \cdot P ) = k_{b} \cdot ( k_{a} \cdot P) @f$.
- *
+ * @code
+ * k(a) * ( k(b) * P ) = k(b) * ( k(a) * P)
+ * @endcode
  * The @c x25519 class provides the mathematical operations to generate the
  * private and calculate the associated public key-pair as well as to calculate
  * the shared secret key.

@@ -27,8 +27,8 @@
 #ifndef _HTTP_REMEDIATOR_H_
 #define _HTTP_REMEDIATOR_H_
 
-#include "mud/http/request.h"
-#include "mud/http/response.h"
+#include "mud/protocols/http/request.h"
+#include "mud/protocols/http/response.h"
 
 BEGIN_MUDLIB_HTTP_NS
 

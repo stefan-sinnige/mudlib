@@ -1,0 +1,198 @@
+:root {
+  --header-background: #f9f7f2;
+  --footer-background: #cab086;
+  --navigation-background: #e7dbc8;
+  --navigation-hover: #f5f0e8;
+  --navigation-text: black;
+  --side-background: #fbf9f6;
+  --main-background: #fefefe;
+  --codeblock-background: whitesmoke;
+  --text-font: ui-sans-serif;
+  --border-color: darkgray;
+  --monospace-font: ui-monospace;
+  --highlight-comment-color: green;
+  --highlight-comment-weight: normal;
+  --highlight-keyword-color: brown;
+  --highlight-keyword-weight: bold;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: var(--text-font);
+  font-size: 0.8em;
+  margin: 0 auto;
+  background-color: var(--main-background);
+}
+header {
+  padding: 20px;
+  text-align: left;
+  color: black;
+  font-size: 1.4em;
+  font-weight: bold;
+  background-color: var(--header-background);
+}
+header img {
+  vertical-align: middle;
+  margin-right: 1em;
+}
+footer {
+  padding: 20px;
+  text-align: center;
+  background-color: var(--footer-background);
+}
+.navigation {
+  display: flex;
+  background-color: var(--navigation-background)
+}
+.navigation a {
+  padding: 14px 20px;
+  text-decoration: none;
+  text-align: center;
+  color: var(--navigation-text);
+  background-color: var(--navigation-background);
+}
+.navigation a:hover {
+  background-color: var(--navigation-hover);
+  color: black;
+}
+.container {
+  display: flex;
+  flex-wrap: wrap;
+}
+.side {
+  flex: 20%;
+  /*position: sticky;
+  top: 20px;*/
+  background-color: var(--side-background);
+  padding: 20px;
+  font-variant: small-caps;
+}
+.side a {
+  text-decoration: none;
+  color: var(--navigation-text);
+}
+.side ul {
+  list-style-type: disc;
+  padding-inline-start: 30px;
+}
+.side ul ul {
+  list-style-type: none;
+  padding-inline-start: 20px;
+}
+.side li {
+  font-variant: small-caps;
+}
+.side ul > ul > li {
+  font-family: var(--monospace-font);
+  font-variant: normal;
+}
+.main {
+  flex: 0 1 80%;
+  padding: 20px;
+}
+.main a {
+  text-decoration: none;
+  color: var(--navigation-text);
+}
+.monospace {
+  font-family: var(--monospace-font);
+}
+.brief {
+  height: fit-content;
+  margin-top: 1em;
+}
+.detail {
+  height: fit-content;
+  margin-top: 1em;
+}
+.codeblock {
+  font-family: var(--monospace-font);
+  margin: 0em;
+  padding: 0.8em;
+  border: 1px solid gray;
+  background-color: var(--codeblock-background);
+}
+.example {
+  font-family: var(--monospace-font);
+  margin: 0em;
+  padding: 0.8em;
+  margin: 1em;
+  border: 1px solid gray;
+  background-color: var(--example-background);
+  white-space: pre;
+}
+.highlight-comment {
+  color: var(--highlight-comment-color);
+  font-weight: var(--highlight-comment-weight);
+}
+.highlight-keyword {
+  color: var(--highlight-keyword-color);
+  font-weight: var(--highlight-keyword-weight);
+}
+.highlight-comment .highlight-keyword {
+  color: var(--highlight-comment-color);
+  font-weight: var(--highlight-comment-weight);
+}
+h1 {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 2px;
+  margin-bottom: 1em;
+  font-size: 2.41em;
+  font-weight: bold;
+}
+h2 {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 2px;
+  margin-bottom: 1em;
+  font-size: 1.95em;
+  font-weight: bold;
+}
+h3 {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 2px;
+  margin-bottom: 0.5em;
+  font-size: 1.56em;
+  font-weight: bold;
+}
+h4 {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1px;
+  margin-bottom: 0.5em;
+  font-size: 1.25em;
+  font-weight: bold;
+}
+h5 {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1px;
+  margin-bottom: 0.5em;
+  font-size: 1em;
+  font-weight: bold;
+}
+table {
+  width: 100%;
+  margin: 0em;
+  font-size: 1em;
+  padding: 0px;
+  margin: 0px;
+}
+td {
+  vertical-align: top;
+}
+td.code {
+  font-family: var(--monospace-font);
+}
+td.parameter, td.exception {
+  width: 15%;
+  max-width: 200em;
+  padding-left: 2em;
+}
+td.return, td.misc {
+  padding-left: 2em;
+}
+td.separator {
+  padding-bottom: 1em;
+}
+tt {
+  font-family: var(--monospace-font);
+}
