@@ -29,25 +29,53 @@
 
 BEGIN_MUDLIB_TLS_NS
 
-message::message(enum message::type type)
-  : _type(type)
+/* SSL 3.0 was given version 0x0300, and TLS 3.0 started off as SSL 3.1, was
+ * given the next one up. Note that the version number in the message are
+ * deprecated in favour of the 'Supported Version' extension. The legacy version
+ * numbers are largely hard-coded now. */
+const uint16_t tls_10_protocol_version = 0x0301;
+const uint16_t tls_11_protocol_version = 0x0302;
+const uint16_t tls_12_protocol_version = 0x0303;
+const uint16_t tls_13_protocol_version = 0x0304;
+
+handshake::handshake(type_t type)
+  : _msg_type(type)
+  , _length(0)
 {
 }
 
-enum message::type
-message::type() const
+/* ====================================================================== 
+ * Client Hello
+ * ====================================================================== */
+
+client_hello::client_hello()
+    : handshake(handshake::type_t::client_hello)
+    , _protocol_version(tls_12_protocol_version)
 {
-    return _type;
 }
+
+/* ====================================================================== 
+ * Server Hello
+ * ====================================================================== */
+
+server_hello::server_hello()
+    : handshake(handshake::type_t::server_hello)
+    , _protocol_version(tls_12_protocol_version)
+{
+}
+
+/* ====================================================================== 
+ * Streaming operators
+ * ====================================================================== */
 
 std::ostream&
-operator<<(std::ostream& ostr, const message& msg)
+operator<<(std::ostream& ostr, const handshake& msg)
 {
     return ostr;
 }
 
 std::istream&
-operator>>(std::istream& istr, message& msg)
+operator>>(std::istream& istr, handshake& msg)
 {
     return istr;
 }

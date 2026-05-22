@@ -29,11 +29,16 @@ TESTS = $(check_PROGRAMS)
 
 mudtls_test_SOURCES = \
     main.cpp \
+    mock.cpp \
+    mock_communicator.cpp \
+    mock_device.cpp \
+    tls_13_test.cpp \
     message_test.cpp
 
 mudtls_test_CPPFLAGS = \
     -UVERSION \
 	-I$(srcdir)/../include \
+	-I$(srcdir)/../../include \
 	-I$(srcdir)/../../../io/include \
 	-I$(srcdir)/../../../core/include \
 	-I$(srcdir)/../../../test/include \

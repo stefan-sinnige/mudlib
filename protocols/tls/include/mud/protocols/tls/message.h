@@ -33,61 +33,112 @@
 BEGIN_MUDLIB_TLS_NS
 
 /**
- * @brief The definition of an TLS message. This conforms with
- *    RFC 1945: Section 4, 5 and 6
+ * @brief The base definition of an TLS handshake message.
+ * @see RFC 8446: Section 4
  */
-class MUDLIB_TLS_API message
+class MUDLIB_TLS_API handshake
 {
 public:
     /**
-     * The TLS message type
+     * @brief The TLS handshake type
+     * @details
+     * The TLS handshake type defines the supported protocol messages. Other
+     * values that are not listed are reserved. They may be compatible with
+     * older TLS versions but deprecated
      */
-    enum class type
+    enum class type_t : uint8_t
     {
+        client_hello = 1,
+        server_hello = 2,
+        new_session_ticket = 4,
+        end_of_early_data = 5,
+        encrypted_extensions = 8,
+        certificate = 11,
+        certificate_request = 13,
+        certificate_verify = 15,
+        finished = 20,
+        key_update = 24,
+        message_hash = 254
     };
 
     /**
      * Copy constructor.
      */
-    message(const message& rhs) = default;
+    handshake(const handshake& rhs) = default;
 
     /**
      * Destructor.
      */
-    virtual ~message() = default;
+    virtual ~handshake() = default;
 
     /**
-     * Assign an TLS mesage.
+     * Assign a TLS mesage.
      * @param[in] rhs The message details to copy.
      * @return Reference to this message.
      */
-    message& operator=(const message& rhs) = default;
+    handshake& operator=(const handshake& rhs) = default;
 
     /**
-     * The message type.
+     * The handshake type.
      */
-    message::type type() const;
+    type_t type() const { return _msg_type; }
 
 protected:
     /**
-     * Construction of a message of a certain type.
+     * @brief Construction of a message of a certain type.
+     * @param type The handshake messgae type.
      */
-    message(enum message::type);
+    handshake(type_t type);
 
 private:
+    /** The message type */
+    type_t _msg_type;
+
+    /** The message length (24-bits) */
+    uint32_t _length;
+};
+
+/**
+ * @brief TLS Client Hello message
+ * @details
+ */
+class client_hello: public handshake
+{
+public:
     /**
-     * Data members
+     * @brief Construct a Client Hello message.
      */
-    enum message::type _type;
+    client_hello();
+
+private:
+    /** The protocol version */
+    uint16_t _protocol_version;
+};
+
+/**
+ * @brief TLS Server Hello message
+ * @details
+ */
+class server_hello: public handshake
+{
+public:
+    /**
+     * @brief Construct a Server Hello message.
+     */
+    server_hello();
+
+private:
+    /** The protocol version */
+    uint16_t _protocol_version;
 };
 
 /** Read an TLS message from an input stream. */
 std::istream&
-operator>>(std::istream&, message&);
+operator>>(std::istream&, handshake&);
 
 /** Write an TLS message to an output stream. */
 std::ostream&
-operator<<(std::ostream&, const message&);
+operator<<(std::ostream&, const handshake&);
 
 END_MUDLIB_TLS_NS
 

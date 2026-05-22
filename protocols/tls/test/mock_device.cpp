@@ -24,51 +24,59 @@
  * ++ end-license-description ++
  */
 
-#ifndef _MUDLIB_TLS_CLIENT_H_
-#define _MUDLIB_TLS_CLIENT_H_
+#include "mock_device.h"
 
-#include <future>
-#include <mud/protocols/tls/ns.h>
-#include <mud/io/tcp.h>
+namespace mock {
 
-BEGIN_MUDLIB_TLS_NS
-
-/**
- * @brief The client part of an TLS connection pair. The client connects
- * to a server, sends a request and waits for a response.
- * This conforms with
- *    RFC 1945: Section 4, 5 and 6
- */
-class MUDLIB_TLS_API client
+device::device(channel::entity side, std::shared_ptr<channel> comm)
+    : _entity(side)
+    , _channel(comm)
 {
-public:
-    /**
-     * @brief Constructor of an new TLS client.
-     */
-    client();
+}
 
-    /**
-     * @brief Destructor.
-     */
-    virtual ~client() = default;
+std::istream&
+device::istr()
+{
+    if (_entity == channel::entity::entity_a) {
+        return _channel->first().istr();
+    }
+    else {
+        return _channel->second().istr();
+    }
+}
 
-    /**
-     * Non-copyable.
-     */
-    client(const client&) = delete;
-    client& operator=(const client&) = delete;
+std::ostream&
+device::ostr()
+{
+    if (_entity == channel::entity::entity_a) {
+        return _channel->second().ostr();
+    }
+    else {
+        return _channel->first().ostr();
+    }
+}
 
-private:
-    /** Implementation */
-    class communicator;
-    class impl;
-    struct impl_deleter
-    {
-        void operator()(impl*) const;
-    };
-    std::unique_ptr<impl, impl_deleter> _impl;
-};
+std::shared_ptr<mud::core::handle>
+device::read_handle()
+{
+    if (_entity == channel::entity::entity_a) {
+        return _channel->first().read_handle();
+    }
+    else {
+        return _channel->second().read_handle();
+    }
+}
 
-END_MUDLIB_TLS_NS
+std::shared_ptr<mud::core::handle>
+device::write_handle()
+{
+    if (_entity == channel::entity::entity_a) {
+        return _channel->second().write_handle();
+    }
+    else {
+        return _channel->first().write_handle();
+    }
+}
 
-#endif /* _MUDLIB_TLS_CLIENT_H_ */
+} // namespace mock
+

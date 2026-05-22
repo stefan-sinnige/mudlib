@@ -67,18 +67,18 @@ FEATURE("TLS Message")
     THEN ("The type is default constructible",
         [](context& ctx) {
             ASSERT(true, std::is_default_constructible<
-                  mud::tls::message>::value);
+                  mud::tls::handshake>::value);
         })
     THEN ("The type is copy-constructible",
         [](context& ctx) {
             ASSERT(true, std::is_copy_constructible<
-                  mud::tls::message>::value);
+                  mud::tls::handshake>::value);
         })
     THEN ("The type is assignable",
         [](context& ctx) {
             ASSERT(true, std::is_assignable<
-                  mud::tls::message,
-                  mud::tls::message>::value);
+                  mud::tls::handshake,
+                  mud::tls::handshake>::value);
         })
 
 END_FEATURE()

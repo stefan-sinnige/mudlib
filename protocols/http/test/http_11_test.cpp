@@ -58,7 +58,7 @@ CONTEXT()
         }
     }
 
-    /** Thread to run the ecebt loop */
+    /** Thread to run the event loop */
     std::thread thr;
 
     /* The endpoint */

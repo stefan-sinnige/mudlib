@@ -29,9 +29,8 @@ SUBDIRS = . test
 lib_LTLIBRARIES = libmudtls.la
 
 libmudtls_la_SOURCES = \
-    src/client.cpp \
-    src/message.cpp \
-    src/server.cpp
+    src/communicator.cpp \
+    src/message.cpp
 
 includemuddir = $(includedir)/mud
 includemud_HEADERS = \
@@ -39,9 +38,8 @@ includemud_HEADERS = \
 
 includemudtlsdir = $(includedir)/mud/tls
 includemudtls_HEADERS = \
-    include/mud/protocols/tls/client.h \
-    include/mud/protocols/tls/message.h \
-    include/mud/protocols/tls/server.h
+    include/mud/protocols/tls/communicator.h \
+    include/mud/protocols/tls/message.h
 
 libmudtls_la_CPPFLAGS = \
     -UVERSION \

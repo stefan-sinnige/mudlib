@@ -119,12 +119,12 @@ public:
     /**
      * The read handle.
      */
-    const std::shared_ptr<mud::core::handle>& read_handle() const;
+    std::shared_ptr<mud::core::handle> read_handle() const;
 
     /**
      * The write handle.
      */
-    const std::shared_ptr<mud::core::handle>& write_handle() const;
+    std::shared_ptr<mud::core::handle> write_handle() const;
 
 private:
     /** The stream for reading. */
@@ -201,13 +201,13 @@ pipe::impl::ostr()
     return _ostr;
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::impl::read_handle() const
 {
     return _read_handle;
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::impl::write_handle() const
 {
     return _write_handle;
@@ -240,13 +240,13 @@ pipe::ostr()
     return _impl->ostr();
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::read_handle() const
 {
     return _impl->read_handle();
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::write_handle() const
 {
     return _impl->write_handle();
