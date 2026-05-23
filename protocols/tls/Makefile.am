@@ -30,6 +30,7 @@ lib_LTLIBRARIES = libmudtls.la
 
 libmudtls_la_SOURCES = \
     src/communicator.cpp \
+    src/extension.cpp \
     src/message.cpp
 
 includemuddir = $(includedir)/mud
@@ -39,7 +40,10 @@ includemud_HEADERS = \
 includemudtlsdir = $(includedir)/mud/tls
 includemudtls_HEADERS = \
     include/mud/protocols/tls/communicator.h \
-    include/mud/protocols/tls/message.h
+    include/mud/protocols/tls/exception.h \
+    include/mud/protocols/tls/extension.h \
+    include/mud/protocols/tls/message.h \
+    include/mud/protocols/tls/ns.h
 
 libmudtls_la_CPPFLAGS = \
     -UVERSION \
@@ -47,7 +51,8 @@ libmudtls_la_CPPFLAGS = \
     -I$(srcdir)/include \
     -I$(srcdir)/../include \
     -I$(srcdir)/../../io/include \
-    -I$(srcdir)/../../core/include
+    -I$(srcdir)/../../core/include \
+    -I$(srcdir)/../../crypto/include
 
 # vi: set ts=4 noexpandtab:
 

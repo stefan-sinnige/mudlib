@@ -35,6 +35,7 @@ mudcore_test_SOURCES = \
     event_loop_test.cpp \
     json_test.cpp \
     handle_test.cpp \
+    hexdump_test.cpp \
     log_test.cpp \
     notification_test.cpp \
     optional_test.cpp \
