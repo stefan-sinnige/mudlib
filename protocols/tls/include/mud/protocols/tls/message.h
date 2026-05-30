@@ -31,30 +31,11 @@
 #include <memory>
 #include <vector>
 #include <mud/protocols/tls/ns.h>
+#include <mud/protocols/tls/common.h>
 #include <mud/protocols/tls/extension.h>
 #include <mud/crypto/types.h>
 
 BEGIN_MUDLIB_TLS_NS
-
-/**
- * @brief Allowable cipher suites for TLS v1.3
- */
-enum class cipher_suite_t : uint16_t
-{
-    tls_aes_128_gcm_sha256       = 0x1301,  /* RFC 5116 */
-    tls_aes_256_gcm_sha384       = 0x1302,  /* RFC 5116 */
-    tls_chacha20_poly1305_sha256 = 0x1303,  /* RFC 8439 */
-    tls_aes_128_ccm_sha256       = 0x1304,  /* RFC 5116 */
-    tls_aes_128_ccm_8_sha256     = 0x1305,  /* RFC 6655 */
-};
-
-/*
- * @brief Allowable compression methods for TLS v1.3
- */
-enum class compression_method_t : uint8_t
-{
-    null = 0x00
-};
 
 /**
  * @brief The definition of an TLS record message.
@@ -131,13 +112,15 @@ public:
     /**
      * @brief Get legacy record version
      */
-    uint16_t legacy_record_version() const { return _legacy_record_version; }
+    protocol_version_t legacy_record_version() const {
+        return _legacy_record_version;
+    }
 
     /**
      * @brief Set the legacy record version
      * @param version The version to set.
      */
-    void legacy_record_version(uint16_t version) {
+    void legacy_record_version(protocol_version_t version) {
         _legacy_record_version = version; 
     }
 
@@ -163,14 +146,14 @@ protected:
      * @param content_type The record content type
      * @param legacy_version The legacy record version.
      */
-    record(content_type_t content_type, uint16_t legacy_version);
+    record(content_type_t content_type, protocol_version_t legacy_version);
 
 private:
     /** The content type */
     content_type_t _content_type;
 
     /** The legacy record version */
-    uint16_t _legacy_record_version;
+    protocol_version_t _legacy_record_version;
 
     /** The record length */
     uint16_t _length;
@@ -283,13 +266,15 @@ public:
     /**
      * @brief Get legacy version
      */
-    uint16_t legacy_version() const { return _legacy_version; }
+    protocol_version_t legacy_version() const { return _legacy_version; }
 
     /**
      * @brief Set the legacy version
      * @param version The version to set.
      */
-    void legacy_version(uint16_t version) { _legacy_version = version; }
+    void legacy_version(protocol_version_t version) {
+        _legacy_version = version;
+    }
 
     /**
      * @brief Get the 32-byte random value.
@@ -353,9 +338,24 @@ public:
         _legacy_compression_methods = value;
     }
 
+    /**
+     * @brief Get the extensions
+     */
+    const std::vector<std::shared_ptr<extension>>& extensions() const {
+        return _extensions;
+    }
+
+    /**
+     * @brief Set the extensions
+     * @param value The extensions
+     */
+    void extensions(const std::vector<std::shared_ptr<extension>>& value) {
+        _extensions = value;
+    }
+
 private:
     /** The legacy protocol version */
-    uint16_t _legacy_version;
+    protocol_version_t _legacy_version;
 
     /** The 32-byte random value. */
     mud::crypto::random_t _random;
@@ -368,6 +368,9 @@ private:
 
     /* The legacy compression methods */
     std::vector<compression_method_t> _legacy_compression_methods;
+
+    /* The extensions */
+    std::vector<std::shared_ptr<extension>> _extensions;
 
     /** Friends */
     friend std::istream& operator>>(std::istream& istr, client_hello& rec);
@@ -388,13 +391,15 @@ public:
     /**
      * @brief Get legacy version
      */
-    uint16_t legacy_version() const { return _legacy_version; }
+    protocol_version_t legacy_version() const { return _legacy_version; }
 
     /**
      * @brief Set the legacy version
      * @param version The version to set.
      */
-    void legacy_version(uint16_t version) { _legacy_version = version; }
+    void legacy_version(protocol_version_t version) {
+        _legacy_version = version;
+    }
 
     /**
      * @brief Get the random value.
@@ -412,7 +417,7 @@ public:
 
 private:
     /** The legacy protocol version */
-    uint16_t _legacy_version;
+    protocol_version_t _legacy_version;
 
     /** The random value. */
     mud::crypto::random_t _random;

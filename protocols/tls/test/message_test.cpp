@@ -121,7 +121,8 @@ FEATURE("TLS Message")
     THEN ("The record header is defined accordingly", [](context& ctx){
         ASSERT(mud::tls::record::content_type_t::handshake,
                ctx.record->content_type());
-        ASSERT(0x0301, ctx.record->legacy_record_version());
+        ASSERT(mud::tls::protocol_version_t::tls_10,
+               ctx.record->legacy_record_version());
         ASSERT(248, ctx.record->length());
       })
 
@@ -156,8 +157,10 @@ FEATURE("TLS Message")
       })
     WHEN ("The message is examined", [](context &ctx) {})
     THEN ("The default content values are set", [](context& ctx) {
-            ASSERT(0x0301, ctx.client_hello->legacy_record_version());
-            ASSERT(0x0303, ctx.client_hello->legacy_version());
+            ASSERT(mud::tls::protocol_version_t::tls_10,
+                   ctx.client_hello->legacy_record_version());
+            ASSERT(mud::tls::protocol_version_t::tls_12,
+                   ctx.client_hello->legacy_version());
             ASSERT(32, ctx.client_hello->random().size());
       })
 
@@ -167,8 +170,10 @@ FEATURE("TLS Message")
       })
     WHEN ("The message is examined", [](context &ctx) {})
     THEN ("The default content values are set", [](context& ctx) {
-            ASSERT(0x0303, ctx.server_hello->legacy_record_version());
-            ASSERT(0x0303, ctx.server_hello->legacy_version());
+            ASSERT(mud::tls::protocol_version_t::tls_12,
+                   ctx.server_hello->legacy_record_version());
+            ASSERT(mud::tls::protocol_version_t::tls_12,
+                   ctx.server_hello->legacy_version());
             ASSERT(32, ctx.server_hello->random().size());
       })
 
@@ -209,7 +214,8 @@ FEATURE("TLS Message")
         ctx.istr >> *ctx.client_hello;
       })
     THEN ("The message is defined accordingly", [](context& ctx){
-        ASSERT(0x0303, ctx.client_hello->legacy_version());
+        ASSERT(mud::tls::protocol_version_t::tls_12,
+               ctx.client_hello->legacy_version());
         ASSERT(ctx.to_data("000102030405060708090a0b0c0d0e0f"
                            "101112131415161718191a1b1c1d1e1f"),
                ctx.client_hello->random());
@@ -229,6 +235,99 @@ FEATURE("TLS Message")
         auto compr_methods = ctx.client_hello->legacy_compression_methods();
         ASSERT(1, compr_methods.size());
         ASSERT(mud::tls::compression_method_t::null, compr_methods[0]);
+
+        /* Extension (only the supported ones can be queried. There are 10 in
+         * the message but only 6 are supoprted. */
+        auto extensions = ctx.client_hello->extensions();
+        ASSERT(6, extensions.size());
+        size_t idx = 0;
+
+        /* Server-name extension */
+        {
+            auto ext = std::dynamic_pointer_cast<mud::tls::server_name>(
+                    extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(1, ext->names().size());
+            ASSERT("example.ulfheim.net", ext->names()[0]);
+        }
+        ++idx;
+
+        /* Supported-groups extension */
+        {
+            auto ext = std::dynamic_pointer_cast<mud::tls::supported_groups>(
+                    extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(10, ext->groups().size());
+            ASSERT(mud::tls::key_exchange_group_t::x25519, ext->groups()[0]);
+            ASSERT(0x0017, (uint16_t)ext->groups()[1]);
+            ASSERT(0x001e, (uint16_t)ext->groups()[2]);
+            ASSERT(0x0019, (uint16_t)ext->groups()[3]);
+            ASSERT(0x0018, (uint16_t)ext->groups()[4]);
+            ASSERT(0x0100, (uint16_t)ext->groups()[5]);
+            ASSERT(0x0101, (uint16_t)ext->groups()[6]);
+            ASSERT(0x0102, (uint16_t)ext->groups()[7]);
+            ASSERT(0x0103, (uint16_t)ext->groups()[8]);
+            ASSERT(0x0104, (uint16_t)ext->groups()[9]);
+        }
+        ++idx;
+
+        /* Signature-algorithms extension */
+        {
+            auto ext = std::dynamic_pointer_cast<mud::tls::signature_algorithms>
+                    (extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(14, ext->algorithms().size());
+            ASSERT(0x0403, (uint16_t)ext->algorithms()[ 0]);
+            ASSERT(0x0503, (uint16_t)ext->algorithms()[ 1]);
+            ASSERT(0x0603, (uint16_t)ext->algorithms()[ 2]);
+            ASSERT(0x0807, (uint16_t)ext->algorithms()[ 3]);
+            ASSERT(0x0808, (uint16_t)ext->algorithms()[ 4]);
+            ASSERT(0x0809, (uint16_t)ext->algorithms()[ 5]);
+            ASSERT(0x080a, (uint16_t)ext->algorithms()[ 6]);
+            ASSERT(0x080b, (uint16_t)ext->algorithms()[ 7]);
+            ASSERT(0x0804, (uint16_t)ext->algorithms()[ 8]);
+            ASSERT(0x0805, (uint16_t)ext->algorithms()[ 9]);
+            ASSERT(0x0806, (uint16_t)ext->algorithms()[10]);
+            ASSERT(mud::tls::signature_algorithm_t::rsa_pkcs1_sha256,
+                   ext->algorithms()[11]);
+            ASSERT(0x0501, (uint16_t)ext->algorithms()[12]);
+            ASSERT(0x0601, (uint16_t)ext->algorithms()[13]);
+        }
+        ++idx;
+
+        /* Supported-versions extension */
+        {
+            auto ext = std::dynamic_pointer_cast<mud::tls::supported_versions>
+                    (extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(1, ext->versions().size());
+            ASSERT(mud::tls::protocol_version_t::tls_13, ext->versions()[0]);
+        }
+        ++idx;
+
+        /* PSK key exchange modes extension */
+        {
+            auto ext = std::dynamic_pointer_cast<
+                    mud::tls::psk_key_exchange_modes>(extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(1, ext->modes().size());
+            ASSERT(mud::tls::key_exchange_mode_t::psk_dhe_ke, ext->modes()[0]);
+        }
+        ++idx;
+
+        /* Key-share extension */
+        {
+            auto ext = std::dynamic_pointer_cast<mud::tls::key_share>(
+                    extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(1, ext->shares().size());
+            ASSERT(mud::tls::key_exchange_group_t::x25519,
+                   ext->shares()[0].first);
+            ASSERT(ctx.to_data("358072d6365880d1aeea329adf912138"
+                               "3851ed21a28e3b75e965d0d2cd166254"),
+                   ext->shares()[0].second);
+        }
+        ++idx;
       })
 
   SCENARIO("A ServerHello message can be written")

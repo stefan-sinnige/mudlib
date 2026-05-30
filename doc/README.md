@@ -20,6 +20,9 @@
 * TLS
     * [Transport Layer  Security (TLS) Protocol Version 1.2](rfc/rfc5246.txt)
     * [Transport Layer  Security (TLS) Protocol Version 1.3](rfc/rfc8446.txt)
+        * [Transport Layer Security (TLS) Extensions (IANA)](https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml)
+        * [Transport Layer Security (TLS) Parameters (IANA)](https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml)
+        * [Transport Layer Security (TLS) Extensions: Extension Definitions](rfc/rfc6066.txt)
         * [Example Handshake Traces for TLS 1.3](rfc/rfc8448.txt)
 * [Uniform Resource Identifier (URI): General Syntax](rfc/rfc3986.txt)
 * [The Javascript Object Notation (JSON) Data Interchange Format](rfc/rfc8259.txt)

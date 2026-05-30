@@ -39,11 +39,13 @@ includemud_HEADERS = \
 
 includemudtlsdir = $(includedir)/mud/tls
 includemudtls_HEADERS = \
+    include/mud/protocols/tls/common.h \
     include/mud/protocols/tls/communicator.h \
     include/mud/protocols/tls/exception.h \
     include/mud/protocols/tls/extension.h \
     include/mud/protocols/tls/message.h \
-    include/mud/protocols/tls/ns.h
+    include/mud/protocols/tls/ns.h \
+    include/mud/protocols/tls/session.h
 
 libmudtls_la_CPPFLAGS = \
     -UVERSION \

@@ -34,28 +34,19 @@ using endian_t = mud::core::endian::endian_t;
 
 BEGIN_MUDLIB_TLS_NS
 
-/* SSL 3.0 was given version 0x0300, and TLS 3.0 started off as SSL 3.1, was
- * given the next one up. Note that the version number in the message are
- * deprecated in favour of the 'Supported Version' extension. The legacy version
- * numbers are largely hard-coded now. */
-const uint16_t tls_10_protocol_version = 0x0301;
-const uint16_t tls_11_protocol_version = 0x0302;
-const uint16_t tls_12_protocol_version = 0x0303;
-const uint16_t tls_13_protocol_version = 0x0304;
-
 /* ====================================================================== 
  * Record
  * ====================================================================== */
 
 record::record()
     : _content_type(content_type_t::invalid)
-    , _legacy_record_version(tls_10_protocol_version)
+    , _legacy_record_version(protocol_version_t::tls_10)
     , _length(0)
     , _encrypted(true)
 {
 }
 
-record::record(content_type_t type, uint16_t legacy_version)
+record::record(content_type_t type, protocol_version_t legacy_version)
     : _content_type(type)
     , _legacy_record_version(legacy_version)
     , _encrypted(true)
@@ -73,7 +64,7 @@ handshake::handshake()
 }
 
 handshake::handshake(type_t type)
-    : record(record::content_type_t::handshake, tls_12_protocol_version)
+    : record(record::content_type_t::handshake, protocol_version_t::tls_12)
     , _msg_type(type)
     , _length(0)
 {
@@ -85,12 +76,12 @@ handshake::handshake(type_t type)
 
 client_hello::client_hello()
     : handshake(handshake::type_t::client_hello)
-    , _legacy_version(tls_12_protocol_version)
+    , _legacy_version(protocol_version_t::tls_12)
     , _random(32)
 {
     /* For compatibility reasons, it is common for the Client Hello message
      * to define TLS 1.0 for the record lgeacy version. */
-    legacy_record_version(tls_10_protocol_version);
+    legacy_record_version(protocol_version_t::tls_10);
 
     /* Supported cipher suites */
     _cipher_suites.push_back(cipher_suite_t::tls_aes_128_gcm_sha256);
@@ -107,7 +98,7 @@ client_hello::client_hello()
 
 server_hello::server_hello()
     : handshake(handshake::type_t::server_hello)
-    , _legacy_version(tls_12_protocol_version)
+    , _legacy_version(protocol_version_t::tls_12)
     , _random(32)
 {
 }
@@ -119,11 +110,11 @@ server_hello::server_hello()
 std::istream&
 operator>>(std::istream& istr, record& rec)
 {
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
     /* Get the content type byte */
     int ch = istr.get();
-    if (ch == std::istream::traits_type::eof()) {
-        throw invalid_message("No record content-type");
-    }
     switch (static_cast<record::content_type_t>(ch)) {
         case record::content_type_t::change_cipher_spec:
         case record::content_type_t::alert:
@@ -137,16 +128,12 @@ operator>>(std::istream& istr, record& rec)
 
     /* Get the legacy version */
     uint16_t value_uint16;
-    if (!istr.read((char*)&value_uint16, 2)) {
-        throw invalid_message("No record legacy version");
-    }
-    rec._legacy_record_version = endian::convert(endian::native(),
-            endian_t::big, value_uint16);
+    istr.read((char*)&value_uint16, 2);
+    rec._legacy_record_version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), value_uint16));
 
     /* Get the length */
-    if (!istr.read((char*)&value_uint16, 2)) {
-        throw invalid_message("No record length");
-    }
+    istr.read((char*)&value_uint16, 2);
     rec._length = endian::convert(endian_t::big, endian::native(),
                                   value_uint16);
     return istr;
@@ -155,11 +142,11 @@ operator>>(std::istream& istr, record& rec)
 std::istream&
 operator>>(std::istream& istr, handshake& msg)
 {
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
     /* Get the message handshake type byte */
     int ch = istr.get();
-    if (ch == std::istream::traits_type::eof()) {
-        throw invalid_message("No handshake message-type");
-    }
     switch (static_cast<handshake::type_t>(ch)) {
         case handshake::type_t::client_hello:
         case handshake::type_t::server_hello:
@@ -179,9 +166,7 @@ operator>>(std::istream& istr, handshake& msg)
 
     /* Get the length */
     uint32_t value_uint32 = 0;
-    if (!istr.read(((char*)&value_uint32)+1, 3)) {
-        throw invalid_message("No handshake length");
-    }
+    istr.read(((char*)&value_uint32)+1, 3);
     msg._length = endian::convert(
             endian_t::big, endian::native(), value_uint32);
     return istr;
@@ -190,68 +175,193 @@ operator>>(std::istream& istr, handshake& msg)
 std::istream&
 operator>>(std::istream& istr, client_hello& msg)
 {
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
     /* Get the legacy version */
     uint16_t value_uint16;
-    if (!istr.read((char*)&value_uint16, 2)) {
-        throw invalid_message("No client-hello legacy version");
-    }
-    msg._legacy_version = endian::convert(endian::native(), endian_t::big,
-                                          value_uint16);
+    istr.read((char*)&value_uint16, 2);
+    msg._legacy_version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), value_uint16));
 
     /* The 32-byte random */
     mud::crypto::data_t random(32);
-    if (!istr.read((char*)random.data(), 32)) {
-        throw invalid_message("No client-hello random");
-    }
+    istr.read((char*)random.data(), 32);
     msg._random = random;
 
     /* The legacy session ID */
     int ch = istr.get();
-    if (ch == std::istream::traits_type::eof()) {
-        throw invalid_message("No client-hello session ID");
-    }
     if (ch > 32) {
         throw invalid_message("Invalid client-hello session ID length");
     }
     mud::crypto::data_t legacy_session_id(ch);
-    if (!istr.read((char*)legacy_session_id.data(), 32)) {
-        throw invalid_message("No client-hello session ID");
-    }
+    istr.read((char*)legacy_session_id.data(), 32);
     msg._legacy_session_id = legacy_session_id;
 
     /* Cipher suites */
-    if (!istr.read((char*)&value_uint16, 2)) {
-        throw invalid_message("No client-hello cipher suites");
-    }
-    uint16_t length = endian::convert(endian::native(), endian_t::big,
+    istr.read((char*)&value_uint16, 2);
+    uint16_t length = endian::convert(endian_t::big, endian::native(),
                                       value_uint16);
     msg._cipher_suites.clear();
     for (int i = 0; i < length / 2; ++i) {
-        if (!istr.read((char*)&value_uint16, 2)) {
-            throw invalid_message("No client-hello cipher suite");
-        }
-        uint16_t suite = endian::convert(endian::native(), endian_t::big,
+        istr.read((char*)&value_uint16, 2);
+        uint16_t suite = endian::convert(endian_t::big, endian::native(),
                                          value_uint16);
         msg._cipher_suites.push_back(static_cast<cipher_suite_t>(suite));
     }
 
     /* Compression methods */
     ch = istr.get();
-    if (ch == std::istream::traits_type::eof()) {
-        throw invalid_message("No client-hello compression methods");
-    }
     length = ch;
-    std::cout << "compression methods = " << length << std::endl;
     msg._legacy_compression_methods.clear();
     for (int i = 0; i < length; ++i) {
         ch = istr.get();
-        if (ch == std::istream::traits_type::eof()) {
-            throw invalid_message("No client-hello compression methods");
-        }
         msg._legacy_compression_methods.push_back(
                 static_cast<compression_method_t>(ch));
     }
 
+    /* Extensions */
+    istr.read((char*)&value_uint16, 2);
+    length = endian::convert(endian_t::big, endian::native(), value_uint16);
+    msg._extensions.clear();
+    auto end = (uint16_t)istr.tellg() + length;
+    while (istr.tellg() < end) {
+        /* Get the first two bytes to retrieve the extension type and use their
+         * streaming operator to read it. Put the two bytes back as the
+         * extension will read it in. */
+        int hi = istr.get();
+        int lo = istr.get();
+        istr.putback(lo);
+        istr.putback(hi);
+        uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
+
+        /* Read the extension */
+        switch (static_cast<extension::type_t>(ext_type)) {
+            case extension::type_t::server_name: {
+                auto ext = std::make_shared<server_name>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::max_fragment_length: {
+                auto ext = std::make_shared<max_fragment_length>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::status_request: {
+                auto ext = std::make_shared<status_request>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::supported_groups: {
+                auto ext = std::make_shared<supported_groups>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::signature_algorithms: {
+                auto ext = std::make_shared<signature_algorithms>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::heartbeat: {
+                auto ext = std::make_shared<heartbeat>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::application_layer_protocol_negotiation: {
+                auto ext = std::make_shared<
+                        application_layer_protocol_negotiation>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::client_certificate_type: {
+                auto ext = std::make_shared<client_certificate_type>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::server_certificate_type: {
+                auto ext = std::make_shared<server_certificate_type>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::padding: {
+                auto ext = std::make_shared<padding>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::pre_shared_key: {
+                auto ext = std::make_shared<pre_shared_key>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::supported_versions: {
+                auto ext = std::make_shared<supported_versions>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::cookie: {
+                auto ext = std::make_shared<cookie>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::psk_key_exchange_modes: {
+                auto ext = std::make_shared<psk_key_exchange_modes>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::certificate_authorities: {
+                auto ext = std::make_shared<certificate_authorities>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::oid_filters: {
+                auto ext = std::make_shared<oid_filters>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::post_handshake_auth: {
+                auto ext = std::make_shared<post_handshake_auth>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::signature_algorithms_cert: {
+                auto ext = std::make_shared<signature_algorithms_cert>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            case extension::type_t::key_share: {
+                auto ext = std::make_shared<key_share>();
+                istr >> *ext;
+                msg._extensions.push_back(ext);
+                break;
+            }
+            default:
+                /* Unsupported extension type, skip it */
+                istr.read((char*)&value_uint16, 2);
+                istr.read((char*)&value_uint16, 2);
+                uint16_t length = endian::convert(endian_t::big,
+                                endian::native(), value_uint16);
+                istr.ignore(length);
+                break;
+        }
+    }
     return istr;
 }
 
