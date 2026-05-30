@@ -35,6 +35,75 @@
 BEGIN_MUDLIB_TLS_NS
 
 /**
+ * @brief The TLS message record content type
+ * @details
+ * The TLS record type defines the content of the message it wraps.
+ */
+enum class record_content_type_t : uint8_t
+{
+    invalid = 0,
+    change_cipher_spec = 20,
+    alert = 21,
+    handshake = 22,
+    application_data = 23,
+    unassigned = 255
+};
+
+/**
+ * @brief The TLS message handshake type
+ * @details
+ * The TLS handshake type defines the supported protocol messages. Other
+ * values that are not listed are reserved. They may be compatible with
+ * older TLS versions but deprecated
+ */
+enum class handshake_type_t : uint8_t
+{
+    client_hello = 1,
+    server_hello = 2,
+    new_session_ticket = 4,
+    end_of_early_data = 5,
+    encrypted_extensions = 8,
+    certificate = 11,
+    certificate_request = 13,
+    certificate_verify = 15,
+    finished = 20,
+    key_update = 24,
+    message_hash = 254,
+    unassigned = 255
+};
+
+/**
+ * @brief The TLS message extension type
+ * @details
+ */
+enum class extension_type_t : uint16_t
+{
+    server_name = 0,
+    max_fragment_length = 1,
+    status_request = 5,
+    supported_groups = 10,
+    signature_algorithms = 13,
+    use_srtp = 14,
+    heartbeat = 15,
+    application_layer_protocol_negotiation = 16,
+    signed_certificate_timestamp = 18,
+    client_certificate_type = 19,
+    server_certificate_type = 20,
+    padding = 21,
+    pre_shared_key = 41,
+    early_data = 42,
+    supported_versions = 43,
+    cookie = 44,
+    psk_key_exchange_modes = 45,
+    certificate_authorities = 47,
+    oid_filters = 48,
+    post_handshake_auth = 49,
+    signature_algorithms_cert = 50,
+    key_share = 51,
+    unassigned = 0xffff
+};
+
+/**
  * @brief Protocol version specifications.
  * @details
  * SSL 3.0 was given version 0x0300, and TLS 3.0 started off as SSL 3.1, was

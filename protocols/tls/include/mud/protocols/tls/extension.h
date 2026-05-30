@@ -36,6 +36,7 @@
 #include <mud/protocols/tls/exception.h>
 #include <mud/protocols/tls/session.h>
 #include <mud/crypto/types.h>
+#include <mud/core/factory.h>
 
 BEGIN_MUDLIB_TLS_NS
 
@@ -47,37 +48,6 @@ class MUDLIB_TLS_API extension
 {
 public:
     /**
-     * @brief The supported  TLS extensions
-     * @details
-     */
-    enum class type_t : uint16_t
-    {
-        server_name = 0,
-        max_fragment_length = 1,
-        status_request = 5,
-        supported_groups = 10,
-        signature_algorithms = 13,
-        use_srtp = 14,
-        heartbeat = 15,
-        application_layer_protocol_negotiation = 16,
-        signed_certificate_timestamp = 18,
-        client_certificate_type = 19,
-        server_certificate_type = 20,
-        padding = 21,
-        pre_shared_key = 41,
-        early_data = 42,
-        supported_versions = 43,
-        cookie = 44,
-        psk_key_exchange_modes = 45,
-        certificate_authorities = 47,
-        oid_filters = 48,
-        post_handshake_auth = 49,
-        signature_algorithms_cert = 50,
-        key_share = 51,
-        unassigned = 0xffff
-    };
-
-    /**
      * @brief Destructor.
      */
     virtual ~extension() = default;
@@ -85,37 +55,47 @@ public:
     /**
      * @brief Return the extension type.
      */
-    type_t extension_type() const { return _type; }
+    extension_type_t extension_type() const { return _type; }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) = 0;
 
 protected:
     /**
      * Constructor
      * @param extension_type The extension type
      */
-    extension(type_t extension_type);
+    extension(extension_type_t extension_type);
 
     /**
      * Assert a value and throw an @c invalid_message exception if they are not
      * equal.
-     * @param val_1 Value to check against.
-     * @param val_2 Value to check against.
+     * @param v1 Value to check against.
+     * @param v2 Value to check against.
      */
     template<typename T1, typename T2>
-    void assert(T1 val_1, T2 val_2) const {
-        if (val_1 != val_2) {
+    void assert(T1 v1, T2 v2) const {
+        if (v1 != v2) {
             throw invalid_message();
         }
     }
     template<>
-    void assert<uint16_t, type_t>(uint16_t val_1, type_t val_2) const {
-        if (val_1 != static_cast<uint16_t>(val_2)) {
+    void assert<uint16_t, extension_type_t>(
+            uint16_t v1,
+            extension_type_t v2) const
+    {
+        if (v1 != static_cast<uint16_t>(v2)) {
             throw invalid_message();
         }
     }
 
 private:
     /** The extension type */
-    type_t _type;
+    extension_type_t _type;
 };
 
 /**
@@ -139,6 +119,16 @@ public:
      * @param value The list of names to set.
      */
     void names(const std::vector<std::string>& value) { _names = value; }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
 
 private:
     /* The list of names */
@@ -189,6 +179,16 @@ public:
      */
     void length(uint16_t value) { _length = value; }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The maximum fragment length */
     uint16_t _length;
@@ -225,6 +225,16 @@ public:
      * @brief Create a status request extension.
      */
     status_request();
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
 
 private:
 
@@ -276,6 +286,16 @@ public:
      */
     void groups(const std::vector<key_exchange_group_t>& value) {
         _groups = value;
+    }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
     }
 
 private:
@@ -335,6 +355,16 @@ public:
         _algos = value;
     }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The list of algorithms */
     std::vector<signature_algorithm_t> _algos;
@@ -390,6 +420,16 @@ public:
      */
     void mode(mode_t value) { _mode = value; }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The heartbeat mode */
     mode_t _mode;
@@ -439,6 +479,16 @@ public:
      */
     void protocols(const std::vector<std::string>& value) {
         _protocols = value;
+    }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
     }
 
 private:
@@ -494,6 +544,16 @@ public:
         _types = value;
     }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The heartbeat mode */
     std::vector<certificate_type_t> _types;
@@ -543,6 +603,16 @@ public:
      */
     void types(const std::vector<certificate_type_t>& value) {
         _types = value;
+    }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
     }
 
 private:
@@ -595,6 +665,16 @@ public:
      */
     void length(size_t value) { _length = value; }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The padding length (excluding the 4-btyte header) */
     size_t _length;
@@ -642,6 +722,16 @@ public:
      */
     void offerings(const std::vector<psk_identity>& value) {
         _offerings = value;
+    }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
     }
 
 private:
@@ -696,6 +786,16 @@ public:
      */
     void data(const mud::crypto::data_t& value) { _data = value; }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /** The data */
     mud::crypto::data_t _data;
@@ -722,15 +822,15 @@ std::ostream&
 operator<<(std::ostream& ostr, const early_data& ext);
 
 /**
- * @brief The TLS supported versions extension
+ * @brief The TLS supported versions extension for a client-hello extension.
  */
-class supported_versions: public extension
+class client_supported_versions: public extension
 {
 public:
     /**
      * @brief Create a supported versions extension.
      */
-    supported_versions();
+    client_supported_versions();
 
     /**
      * @brief Get the list of offerings.
@@ -747,30 +847,101 @@ public:
         _versions = value;
     }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The pre-shread key offerings */
     std::vector<protocol_version_t> _versions;
 
     /* Friends */
-    friend std::istream& operator>>(std::istream&, supported_versions&);
-    friend std::ostream& operator>>(std::ostream&, const supported_versions&);
+    friend std::istream& operator>>(std::istream&, client_supported_versions&);
+    friend std::ostream& operator>>(std::ostream&,
+            const client_supported_versions&);
 };
 
 /**
- * @brief Read a TLS supported versions key extension.
+ * @brief Read a TLS supported versions for client hello extension.
  * @param istr The input stream to read from
  * @param ext The extention details.
  */
 std::istream&
-operator>>(std::istream& istr, supported_versions& ext);
+operator>>(std::istream& istr, client_supported_versions& ext);
 
 /**
- * @brief Write a TLS supported versions extension to an output stream.
+ * @brief Write a TLS supported versions for client hello extension to an output
+ * stream.
  * @param ostr The output stream
  * @param ext The extension details.
  */
 std::ostream&
-operator<<(std::ostream& ostr, const supported_versions& ext);
+operator<<(std::ostream& ostr, const client_supported_versions& ext);
+
+/**
+ * @brief The TLS supported version extension for a server-hello extension.
+ */
+class server_supported_versions: public extension
+{
+public:
+    /**
+     * @brief Create a supported versions extension.
+     */
+    server_supported_versions();
+
+    /**
+     * @brief Get the list of offerings.
+     */
+    protocol_version_t version() const { return _version; }
+
+    /**
+     * @brief Set the supported version.
+     * @param value The version to set.
+     */
+    void version(protocol_version_t value) { _version = value; }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
+private:
+    /* The supported version */
+    protocol_version_t _version;
+
+    /* Friends */
+    friend std::istream& operator>>(std::istream&, server_supported_versions&);
+    friend std::ostream& operator>>(std::ostream&,
+            const server_supported_versions&);
+};
+
+/**
+ * @brief Read a TLS supported version key for server hello extension.
+ * @param istr The input stream to read from
+ * @param ext The extention details.
+ */
+std::istream&
+operator>>(std::istream& istr, server_supported_versions& ext);
+
+/**
+ * @brief Write a TLS supported version for server hello extension to an output
+ * stream.
+ * @param ostr The output stream
+ * @param ext The extension details.
+ */
+std::ostream&
+operator<<(std::ostream& ostr, const server_supported_versions& ext);
 
 /**
  * @brief The TLS cookie extension
@@ -796,6 +967,16 @@ public:
      * @param value The data to set.
      */
     void data(const mud::crypto::data_t& value) { _data = value; }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
 
 private:
     /** The data */
@@ -848,6 +1029,16 @@ public:
         _modes = value;
     }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The pre-shread key offerings */
     std::vector<key_exchange_mode_t> _modes;
@@ -886,6 +1077,16 @@ public:
      */
     certificate_authorities();
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
 
     /* Friends */
@@ -922,6 +1123,16 @@ public:
      */
     oid_filters();
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
 
     /* Friends */
@@ -955,6 +1166,16 @@ public:
      * @brief Create a post-handhsake auth extension.
      */
     post_handshake_auth();
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
 
 private:
 
@@ -1010,6 +1231,16 @@ public:
         _algos = value;
     }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /* The list of algorithms */
     std::vector<signature_algorithm_t> _algos;
@@ -1037,11 +1268,11 @@ std::ostream&
 operator<<(std::ostream& ostr, const signature_algorithms_cert& ext);
 
 /**
- * @brief The key share extension
+ * @brief The key share extension for client hello
  * @details
  * The key share extension carries the cryptographic parameters.
  */
-class key_share: public extension
+class client_key_share: public extension
 {
 public:
     /**
@@ -1052,7 +1283,7 @@ public:
     /**
      * @brief Create a early data extension.
      */
-    key_share();
+    client_key_share();
 
     /**
      * @brief Get the key shares.
@@ -1065,30 +1296,114 @@ public:
      */
     void shares(const std::vector<entry_t>& value) { _shares = value; }
 
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
 private:
     /** The data */
     std::vector<entry_t> _shares;
 
     /* Friends */
-    friend std::istream& operator>>(std::istream&, key_share&);
-    friend std::ostream& operator>>(std::ostream&, const key_share&);
+    friend std::istream& operator>>(std::istream&, client_key_share&);
+    friend std::ostream& operator>>(std::ostream&, const client_key_share&);
 };
 
 /**
- * @brief Read a TLS early-data extension.
+ * @brief Read a TLS key-share extension for client hello.
  * @param istr The input stream to read from
  * @param ext The extention details.
  */
 std::istream&
-operator>>(std::istream& istr, key_share& ext);
+operator>>(std::istream& istr, client_key_share& ext);
 
 /**
- * @brief Write a TLS early-data extension to an output stream.
+ * @brief Write a TLS key-share extension for client hello to an output stream.
  * @param ostr The output stream
  * @param ext The extension details.
  */
 std::ostream&
-operator<<(std::ostream& ostr, const key_share& ext);
+operator<<(std::ostream& ostr, const client_key_share& ext);
+
+/**
+ * @brief The key share extension for server hello
+ * @details
+ * The key share extension carries the cryptographic parameters.
+ */
+class server_key_share: public extension
+{
+public:
+    /**
+     * The key-share data entry
+     */
+    typedef std::pair<key_exchange_group_t, mud::crypto::key_t> entry_t;
+
+    /**
+     * @brief Create a early data extension.
+     */
+    server_key_share();
+
+    /**
+     * @brief Get the key share.
+     */
+    const entry_t& share() const { return _share; }
+
+    /**
+     * @brief Set the key shares.
+     * @param value The data to set.
+     */
+    void share(const entry_t& value) { _share = value; }
+
+    /**
+     * @brief Parse an extension from an input stream.
+     * @param istr The input stream, currently pointed to an extension.
+     * @return The input stream.
+     */
+    virtual std::istream& parse(std::istream& istr) override {
+        istr >> *this;
+        return istr;
+    }
+
+private:
+    /** The key-share data */
+    entry_t _share;
+
+    /* Friends */
+    friend std::istream& operator>>(std::istream&, server_key_share&);
+    friend std::ostream& operator>>(std::ostream&, const server_key_share&);
+};
+
+/**
+ * @brief Read a TLS key-share  extension for server hello.
+ * @param istr The input stream to read from
+ * @param ext The extention details.
+ */
+std::istream&
+operator>>(std::istream& istr, server_key_share& ext);
+
+/**
+ * @brief Write a TLS key-share extension for server hello to an output stream.
+ * @param ostr The output stream
+ * @param ext The extension details.
+ */
+std::ostream&
+operator<<(std::ostream& ostr, const server_key_share& ext);
+
+/**
+ * @brief Factory for TLS handshake extensions.
+ * @details
+ * Extension may only be allowed with certain handshake message type or have a
+ * different specification.
+ */
+typedef ::mud::core::factory<std::pair<handshake_type_t,
+                                       extension_type_t>,
+                             extension> extension_factory;
 
 END_MUDLIB_TLS_NS
 

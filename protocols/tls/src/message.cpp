@@ -39,14 +39,14 @@ BEGIN_MUDLIB_TLS_NS
  * ====================================================================== */
 
 record::record()
-    : _content_type(content_type_t::invalid)
+    : _content_type(record_content_type_t::invalid)
     , _legacy_record_version(protocol_version_t::tls_10)
     , _length(0)
     , _encrypted(true)
 {
 }
 
-record::record(content_type_t type, protocol_version_t legacy_version)
+record::record(record_content_type_t type, protocol_version_t legacy_version)
     : _content_type(type)
     , _legacy_record_version(legacy_version)
     , _encrypted(true)
@@ -58,13 +58,13 @@ record::record(content_type_t type, protocol_version_t legacy_version)
  * ====================================================================== */
 
 handshake::handshake()
-    : _msg_type(type_t::unassigned)
+    : _msg_type(handshake_type_t::unassigned)
     , _length(0)
 {
 }
 
-handshake::handshake(type_t type)
-    : record(record::content_type_t::handshake, protocol_version_t::tls_12)
+handshake::handshake(handshake_type_t type)
+    : record(record_content_type_t::handshake, protocol_version_t::tls_12)
     , _msg_type(type)
     , _length(0)
 {
@@ -75,7 +75,7 @@ handshake::handshake(type_t type)
  * ====================================================================== */
 
 client_hello::client_hello()
-    : handshake(handshake::type_t::client_hello)
+    : handshake(handshake_type_t::client_hello)
     , _legacy_version(protocol_version_t::tls_12)
     , _random(32)
 {
@@ -97,7 +97,7 @@ client_hello::client_hello()
  * ====================================================================== */
 
 server_hello::server_hello()
-    : handshake(handshake::type_t::server_hello)
+    : handshake(handshake_type_t::server_hello)
     , _legacy_version(protocol_version_t::tls_12)
     , _random(32)
 {
@@ -115,12 +115,12 @@ operator>>(std::istream& istr, record& rec)
 
     /* Get the content type byte */
     int ch = istr.get();
-    switch (static_cast<record::content_type_t>(ch)) {
-        case record::content_type_t::change_cipher_spec:
-        case record::content_type_t::alert:
-        case record::content_type_t::handshake:
-        case record::content_type_t::application_data:
-            rec._content_type = static_cast<record::content_type_t>(ch);
+    switch (static_cast<record_content_type_t>(ch)) {
+        case record_content_type_t::change_cipher_spec:
+        case record_content_type_t::alert:
+        case record_content_type_t::handshake:
+        case record_content_type_t::application_data:
+            rec._content_type = static_cast<record_content_type_t>(ch);
             break;
         default:
             throw invalid_message("Unrecognized record content-type");
@@ -147,18 +147,18 @@ operator>>(std::istream& istr, handshake& msg)
 
     /* Get the message handshake type byte */
     int ch = istr.get();
-    switch (static_cast<handshake::type_t>(ch)) {
-        case handshake::type_t::client_hello:
-        case handshake::type_t::server_hello:
-        case handshake::type_t::new_session_ticket:
-        case handshake::type_t::end_of_early_data:
-        case handshake::type_t::encrypted_extensions:
-        case handshake::type_t::certificate:
-        case handshake::type_t::certificate_request:
-        case handshake::type_t::finished:
-        case handshake::type_t::key_update:
-        case handshake::type_t::message_hash:
-            msg._msg_type = static_cast<handshake::type_t>(ch);
+    switch (static_cast<handshake_type_t>(ch)) {
+        case handshake_type_t::client_hello:
+        case handshake_type_t::server_hello:
+        case handshake_type_t::new_session_ticket:
+        case handshake_type_t::end_of_early_data:
+        case handshake_type_t::encrypted_extensions:
+        case handshake_type_t::certificate:
+        case handshake_type_t::certificate_request:
+        case handshake_type_t::finished:
+        case handshake_type_t::key_update:
+        case handshake_type_t::message_hash:
+            msg._msg_type = static_cast<handshake_type_t>(ch);
             break;
         default:
             throw invalid_message("Unrecognized handshake message-type");
@@ -236,130 +236,20 @@ operator>>(std::istream& istr, client_hello& msg)
         uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
 
         /* Read the extension */
-        switch (static_cast<extension::type_t>(ext_type)) {
-            case extension::type_t::server_name: {
-                auto ext = std::make_shared<server_name>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::max_fragment_length: {
-                auto ext = std::make_shared<max_fragment_length>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::status_request: {
-                auto ext = std::make_shared<status_request>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::supported_groups: {
-                auto ext = std::make_shared<supported_groups>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::signature_algorithms: {
-                auto ext = std::make_shared<signature_algorithms>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::heartbeat: {
-                auto ext = std::make_shared<heartbeat>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::application_layer_protocol_negotiation: {
-                auto ext = std::make_shared<
-                        application_layer_protocol_negotiation>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::client_certificate_type: {
-                auto ext = std::make_shared<client_certificate_type>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::server_certificate_type: {
-                auto ext = std::make_shared<server_certificate_type>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::padding: {
-                auto ext = std::make_shared<padding>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::pre_shared_key: {
-                auto ext = std::make_shared<pre_shared_key>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::supported_versions: {
-                auto ext = std::make_shared<supported_versions>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::cookie: {
-                auto ext = std::make_shared<cookie>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::psk_key_exchange_modes: {
-                auto ext = std::make_shared<psk_key_exchange_modes>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::certificate_authorities: {
-                auto ext = std::make_shared<certificate_authorities>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::oid_filters: {
-                auto ext = std::make_shared<oid_filters>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::post_handshake_auth: {
-                auto ext = std::make_shared<post_handshake_auth>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::signature_algorithms_cert: {
-                auto ext = std::make_shared<signature_algorithms_cert>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            case extension::type_t::key_share: {
-                auto ext = std::make_shared<key_share>();
-                istr >> *ext;
-                msg._extensions.push_back(ext);
-                break;
-            }
-            default:
-                /* Unsupported extension type, skip it */
-                istr.read((char*)&value_uint16, 2);
-                istr.read((char*)&value_uint16, 2);
-                uint16_t length = endian::convert(endian_t::big,
+        try {
+            auto ext = extension_factory::instance().create(
+                { msg.msg_type(),
+                  static_cast<extension_type_t>(ext_type) });
+            ext->parse(istr);
+            msg._extensions.push_back(std::move(ext));
+        }
+        catch (...) {
+            /* Unsupported extension type, skip it */
+            istr.read((char*)&value_uint16, 2);
+            istr.read((char*)&value_uint16, 2);
+            uint16_t length = endian::convert(endian_t::big,
                                 endian::native(), value_uint16);
-                istr.ignore(length);
-                break;
+            istr.ignore(length);
         }
     }
     return istr;
@@ -368,6 +258,72 @@ operator>>(std::istream& istr, client_hello& msg)
 std::istream&
 operator>>(std::istream& istr, server_hello& msg)
 {
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
+    /* Get the legacy version */
+    uint16_t value_uint16;
+    istr.read((char*)&value_uint16, 2);
+    msg._legacy_version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), value_uint16));
+
+    /* The 32-byte random */
+    mud::crypto::data_t random(32);
+    istr.read((char*)random.data(), 32);
+    msg._random = random;
+
+    /* The legacy session ID */
+    int ch = istr.get();
+    if (ch > 32) {
+        throw invalid_message("Invalid server-hello session ID length");
+    }
+    mud::crypto::data_t legacy_session_id(ch);
+    istr.read((char*)legacy_session_id.data(), 32);
+    msg._legacy_session_id = legacy_session_id;
+
+    /* Cipher suite */
+    istr.read((char*)&value_uint16, 2);
+    uint16_t suite = endian::convert(endian_t::big, endian::native(),
+                                     value_uint16);
+    msg._cipher_suite = static_cast<cipher_suite_t>(suite);
+
+    /* Compression method */
+    ch = istr.get();
+    msg._legacy_compression_method = static_cast<compression_method_t>(ch);
+    
+    /* Extensions */
+    uint16_t length;
+    istr.read((char*)&value_uint16, 2);
+    length = endian::convert(endian_t::big, endian::native(), value_uint16);
+    msg._extensions.clear();
+    auto end = (uint16_t)istr.tellg() + length;
+    while (istr.tellg() < end) {
+        /* Get the first two bytes to retrieve the extension type and use their
+         * streaming operator to read it. Put the two bytes back as the
+         * extension will read it in. */
+        int hi = istr.get();
+        int lo = istr.get();
+        istr.putback(lo);
+        istr.putback(hi);
+        uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
+
+        /* Read the extension */
+        try {
+            auto ext = extension_factory::instance().create(
+                { msg.msg_type(),
+                  static_cast<extension_type_t>(ext_type) });
+            ext->parse(istr);
+            msg._extensions.push_back(std::move(ext));
+        }
+        catch (...) {
+            /* Unsupported extension type, skip it */
+            istr.read((char*)&value_uint16, 2);
+            istr.read((char*)&value_uint16, 2);
+            uint16_t length = endian::convert(endian_t::big,
+                                endian::native(), value_uint16);
+            istr.ignore(length);
+        }
+    }
     return istr;
 }
 

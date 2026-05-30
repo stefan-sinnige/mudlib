@@ -37,7 +37,7 @@ BEGIN_MUDLIB_TLS_NS
  * Extension
  * ====================================================================== */
 
-extension::extension(extension::type_t extension_type)
+extension::extension(extension_type_t extension_type)
     : _type(extension_type)
 {
 }
@@ -47,7 +47,7 @@ extension::extension(extension::type_t extension_type)
  * ====================================================================== */
 
 server_name::server_name()
-    : extension(extension::type_t::server_name)
+    : extension(extension_type_t::server_name)
 {
 }
 
@@ -63,7 +63,7 @@ operator>>(std::istream& istr, server_name& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::server_name);
+    ext.assert(ext_type, extension_type_t::server_name);
 
     /* The length of the list */
     istr.read((char*)&ui16, 2);
@@ -96,12 +96,24 @@ operator<<(std::ostream& ostr, const server_name& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::server_name },
+            server_name>
+    _ch_server_name_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::server_name },
+            server_name>
+    _ee_server_name_registrar;
+
 /* ====================================================================== 
  * Maximum fragment length
  * ====================================================================== */
 
 max_fragment_length::max_fragment_length()
-    : extension(extension::type_t::max_fragment_length)
+    : extension(extension_type_t::max_fragment_length)
     , _length(4096)
 {
 }
@@ -118,7 +130,7 @@ operator>>(std::istream& istr, max_fragment_length& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::max_fragment_length);
+    ext.assert(ext_type, extension_type_t::max_fragment_length);
     ext.assert(ext_length, 1);
 
     /* Get the length specifier */
@@ -146,12 +158,24 @@ operator<<(std::ostream& ostr, const max_fragment_length& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::max_fragment_length },
+            max_fragment_length>
+    _ch_max_fragment_length_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::max_fragment_length },
+            max_fragment_length>
+    _ee_max_fragment_length_registrar;
+
 /* ====================================================================== 
  * Status request
  * ====================================================================== */
 
 status_request::status_request()
-    : extension(extension::type_t::status_request)
+    : extension(extension_type_t::status_request)
 {
     /* Not supported until we can handle DER encoding */
 }
@@ -168,7 +192,7 @@ operator>>(std::istream& istr, status_request& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::status_request);
+    ext.assert(ext_type, extension_type_t::status_request);
 
     /* Unsupported extension type, skip it */
     istr.ignore(ext_length);
@@ -182,12 +206,30 @@ operator<<(std::ostream& ostr, const status_request& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::status_request },
+            status_request>
+    _ch_status_request_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::certificate_request,
+              extension_type_t::status_request },
+            status_request>
+    _cr_status_request_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::certificate,
+              extension_type_t::status_request },
+            status_request>
+    _ct_status_request_registrar;
+
 /* ====================================================================== 
  * Supported groups
  * ====================================================================== */
 
 supported_groups::supported_groups()
-    : extension(extension::type_t::supported_groups)
+    : extension(extension_type_t::supported_groups)
 {
     _groups.push_back(key_exchange_group_t::x25519);
 }
@@ -204,7 +246,7 @@ operator>>(std::istream& istr, supported_groups& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::supported_groups);
+    ext.assert(ext_type, extension_type_t::supported_groups);
 
     /* Get the group length  */
     istr.read((char*)&ui16, 2);
@@ -229,12 +271,24 @@ operator<<(std::ostream& ostr, const supported_groups& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::supported_groups },
+            supported_groups>
+    _ch_supported_groups_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::supported_groups },
+            supported_groups>
+    _ee_supported_groups_registrar;
+
 /* ====================================================================== 
  * Supported groups
  * ====================================================================== */
 
 signature_algorithms::signature_algorithms()
-    : extension(extension::type_t::signature_algorithms)
+    : extension(extension_type_t::signature_algorithms)
 {
     _algos.push_back(signature_algorithm_t::rsa_pkcs1_sha256);
 }
@@ -251,7 +305,7 @@ operator>>(std::istream& istr, signature_algorithms& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::signature_algorithms);
+    ext.assert(ext_type, extension_type_t::signature_algorithms);
 
     /* Get the algorithms length  */
     istr.read((char*)&ui16, 2);
@@ -276,12 +330,24 @@ operator<<(std::ostream& ostr, const signature_algorithms& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::signature_algorithms },
+            signature_algorithms>
+    _ch_signature_algorithms_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::certificate_request,
+              extension_type_t::signature_algorithms },
+            signature_algorithms>
+    _cr_signature_algorithms_registrar;
+
 /* ====================================================================== 
  * Heartbeat
  * ====================================================================== */
 
 heartbeat::heartbeat()
-    : extension(extension::type_t::signature_algorithms)
+    : extension(extension_type_t::signature_algorithms)
     , _mode(mode_t::peer_allowed_to_send)
 {
 }
@@ -298,7 +364,7 @@ operator>>(std::istream& istr, heartbeat& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::heartbeat);
+    ext.assert(ext_type, extension_type_t::heartbeat);
     ext.assert(ext_length, 1);
 
     /* Get the mode */
@@ -314,12 +380,24 @@ operator<<(std::ostream& ostr, const heartbeat& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::heartbeat },
+            heartbeat>
+    _ch_heartbeat_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::heartbeat },
+            heartbeat>
+    _ee_heartbeat_registrar;
+
 /* ====================================================================== 
  * Application layer protocol negotiation
  * ====================================================================== */
 
 application_layer_protocol_negotiation::application_layer_protocol_negotiation()
-    : extension(extension::type_t::application_layer_protocol_negotiation)
+    : extension(extension_type_t::application_layer_protocol_negotiation)
 {
 }
 
@@ -336,7 +414,7 @@ operator>>(std::istream& istr, application_layer_protocol_negotiation& ext)
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
     ext.assert(ext_type,
-               extension::type_t::application_layer_protocol_negotiation);
+               extension_type_t::application_layer_protocol_negotiation);
 
     /* Get the protocols length  */
     istr.read((char*)&ui16, 2);
@@ -366,12 +444,24 @@ operator<<(std::ostream& ostr,
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::application_layer_protocol_negotiation },
+            application_layer_protocol_negotiation>
+    _ch_application_layer_protocol_negotiation_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::application_layer_protocol_negotiation },
+            application_layer_protocol_negotiation>
+    _ee_application_layer_protocol_negotiation_registrar;
+
 /* ====================================================================== 
  * Client certificate type
  * ====================================================================== */
 
 client_certificate_type::client_certificate_type()
-    : extension(extension::type_t::client_certificate_type)
+    : extension(extension_type_t::client_certificate_type)
 {
 }
 
@@ -387,7 +477,7 @@ operator>>(std::istream& istr, client_certificate_type& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::client_certificate_type);
+    ext.assert(ext_type, extension_type_t::client_certificate_type);
 
     /* Get the types length  */
     auto length = istr.get();
@@ -410,12 +500,24 @@ operator<<(std::ostream& ostr, const client_certificate_type& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::client_certificate_type },
+            client_certificate_type>
+    _ch_client_certificate_type_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::client_certificate_type },
+            client_certificate_type>
+    _ee_client_certificate_type_registrar;
+
 /* ====================================================================== 
  * Server certificate type
  * ====================================================================== */
 
 server_certificate_type::server_certificate_type()
-    : extension(extension::type_t::server_certificate_type)
+    : extension(extension_type_t::server_certificate_type)
 {
 }
 
@@ -431,7 +533,7 @@ operator>>(std::istream& istr, server_certificate_type& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::client_certificate_type);
+    ext.assert(ext_type, extension_type_t::client_certificate_type);
 
     /* Get the types length  */
     auto length = istr.get();
@@ -454,12 +556,24 @@ operator<<(std::ostream& ostr, const server_certificate_type& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::server_certificate_type },
+            server_certificate_type>
+    _ch_server_certificate_type_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::server_certificate_type },
+            server_certificate_type>
+    _ee_server_certificate_type_registrar;
+
 /* ====================================================================== 
  * Padding
  * ====================================================================== */
 
 padding::padding()
-    : extension(extension::type_t::padding)
+    : extension(extension_type_t::padding)
     , _length(0)
 {
 }
@@ -476,7 +590,7 @@ operator>>(std::istream& istr, padding& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::padding);
+    ext.assert(ext_type, extension_type_t::padding);
 
     /* Ignore the padding */
     istr.ignore(ext_length);
@@ -490,12 +604,18 @@ operator<<(std::ostream& ostr, const padding& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::padding },
+            padding>
+    _ch_padding_registrar;
+
 /* ====================================================================== 
  * Pre-shared key
  * ====================================================================== */
 
 pre_shared_key::pre_shared_key()
-    : extension(extension::type_t::pre_shared_key)
+    : extension(extension_type_t::pre_shared_key)
 {
 }
 
@@ -511,7 +631,7 @@ operator>>(std::istream& istr, pre_shared_key& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::pre_shared_key);
+    ext.assert(ext_type, extension_type_t::pre_shared_key);
 
     /* Get the list length  */
     istr.read((char*)&ui16, 2);
@@ -560,12 +680,24 @@ operator<<(std::ostream& ostr, const pre_shared_key& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::pre_shared_key },
+            pre_shared_key>
+    _ch_pre_shared_key_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::server_hello,
+              extension_type_t::pre_shared_key },
+            pre_shared_key>
+    _ee_pre_shared_key_registrar;
+
 /* ====================================================================== 
  * Early-data
  * ====================================================================== */
 
 early_data::early_data()
-    : extension(extension::type_t::early_data)
+    : extension(extension_type_t::early_data)
 {
 }
 
@@ -581,7 +713,7 @@ operator>>(std::istream& istr, early_data& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::early_data);
+    ext.assert(ext_type, extension_type_t::early_data);
 
     /* Read the data  */
     mud::crypto::data_t data(ext_length);
@@ -597,18 +729,36 @@ operator<<(std::ostream& ostr, const early_data& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::early_data },
+            early_data>
+    _ch_early_data_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::encrypted_extensions,
+              extension_type_t::early_data },
+            early_data>
+    _ee_early_data_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::new_session_ticket,
+              extension_type_t::early_data },
+            early_data>
+    _nst_early_data_registrar;
+
 /* ====================================================================== 
- * Supported versions
+ * Supported versions (client hello)
  * ====================================================================== */
 
-supported_versions::supported_versions()
-    : extension(extension::type_t::supported_versions)
+client_supported_versions::client_supported_versions()
+    : extension(extension_type_t::supported_versions)
 {
     _versions.push_back(protocol_version_t::tls_13);
 }
 
 std::istream&
-operator>>(std::istream& istr, supported_versions& ext)
+operator>>(std::istream& istr, client_supported_versions& ext)
 {
     /* Set up to throw exceptions */
     istr.exceptions(std::istream::failbit);
@@ -619,7 +769,7 @@ operator>>(std::istream& istr, supported_versions& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::supported_versions);
+    ext.assert(ext_type, extension_type_t::supported_versions);
 
     /* Get the list length  */
     auto length = istr.get();
@@ -638,17 +788,66 @@ operator>>(std::istream& istr, supported_versions& ext)
 }
 
 std::ostream&
-operator<<(std::ostream& ostr, const supported_versions& ext)
+operator<<(std::ostream& ostr, const client_supported_versions& ext)
 {
     return ostr;
 }
+
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::supported_versions },
+            client_supported_versions>
+    _ch_supported_versions_registrar;
+
+/* ====================================================================== 
+ * Supported versions (server hello)
+ * ====================================================================== */
+
+server_supported_versions::server_supported_versions()
+    : extension(extension_type_t::supported_versions)
+{
+    _version = protocol_version_t::tls_13;
+}
+
+std::istream&
+operator>>(std::istream& istr, server_supported_versions& ext)
+{
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
+    /* Get the extension type and total extension length */
+    uint16_t ui16;
+    istr.read((char*)&ui16, 2);
+    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    istr.read((char*)&ui16, 2);
+    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    ext.assert(ext_type, extension_type_t::supported_versions);
+
+    /* Read and save the version */
+    istr.read((char*)&ui16, 2);
+    ext._version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), ui16));
+    return istr;
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const server_supported_versions& ext)
+{
+    return ostr;
+}
+
+extension_factory::registrar<
+            { handshake_type_t::server_hello,
+              extension_type_t::supported_versions },
+            server_supported_versions>
+    _sh_supported_versions_registrar;
 
 /* ====================================================================== 
  * Cookie
  * ====================================================================== */
 
 cookie::cookie()
-    : extension(extension::type_t::cookie)
+    : extension(extension_type_t::cookie)
 {
 }
 
@@ -664,7 +863,7 @@ operator>>(std::istream& istr, cookie& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::cookie);
+    ext.assert(ext_type, extension_type_t::cookie);
 
     /* Get the cookie data length  */
     auto length = istr.get();
@@ -684,12 +883,18 @@ operator<<(std::ostream& ostr, const cookie& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::cookie },
+            cookie>
+    _ch_cookie_registrar;
+
 /* ====================================================================== 
  * PSK key exchange modes
  * ====================================================================== */
 
 psk_key_exchange_modes::psk_key_exchange_modes()
-    : extension(extension::type_t::psk_key_exchange_modes)
+    : extension(extension_type_t::psk_key_exchange_modes)
 {
 }
 
@@ -705,7 +910,7 @@ operator>>(std::istream& istr, psk_key_exchange_modes& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::psk_key_exchange_modes);
+    ext.assert(ext_type, extension_type_t::psk_key_exchange_modes);
 
     /* Get the list length  */
     auto length = istr.get();
@@ -728,12 +933,18 @@ operator<<(std::ostream& ostr, const psk_key_exchange_modes& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::psk_key_exchange_modes },
+            psk_key_exchange_modes>
+    _ch_psk_key_exchange_modes_registrar;
+
 /* ====================================================================== 
  * Certificate Authorities
  * ====================================================================== */
 
 certificate_authorities::certificate_authorities()
-    : extension(extension::type_t::certificate_authorities)
+    : extension(extension_type_t::certificate_authorities)
 {
     /* Not supported until we can handle DER encoding */
 }
@@ -750,7 +961,7 @@ operator>>(std::istream& istr, certificate_authorities& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::certificate_authorities);
+    ext.assert(ext_type, extension_type_t::certificate_authorities);
 
     /* Unsupported extension type, skip it */
     istr.ignore(ext_length);
@@ -764,12 +975,24 @@ operator<<(std::ostream& ostr, const certificate_authorities& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::certificate_authorities },
+            certificate_authorities>
+    _ch_certificate_authorities_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::certificate_request,
+              extension_type_t::certificate_authorities },
+            certificate_authorities>
+    _cr_certificate_authorities_registrar;
+
 /* ====================================================================== 
  * OID Filters
  * ====================================================================== */
 
 oid_filters::oid_filters()
-    : extension(extension::type_t::oid_filters)
+    : extension(extension_type_t::oid_filters)
 {
     /* Not supported until we can handle DER encoding */
 }
@@ -786,7 +1009,7 @@ operator>>(std::istream& istr, oid_filters& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::oid_filters);
+    ext.assert(ext_type, extension_type_t::oid_filters);
 
     /* Unsupported extension type, skip it */
     istr.ignore(ext_length);
@@ -800,12 +1023,18 @@ operator<<(std::ostream& ostr, const oid_filters& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::certificate_request,
+              extension_type_t::oid_filters },
+            oid_filters>
+    _cr_oid_filters_registrar;
+
 /* ====================================================================== 
  * Post-handshake auth
  * ====================================================================== */
 
 post_handshake_auth::post_handshake_auth()
-    : extension(extension::type_t::post_handshake_auth)
+    : extension(extension_type_t::post_handshake_auth)
 {
 }
 
@@ -831,12 +1060,18 @@ operator<<(std::ostream& ostr, const post_handshake_auth& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::post_handshake_auth },
+            post_handshake_auth>
+    _ch_post_handshake_auth_registrar;
+
 /* ====================================================================== 
  * Signature algorithms certs extension
  * ====================================================================== */
 
 signature_algorithms_cert::signature_algorithms_cert()
-    : extension(extension::type_t::signature_algorithms_cert)
+    : extension(extension_type_t::signature_algorithms_cert)
 {
     _algos.push_back(signature_algorithm_t::rsa_pkcs1_sha256);
 }
@@ -853,7 +1088,7 @@ operator>>(std::istream& istr, signature_algorithms_cert& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::signature_algorithms_cert);
+    ext.assert(ext_type, extension_type_t::signature_algorithms_cert);
 
     /* Get the algorithms length  */
     istr.read((char*)&ui16, 2);
@@ -879,17 +1114,29 @@ operator<<(std::ostream& ostr, const signature_algorithms_cert& ext)
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::signature_algorithms_cert },
+            signature_algorithms_cert>
+    _ch_signature_algorithms_cert_registrar;
+
+extension_factory::registrar<
+            { handshake_type_t::certificate_request,
+              extension_type_t::signature_algorithms_cert },
+            signature_algorithms_cert>
+    _cr_signature_algorithms_cert_registrar;
+
 /* ====================================================================== 
- * Key-share
+ * Key-share for client hello
  * ====================================================================== */
 
-key_share::key_share()
-    : extension(extension::type_t::key_share)
+client_key_share::client_key_share()
+    : extension(extension_type_t::key_share)
 {
 }
 
 std::istream&
-operator>>(std::istream& istr, key_share& ext)
+operator>>(std::istream& istr, client_key_share& ext)
 {
     /* Set up to throw exceptions */
     istr.exceptions(std::istream::failbit);
@@ -900,7 +1147,7 @@ operator>>(std::istream& istr, key_share& ext)
     auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
     istr.read((char*)&ui16, 2);
     auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
-    ext.assert(ext_type, extension::type_t::key_share);
+    ext.assert(ext_type, extension_type_t::key_share);
 
     /* Get the key data length  */
     istr.read((char*)&ui16, 2);
@@ -931,11 +1178,82 @@ operator>>(std::istream& istr, key_share& ext)
 }
 
 std::ostream&
-operator<<(std::ostream& ostr, const key_share& ext)
+operator<<(std::ostream& ostr, const client_key_share& ext)
 {
     return ostr;
 }
 
+extension_factory::registrar<
+            { handshake_type_t::client_hello,
+              extension_type_t::key_share },
+            client_key_share>
+    _ch_key_share_registrar;
+
+/* ====================================================================== 
+ * Key-share for server hello
+ * ====================================================================== */
+
+server_key_share::server_key_share()
+    : extension(extension_type_t::key_share)
+{
+}
+
+std::istream&
+operator>>(std::istream& istr, server_key_share& ext)
+{
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
+    /* Get the extension type and total extension length */
+    uint16_t ui16;
+    istr.read((char*)&ui16, 2);
+    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    istr.read((char*)&ui16, 2);
+    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    ext.assert(ext_type, extension_type_t::key_share);
+
+    /* The key exchange group */
+    istr.read((char*)&ui16, 2);
+    auto group = static_cast<key_exchange_group_t>(
+        endian::convert(endian_t::big, endian::native(), ui16));
+
+    /* The length of the key */
+    istr.read((char*)&ui16, 2);
+    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+
+    /* Read the key */
+    mud::crypto::key_t key(length);
+    istr.read((char*)key.data(), length);
+
+    /* Save the entry */
+    ext._share = std::make_pair(group, key);
+    return istr;
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const server_key_share& ext)
+{
+    return ostr;
+}
+
+extension_factory::registrar<
+            { handshake_type_t::server_hello,
+              extension_type_t::key_share },
+            server_key_share>
+    _sh_key_share_registrar;
+
 END_MUDLIB_TLS_NS
+
+/* ====================================================================== 
+ * Extension factory
+ * ====================================================================== */
+
+template<>
+mud::tls::extension_factory&
+mud::tls::extension_factory::instance()
+{   
+    static mud::tls::extension_factory _instance;
+    return _instance;
+}   
 
 /* vi: set ai ts=4 expandtab: */

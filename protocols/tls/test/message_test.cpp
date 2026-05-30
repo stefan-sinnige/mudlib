@@ -119,7 +119,7 @@ FEATURE("TLS Message")
         ctx.istr >> *ctx.record;
       })
     THEN ("The record header is defined accordingly", [](context& ctx){
-        ASSERT(mud::tls::record::content_type_t::handshake,
+        ASSERT(mud::tls::record_content_type_t::handshake,
                ctx.record->content_type());
         ASSERT(mud::tls::protocol_version_t::tls_10,
                ctx.record->legacy_record_version());
@@ -146,7 +146,7 @@ FEATURE("TLS Message")
         ctx.istr >> *ctx.handshake;
       })
     THEN ("The handshake header is defined accordingly", [](context& ctx){
-        ASSERT(mud::tls::handshake::type_t::client_hello,
+        ASSERT(mud::tls::handshake_type_t::client_hello,
                ctx.handshake->msg_type());
         ASSERT(244, ctx.handshake->length());
       })
@@ -236,7 +236,7 @@ FEATURE("TLS Message")
         ASSERT(1, compr_methods.size());
         ASSERT(mud::tls::compression_method_t::null, compr_methods[0]);
 
-        /* Extension (only the supported ones can be queried. There are 10 in
+        /* Extensions (only the supported ones can be queried. There are 10 in
          * the message but only 6 are supoprted. */
         auto extensions = ctx.client_hello->extensions();
         ASSERT(6, extensions.size());
@@ -297,8 +297,8 @@ FEATURE("TLS Message")
 
         /* Supported-versions extension */
         {
-            auto ext = std::dynamic_pointer_cast<mud::tls::supported_versions>
-                    (extensions[idx]);
+            auto ext = std::dynamic_pointer_cast<
+                    mud::tls::client_supported_versions>(extensions[idx]);
             ASSERT(true, ext != nullptr);
             ASSERT(1, ext->versions().size());
             ASSERT(mud::tls::protocol_version_t::tls_13, ext->versions()[0]);
@@ -317,7 +317,7 @@ FEATURE("TLS Message")
 
         /* Key-share extension */
         {
-            auto ext = std::dynamic_pointer_cast<mud::tls::key_share>(
+            auto ext = std::dynamic_pointer_cast<mud::tls::client_key_share>(
                     extensions[idx]);
             ASSERT(true, ext != nullptr);
             ASSERT(1, ext->shares().size());
@@ -337,23 +337,67 @@ FEATURE("TLS Message")
       })
     THEN ("The message is formatted accordingly", [](context& ctx){
         const char* expected = 
-            "160303007a020000760303707172737475767778797a7b7c7d7e7f8081828384"
-            "85868788898a8b8c8d8e8f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3"
-            "f4f5f6f7f8f9fafbfcfdfeff130200002e002b0002030400330024001d00209f"
-            "d7ad6dcff4298dd3f96d5b1b2af910a0535b1488d7f8fabb349a982880b615";
+            "0303707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d"
+            "8e8f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfc"
+            "fdfeff130200002e002b0002030400330024001d00209fd7ad6dcff4298dd3f9"
+            "6d5b1b2af910a0535b1488d7f8fabb349a982880b615";
       })
 
   SCENARIO("A ServerHello message can be read")
     GIVEN("A binary ServerHello message", [](context& ctx){
         const char* message = 
-            "160303007a020000760303707172737475767778797a7b7c7d7e7f8081828384"
-            "85868788898a8b8c8d8e8f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3"
-            "f4f5f6f7f8f9fafbfcfdfeff130200002e002b0002030400330024001d00209f"
-            "d7ad6dcff4298dd3f96d5b1b2af910a0535b1488d7f8fabb349a982880b615";
+            "0303707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d"
+            "8e8f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfc"
+            "fdfeff130200002e002b0002030400330024001d00209fd7ad6dcff4298dd3f9"
+            "6d5b1b2af910a0535b1488d7f8fabb349a982880b615";
+        auto data = ctx.to_data(message);
+        std::string str((const char*)data.data(), data.size());
+        ctx.istr = std::istringstream(str);
       })
     WHEN ("The message is read", [](context& ctx){
+        ctx.server_hello = std::make_shared<mud::tls::server_hello>();
+        ctx.istr >> *ctx.server_hello;
       })
     THEN ("The message is defined accordingly", [](context& ctx){
+        ASSERT(mud::tls::protocol_version_t::tls_12,
+               ctx.server_hello->legacy_version());
+        ASSERT(ctx.to_data("707172737475767778797a7b7c7d7e7f"
+                           "808182838485868788898a8b8c8d8e8f"),
+               ctx.server_hello->random());
+        ASSERT(ctx.to_data("e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+                           "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"),
+               ctx.server_hello->legacy_session_id());
+        ASSERT(mud::tls::cipher_suite_t::tls_aes_256_gcm_sha384,
+               ctx.server_hello->cipher_suite());
+        ASSERT(mud::tls::compression_method_t::null,
+               ctx.server_hello->legacy_compression_method());
+
+        /* Extensions. */
+        auto extensions = ctx.server_hello->extensions();
+        ASSERT(2, extensions.size());
+        size_t idx = 0;
+
+        /* Supported-versions extension */
+        {
+            auto ext = std::dynamic_pointer_cast<
+                    mud::tls::server_supported_versions>(extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(mud::tls::protocol_version_t::tls_13, ext->version());
+        }
+        ++idx;
+
+        /* Key-share extension */
+        {
+            auto ext = std::dynamic_pointer_cast<mud::tls::server_key_share>(
+                    extensions[idx]);
+            ASSERT(true, ext != nullptr);
+            ASSERT(mud::tls::key_exchange_group_t::x25519,
+                   ext->share().first);
+            ASSERT(ctx.to_data("9fd7ad6dcff4298dd3f96d5b1b2af910"
+                               "a0535b1488d7f8fabb349a982880b615"),
+                   ext->share().second);
+        }
+        ++idx;
       })
 
 END_FEATURE()
