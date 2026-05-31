@@ -147,8 +147,27 @@ private:
     bool _encrypted;
 
     /** Friends */
-    friend std::istream& operator>>(std::istream& istr, record& rec);
+    friend std::ostream& operator<<(std::ostream&, const record&);
+    friend std::istream& operator>>(std::istream&, record&);
 };
+
+/**
+ * @brief Write an TLS reord message to an output stream.
+ * @param ostr The output stream
+ * @param msg The message to write.
+ */
+std::ostream&
+operator<<(std::ostream& ostr, const record& msg);
+
+/**
+ * @brief Read a TLS record (header only) from an input stream
+ * @param istr The input stream to read from
+ * @param rec The record header details.
+ * @details
+ * Read only the TLS record header from the input stream.
+ */
+std::istream&
+operator>>(std::istream& istr, record& rec);
 
 /**
  * @brief The base definition of an TLS handshake message.
@@ -210,8 +229,25 @@ private:
     uint32_t _length;
 
     /** Friends */
-    friend std::istream& operator>>(std::istream& istr, handshake& rec);
+    friend std::ostream& operator>>(std::ostream&, const handshake&);
+    friend std::istream& operator>>(std::istream&, handshake&);
 };
+
+/**
+ * @brief Write a TLS handshake (header only) to an output stream
+ * @param ostr The output stream to write to
+ * @param msg The handshake header details.
+ */
+std::ostream&
+operator<<(std::ostream& ostr, handshake& msg);
+
+/**
+ * @brief Read a TLS handshake (header only) from an input stream
+ * @param istr The input stream to read from
+ * @param msg The handshake header details.
+ */
+std::istream&
+operator>>(std::istream& istr, handshake& msg);
 
 /**
  * @brief TLS Client Hello message
@@ -335,8 +371,25 @@ private:
     std::vector<std::shared_ptr<extension>> _extensions;
 
     /** Friends */
-    friend std::istream& operator>>(std::istream& istr, client_hello& rec);
+    friend std::ostream& operator<<(std::ostream&, const client_hello&);
+    friend std::istream& operator>>(std::istream&, client_hello& rec);
 };
+
+/**
+ * @brief Write an TLS client-hello to an output stream.
+ * @param ostr The output stream
+ * @param msg The message to write.
+ */
+std::ostream&
+operator<<(std::ostream& ostr, const client_hello& msg);
+
+/**
+ * @brief Read a TLS client-hello from an input stream
+ * @param istr The input stream to read from
+ * @param msg The message details.
+ */
+std::istream&
+operator>>(std::istream& istr, client_hello& msg);
 
 /**
  * @brief TLS Server Hello message
@@ -456,36 +509,17 @@ private:
     std::vector<std::shared_ptr<extension>> _extensions;
 
     /** Friends */
-    friend std::istream& operator>>(std::istream& istr, server_hello& rec);
+    friend std::ostream& operator<<(std::ostream&, const server_hello&);
+    friend std::istream& operator>>(std::istream&, server_hello&);
 };
 
 /**
- * @brief Read a TLS record (header only) from an input stream
- * @param istr The input stream to read from
- * @param rec The record header details.
- * @details
- * Read only the TLS record header from the input stream.
+ * @brief Write an TLS server-hello to an output stream.
+ * @param ostr The output stream
+ * @param msg The message to write.
  */
-std::istream&
-operator>>(std::istream& istr, record& rec);
-
-/**
- * @brief Read a TLS handshake (header only) from an input stream
- * @param istr The input stream to read from
- * @param msg The handshake header details.
- * @details
- * Read only the TLS handshake header from the input stream.
- */
-std::istream&
-operator>>(std::istream& istr, handshake& msg);
-
-/**
- * @brief Read a TLS client-hello from an input stream
- * @param istr The input stream to read from
- * @param msg The message details.
- */
-std::istream&
-operator>>(std::istream& istr, client_hello& msg);
+std::ostream&
+operator<<(std::ostream& ostr, const server_hello& msg);
 
 /**
  * @brief Read a TLS server-hello from an input stream
@@ -494,14 +528,6 @@ operator>>(std::istream& istr, client_hello& msg);
  */
 std::istream&
 operator>>(std::istream& istr, server_hello& msg);
-
-/**
- * @brief Write an TLS message to an output stream.
- * @param ostr The output stream
- * @param msg The message to write.
- */
-std::ostream&
-operator<<(std::ostream& ostr, const record& msg);
 
 /**
  * @brief Read a TLS message from an input stream.

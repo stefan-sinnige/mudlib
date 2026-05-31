@@ -50,6 +50,29 @@ CONTEXT()
         return d;
     }
 
+    /* Convert from string to random */
+    mud::crypto::random_t to_random(const std::string& s) {
+        mud::crypto::random_t r;
+        std::stringstream sstr(s);
+        sstr >> r;
+        return r;
+    }
+
+    /* Convert from string to key */
+    mud::crypto::key_t to_key(const std::string& s) {
+        mud::crypto::key_t k;
+        std::stringstream sstr(s);
+        sstr >> k;
+        return k;
+    }
+
+    /* Convert from data to string */
+    std::string to_string(const mud::crypto::data_t& d) {
+        std::stringstream sstr;
+        sstr << d;
+        return sstr.str();
+    }
+
     /* Input string stream */
     std::istringstream istr;
 
@@ -179,19 +202,39 @@ FEATURE("TLS Message")
 
   SCENARIO("A ClientHello message can be written")
     GIVEN("A defined ClientHello message", [](context& ctx){
+        ctx.client_hello = std::make_shared<mud::tls::client_hello>();
+        ctx.client_hello->random(ctx.to_random(
+                "000102030405060708090a0b0c0d0e0f"
+                "101112131415161718191a1b1c1d1e1f"));
+        ctx.client_hello->legacy_session_id(ctx.to_data(
+                "e0e1e2e3e4e5e6e7e8e9eaebecedeeef"
+                "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"));
+        auto exts = ctx.client_hello->extensions();
+        {
+            std::vector<mud::tls::client_key_share::entry_t> key_shares;
+            mud::tls::client_key_share::entry_t key_share =
+                { mud::tls::key_exchange_group_t::x25519,
+                  ctx.to_key("358072d6365880d1aeea329adf912138"
+                             "3851ed21a28e3b75e965d0d2cd166254") };
+            key_shares.push_back(key_share);
+            auto ext = std::make_shared<mud::tls::client_key_share>();
+            ext->shares(key_shares);
+            exts.push_back(ext);
+        }
+        ctx.client_hello->extensions(exts);
       })
     WHEN ("The message is written", [](context& ctx){
+        ctx.ostr << *ctx.client_hello;
       })
     THEN ("The message is formatted accordingly", [](context& ctx){
         const char* expected = 
             "0303000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d"
             "1e1f20e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfc"
-            "fdfeff000813021303130100ff010000a30000001800160000136578616d706c"
-            "652e756c666865696d2e6e6574000b000403000102000a00160014001d001700"
-            "1e0019001801000101010201030104002300000016000000170000000d001e00"
-            "1c040305030603080708080809080a080b080408050806040105010601002b00"
-            "03020304002d00020101003300260024001d0020358072d6365880d1aeea329a"
-            "df9121383851ed21a28e3b75e965d0d2cd166254";
+            "fdfeff000613011302130401000031002b0003020304003300260024001d0020"
+            "358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254";
+        std::string str = ctx.ostr.str();
+        mud::crypto::data_t data((const uint8_t*)str.data(), str.size());
+        ASSERT(expected, ctx.to_string(data));
       })
 
   SCENARIO("A ClientHello message can be read")

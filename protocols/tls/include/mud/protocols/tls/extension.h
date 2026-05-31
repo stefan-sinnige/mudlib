@@ -58,11 +58,23 @@ public:
     extension_type_t extension_type() const { return _type; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const = 0;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) = 0;
+    virtual std::istream& read(std::istream& istr) = 0;
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) = 0;
 
 protected:
     /**
@@ -121,13 +133,28 @@ public:
     void names(const std::vector<std::string>& value) { _names = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -136,7 +163,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, server_name&);
-    friend std::ostream& operator>>(std::ostream&, const server_name&);
+    friend std::ostream& operator<<(std::ostream&, const server_name&);
 };
 
 /**
@@ -180,13 +207,28 @@ public:
     void length(uint16_t value) { _length = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -195,7 +237,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, max_fragment_length&);
-    friend std::ostream& operator>>(std::ostream&, const max_fragment_length&);
+    friend std::ostream& operator<<(std::ostream&, const max_fragment_length&);
 };
 
 /**
@@ -227,20 +269,35 @@ public:
     status_request();
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, status_request&);
-    friend std::ostream& operator>>(std::ostream&, const status_request&);
+    friend std::ostream& operator<<(std::ostream&, const status_request&);
 };
 
 /**
@@ -289,13 +346,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -304,7 +376,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, supported_groups&);
-    friend std::ostream& operator>>(std::ostream&, const supported_groups&);
+    friend std::ostream& operator<<(std::ostream&, const supported_groups&);
 };
 
 /**
@@ -356,13 +428,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -371,7 +458,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, signature_algorithms&);
-    friend std::ostream& operator>>(std::ostream&, const signature_algorithms&);
+    friend std::ostream& operator<<(std::ostream&, const signature_algorithms&);
 };
 
 /**
@@ -421,13 +508,28 @@ public:
     void mode(mode_t value) { _mode = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -436,7 +538,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, heartbeat&);
-    friend std::ostream& operator>>(std::ostream&, const heartbeat&);
+    friend std::ostream& operator<<(std::ostream&, const heartbeat&);
 };
 
 /**
@@ -482,13 +584,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -498,7 +615,7 @@ private:
     /* Friends */
     friend std::istream& operator>>(std::istream&,
             application_layer_protocol_negotiation&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const application_layer_protocol_negotiation&);
 };
 
@@ -545,13 +662,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -561,7 +693,7 @@ private:
     /* Friends */
     friend std::istream& operator>>(std::istream&,
             client_certificate_type&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const client_certificate_type&);
 };
 
@@ -606,13 +738,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -622,7 +769,7 @@ private:
     /* Friends */
     friend std::istream& operator>>(std::istream&,
             server_certificate_type&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const server_certificate_type&);
 };
 
@@ -666,13 +813,28 @@ public:
     void length(size_t value) { _length = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -681,7 +843,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, padding&);
-    friend std::ostream& operator>>(std::ostream&, const padding&);
+    friend std::ostream& operator<<(std::ostream&, const padding&);
 };
 
 /**
@@ -725,13 +887,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -740,7 +917,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, pre_shared_key&);
-    friend std::ostream& operator>>(std::ostream&, const pre_shared_key&);
+    friend std::ostream& operator<<(std::ostream&, const pre_shared_key&);
 };
 
 /**
@@ -787,13 +964,28 @@ public:
     void data(const mud::crypto::data_t& value) { _data = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -802,7 +994,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, early_data&);
-    friend std::ostream& operator>>(std::ostream&, const early_data&);
+    friend std::ostream& operator<<(std::ostream&, const early_data&);
 };
 
 /**
@@ -848,13 +1040,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -863,7 +1070,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, client_supported_versions&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const client_supported_versions&);
 };
 
@@ -907,13 +1114,28 @@ public:
     void version(protocol_version_t value) { _version = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -922,7 +1144,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, server_supported_versions&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const server_supported_versions&);
 };
 
@@ -969,13 +1191,28 @@ public:
     void data(const mud::crypto::data_t& value) { _data = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -984,7 +1221,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, cookie&);
-    friend std::ostream& operator>>(std::ostream&, const cookie&);
+    friend std::ostream& operator<<(std::ostream&, const cookie&);
 };
 
 /**
@@ -1030,13 +1267,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -1045,7 +1297,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, psk_key_exchange_modes&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const psk_key_exchange_modes&);
 };
 
@@ -1078,20 +1330,35 @@ public:
     certificate_authorities();
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, certificate_authorities&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const certificate_authorities&);
 };
 
@@ -1124,20 +1391,35 @@ public:
     oid_filters();
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, oid_filters&);
-    friend std::ostream& operator>>(std::ostream&, const oid_filters&);
+    friend std::ostream& operator<<(std::ostream&, const oid_filters&);
 };
 
 /**
@@ -1168,20 +1450,35 @@ public:
     post_handshake_auth();
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, post_handshake_auth&);
-    friend std::ostream& operator>>(std::ostream&, const post_handshake_auth&);
+    friend std::ostream& operator<<(std::ostream&, const post_handshake_auth&);
 };
 
 /**
@@ -1232,13 +1529,28 @@ public:
     }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -1247,7 +1559,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, signature_algorithms_cert&);
-    friend std::ostream& operator>>(std::ostream&,
+    friend std::ostream& operator<<(std::ostream&,
             const signature_algorithms_cert&);
 };
 
@@ -1297,13 +1609,28 @@ public:
     void shares(const std::vector<entry_t>& value) { _shares = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -1312,7 +1639,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, client_key_share&);
-    friend std::ostream& operator>>(std::ostream&, const client_key_share&);
+    friend std::ostream& operator<<(std::ostream&, const client_key_share&);
 };
 
 /**
@@ -1361,13 +1688,28 @@ public:
     void share(const entry_t& value) { _share = value; }
 
     /**
-     * @brief Parse an extension from an input stream.
+     * @brief Return the extension size in bytes.
+     */
+    virtual size_t size() const override;
+
+    /**
+     * @brief Read an extension from an input stream.
      * @param istr The input stream, currently pointed to an extension.
      * @return The input stream.
      */
-    virtual std::istream& parse(std::istream& istr) override {
+    virtual std::istream& read(std::istream& istr) override {
         istr >> *this;
         return istr;
+    }
+
+    /**
+     * @brief Write an extension to an output stream.
+     * @param istr The output stream.
+     * @return The output stream.
+     */
+    virtual std::ostream& write(std::ostream& ostr) override {
+        ostr << *this;
+        return ostr;
     }
 
 private:
@@ -1376,7 +1718,7 @@ private:
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, server_key_share&);
-    friend std::ostream& operator>>(std::ostream&, const server_key_share&);
+    friend std::ostream& operator<<(std::ostream&, const server_key_share&);
 };
 
 /**

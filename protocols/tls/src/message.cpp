@@ -90,6 +90,140 @@ client_hello::client_hello()
 
     /* Legacy compression methods */
     _legacy_compression_methods.push_back(compression_method_t::null);
+
+    /* Mandatory extensions */
+    auto ext = extension_factory::instance().create(
+            { msg_type(), extension_type_t::supported_versions });
+    _extensions.push_back(std::move(ext));
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const client_hello& msg)
+{
+    /* Set up to throw exceptions */
+    ostr.exceptions(std::istream::failbit);
+
+    /* Write the legacy version */
+    uint16_t ui16 = endian::convert(endian::native(), endian_t::big,
+            static_cast<uint16_t>(msg._legacy_version));
+    ostr.write((const char*)&ui16, 2);
+
+    /* The 32-byte random */
+    ostr.write((const char*)msg._random.data(), msg._random.size());
+
+    /* The session ID random */
+    ostr.put(msg._legacy_session_id.size());
+    ostr.write((const char*)msg._legacy_session_id.data(),
+               msg._legacy_session_id.size());
+
+    /* Cipher suites */
+    ui16 = endian::convert(endian::native(), endian_t::big,
+            static_cast<uint16_t>(msg._cipher_suites.size() * 2));
+    ostr.write((const char*)&ui16, 2);
+    for (auto suite: msg._cipher_suites) {
+        ui16 = endian::convert(endian::native(), endian_t::big,
+                static_cast<uint16_t>(suite));
+        ostr.write((const char*)&ui16, 2);
+    }
+
+    /* Compression methods */
+    ostr.put(msg._legacy_compression_methods.size());
+    for (auto method: msg._legacy_compression_methods) {
+        ostr.put(static_cast<uint8_t>(method));
+    }
+
+    /* Extensions */
+    ui16 = 0;
+    for (auto ext: msg._extensions) {
+        ui16 += ext->size();
+    }
+    ui16 = endian::convert(endian::native(), endian_t::big, ui16);
+    ostr.write((const char*)&ui16, 2);
+    for (auto ext: msg._extensions) {
+        ext->write(ostr);
+    }
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, client_hello& msg)
+{
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
+    /* The legacy version */
+    uint16_t ui16;
+    istr.read((char*)&ui16, 2);
+    msg._legacy_version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), ui16));
+
+    /* The 32-byte random */
+    mud::crypto::data_t random(32);
+    istr.read((char*)random.data(), 32);
+    msg._random = random;
+
+    /* The legacy session ID */
+    int ch = istr.get();
+    if (ch > 32) {
+        throw invalid_message("Invalid client-hello session ID length");
+    }
+    mud::crypto::data_t legacy_session_id(ch);
+    istr.read((char*)legacy_session_id.data(), 32);
+    msg._legacy_session_id = legacy_session_id;
+
+    /* Cipher suites */
+    istr.read((char*)&ui16, 2);
+    uint16_t length = endian::convert(endian_t::big, endian::native(), ui16);
+    msg._cipher_suites.clear();
+    for (int i = 0; i < length / 2; ++i) {
+        istr.read((char*)&ui16, 2);
+        uint16_t suite = endian::convert(endian_t::big, endian::native(), ui16);
+        msg._cipher_suites.push_back(static_cast<cipher_suite_t>(suite));
+    }
+
+    /* Compression methods */
+    ch = istr.get();
+    length = ch;
+    msg._legacy_compression_methods.clear();
+    for (int i = 0; i < length; ++i) {
+        ch = istr.get();
+        msg._legacy_compression_methods.push_back(
+                static_cast<compression_method_t>(ch));
+    }
+
+    /* Extensions */
+    istr.read((char*)&ui16, 2);
+    length = endian::convert(endian_t::big, endian::native(), ui16);
+    msg._extensions.clear();
+    auto end = (uint16_t)istr.tellg() + length;
+    while (istr.tellg() < end) {
+        /* Get the first two bytes to retrieve the extension type and use their
+         * streaming operator to read it. Put the two bytes back as the
+         * extension will read it in. */
+        int hi = istr.get();
+        int lo = istr.get();
+        istr.putback(lo);
+        istr.putback(hi);
+        uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
+
+        /* Read the extension */
+        try {
+            auto ext = extension_factory::instance().create(
+                { msg.msg_type(),
+                  static_cast<extension_type_t>(ext_type) });
+            ext->read(istr);
+            msg._extensions.push_back(std::move(ext));
+        }
+        catch (...) {
+            /* Unsupported extension type, skip it */
+            istr.read((char*)&ui16, 2);
+            istr.read((char*)&ui16, 2);
+            uint16_t length = endian::convert(endian_t::big, endian::native(),
+                                              ui16);
+            istr.ignore(length);
+        }
+    }
+    return istr;
 }
 
 /* ====================================================================== 
@@ -101,6 +235,87 @@ server_hello::server_hello()
     , _legacy_version(protocol_version_t::tls_12)
     , _random(32)
 {
+}
+
+std::ostream&
+operator>>(std::ostream& ostr, const server_hello& msg)
+{
+    /* Set up to throw exceptions */
+    ostr.exceptions(std::istream::failbit);
+
+    return ostr;
+}
+
+std::istream&
+operator>>(std::istream& istr, server_hello& msg)
+{
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
+    /* Get the legacy version */
+    uint16_t ui16;
+    istr.read((char*)&ui16, 2);
+    msg._legacy_version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), ui16));
+
+    /* The 32-byte random */
+    mud::crypto::data_t random(32);
+    istr.read((char*)random.data(), 32);
+    msg._random = random;
+
+    /* The legacy session ID */
+    int ch = istr.get();
+    if (ch > 32) {
+        throw invalid_message("Invalid server-hello session ID length");
+    }
+    mud::crypto::data_t legacy_session_id(ch);
+    istr.read((char*)legacy_session_id.data(), 32);
+    msg._legacy_session_id = legacy_session_id;
+
+    /* Cipher suite */
+    istr.read((char*)&ui16, 2);
+    uint16_t suite = endian::convert(endian_t::big, endian::native(),
+                                     ui16);
+    msg._cipher_suite = static_cast<cipher_suite_t>(suite);
+
+    /* Compression method */
+    ch = istr.get();
+    msg._legacy_compression_method = static_cast<compression_method_t>(ch);
+    
+    /* Extensions */
+    uint16_t length;
+    istr.read((char*)&ui16, 2);
+    length = endian::convert(endian_t::big, endian::native(), ui16);
+    msg._extensions.clear();
+    auto end = (uint16_t)istr.tellg() + length;
+    while (istr.tellg() < end) {
+        /* Get the first two bytes to retrieve the extension type and use their
+         * streaming operator to read it. Put the two bytes back as the
+         * extension will read it in. */
+        int hi = istr.get();
+        int lo = istr.get();
+        istr.putback(lo);
+        istr.putback(hi);
+        uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
+
+        /* Read the extension */
+        try {
+            auto ext = extension_factory::instance().create(
+                { msg.msg_type(),
+                  static_cast<extension_type_t>(ext_type) });
+            ext->read(istr);
+            msg._extensions.push_back(std::move(ext));
+        }
+        catch (...) {
+            /* Unsupported extension type, skip it */
+            istr.read((char*)&ui16, 2);
+            istr.read((char*)&ui16, 2);
+            uint16_t length = endian::convert(endian_t::big,
+                                endian::native(), ui16);
+            istr.ignore(length);
+        }
+    }
+    return istr;
 }
 
 /* ====================================================================== 
@@ -127,15 +342,14 @@ operator>>(std::istream& istr, record& rec)
     }
 
     /* Get the legacy version */
-    uint16_t value_uint16;
-    istr.read((char*)&value_uint16, 2);
+    uint16_t ui16;
+    istr.read((char*)&ui16, 2);
     rec._legacy_record_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), value_uint16));
+            endian::convert(endian_t::big, endian::native(), ui16));
 
     /* Get the length */
-    istr.read((char*)&value_uint16, 2);
-    rec._length = endian::convert(endian_t::big, endian::native(),
-                                  value_uint16);
+    istr.read((char*)&ui16, 2);
+    rec._length = endian::convert(endian_t::big, endian::native(), ui16);
     return istr;
 }
 
@@ -165,165 +379,9 @@ operator>>(std::istream& istr, handshake& msg)
     }
 
     /* Get the length */
-    uint32_t value_uint32 = 0;
-    istr.read(((char*)&value_uint32)+1, 3);
-    msg._length = endian::convert(
-            endian_t::big, endian::native(), value_uint32);
-    return istr;
-}
-
-std::istream&
-operator>>(std::istream& istr, client_hello& msg)
-{
-    /* Set up to throw exceptions */
-    istr.exceptions(std::istream::failbit);
-
-    /* Get the legacy version */
-    uint16_t value_uint16;
-    istr.read((char*)&value_uint16, 2);
-    msg._legacy_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), value_uint16));
-
-    /* The 32-byte random */
-    mud::crypto::data_t random(32);
-    istr.read((char*)random.data(), 32);
-    msg._random = random;
-
-    /* The legacy session ID */
-    int ch = istr.get();
-    if (ch > 32) {
-        throw invalid_message("Invalid client-hello session ID length");
-    }
-    mud::crypto::data_t legacy_session_id(ch);
-    istr.read((char*)legacy_session_id.data(), 32);
-    msg._legacy_session_id = legacy_session_id;
-
-    /* Cipher suites */
-    istr.read((char*)&value_uint16, 2);
-    uint16_t length = endian::convert(endian_t::big, endian::native(),
-                                      value_uint16);
-    msg._cipher_suites.clear();
-    for (int i = 0; i < length / 2; ++i) {
-        istr.read((char*)&value_uint16, 2);
-        uint16_t suite = endian::convert(endian_t::big, endian::native(),
-                                         value_uint16);
-        msg._cipher_suites.push_back(static_cast<cipher_suite_t>(suite));
-    }
-
-    /* Compression methods */
-    ch = istr.get();
-    length = ch;
-    msg._legacy_compression_methods.clear();
-    for (int i = 0; i < length; ++i) {
-        ch = istr.get();
-        msg._legacy_compression_methods.push_back(
-                static_cast<compression_method_t>(ch));
-    }
-
-    /* Extensions */
-    istr.read((char*)&value_uint16, 2);
-    length = endian::convert(endian_t::big, endian::native(), value_uint16);
-    msg._extensions.clear();
-    auto end = (uint16_t)istr.tellg() + length;
-    while (istr.tellg() < end) {
-        /* Get the first two bytes to retrieve the extension type and use their
-         * streaming operator to read it. Put the two bytes back as the
-         * extension will read it in. */
-        int hi = istr.get();
-        int lo = istr.get();
-        istr.putback(lo);
-        istr.putback(hi);
-        uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
-
-        /* Read the extension */
-        try {
-            auto ext = extension_factory::instance().create(
-                { msg.msg_type(),
-                  static_cast<extension_type_t>(ext_type) });
-            ext->parse(istr);
-            msg._extensions.push_back(std::move(ext));
-        }
-        catch (...) {
-            /* Unsupported extension type, skip it */
-            istr.read((char*)&value_uint16, 2);
-            istr.read((char*)&value_uint16, 2);
-            uint16_t length = endian::convert(endian_t::big,
-                                endian::native(), value_uint16);
-            istr.ignore(length);
-        }
-    }
-    return istr;
-}
-
-std::istream&
-operator>>(std::istream& istr, server_hello& msg)
-{
-    /* Set up to throw exceptions */
-    istr.exceptions(std::istream::failbit);
-
-    /* Get the legacy version */
-    uint16_t value_uint16;
-    istr.read((char*)&value_uint16, 2);
-    msg._legacy_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), value_uint16));
-
-    /* The 32-byte random */
-    mud::crypto::data_t random(32);
-    istr.read((char*)random.data(), 32);
-    msg._random = random;
-
-    /* The legacy session ID */
-    int ch = istr.get();
-    if (ch > 32) {
-        throw invalid_message("Invalid server-hello session ID length");
-    }
-    mud::crypto::data_t legacy_session_id(ch);
-    istr.read((char*)legacy_session_id.data(), 32);
-    msg._legacy_session_id = legacy_session_id;
-
-    /* Cipher suite */
-    istr.read((char*)&value_uint16, 2);
-    uint16_t suite = endian::convert(endian_t::big, endian::native(),
-                                     value_uint16);
-    msg._cipher_suite = static_cast<cipher_suite_t>(suite);
-
-    /* Compression method */
-    ch = istr.get();
-    msg._legacy_compression_method = static_cast<compression_method_t>(ch);
-    
-    /* Extensions */
-    uint16_t length;
-    istr.read((char*)&value_uint16, 2);
-    length = endian::convert(endian_t::big, endian::native(), value_uint16);
-    msg._extensions.clear();
-    auto end = (uint16_t)istr.tellg() + length;
-    while (istr.tellg() < end) {
-        /* Get the first two bytes to retrieve the extension type and use their
-         * streaming operator to read it. Put the two bytes back as the
-         * extension will read it in. */
-        int hi = istr.get();
-        int lo = istr.get();
-        istr.putback(lo);
-        istr.putback(hi);
-        uint16_t ext_type = ((hi & 0xFF) << 8) | (lo & 0xFF);
-
-        /* Read the extension */
-        try {
-            auto ext = extension_factory::instance().create(
-                { msg.msg_type(),
-                  static_cast<extension_type_t>(ext_type) });
-            ext->parse(istr);
-            msg._extensions.push_back(std::move(ext));
-        }
-        catch (...) {
-            /* Unsupported extension type, skip it */
-            istr.read((char*)&value_uint16, 2);
-            istr.read((char*)&value_uint16, 2);
-            uint16_t length = endian::convert(endian_t::big,
-                                endian::native(), value_uint16);
-            istr.ignore(length);
-        }
-    }
+    uint32_t ui32 = 0;
+    istr.read(((char*)&ui32)+1, 3);
+    msg._length = endian::convert(endian_t::big, endian::native(), ui32);
     return istr;
 }
 
