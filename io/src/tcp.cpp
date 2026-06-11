@@ -100,20 +100,21 @@ namespace _tcp {
             }
             else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                /* Not ready to receive, wait a bit (5 seconds maximum). This
+                /* Not ready to read, wait a bit (10*1000 µsec maximum). This
                  * has the side-effect that this read will be blocked at most
                  * by this time interval. */
                 fd_set rdfs;
                 FD_ZERO(&rdfs);
                 FD_SET(hndl, &rdfs);
                 struct timeval  tv;
-                tv.tv_sec = 5;
-                tv.tv_usec = 0;
+                tv.tv_sec = 0;
+                tv.tv_usec = 1000;
                 if (::select(hndl+1, &rdfs, nullptr, nullptr, &tv) <= 0) {
                     /* Still nothing available, or low-level errors */
-                    ERROR(log) << "No data available on socket " << hndl
-                               << ": " << strerror(errno) << std::endl;
-                    return -1;
+                    TRACE(log) << "No data available on socket " << hndl
+                               << ": " << strerror(errno) << " (retry)"
+                               << std::endl;
+                    continue;
                 }
                 if (! FD_ISSET(hndl, &rdfs)) {
                     ERROR(log) << "No data available on socket " << hndl
@@ -142,9 +143,9 @@ namespace _tcp {
     {
         LOG(log);
         int hndl = mud::core::internal_handle<int>(handle());
-        ssize_t nwrite = 0;
+        ssize_t nwritten = 0;
         int tries = 10;
-        while ((nwrite = ::send(hndl, SEND_CAST buf, count, 0)) < 0
+        while ((nwritten = ::send(hndl, SEND_CAST buf, count, 0)) < 0
                && tries -- > 0)
         {
             if (errno == EINTR) {
@@ -153,13 +154,15 @@ namespace _tcp {
             }
             else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                /* Not ready to write, wait a bit (1 millisecond) */
+                /* Not ready to write, wait a bit (10*1000 µsec maximum). This
+                 * has the side-effect that this write will be blocked at most
+                 * by this time interval. */
                 fd_set wrfs;
                 FD_ZERO(&wrfs);
                 FD_SET(hndl, &wrfs);
                 struct timeval  tv;
                 tv.tv_sec = 0;
-                tv.tv_usec = 1 * 1000;
+                tv.tv_usec = 1000;
                 if (::select(hndl+1, nullptr, &wrfs, nullptr, &tv) <= 0) {
                     /* Still not ready to write, or low-level errors */
                     ERROR(log) << "Socket " << hndl << " not ready to write"
@@ -192,9 +195,9 @@ namespace _tcp {
         /* We may have written less than asked for, for example, the output
          * buffer is full. We may need subsequent calls to flush more data if
          * needed dictated by more calls to `underflow` or related. */
-        TRACE(log) << "Sent " << nwrite << " bytes on TCP socket " << hndl
+        TRACE(log) << "Sent " << nwritten << " bytes on TCP socket " << hndl
                    << std::endl;
-        return nwrite;
+        return nwritten;
     }
 
 } // namespace _tcp
