@@ -24,7 +24,6 @@
  * ++ end-license-description ++
  */
 
-#include "mud/core/hexdump.h"
 #include "mud/io/pipe.h"
 #include "mud/core/exception.h"
 #include "mud/io/streambuf.h"
@@ -117,8 +116,6 @@ namespace _pipe {
          * data if needed, dictated by more calls to `underflow` or related. */
         TRACE(log) << "Received " << nread << " bytes on pipe " << hndl
                    << std::endl;
-std::cerr << "Received on pipe: " << std::endl
-          << mud::core::hexdump((const char*)buf, nread) << std::endl;
         return nread;
     }
 
@@ -180,8 +177,6 @@ std::cerr << "Received on pipe: " << std::endl
          * needed dictated by more calls to `underflow` or related. */
         TRACE(log) << "Sent " << nwritten << " bytes on pipe " << hndl
                    << std::endl;
-//std::cerr << "Written on pipe: " << std::endl
-//          << mud::core::hexdump((const char*)buf, nwritten) << std::endl;
         return nwritten;
     }
 

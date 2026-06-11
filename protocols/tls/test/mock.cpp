@@ -25,8 +25,39 @@
  */
 
 #include "mock.h"
+#include <mud/core/endian.h>
+
+using mud::core::endian;
+using endian_t = mud::core::endian::endian_t;
 
 namespace mock {
+
+std::istream&
+operator>>(std::istream& istr, message& msg)
+{
+    uint16_t length;
+    istr.read((char*)&length, 2);
+    length = endian::convert(endian_t::big, endian::native(), length);
+    std::string str;
+    str.resize(length);
+    istr.read(str.data(), length);
+    msg.contents(str);
+    return istr;
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, const message& msg)
+{
+    uint16_t length = endian::convert(endian::native(), endian_t::big,
+            (uint16_t)msg.contents().size());
+    ostr.write((const char*)&length, 2);
+    ostr.write(msg.contents().data(), msg.contents().size());
+    return ostr;
+}
+
+/* ======================================================================
+ * Server
+ * ====================================================================== */
 
 server::server()
     : _connected(false)
@@ -44,6 +75,7 @@ server::open(std::shared_ptr<channel> comms)
     /* Setup the event notifications */
     attach(_protocol->connected(), &server::on_connected);
     attach(_protocol->disconnected(), &server::on_disconnected);
+    attach(_protocol->received(), &server::on_received);
 
     /* Create the physical device and pass it to the communicators */
     mock::device device(channel::entity::entity_a, comms);
@@ -62,16 +94,9 @@ server::close()
 }
 
 void
-server::send()
+server::send(const mock::message& msg)
 {
-    _protocol->ostr() << "Aenean vitae dui quis leo venenatis rhoncus. Nullam diam sem, blandit ac tempus id, volutpat malesuada massa. Duis pellentesque, velit quis vulputate mollis, arcu purus pharetra velit, ac condimentum lorem metus nec metus. Proin a ipsum quis nunc vestibulum tempus. Integer fringilla ligula velit, eget porttitor risus lobortis consequat. Mauris turpis augue, efficitur faucibus mi vel, elementum posuere nunc. Pellentesque pretium turpis quis nulla fermentum, commodo dictum massa accumsan. Morbi tempus porttitor tristique. Mauris ornare at quam sed blandit. Ut a sagittis mi. In hac habitasse platea dictumst. Donec sed quam eu odio lacinia egestas ut eget dui. Nam convallis massa diam, sit amet fringilla nisl finibus ac. Integer venenatis mi eu nisi blandit, et gravida ex efficitur. Donec dui elit, semper in dui nec, viverra luctus metus. Sed eu euismod lectus, sed viverra justo. Integer vel ex congue, luctus lacus sit amet, pharetra risus. Nulla pharetra est eget velit pulvinar, nec tincidunt sem tincidunt. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nulla facilisi. Cras in ligula nibh. Mauris aliquet dolor massa, nec ultricies neque maximus non. Donec pellentesque in risus nec tristique. Nunc blandit accumsan diam, id elementum mauris bibendum vitae. Aenean quis mi ut arcu posuere posuere ac id nibh." << std::endl;
-}
-
-void server::receive()
-{
-    std::string str;
-    std::getline(_protocol->istr(), str);
-    std::cout << "==> Received from server: " << str << std::endl;
+    _protocol->ostr() << msg << std::flush;
 }
 
 bool
@@ -86,6 +111,12 @@ server::connected_future()
     return _connected_promise.get_future();
 }
 
+std::future<mock::message>
+server::received_future()
+{
+    return _received_promise.get_future();
+}
+
 std::future<void>
 server::disconnected_future()
 {
@@ -93,18 +124,30 @@ server::disconnected_future()
 }
 
 void
-server::on_connected(const mud::core::message& msg)
+server::on_connected(const mud::core::message&)
 {
     _connected = true;
     _connected_promise.set_value();
 }
 
 void
-server::on_disconnected(const mud::core::message& msg)
+server::on_disconnected(const mud::core::message&)
 {
     _connected = false;
     _disconnected_promise.set_value();
 }
+
+void
+server::on_received(const mud::core::message&)
+{
+    mock::message mock_msg;
+    _protocol->istr() >> mock_msg;
+    _received_promise.set_value(mock_msg);
+}
+
+/* ======================================================================
+ * Client
+ * ====================================================================== */
 
 client::client()
     : _connected(false)
@@ -122,6 +165,7 @@ client::open(std::shared_ptr<channel> comms)
     /* Setup the event notifications */
     attach(_protocol->connected(), &client::on_connected);
     attach(_protocol->disconnected(), &client::on_disconnected);
+    attach(_protocol->received(), &client::on_received);
 
     /* Create the physical device and pass it to the communicators */
     mock::device device(channel::entity::entity_b, comms);
@@ -140,17 +184,9 @@ client::close()
 }
 
 void
-client::send()
+client::send(const mock::message& msg)
 {
-    _protocol->ostr() << "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus dignissim risus sit amet odio varius, quis fermentum lorem aliquet. Aenean nec leo elit. Vivamus ante purus, lobortis id elit mollis, ultricies tempor erat. Phasellus eget ipsum sit amet mauris dignissim convallis ut in odio. Aliquam commodo tellus vitae consectetur blandit. Aenean tristique purus nec neque dapibus, ut condimentum quam convallis. Donec pharetra tincidunt tellus sed feugiat. Donec molestie lacinia placerat. Etiam in purus nec enim luctus scelerisque. Pellentesque blandit dolor vel lectus lobortis porta. Phasellus at feugiat ligula. Cras facilisis non dolor eget rutrum. Vivamus pretium quis erat convallis porta. Suspendisse potenti. Ut suscipit ultricies dapibus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Proin et mi in lectus placerat viverra vitae eu odio. Maecenas mattis vitae justo quis efficitur. Donec sed tincidunt justo. Maecenas malesuada finibus lectus sed blandit. Nulla facilisi. Cras congue libero at libero sollicitudin ullamcorper. Donec non scelerisque massa, vitae ultricies mi." << std::endl;
-}
-
-void
-client::receive()
-{
-    std::string str;
-    std::getline(_protocol->istr(), str);
-    std::cout << "==> Received from client: " << str << std::endl;
+    _protocol->ostr() << msg << std::flush;
 }
 
 bool
@@ -171,18 +207,32 @@ client::disconnected_future()
     return _disconnected_promise.get_future();
 }
 
+std::future<mock::message>
+client::received_future()
+{
+    return _received_promise.get_future();
+}
+
 void
-client::on_connected(const mud::core::message& msg)
+client::on_connected(const mud::core::message&)
 {
     _connected = true;
     _connected_promise.set_value();
 }
 
 void
-client::on_disconnected(const mud::core::message& msg)
+client::on_disconnected(const mud::core::message&)
 {
     _connected = false;
     _disconnected_promise.set_value();
+}
+
+void
+client::on_received(const mud::core::message&)
+{
+    mock::message mock_msg;
+    _protocol->istr() >> mock_msg;
+    _received_promise.set_value(mock_msg);
 }
 
 } // namespace mock

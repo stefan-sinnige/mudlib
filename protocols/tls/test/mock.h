@@ -30,6 +30,7 @@
 #include <condition_variable>
 #include <future>
 #include <memory>
+#include <string>
 #include <mud/core/object.h>
 #include <mud/protocols/communicator.h>
 #include <mud/protocols/tls/communicator.h>
@@ -41,6 +42,57 @@ namespace mock {
 /** Type definition for a TLS communicator on a mock device */
 typedef mud::tls::communicator::client<mock::device> tls_client;
 typedef mud::tls::communicator::server<mock::device> tls_server;
+
+/**
+ * @brief A mock message.
+ */
+class message
+{
+public:
+    /**
+     * @crief Create an empty message.
+     */
+    message() = default;
+
+    /**
+     * @brief Create a message containing a string.
+     * @param str The message contents.
+     */
+    message(const std::string& str) : _str(str) {}
+
+    /**
+     * @brief Get the message contents.
+     */
+    const std::string& contents() const { return _str; }
+
+    /**
+     * @brief Set the message contents.
+     * @param str Set the contents.
+     */
+    void contents(const std::string& msg) { _str = msg; }
+
+private:
+    /** The contents */
+    std::string _str;
+};
+
+/**
+ * @brief Mock message streaming.
+ * @pram istr The input stream.
+ * @pram msg The mock message received.
+ * @retunr The input stream.
+ */
+std::istream&
+operator>>(std::istream& istr, message& msg);
+
+/**
+ * @brief Mock message streaming.
+ * @pram istr The output stream.
+ * @pram msg The mock message to send.
+ * @retunr The output stream.
+ */
+std::ostream&
+operator<<(std::ostream& istr, const message& msg);
 
 /**
  * @brief The server side.
@@ -72,8 +124,11 @@ public:
      */
      void close();
 
-    void send();
-    void receive();
+    /**
+     * @brief Send the message.
+     * @param msg The message to send.
+     */
+    void send(const mock::message& msg);
 
     /**
      * @brief Return true if the server is connected.
@@ -92,10 +147,17 @@ public:
      */
     std::future<void> disconnected_future();
 
+    /**
+     * @brief Return the received future
+     * @return The future that is set when the message has been received.
+     */
+    std::future<mock::message> received_future();
+
 private:
     /** Event notification handlers */
     void on_connected(const mud::core::message& msg);
     void on_disconnected(const mud::core::message& msg);
+    void on_received(const mud::core::message& msg);
 
     /** The server-side physical device communicator */
     std::unique_ptr<physical_communicator> _physical;
@@ -114,6 +176,9 @@ private:
 
     /** Disconnected promise */
     std::promise<void> _disconnected_promise;
+
+    /** Received promise */
+    std::promise<mock::message> _received_promise;
 };
 
 /**
@@ -144,10 +209,13 @@ public:
     /**
      * @brief Close the client
      */
-     void close();
+    void close();
 
-    void send();
-    void receive();
+    /**
+     * @brief Send the message.
+     * @param msg The message to send.
+     */
+    void send(const mock::message& msg);
 
     /**
      * @brief Return true if the client is connected.
@@ -166,10 +234,17 @@ public:
      */
     std::future<void> disconnected_future();
 
+    /**
+     * @brief Return the received future
+     * @return The future that is set when the message has been received.
+     */
+    std::future<mock::message> received_future();
+
 private:
     /** Event notification handlers */
     void on_connected(const mud::core::message& msg);
     void on_disconnected(const mud::core::message& msg);
+    void on_received(const mud::core::message& msg);
 
     /** The client-side physical device communicator */
     std::unique_ptr<physical_communicator> _physical;
@@ -188,6 +263,9 @@ private:
 
     /** Disconnected promise */
     std::promise<void> _disconnected_promise;
+
+    /** Received promise */
+    std::promise<mock::message> _received_promise;
 };
 
 } // namespace mock

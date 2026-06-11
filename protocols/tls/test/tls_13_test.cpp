@@ -35,6 +35,8 @@
 
 /* clang-format off */
 
+const char lorem[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ante risus, suscipit ac orci non, varius iaculis odio. Sed vestibulum condimentum mauris, nec aliquam ex malesuada a. Sed turpis arcu, lobortis faucibus mauris quis, vulputate laoreet ligula. Nam id enim non enim fringilla fermentum non eu sem. Quisque varius dictum mauris a finibus. Nulla facilisi. Integer at aliquam urna, ut commodo tortor. Morbi id cursus dolor. Ut nibh ipsum, euismod euismod ipsum sit amet, condimentum semper neque. Etiam interdum felis risus, ac consequat lacus sodales in. Maecenas facilisis erat ante, vel sodales eros bibendum sed. Aenean dapibus lorem quis ex feugiat, nec euismod quam posuere. Curabitur sagittis nunc ut mattis iaculis. Pellentesque blandit dignissim dolor tempus aliquam. Praesent malesuada aliquam tellus eu molestie. Nullam commodo magna vel faucibus ornare. Ut congue cursus ligula, quis lobortis ligula pulvinar a. Morbi scelerisque posuere porta. Phasellus vitae felis massa. Nullam eget enim a ligula efficitur bibendum. Praesent vitae velit varius, accumsan tellus ut, hendrerit enim. Suspendisse laoreet quam neque, a efficitur arcu imperdiet quis. Aliquam augue eros, ultrices id mollis at, maximus eget tellus. Suspendisse ex odio, feugiat ac velit non, posuere suscipit nisi. Donec dictum fermentum pharetra. Etiam suscipit venenatis dolor, et ex.";
+
 CONTEXT()
     /* Constructor initialised for each scenario run */
     context() {
@@ -68,6 +70,7 @@ CONTEXT()
 
     /* The communication channel */
     std::shared_ptr<mock::channel> channel;
+
 END_CONTEXT()
 
 FEATURE("TLS v1.3 Protocol")
@@ -81,10 +84,33 @@ FEATURE("TLS v1.3 Protocol")
         ctx.server.open(ctx.channel);
         ctx.server.listen();
       })
+  DEFINE_GIVEN("A TLS secured channel",
+      [](context& ctx) {
+        /* Server ready to accept connection */
+        ctx.server.open(ctx.channel);
+        ctx.server.listen();
+
+        /* Client connects */
+        ctx.client.open(ctx.channel);
+        ctx.client.connect();
+
+        /* Connection is established */
+        auto server_future = ctx.server.connected_future();
+        ASSERT(std::future_status::ready,
+               server_future.wait_for(std::chrono::milliseconds(100)));
+        auto client_future = ctx.client.connected_future();
+        ASSERT(std::future_status::ready,
+               client_future.wait_for(std::chrono::milliseconds(100)));
+      })
   DEFINE_WHEN("A TLS client connects",
       [](context& ctx) {
         ctx.client.open(ctx.channel);
         ctx.client.connect();
+      })
+  DEFINE_WHEN("The client sends a message",
+      [](context& ctx) {
+        mock::message msg(lorem);
+        ctx.client.send(msg);
       })
   DEFINE_THEN("The connection is established",
       [](context& ctx) {
@@ -94,14 +120,6 @@ FEATURE("TLS v1.3 Protocol")
         auto client_future = ctx.client.connected_future();
         ASSERT(std::future_status::ready,
                client_future.wait_for(std::chrono::milliseconds(100)));
-
-        ctx.client.send();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        ctx.server.receive();
-
-        ctx.server.send();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        ctx.client.receive();
       })
   DEFINE_THEN("The connection is closed",
       [](context& ctx) {
@@ -111,6 +129,14 @@ FEATURE("TLS v1.3 Protocol")
         auto client_future = ctx.client.disconnected_future();
         ASSERT(std::future_status::ready,
                client_future.wait_for(std::chrono::milliseconds(100)));
+      })
+  DEFINE_THEN("The server receives the message",
+      [](context& ctx) {
+        auto server_future = ctx.server.received_future();
+        ASSERT(std::future_status::ready,
+               server_future.wait_for(std::chrono::milliseconds(100)));
+        mock::message msg = server_future.get();
+        ASSERT(msg.contents(), lorem);
       })
   END_DEFINES()
 
@@ -122,6 +148,11 @@ FEATURE("TLS v1.3 Protocol")
     GIVEN("A TLS server is listening for inbound connection")
     WHEN("A TLS client connects")
     THEN("The connection is established")
+
+  SCENARIO("A message can be sent and received over a TLS secured channel")
+    GIVEN("A TLS secured channel")
+    WHEN("The client sends a message")
+    THEN("The server receives the message")
 
 END_FEATURE()
 
