@@ -29,13 +29,19 @@ TESTS = $(check_PROGRAMS)
 
 mudtls_test_SOURCES = \
     main.cpp \
+    mock.cpp \
+    mock_communicator.cpp \
+    mock_device.cpp \
+    tls_13_test.cpp \
     message_test.cpp
 
 mudtls_test_CPPFLAGS = \
     -UVERSION \
 	-I$(srcdir)/../include \
+	-I$(srcdir)/../../include \
 	-I$(srcdir)/../../../io/include \
 	-I$(srcdir)/../../../core/include \
+	-I$(srcdir)/../../../crypto/include \
 	-I$(srcdir)/../../../test/include \
 	$(PTHREAD_CFLAGS)
 
@@ -43,6 +49,7 @@ mudtls_test_LDADD = \
     ../libmudtls.la \
     ../../../io/libmudio.la \
     ../../../core/libmudcore.la \
+    ../../../crypto/libmudcrypto.la \
     ../../../test/libmudtest.la \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 

@@ -67,14 +67,117 @@ namespace _pipe {
 
     ssize_t streambuf::read(void* buf, size_t count)
     {
+        LOG(log);
         int hndl = mud::core::internal_handle<int>(handle());
-        return ::read(hndl, buf, count);
+        ssize_t nread;
+        int tries = 10;
+        while ((nread = ::read(hndl, buf, count)) < 0
+               && tries-- > 0)
+        {
+            if (errno == EINTR) {
+                /* Receive was interrupted, try again */
+                continue;
+            }
+            else
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                /* Not ready to read, wait a bit (10*1000 µsec maximum). This
+                 * has the side-effect that this read will be blocked at most
+                 * by this time interval. */
+                fd_set rdfs;
+                FD_ZERO(&rdfs);
+                FD_SET(hndl, &rdfs);
+                struct timeval  tv;
+                tv.tv_sec = 0;
+                tv.tv_usec = 1000;
+                if (::select(hndl+1, &rdfs, nullptr, nullptr, &tv) <= 0) {
+                    /* Still nothing available, or low-level errors */
+                    TRACE(log) << "No data available on pipe " << hndl
+                               << ": " << strerror(errno) << " (retry)"
+                               << std::endl;
+                    continue;
+                }
+                if (! FD_ISSET(hndl, &rdfs)) {
+                    ERROR(log) << "No data available on pipe " << hndl
+                               << std::endl;
+                    return -1;
+                }
+                continue;
+            }
+            else {
+                /* Anything else is an error */
+                ERROR(log) << "Error on pipe " << hndl << strerror(errno)
+                               << std::endl;
+                return -1;
+            }
+        }
+
+        /* We may have received less than asked for, for example, the peer is
+         * still sending more packets. We may need subsequent calls to get more
+         * data if needed, dictated by more calls to `underflow` or related. */
+        TRACE(log) << "Received " << nread << " bytes on pipe " << hndl
+                   << std::endl;
+        return nread;
     }
 
     ssize_t streambuf::write(const void* buf, size_t count)
     {
+        LOG(log);
         int hndl = mud::core::internal_handle<int>(handle());
-        return ::write(hndl, buf, count);
+        ssize_t nwritten = 0;
+        int tries = 10;
+        while ((nwritten = ::write(hndl, buf, count)) < 0
+               && tries -- > 0)
+        {
+            if (errno == EINTR) {
+                /* Send was interrupted, try again */
+                continue;
+            }
+            else
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                /* Not ready to write, wait a bit (10*1000 µsec maximum). This
+                 * has the side-effect that this write will be blocked at most
+                 * by this time interval. */
+                fd_set wrfs;
+                FD_ZERO(&wrfs);
+                FD_SET(hndl, &wrfs);
+                struct timeval  tv;
+                tv.tv_sec = 0;
+                tv.tv_usec = 1000;
+                if (::select(hndl+1, nullptr, &wrfs, nullptr, &tv) <= 0) {
+                    /* Still not ready to write, or low-level errors */
+                    ERROR(log) << "Pipe " << hndl << " not ready to write"
+                               << std::endl;
+                    return -1;
+                }
+                if (! FD_ISSET(hndl, &wrfs)) {
+                    ERROR(log) << "Pipe " << hndl << " not ready to write"
+                               << std::endl;
+                    return -1;
+                }
+                continue;
+            }
+            else if (errno == EMSGSIZE) {
+                /* The block is too large, halve it and try again */
+                if (count <= 1) {
+                    /* Smallest block possible was not small enough */
+                    return -1;
+                }
+                count >>= 1;
+                continue;
+            }
+            else {
+                /* Anything else is an error. */
+                ERROR(log) << "Error on pipe " << hndl << strerror(errno)
+                               << std::endl;
+                return -1;
+            }
+        }
+        /* We may have written less than asked for, for example, the output
+         * buffer is full. We may need subsequent calls to flush more data if
+         * needed dictated by more calls to `underflow` or related. */
+        TRACE(log) << "Sent " << nwritten << " bytes on pipe " << hndl
+                   << std::endl;
+        return nwritten;
     }
 
 } // namespace _pipe
@@ -119,12 +222,12 @@ public:
     /**
      * The read handle.
      */
-    const std::shared_ptr<mud::core::handle>& read_handle() const;
+    std::shared_ptr<mud::core::handle> read_handle() const;
 
     /**
      * The write handle.
      */
-    const std::shared_ptr<mud::core::handle>& write_handle() const;
+    std::shared_ptr<mud::core::handle> write_handle() const;
 
 private:
     /** The stream for reading. */
@@ -201,13 +304,13 @@ pipe::impl::ostr()
     return _ostr;
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::impl::read_handle() const
 {
     return _read_handle;
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::impl::write_handle() const
 {
     return _write_handle;
@@ -240,13 +343,13 @@ pipe::ostr()
     return _impl->ostr();
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::read_handle() const
 {
     return _impl->read_handle();
 }
 
-const std::shared_ptr<mud::core::handle>&
+std::shared_ptr<mud::core::handle>
 pipe::write_handle() const
 {
     return _impl->write_handle();

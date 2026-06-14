@@ -28,7 +28,10 @@
 #define _MUDLIB_TLS_H_
 
 #include <mud/protocols/tls/client.h>
+#include <mud/protocols/tls/communicator.h>
+#include <mud/protocols/tls/exception.h>
 #include <mud/protocols/tls/message.h>
+#include <mud/protocols/tls/server.h>
 #include <mud/protocols/tls/ns.h>
 
 /* vi: set ai ts=4 expandtab: */

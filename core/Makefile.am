@@ -35,6 +35,7 @@ libmudcore_la_SOURCES = \
     src/event_loop.cpp \
     src/event_mechanism.cpp \
     src/handle.cpp \
+    src/hexdump.cpp \
     src/json.cpp \
     src/log.cpp \
     src/message.cpp \
@@ -60,6 +61,7 @@ includemudcore_HEADERS = \
     include/mud/core/exception.h \
     include/mud/core/factory.h \
     include/mud/core/handle.h \
+    include/mud/core/hexdump.h \
     include/mud/core/json.h \
     include/mud/core/log.h \
     include/mud/core/message.h \

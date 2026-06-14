@@ -433,11 +433,6 @@ FEATURE("TCP sockets")
               }
           })
 
-    SCENARIO("Bla")
-      GIVEN("A TCP server")
-        AND("A connected TCP client")
-       WHEN("nothing", [](context& ctx) {})
-       THEN("nothing", [](context& ctx) {})
 END_FEATURE()
 
 /* clang-format on */

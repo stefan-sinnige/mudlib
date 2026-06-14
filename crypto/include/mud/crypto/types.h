@@ -225,6 +225,20 @@ public:
      */
     data_t& operator>>=(size_t pos);
 
+    /**
+     * @brief Equality operator.
+     * @param rhs The data to compare against.
+     * @return @c true if the data is equal.
+     */
+    bool operator==(const data_t&) const;
+
+    /**
+     * @brief In-equality operator.
+     * @param rhs The data to compare against.
+     * @return @c true if the data is not equal..
+     */
+    bool operator!=(const data_t&) const;
+
 private:
     /** Friend operations */
     friend std::ostream& operator<<(std::ostream& ostr, const data_t& data);

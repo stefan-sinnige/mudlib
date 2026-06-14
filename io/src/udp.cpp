@@ -132,18 +132,25 @@ namespace _udp {
             }
             else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                /* Not ready to receive, wait a bit (1 millisecond) */
+                /* Not ready to read, wait a bit (10*1000 µsec maximum). This
+                 * has the side-effect that this read will be blocked at most
+                 * by this time interval. */
                 fd_set rdfs;
                 FD_ZERO(&rdfs);
                 FD_SET(hndl, &rdfs);
                 struct timeval  tv;
                 tv.tv_sec = 0; 
-                tv.tv_usec = 1 * 1000;
+                tv.tv_usec = 1000;
                 if (::select(hndl+1, &rdfs, nullptr, nullptr, &tv) <= 0) {
                     /* Still nothing available, or low-level errors */
-                    return -1;
+                    TRACE(log) << "No data available on socket " << hndl
+                               << ": " << strerror(errno) << " (retry)"
+                               << std::endl;
+                    continue;
                 }
                 if (! FD_ISSET(hndl, &rdfs)) {
+                    ERROR(log) << "No data available on socket " << hndl
+                               << std::endl;
                     return -1;
                 }
                 continue;
@@ -182,9 +189,9 @@ namespace _udp {
 
         /* Send the data. */
         int hndl = mud::core::internal_handle<int>(handle());
-        ssize_t nwrite;
+        ssize_t nwritten;
         int tries = 10;
-        while ((nwrite = ::sendto(hndl, SENDTO_CAST buf, count, 0,
+        while ((nwritten = ::sendto(hndl, SENDTO_CAST buf, count, 0,
                                   (struct sockaddr*)&addr, sizeof(addr))) < 0
                && tries-- > 0)
         {
@@ -194,13 +201,15 @@ namespace _udp {
             }
             else
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                /* Not ready to write, wait a bit ( 1 millisecond) */
+                /* Not ready to write, wait a bit (10*1000 µsec maximum). This
+                 * has the side-effect that this write will be blocked at most
+                 * by this time interval. */
                 fd_set wrfs;
                 FD_ZERO(&wrfs);
                 FD_SET(hndl, &wrfs);
                 struct timeval  tv;
                 tv.tv_sec = 0;
-                tv.tv_usec = 1 * 1000;
+                tv.tv_usec = 1000;
                 if (::select(hndl+1, nullptr, &wrfs, nullptr, &tv) <= 0) {
                     /* Still not ready to write, or low-level errors */
                     return -1;
@@ -226,7 +235,7 @@ namespace _udp {
         }
 
         /* If we have sent something, update the source information. */
-        if (nwrite >= 0) {
+        if (nwritten >= 0) {
             // Establish the source endpoint.
             struct sockaddr_in addr;
             socklen_t len = sizeof(addr);
@@ -244,9 +253,9 @@ namespace _udp {
          * buffer is full. We may need subsequent calls to flush more data if
          * needed dictated by more calls to `underflow` or related.
          * Not sure how this is handled within UDP ... hope and pray. */
-        TRACE(log) << "Sent " << nwrite << " bytes on UDP socket"
+        TRACE(log) << "Sent " << nwritten << " bytes on UDP socket"
                    << std::endl;
-        return nwrite;
+        return nwritten;
     }
 
 } // namespace _udp

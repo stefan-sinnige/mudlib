@@ -213,6 +213,27 @@ data_t::operator>>=(size_t pos)
     return *this;
 }
 
+bool
+data_t::operator==(const data_t& rhs) const
+{
+    if (size() == rhs.size()) {
+        for (size_t i = 0; i < size(); ++i) {
+            if ((*this)[i] != rhs[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+
+bool
+data_t::operator!=(const data_t& rhs) const
+{
+    return ! operator==(rhs);
+}
+
 std::ostream&
 operator<<(std::ostream& ostr, const data_t& d)
 {

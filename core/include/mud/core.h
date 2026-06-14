@@ -35,6 +35,7 @@
 #include <mud/core/exception.h>
 #include <mud/core/factory.h>
 #include <mud/core/handle.h>
+#include <mud/core/hexdump.h>
 #include <mud/core/json.h>
 #include <mud/core/log.h>
 #include <mud/core/ns.h>
