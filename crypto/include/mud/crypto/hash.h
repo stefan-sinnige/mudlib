@@ -117,7 +117,7 @@ public:
      * @brief Update the hash with a chunk of binary input data.
      * @param chunk The chunk of data to add to the hash.
      */
-    virtual void update(const data_t& chunk) = 0;
+    virtual void update(const mud::core::buffer& chunk) = 0;
 
     /**
      * @brief Close or finalise the hash.
@@ -127,7 +127,7 @@ public:
     /**
      * @brief Return the calculated hash value.
      */
-    virtual const data_t& hash() const = 0;
+    virtual const mud::core::buffer& hash() const = 0;
 
     /**
      * @brief Return the hashing material.

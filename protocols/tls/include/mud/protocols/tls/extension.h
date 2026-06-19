@@ -31,6 +31,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mud/core/buffer.h>
 #include <mud/protocols/tls/ns.h>
 #include <mud/protocols/tls/common.h>
 #include <mud/protocols/tls/exception.h>
@@ -955,13 +956,13 @@ public:
     /**
      * @brief Get the data.
      */
-    mud::crypto::data_t data() const { return _data; }
+    mud::core::buffer data() const { return _data; }
 
     /**
      * @brief Set the data.
      * @param value The data to set.
      */
-    void data(const mud::crypto::data_t& value) { _data = value; }
+    void data(const mud::core::buffer& value) { _data = value; }
 
     /**
      * @brief Return the extension size in bytes.
@@ -990,7 +991,7 @@ public:
 
 private:
     /** The data */
-    mud::crypto::data_t _data;
+    mud::core::buffer _data;
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, early_data&);
@@ -1182,13 +1183,13 @@ public:
     /**
      * @brief Get the data.
      */
-    mud::crypto::data_t data() const { return _data; }
+    mud::core::buffer data() const { return _data; }
 
     /**
      * @brief Set the data.
      * @param value The data to set.
      */
-    void data(const mud::crypto::data_t& value) { _data = value; }
+    void data(const mud::core::buffer& value) { _data = value; }
 
     /**
      * @brief Return the extension size in bytes.
@@ -1217,7 +1218,7 @@ public:
 
 private:
     /** The data */
-    mud::crypto::data_t _data;
+    mud::core::buffer _data;
 
     /* Friends */
     friend std::istream& operator>>(std::istream&, cookie&);

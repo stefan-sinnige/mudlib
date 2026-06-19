@@ -67,7 +67,7 @@ x25519::field_element::field_element()
     memset(_value, 0, sizeof(_value));
 }
 
-x25519::field_element::field_element(const data_t& data)
+x25519::field_element::field_element(const mud::core::buffer& data)
 {
     if (data.size() != 32) {
         throw size_error("x25519 element is not 32 bytes");
@@ -85,7 +85,7 @@ x25519::field_element::field_element(const data_t& data)
     _value[15] &= 0x7FFF;
 }
 
-x25519::field_element::operator data_t() const
+x25519::field_element::operator mud::core::buffer() const
 {
     /* Packing the array of 16 64-bit signed integers to a binary buffer. Reduce
      * the value. We have three options after the initial reduction:
@@ -112,7 +112,7 @@ x25519::field_element::operator data_t() const
 
     /* Move all lower 16-bits of each field-element value to the binary buffer
      * in little endian. */
-    data_t result(32);
+    mud::core::buffer result(32);
     for (int i = 0; i < 16; ++i) {
         *((uint16_t*)(result.data() + 2*i)) = endian::convert(
                 endian::native(),
@@ -202,7 +202,7 @@ x25519::x25519()
 {
 }
 
-x25519::x25519(const data_t& p)
+x25519::x25519(const mud::core::buffer& p)
     : _basepoint(32)
     , _private(p)
 {
@@ -218,7 +218,7 @@ x25519::x25519(const data_t& p)
 }
 
 void
-x25519::peer(const data_t& key)
+x25519::peer(const mud::core::buffer& key)
 {
     _shared = mult(_private, key);
 }

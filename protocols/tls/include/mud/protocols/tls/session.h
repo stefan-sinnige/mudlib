@@ -29,6 +29,7 @@
 
 #include <iostream>
 #include <memory>
+#include <mud/core/buffer.h>
 #include <mud/protocols/tls/ns.h>
 #include <mud/crypto/types.h>
 
@@ -59,31 +60,31 @@ public:
     /**
      * @brief Return the identity.
      */
-    const mud::crypto::data_t& identity() const { return _identity; }
+    const mud::core::buffer& identity() const { return _identity; }
 
     /**
      * @brief Set the identity.
      * @param value The identify value to set
      */
-    void identity(const mud::crypto::data_t& value) { _identity = value; }
+    void identity(const mud::core::buffer& value) { _identity = value; }
 
     /**
      * @brief Return the identity.
      */
-    const mud::crypto::data_t& binder() const { return _binder; }
+    const mud::core::buffer& binder() const { return _binder; }
 
     /**
      * @brief Set the binder (HMAC tag).
      * @param value The binder value to set
      */
-    void binder(const mud::crypto::data_t& value) { _binder = value; }
+    void binder(const mud::core::buffer& value) { _binder = value; }
 
 private:
     /** The identity */
-    mud::crypto::data_t _identity;
+    mud::core::buffer _identity;
 
     /** The binder */
-    mud::crypto::data_t _binder;
+    mud::core::buffer _binder;
 
     /** The obfuscated ticket age. */
     uint32_t _age = 0;

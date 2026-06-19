@@ -27,6 +27,7 @@
 #ifndef _MUDLIB_CRYPTO_TYPES_H_
 #define _MUDLIB_CRYPTO_TYPES_H_
 
+#include <mud/core/buffer.h>
 #include <mud/crypto/ns.h>
 #include <cstdint>
 #include <initializer_list>
@@ -36,311 +37,31 @@
 BEGIN_MUDLIB_CRYPTO_NS
 
 /**
- * @brief Generic sequence of bytes.
- * @details
- * A generic storage for an arbitrary sequence of bytes. The context in which
- * the data is used determines its purpose. These can be message data that
- * represents cipher or plain text, or it can be extended to be used as a
- * special type like an initialisation vector, or counter object.
- */
-class MUDLIB_CRYPTO_API data_t : private std::vector<uint8_t>
-{
-public:
-    /**
-     * @brief Constructing a sequence of data of a certain size.
-     * @param sz The number of bytes to allocate.
-     */
-    explicit data_t(size_t sz = 0);
-
-    /**
-     * @brief Constructing a sequence of data through an initialiser.
-     * @param init The initialiser list, as a container of @c uint8_t elements.
-     */
-    data_t(std::initializer_list<uint8_t> init);
-
-    /**
-     * @brief Construct from a string of bytes.
-     * @param str The pointer to the string of bytes
-     * @param sz The number of bytes.
-     */
-    data_t(const uint8_t* d, size_t sz);
-
-    /**
-     * @brief Construct from a vector of bytes.
-     * @param vec The vector to copy from.
-     */
-    data_t(const std::vector<uint8_t>& rhs) : std::vector<uint8_t>(rhs) {}
-
-    /**
-     * @brief Construct from a vector of bytes.
-     * @param vec The vector to move from.
-     */
-    data_t(std::vector<uint8_t>&& rhs) : std::vector<uint8_t>(rhs) {}
-
-    /**
-     * @brief Copy assignment from a vector of bytes.
-     * @param vec The vector to copy from.
-     * @return Reference to this object.
-     */
-    data_t& operator=(const std::vector<uint8_t>& rhs) {
-        std::vector<uint8_t>::operator=(rhs);
-        return *this;
-    }
-
-    /**
-     * @brief Move assignment from a vector of bytes.
-     * @param vec The vector to move from.
-     * @return Reference to this object.
-     */
-    data_t& operator=(std::vector<uint8_t>&& rhs) {
-        std::vector<uint8_t>::operator=(rhs);
-        return *this;
-    }
-
-    /**
-     * @brief Copy constructor.
-     * @param rhs The item to copy from.
-     */
-    data_t(const data_t& rhs) = default;
-
-    /**
-     * @brief Move constructor.
-     * @param rhs The item to move from.
-     */
-    data_t(data_t&& rhs) = default;
-
-    /**
-     * @brief Copy assignment.
-     * @param rhs The item to copy from.
-     * @return Reference to this object.
-     */
-    data_t& operator=(const data_t& rhs) = default;
-
-    /**
-     * @brief Move assignment.
-     * @param rhs The item to move from.
-     * @return Reference to this object.
-     */
-    data_t& operator=(data_t&& rhs) = default;
-
-    /**
-     * @brief Clear the data
-     * @details
-     * Clear the data and set the size to zero.
-     */
-    void clear();
-
-    /**
-     * @brief Appending data to the end.
-     * @param data The data to append
-     */
-    void append(const data_t& data);
-
-    /**
-     * @brief Pad data at the begin.
-     * @param sz The total size of the data after padding.
-     * @param val The value of each padded byte.
-     * @details
-     * If the total size of the buffer is smaller than @c sz, the buffer will
-     * be padded at the start of the buffer such that the total size will be @c
-     * sz bytes. Each padded byte will have a value equal to @c val.
-     */
-    void pad_begin(size_t sz, uint8_t val = 0x00);
-
-    /**
-     * @brief Pad data at the end.
-     * @param sz The total size of the data after padding.
-     * @param val The value of each padded byte.
-     * @details
-     * If the total size of the buffer is smaller than @c sz, the buffer will
-     * be padded at the end of the buffer such that the total size will be @c sz
-     * bytes. Each padded byte will have a value equal to @c val.
-     */
-    void pad_end(size_t sz, uint8_t val = 0x00);
-
-    /**
-     * @brief Return the size of the byte storage.
-     * @return The size of the storage.
-     */
-    size_t size() const { return std::vector<uint8_t>::size(); }
-
-    /**
-     * @brief Resize the data.
-     * @param sz The new size.
-     * @details
-     * If the size is smaller than the current size, the data at the end of
-     * the data is truncated. If the size is larger than the current size, the
-     * data is appended with zero-based padding.
-     */
-    void resize(size_t sz);
-
-    /**
-     * @brief Return the pointer to the underlying data.
-     * @return Pointer to the begin of the string of bytes.
-     */
-    uint8_t* data() { return std::vector<uint8_t>::data(); }
-    const uint8_t* data() const { return std::vector<uint8_t>::data(); }
-
-    /**
-     * @brief Return the byte at the n-th position.
-     * @param n The byte position (0 to size-1) to return, where 0 is the left
-     * most position.
-     * @return The byte at the position.
-     */
-    uint8_t operator[](size_t n) const;
-    uint8_t& operator[](size_t n);
-
-    /**
-     * @brief Bit-wise OR assignment on equal sized blocks.
-     * @param rhs The data to OR with.
-     * @return The reference to this object.
-     */
-    data_t& operator|=(const data_t& rhs);
-
-    /**
-     * @brief Bit-wise AND assignment on equal sized blocks.
-     * @param rhs The data to AND with.
-     * @return The reference to this object.
-     */
-    data_t& operator&=(const data_t& rhs);
-
-    /**
-     * @brief Bit-wise XOR assignment on equal sized blocks.
-     * @param rhs The data to XOR with.
-     * @return The reference to this object.
-     */
-    data_t& operator^=(const data_t& rhs);
-
-    /**
-     * @brief Bit-wise left-shift assignment.
-     * @param pos The amount of bits to shift.
-     * @return The reference to this object.
-     */
-    data_t& operator<<=(size_t pos);
-
-    /**
-     * @brief Bit-wise right-shift assignment.
-     * @param pos The amount of bits to shift.
-     * @return The reference to this object.
-     */
-    data_t& operator>>=(size_t pos);
-
-    /**
-     * @brief Equality operator.
-     * @param rhs The data to compare against.
-     * @return @c true if the data is equal.
-     */
-    bool operator==(const data_t&) const;
-
-    /**
-     * @brief In-equality operator.
-     * @param rhs The data to compare against.
-     * @return @c true if the data is not equal..
-     */
-    bool operator!=(const data_t&) const;
-
-private:
-    /** Friend operations */
-    friend std::ostream& operator<<(std::ostream& ostr, const data_t& data);
-    friend std::istream& operator>>(std::istream& istr, data_t& data);
-    friend data_t operator|(const data_t& lhs, const data_t& rhs);
-    friend data_t operator&(const data_t& lhs, const data_t& rhs);
-    friend data_t operator^(const data_t& lhs, const data_t& rhs);
-    friend data_t operator<<(const data_t& lhs, size_t pos);
-    friend data_t operator>>(const data_t& lhs, size_t pos);
-};
-
-/**
- * @brief Write cryptographic data as hexadecimal digits.
- * @param ostr The output stream to write to.
- * @param data The data value to output.
- * @return The reference to @c ostr;
- */
-std::ostream& operator<<(std::ostream& ostr, const data_t& data);
-
-/**
- * @brief Read hexadecimal digits to cryptographic data.
- * @param istr The input stream to write to.
- * @param data The data value to hold the data.
- * @return The reference to @c istr;
- */
-std::istream& operator>>(std::istream& istr, const data_t& data);
-
-/**
- * @brief Bitwise OR on two equal sized data blocks.
- * @param lhs The first data block
- * @param rhs The second data block
- * @return The result of the OR of @c lhs with @c rhs.
- * @details
- * Note that @c lhs should be smaller or equal to @c rhs, the result is always
- * the same size as @c lhs.
- */
-data_t operator|(const data_t& lhs, const data_t& rhs);
-
-/**
- * @brief Bitwise AND on two equal sized data blocks.
- * @param lhs The first data block
- * @param rhs The second data block
- * @return The result of the AND of @c lhs with @c rhs.
- * @details
- * Note that @c lhs should be smaller or equal to @c rhs, the result is always
- * the same size as @c lhs.
- */
-data_t operator&(const data_t& lhs, const data_t& rhs);
-
-/**
- * @brief Bitwise XOR on two equal sized data blocks.
- * @param lhs The first data block
- * @param rhs The second data block
- * @return The result of the XOR of @c lhs with @c rhs.
- * @details
- * Note that @c lhs should be smaller or equal to @c rhs, the result is always
- * the same size as @c lhs.
- */
-data_t operator^(const data_t& lhs, const data_t& rhs);
-
-/**
- * @brief Bitwise shift left.
- * @param lhs The data to shift.
- * @param pos The amount of bits to shift.
- * @return The shifted result.
- */
-data_t operator<<(const data_t& lhs, size_t pos);
-
-/**
- * @brief Bitwise shift right.
- * @param lhs The data to shift.
- * @param pos The amount of bits to shift.
- * @return The shifted result.
- */
-data_t operator>>(const data_t& lhs, size_t pos);
-
-/**
  * @brief Cryptographic key.
  * @details
  * A cryptogrpahic key as represented by a data block. The key is generally
  * considered secret.
  */
-class MUDLIB_CRYPTO_API key_t : public data_t
+class MUDLIB_CRYPTO_API key_t : public mud::core::buffer
 {
 public:
     /**
-     * @brief Inherit all @c data_t constructors.
+     * @brief Inherit all @c mud::core::buffer constructors.
      */
-    using data_t::data_t;
-    using data_t::operator=;
+    using mud::core::buffer::buffer;
+    using mud::core::buffer::operator=;
 
     /**
-     * @brief Copy construct from a @c data_t object.
+     * @brief Copy construct from a @c mud::core::buffer object.
      * @param rhs The data to copy from.
      */
-    key_t(const data_t& rhs): data_t(rhs) {}
+    key_t(const mud::core::buffer& rhs): mud::core::buffer(rhs) {}
 
     /**
-     * @brief Move construct fro ma @c data_t objectt.
+     * @brief Move construct fro ma @c mud::core::buffer objectt.
      * @param rhs The data to move from.
      */
-    key_t(data_t&& rhs): data_t(rhs) {}
+    key_t(mud::core::buffer&& rhs): mud::core::buffer(rhs) {}
 };
 
 /**
@@ -354,26 +75,26 @@ public:
  * The initialisation vector is generally not considered to be secret and can
  * be supplied with the encrypted message.
  */
-class MUDLIB_CRYPTO_API iv_t : public data_t
+class MUDLIB_CRYPTO_API iv_t : public mud::core::buffer
 {
 public:
     /**
-     * @brief Inherit all @c data_t constructors.
+     * @brief Inherit all @c mud::core::buffer constructors.
      */
-    using data_t::data_t;
-    using data_t::operator=;
+    using mud::core::buffer::buffer;
+    using mud::core::buffer::operator=;
 
     /**
-     * @brief Copy construct from a @c data_t object.
+     * @brief Copy construct from a @c mud::core::buffer object.
      * @param rhs The data to copy from.
      */
-    iv_t(const data_t& rhs): data_t(rhs) {}
+    iv_t(const mud::core::buffer& rhs): mud::core::buffer(rhs) {}
 
     /**
-     * @brief Move construct fro ma @c data_t objectt.
+     * @brief Move construct fro ma @c mud::core::buffer objectt.
      * @param rhs The data to move from.
      */
-    iv_t(data_t&& rhs): data_t(rhs) {}
+    iv_t(mud::core::buffer&& rhs): mud::core::buffer(rhs) {}
 };
 
 /**
@@ -385,26 +106,26 @@ public:
  * The nonce is generally not considered to be secret and can be supplied with
  * the encrypted message.
  */
-class MUDLIB_CRYPTO_API nonce_t : public data_t
+class MUDLIB_CRYPTO_API nonce_t : public mud::core::buffer
 {
 public:
     /**
-     * @brief Inherit all @c data_t constructors.
+     * @brief Inherit all @c mud::core::buffer constructors.
      */
-    using data_t::data_t;
-    using data_t::operator=;
+    using mud::core::buffer::buffer;
+    using mud::core::buffer::operator=;
 
     /**
-     * @brief Copy construct from a @c data_t object.
+     * @brief Copy construct from a @c mud::core::buffer object.
      * @param rhs The data to copy from.
      */
-    nonce_t(const data_t& rhs): data_t(rhs) {}
+    nonce_t(const mud::core::buffer& rhs): mud::core::buffer(rhs) {}
 
     /**
-     * @brief Move construct fro ma @c data_t objectt.
+     * @brief Move construct fro ma @c mud::core::buffer objectt.
      * @param rhs The data to move from.
      */
-    nonce_t(data_t&& rhs): data_t(rhs) {}
+    nonce_t(mud::core::buffer&& rhs): mud::core::buffer(rhs) {}
 };
 
 /**
@@ -416,26 +137,26 @@ public:
  * The counter is generally not considered to be secret and its initial value
  * can be supplied with the encrypted message.
  */
-class MUDLIB_CRYPTO_API counter_t : public data_t
+class MUDLIB_CRYPTO_API counter_t : public mud::core::buffer
 {
 public:
     /**
-     * @brief Inherit all @c data_t constructors.
+     * @brief Inherit all @c mud::core::buffer constructors.
      */
-    using data_t::data_t;
-    using data_t::operator=;
+    using mud::core::buffer::buffer;
+    using mud::core::buffer::operator=;
 
     /**
-     * @brief Copy construct from a @c data_t object.
+     * @brief Copy construct from a @c mud::core::buffer object.
      * @param rhs The data to copy from.
      */
-    counter_t(const data_t& rhs): data_t(rhs) {}
+    counter_t(const mud::core::buffer& rhs): mud::core::buffer(rhs) {}
 
     /**
-     * @brief Move construct fro ma @c data_t objectt.
+     * @brief Move construct fro ma @c mud::core::buffer objectt.
      * @param rhs The data to move from.
      */
-    counter_t(data_t&& rhs): data_t(rhs) {}
+    counter_t(mud::core::buffer&& rhs): mud::core::buffer(rhs) {}
 
     /**
      * @brief Constructing a counter of a certain size.
@@ -465,14 +186,14 @@ enum class padding_t {
  * A cryptographic random number using a non-deterministic uniform random bit
  * generator (e.g. a hardware device).
  */
-class MUDLIB_CRYPTO_API random_t : public data_t
+class MUDLIB_CRYPTO_API random_t : public mud::core::buffer
 {
 public:
     /**
-     * @brief Inherit all @c data_t constructors.
+     * @brief Inherit all @c mud::core::buffer constructors.
      */
-    using data_t::data_t;
-    using data_t::operator=;
+    using mud::core::buffer::buffer;
+    using mud::core::buffer::operator=;
 
     /**
      * @brief Construct a random sequence of data.
@@ -588,23 +309,23 @@ public:
      * @brief Set the salt.
      * @param value The salt value.
      */
-    void salt(const data_t& value) {  _salt = value; }
+    void salt(const mud::core::buffer& value) {  _salt = value; }
 
     /**
      * @brief Return the salt.
      */
-    const data_t& salt() const { return _salt; }
+    const mud::core::buffer& salt() const { return _salt; }
 
     /**
      * @brief Set the additional authenticated data.
      * @param value The additional authenticated value.
      */
-    void aad(const data_t& value) {  _aad = value; }
+    void aad(const mud::core::buffer& value) {  _aad = value; }
 
     /**
      * @brief Return the additional authenticated data.
      */
-    const data_t& aad() const { return _aad; }
+    const mud::core::buffer& aad() const { return _aad; }
 
     /**
      * @brief Set the padding type.
@@ -674,10 +395,10 @@ private:
     counter_t _counter;
 
     /** The salt. */
-    data_t _salt;
+    mud::core::buffer _salt;
 
     /** The additional authenticated data. */
-    data_t _aad;
+    mud::core::buffer _aad;
 
     /** The padding type. */
     padding_t _padding = padding_t::none;
@@ -966,23 +687,23 @@ public:
      * @brief Set the salt.
      * @param value The salt value.
      */
-    void salt(const data_t& value) {  _salt = value; }
+    void salt(const mud::core::buffer& value) {  _salt = value; }
 
     /**
      * @brief Return the salt.
      */
-    const data_t& salt() const { return _salt; }
+    const mud::core::buffer& salt() const { return _salt; }
 
     /**
      * @brief Set the additional information.
      * @param value The information value.
      */
-    void info(const data_t& value) {  _info = value; }
+    void info(const mud::core::buffer& value) {  _info = value; }
 
     /**
      * @brief Return the additional information.
      */
-    const data_t& info() const { return _info; }
+    const mud::core::buffer& info() const { return _info; }
 
     /**
      * @brief Set the key size in bits.
@@ -1006,10 +727,10 @@ private:
     key_t _ikm;
 
     /** The salt. */
-    data_t _salt;
+    mud::core::buffer _salt;
 
     /** The information. */
-    data_t _info;
+    mud::core::buffer _info;
 
     /** The key size. */
     size_t _key_size = 0;

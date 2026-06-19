@@ -24,8 +24,8 @@
  * ++ end-license-description ++
  */
 
-#ifndef _MUDLIB_CORE_PRIVATE_LOG_H_
-#define _MUDLIB_CORE_PRIVATE_LOG_H_
+#ifndef _MUDLIB_CORE_INTERNAL_LOG_H_
+#define _MUDLIB_CORE_INTERNAL_LOG_H_
 
 #include <mud/core/log.h>
 #include <memory>
@@ -191,4 +191,4 @@ END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */
 
-#endif /* _MUDLIB_CORE_PRIVATE_LOG_H_ */
+#endif /* _MUDLIB_CORE_INTERNAL_LOG_H_ */

@@ -158,7 +158,7 @@ operator>>(std::istream& istr, client_hello& msg)
             endian::convert(endian_t::big, endian::native(), ui16));
 
     /* The 32-byte random */
-    mud::crypto::data_t random(32);
+    mud::core::buffer random(32);
     istr.read((char*)random.data(), 32);
     msg._random = random;
 
@@ -167,7 +167,7 @@ operator>>(std::istream& istr, client_hello& msg)
     if (ch > 32) {
         throw invalid_message("Invalid client-hello session ID length");
     }
-    mud::crypto::data_t legacy_session_id(ch);
+    mud::core::buffer legacy_session_id(ch);
     istr.read((char*)legacy_session_id.data(), 32);
     msg._legacy_session_id = legacy_session_id;
 
@@ -259,7 +259,7 @@ operator>>(std::istream& istr, server_hello& msg)
             endian::convert(endian_t::big, endian::native(), ui16));
 
     /* The 32-byte random */
-    mud::crypto::data_t random(32);
+    mud::core::buffer random(32);
     istr.read((char*)random.data(), 32);
     msg._random = random;
 
@@ -268,7 +268,7 @@ operator>>(std::istream& istr, server_hello& msg)
     if (ch > 32) {
         throw invalid_message("Invalid server-hello session ID length");
     }
-    mud::crypto::data_t legacy_session_id(ch);
+    mud::core::buffer legacy_session_id(ch);
     istr.read((char*)legacy_session_id.data(), 32);
     msg._legacy_session_id = legacy_session_id;
 

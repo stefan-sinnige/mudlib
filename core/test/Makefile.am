@@ -30,6 +30,7 @@ TESTS = $(check_PROGRAMS)
 mudcore_test_SOURCES = \
     main.cpp \
     bigint_test.cpp \
+    buffer_test.cpp \
     endian_test.cpp \
 	event_test.cpp \
     event_loop_test.cpp \

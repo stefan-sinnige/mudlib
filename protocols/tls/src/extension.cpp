@@ -928,7 +928,7 @@ operator>>(std::istream& istr, pre_shared_key& ext)
         length = endian::convert(endian_t::big, endian::native(), ui16);
 
         /* Read the identity  */
-        mud::crypto::data_t identity(length);
+        mud::core::buffer identity(length);
         istr.read((char*)identity.data(), length);
 
         /* Get the age (zero for external PSKs) */
@@ -942,7 +942,7 @@ operator>>(std::istream& istr, pre_shared_key& ext)
         length = endian::convert(endian_t::big, endian::native(), ui16);
 
         /* Read the binder  */
-        mud::crypto::data_t binder(length);
+        mud::core::buffer binder(length);
         istr.read((char*)binder.data(), length);
 
         /* Save the offering */
@@ -1045,7 +1045,7 @@ operator>>(std::istream& istr, early_data& ext)
     ext.assert(ext_type, extension_type_t::early_data);
 
     /* Read the data  */
-    mud::crypto::data_t data(ext_length);
+    mud::core::buffer data(ext_length);
     istr.read((char*)data.data(), ext_length);
     ext._data = data;
 
@@ -1269,7 +1269,7 @@ operator>>(std::istream& istr, cookie& ext)
     ext.assert(length, ext_length - 1);
 
     /* Read the data  */
-    mud::crypto::data_t data(length);
+    mud::core::buffer data(length);
     istr.read((char*)data.data(), length);
     ext._data = data;
 

@@ -86,7 +86,7 @@ public:
      * @param input The sequence of bytes.
      * @note The sequence should contain at least 16 bytes.
      */
-    state(const data_t& input);
+    state(const mud::core::buffer& input);
 
     /**
      * @brief Copy constructor
@@ -144,7 +144,7 @@ public:
     /**
      * @brief Convert the state to an output sequence.
      */
-    operator data_t() const;
+    operator mud::core::buffer() const;
 
 private:
     /** The two-dimensional state */
@@ -154,7 +154,7 @@ private:
     friend std::ostream& operator<<(std::ostream&, const basic_aes::state& s);
 };
 
-basic_aes::state::state(const data_t& input)
+basic_aes::state::state(const mud::core::buffer& input)
 {
     _b = new uint8_t[16];
     const uint8_t* data = input.data();
@@ -229,9 +229,9 @@ basic_aes::state::byte_ptr(uint8_t r, uint8_t c) const
     return &(_b[4*r+c]);
 }
 
-basic_aes::state::operator data_t() const
+basic_aes::state::operator mud::core::buffer() const
 {
-    data_t output(16);
+    mud::core::buffer output(16);
     uint8_t* data = output.data();
     for (size_t r = 0; r < 4; ++r) {
         for (size_t c = 0; c < 4; ++c) {
@@ -332,7 +332,7 @@ basic_aes::basic_aes(size_t key_size)
 }
 
 void
-basic_aes::forward(const data_t& input, data_t& output, const key_t& key)
+basic_aes::forward(const mud::core::buffer& input, mud::core::buffer& output, const key_t& key)
 {
     LOG(log);
     TRACE(log) << "Forward Cipher()" << std::endl;
@@ -355,7 +355,7 @@ basic_aes::forward(const data_t& input, data_t& output, const key_t& key)
 }
 
 void
-basic_aes::inverse(const data_t& input, data_t& output, const key_t& key)
+basic_aes::inverse(const mud::core::buffer& input, mud::core::buffer& output, const key_t& key)
 {
     LOG(log);
     TRACE(log) << "Inverse Cipher()" << std::endl;

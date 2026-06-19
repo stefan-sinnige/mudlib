@@ -88,7 +88,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    virtual void update(const data_t& chunk) = 0;
+    virtual void update(const mud::core::buffer& chunk) = 0;
 
     /**
      * @brief Close or finalise the hash.
@@ -98,7 +98,7 @@ public:
     /**
      * @brief Return the calculated hash value.
      */
-    virtual const data_t& hash() const = 0;
+    virtual const mud::core::buffer& hash() const = 0;
 
     /**
      * @brief Return the hash size (in bytes).
@@ -175,7 +175,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const data_t& chunk) override;
+    void update(const mud::core::buffer& chunk) override;
 
     /**
      * @brief Close or finalise the hash.
@@ -185,7 +185,7 @@ public:
     /**
      * @brief Return the calculated hash value.
      */
-    const data_t& hash() const override { return _hash; }
+    const mud::core::buffer& hash() const override { return _hash; }
 
     /**
      * @brief Return the hash size (in bytes).
@@ -232,7 +232,7 @@ private:
     void finalise();
 
     /* The calculated hash */
-    data_t _hash;
+    mud::core::buffer _hash;
 
     /* The specification */
     const char* _specs;
@@ -270,7 +270,7 @@ sha_algorithm::sha_1_impl::specs() const
 }
 
 void
-sha_algorithm::sha_1_impl::update(const data_t& chunk)
+sha_algorithm::sha_1_impl::update(const mud::core::buffer& chunk)
 {
     /*
      * Keep on adding the data from the chunk to the message block. When the
@@ -355,7 +355,7 @@ sha_algorithm::sha_1_impl::finalise()
     }
 
     /* As the H array is correctly byte-oriented, we can just do a byte copy */
-    _hash = data_t(digest_sz);
+    _hash = mud::core::buffer(digest_sz);
     memcpy(_hash.data(), H, digest_sz);
 }
 
@@ -640,7 +640,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const data_t& chunk) override;
+    void update(const mud::core::buffer& chunk) override;
 
     /**
      * @brief Close or finalise the hash.
@@ -650,7 +650,7 @@ public:
     /**
      * @brief Return the calculated hash value.
      */
-    const data_t& hash() const override { return _hash; }
+    const mud::core::buffer& hash() const override { return _hash; }
 
     /**
      * @brief Return the hash size (in bytes).
@@ -706,7 +706,7 @@ private:
     size_t _nr_rounds;
 
     /* The hash */
-    data_t _hash;
+    mud::core::buffer _hash;
 
     /* The digest size (in bytes) */
     size_t _digest_size;
@@ -800,7 +800,7 @@ sha_algorithm::sha_2_impl<WordType>::specs() const
 
 template<typename WordType>
 void
-sha_algorithm::sha_2_impl<WordType>::update(const data_t& chunk)
+sha_algorithm::sha_2_impl<WordType>::update(const mud::core::buffer& chunk)
 {
     /*
      * Keep on adding the data from the chunk to the message block. When the
@@ -1035,7 +1035,7 @@ sha_algorithm::sha_2_impl<WordType>::finalise()
     }
 
     /* As the H array is correctly byte-oriented, we can just do a byte copy */
-    _hash = data_t(_digest_size);
+    _hash = mud::core::buffer(_digest_size);
     memcpy(_hash.data(), H, _digest_size);
 }
 
@@ -1130,7 +1130,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const data_t& chunk) override;
+    void update(const mud::core::buffer& chunk) override;
 
     /**
      * @brief Close or finalise the hash.
@@ -1140,7 +1140,7 @@ public:
     /**
      * @brief Return the calculated hash value.
      */
-    const data_t& hash() const override;
+    const mud::core::buffer& hash() const override;
 
     /**
      * @brief Return the hash size (in bytes).
@@ -1192,7 +1192,7 @@ sha_algorithm::sha_3_impl::specs() const
 }
 
 void
-sha_algorithm::sha_3_impl::update(const data_t& chunk)
+sha_algorithm::sha_3_impl::update(const mud::core::buffer& chunk)
 {
     _keccak.update(chunk);
 }
@@ -1203,7 +1203,7 @@ sha_algorithm::sha_3_impl::close()
     return _keccak.close();
 }
 
-const data_t&
+const mud::core::buffer&
 sha_algorithm::sha_3_impl::hash() const
 {
     return _keccak.hash();
@@ -1254,7 +1254,7 @@ sha_algorithm::block_size() const
 }
 
 void
-sha_algorithm::update(const data_t& chunk)
+sha_algorithm::update(const mud::core::buffer& chunk)
 {
     _impl->update(chunk);
 }
@@ -1265,7 +1265,7 @@ sha_algorithm::close()
     _impl->close();
 }
 
-const data_t&
+const mud::core::buffer&
 sha_algorithm::hash() const
 {
     return _impl->hash();

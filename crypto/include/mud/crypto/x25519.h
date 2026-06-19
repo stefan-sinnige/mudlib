@@ -100,27 +100,27 @@ public:
      * The actual private key being used will undergo 'clamping' procedures that
      * affect bits 0, 1, 2, 254 and 255.
      */
-    x25519(const data_t& p);
+    x25519(const mud::core::buffer& p);
 
     /**
      * @brief Supply the peer public key and create the shared secret key.
      * @param key The peer public key in little endian.
      */
-    void peer(const data_t& key);
+    void peer(const mud::core::buffer& key);
 
     /**
      * @brief Return the public key of the key-pair.
      * @return the public key (x-coordinate of a point on the curve) in little
      * endian.
      */
-    const data_t& public_key() const { return _public; }
+    const mud::core::buffer& public_key() const { return _public; }
 
     /**
      * @brief Return the shared key.
      * @return the shared key in little endian, or an empty buffer if no shared
      * key has been determined.
      */
-    const data_t& shared_key() const { return _shared; }
+    const mud::core::buffer& shared_key() const { return _shared; }
 
     /**
      * @brief A curve field-element.
@@ -141,7 +141,7 @@ public:
          * @param data The buffer to copy from. The data is expected to be
          * in little-endian (LSB in first position).
          */
-        field_element(const data_t& data);
+        field_element(const mud::core::buffer& data);
 
         /**
          * @brief Copy a field-element.
@@ -172,7 +172,7 @@ public:
         /**
          * Convert to a binary buffer.
          */
-        operator data_t() const;
+        operator mud::core::buffer() const;
 
         /**
          * Access the 64-bit integer at the n-th position.
@@ -255,16 +255,16 @@ private:
     field_element mult(const field_element& scalar, const field_element& point);
 
     /** The base point */
-    data_t _basepoint;
+    mud::core::buffer _basepoint;
 
     /** The private key */
-    data_t _private;
+    mud::core::buffer _private;
 
     /** The public key */
-    data_t _public;
+    mud::core::buffer _public;
 
     /** The shared secret */
-    data_t _shared;
+    mud::core::buffer _shared;
 };
 
 /**

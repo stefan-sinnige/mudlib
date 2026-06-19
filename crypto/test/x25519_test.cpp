@@ -43,15 +43,15 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_buffer(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& d) {
+    std::string to_string(const mud::core::buffer& d) {
         std::stringstream sstr;
         sstr << d;
         return sstr.str();
@@ -100,7 +100,7 @@ FEATURE("X25519")
 
   SCENARIO("Associated public/private keypair")
     GIVEN("An X25519 key-pair", [](context& ctx) {
-          auto private_key = ctx.to_data(ctx.sample<std::string>("private"));
+          auto private_key = ctx.to_buffer(ctx.sample<std::string>("private"));
           ctx.alice = new mud::crypto::x25519(private_key);
     })
     WHEN ("The public key is examined", [](context&) {})
@@ -138,11 +138,11 @@ FEATURE("X25519")
 
   SCENARIO("Keys can be exchanged successfully")
     GIVEN("Alice has a public / private key pair", [](context& ctx) {
-          auto private_key = ctx.to_data(ctx.sample<std::string>("private-a"));
+          auto private_key = ctx.to_buffer(ctx.sample<std::string>("private-a"));
           ctx.alice = new mud::crypto::x25519(private_key);
         })
     AND  ("Bob has a public / private key pair", [](context& ctx) {
-          auto private_key = ctx.to_data(ctx.sample<std::string>("private-b"));
+          auto private_key = ctx.to_buffer(ctx.sample<std::string>("private-b"));
           ctx.bob = new mud::crypto::x25519(private_key);
         })
     WHEN ("The public keys are exchanged", [](context& ctx) {

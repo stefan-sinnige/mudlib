@@ -43,15 +43,15 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_buffer(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& d) {
+    std::string to_string(const mud::core::buffer& d) {
         std::stringstream sstr;
         sstr << d;
         return sstr.str();
@@ -109,13 +109,13 @@ FEATURE("KDF")
     })
     AND  ("A HKDF algorithm", [](context& ctx) {
         ctx.material.mac_algorithm(ctx.sample<std::string>("mac"));
-        ctx.material.ikm(ctx.to_data(ctx.sample<std::string>("ikm")));
-        ctx.material.salt(ctx.to_data(ctx.sample<std::string>("salt")));
+        ctx.material.ikm(ctx.to_buffer(ctx.sample<std::string>("ikm")));
+        ctx.material.salt(ctx.to_buffer(ctx.sample<std::string>("salt")));
         ctx.algorithm = new mud::crypto::hkdf(ctx.material);
     })
     WHEN ("A key is derived", [](context& ctx) {
         auto key_size = ctx.sample<size_t>("length");
-        auto info = ctx.to_data(ctx.sample<std::string>("info"));
+        auto info = ctx.to_buffer(ctx.sample<std::string>("info"));
         ctx.key = ctx.algorithm->key(key_size, info);
     })
     THEN ("The key is derived correctly", [](context& ctx) {

@@ -79,9 +79,9 @@ hkdf::hkdf(const kdf_material_t& keying)
             mac.release()));
 
     /* If salt is not defined, use a string of hash-length */
-    data_t salt;
+    mud::core::buffer salt;
     if (keying.salt().size() == 0) {
-        salt = data_t(_hmac->hash_size());
+        salt = mud::core::buffer(_hmac->hash_size());
     }
     else {
         salt = keying.salt();
@@ -109,7 +109,7 @@ hkdf::specs() const
 }
 
 key_t
-hkdf::key(size_t ex_key_size /* = 0 */, const data_t& ex_info /* = data_t() */)
+hkdf::key(size_t ex_key_size /* = 0 */, const mud::core::buffer& ex_info /* = mud::core::buffer() */)
 {
     /* If no explicit key-size is defined, use the keying material size */
     size_t key_size = ex_key_size;
@@ -118,7 +118,7 @@ hkdf::key(size_t ex_key_size /* = 0 */, const data_t& ex_info /* = data_t() */)
     }
 
     /* If no explicit info is defined, use the keying material information */
-    data_t info = ex_info;
+    mud::core::buffer info = ex_info;
     if (info.size() == 0) {
         info = keying().info();
     }
@@ -134,18 +134,18 @@ hkdf::key(size_t ex_key_size /* = 0 */, const data_t& ex_info /* = data_t() */)
     /* While we need more data to fill the key with the next hmac result. */
     key_t key;
     uint8_t count = 0x00;
-    data_t T;
+    mud::core::buffer T;
     while (key.size() < key_size) {
         /* Create a new tag, using the previous tag, info and count */
         _hmac->reset(key_material);
         _hmac->update(T);
         _hmac->update(info);
-        _hmac->update(data_t(&(++count), 1));
+        _hmac->update(mud::core::buffer(&(++count), 1));
         _hmac->close();
         T = _hmac->tag();
 
         /* Append the tag T to the key */
-        key.append(T);
+        key.insert(key.end(), T.begin(), T.end());
     }
     key.resize(key_size);
     TRACE(log) << "OKM  = " << key << std::endl;

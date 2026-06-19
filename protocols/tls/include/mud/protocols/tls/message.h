@@ -30,6 +30,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <mud/core/buffer.h>
 #include <mud/protocols/tls/ns.h>
 #include <mud/protocols/tls/common.h>
 #include <mud/protocols/tls/extension.h>
@@ -288,7 +289,7 @@ public:
     /**
      * @brief Get the legacy session ID.
      */
-    const mud::crypto::data_t& legacy_session_id() const {
+    const mud::core::buffer& legacy_session_id() const {
         return _legacy_session_id;
     }
 
@@ -296,7 +297,7 @@ public:
      * @brief Set the legacy session ID.
      * @param version The seesion ID value to set.
      */
-    void legacy_session_id(const mud::crypto::data_t& value) {
+    void legacy_session_id(const mud::core::buffer& value) {
         _legacy_session_id = value;
     }
 
@@ -359,7 +360,7 @@ private:
     mud::crypto::random_t _random;
 
     /** The legacy session ID. */
-    mud::crypto::data_t _legacy_session_id;
+    mud::core::buffer _legacy_session_id;
 
     /** The cipher suites */
     std::vector<cipher_suite_t> _cipher_suites;
@@ -433,7 +434,7 @@ public:
     /**
      * @brief Get the legacy session ID.
      */
-    const mud::crypto::data_t& legacy_session_id() const {
+    const mud::core::buffer& legacy_session_id() const {
         return _legacy_session_id;
     }
 
@@ -441,7 +442,7 @@ public:
      * @brief Set the legacy session ID.
      * @param version The seesion ID value to set.
      */
-    void legacy_session_id(const mud::crypto::data_t& value) {
+    void legacy_session_id(const mud::core::buffer& value) {
         _legacy_session_id = value;
     }
 
@@ -497,7 +498,7 @@ private:
     mud::crypto::random_t _random;
 
     /** The legacy session ID. */
-    mud::crypto::data_t _legacy_session_id;
+    mud::core::buffer _legacy_session_id;
 
     /** The cipher suite */
     cipher_suite_t _cipher_suite;

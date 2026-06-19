@@ -101,7 +101,7 @@ public:
      * @brief Update the MAC with a chunk of binary input data.
      * @param chunk The chunk of data to add to the MAC.
      */
-    virtual void update(const data_t& chunk) = 0;
+    virtual void update(const mud::core::buffer& chunk) = 0;
 
     /**
      * @brief Close or finalise the MAC.
@@ -117,7 +117,7 @@ public:
     /**
      * @brief Return the calculated message tag.
      */
-    virtual const data_t& tag() const = 0;
+    virtual const mud::core::buffer& tag() const = 0;
 
     /**
      * @brief Create and return a filtering stream buffer for calculating MAC

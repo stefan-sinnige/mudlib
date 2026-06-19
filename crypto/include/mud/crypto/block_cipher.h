@@ -70,7 +70,7 @@ public:
      * @param out The output block (ie cipher text).
      * @param key The algorithm key.
      */
-    virtual void forward(const data_t& in, data_t& out, const key_t& key) = 0;
+    virtual void forward(const mud::core::buffer& in, mud::core::buffer& out, const key_t& key) = 0;
 
     /**
      * @brief Inverse cipher (typycailly decrypt) text into plain text using a
@@ -79,7 +79,7 @@ public:
      * @param out The output block (ie plain text).
      * @param key The algorithm key.
      */
-    virtual void inverse(const data_t& in, data_t& out, const key_t& key) = 0;
+    virtual void inverse(const mud::core::buffer& in, mud::core::buffer& out, const key_t& key) = 0;
 };
 
 /**
@@ -165,7 +165,7 @@ public:
      * @param out The output block (ie cipher text).
      * @param final Flag to indicate that this is the final block.
      */
-    virtual void encrypt(const data_t& plain, data_t& cipher, bool final);
+    virtual void encrypt(const mud::core::buffer& plain, mud::core::buffer& cipher, bool final);
 
     /**
      * @brief Decrypt cipher text block into plain text.
@@ -173,7 +173,7 @@ public:
      * @param out The output block (ie plain text).
      * @param final Flag to indicate that this is the final block.
      */
-    virtual void decrypt(const data_t& cipher, data_t& plain, bool final);
+    virtual void decrypt(const mud::core::buffer& cipher, mud::core::buffer& plain, bool final);
 
     /**
      * @brief Return the authentication tag.
@@ -182,7 +182,7 @@ public:
      * otherwise return a zero length buffer. The tag should only be valid after
      * the final block have been processed.
      */
-    virtual data_t authentication_tag() const { return data_t(0); }
+    virtual mud::core::buffer authentication_tag() const { return mud::core::buffer(0); }
 
 protected:
     /**
@@ -226,7 +226,7 @@ protected:
      * The @c input data block is the next block of data (plain or cipher text)
      * to be processed. The default implementation is to return the same data.
      */
-    virtual data_t next(const data_t& input);
+    virtual mud::core::buffer next(const mud::core::buffer& input);
 
     /**
      * @brief Preprocess a block for encryption.
@@ -238,7 +238,7 @@ protected:
      * Returns any possible altered input block that is ready to be encrypted.
      * Default implementation returns @c input as-is.
      */
-    virtual data_t prelude_encrypt(const data_t& input);
+    virtual mud::core::buffer prelude_encrypt(const mud::core::buffer& input);
 
     /**
      * @brief Postprocess a block after encryption.
@@ -250,7 +250,7 @@ protected:
      * possible altered output block.
      * Default implementation returns @c output as-is.
      */
-    virtual data_t postlude_encrypt(const data_t& output);
+    virtual mud::core::buffer postlude_encrypt(const mud::core::buffer& output);
 
     /**
      * @brief Preprocess a block for decryption.
@@ -262,7 +262,7 @@ protected:
      * Returns any possible altered input block that is ready to be decrypted.
      * Default implementation returns @c input as-is.
      */
-    virtual data_t prelude_decrypt(const data_t& input);
+    virtual mud::core::buffer prelude_decrypt(const mud::core::buffer& input);
 
     /**
      * @brief Postprocess a block after decryption.
@@ -274,7 +274,7 @@ protected:
      * possible altered output block.
      * Default implementation returns @c output as-is.
      */
-    virtual data_t postlude_decrypt(const data_t& output);
+    virtual mud::core::buffer postlude_decrypt(const mud::core::buffer& output);
 
 private:
     /** The keying material */
@@ -341,7 +341,7 @@ public:
      * alter the mode's internal state and may alter the block to be encrypted.
      * Returns any possible altered input block that is ready to be encrypted.
      */
-    virtual data_t prelude_encrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_encrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after encryption.
@@ -352,7 +352,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_encrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_encrypt(const mud::core::buffer& output) override;
 
     /**
      * @brief Prelude a block for decryption.
@@ -362,7 +362,7 @@ public:
      * Perform any prelude action before decrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be decrypted.
      */
-    virtual data_t prelude_decrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_decrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after decryption.
@@ -373,7 +373,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_decrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_decrypt(const mud::core::buffer& output) override;
 
 private:
     /** Flag to indicate that padding of the final block had been applied. */
@@ -431,7 +431,7 @@ public:
      * alter the mode's internal state and may alter the block to be encrypted.
      * Returns any possible altered input block that is ready to be encrypted.
      */
-    virtual data_t prelude_encrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_encrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after encryption.
@@ -442,7 +442,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_encrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_encrypt(const mud::core::buffer& output) override;
 
     /**
      * @brief Prelude a block for decryption.
@@ -452,7 +452,7 @@ public:
      * Perform any prelude action before decrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be decrypted.
      */
-    virtual data_t prelude_decrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_decrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after decryption.
@@ -463,17 +463,17 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_decrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_decrypt(const mud::core::buffer& output) override;
 
 private:
     /** The initialisation vector */
     iv_t _iv;
 
     /** The previous cipher block */
-    data_t _previous;
+    mud::core::buffer _previous;
 
     /** The temporary cipher block */
-    data_t _tmp;
+    mud::core::buffer _tmp;
 
     /** Flag to indicate that padding of the final block had been applied. */
     bool _padded = false;
@@ -529,7 +529,7 @@ public:
      * Perform any prelude action before encrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be encrypted.
      */
-    virtual data_t prelude_encrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_encrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after encryption.
@@ -540,7 +540,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_encrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_encrypt(const mud::core::buffer& output) override;
 
     /**
      * @brief Prelude a block for decryption.
@@ -550,7 +550,7 @@ public:
      * Perform any prelude action before decrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be decrypted.
      */
-    virtual data_t prelude_decrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_decrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after decryption.
@@ -561,17 +561,17 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_decrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_decrypt(const mud::core::buffer& output) override;
 
 private:
     /** The initialisation vector */
     iv_t _iv;
 
     /** The previous cipher block */
-    data_t _previous;
+    mud::core::buffer _previous;
 
     /** The text block */
-    data_t _text;
+    mud::core::buffer _text;
 };
 
 /**
@@ -624,7 +624,7 @@ public:
      * Perform any prelude action before encrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be encrypted.
      */
-    virtual data_t prelude_encrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_encrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after encryption.
@@ -635,7 +635,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_encrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_encrypt(const mud::core::buffer& output) override;
 
     /**
      * @brief Prelude a block for decryption.
@@ -645,7 +645,7 @@ public:
      * Perform any prelude action before decrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be decrypted.
      */
-    virtual data_t prelude_decrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_decrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after decryption.
@@ -656,14 +656,14 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_decrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_decrypt(const mud::core::buffer& output) override;
 
 private:
     /** The counter */
     counter_t _counter;
 
     /** The text block */
-    data_t _text;
+    mud::core::buffer _text;
 };
 
 /**
@@ -716,7 +716,7 @@ public:
      * Perform any prelude action before encrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be encrypted.
      */
-    virtual data_t prelude_encrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_encrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after encryption.
@@ -727,7 +727,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_encrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_encrypt(const mud::core::buffer& output) override;
 
     /**
      * @brief Prelude a block for decryption.
@@ -737,7 +737,7 @@ public:
      * Perform any prelude action before decrypting the @c input block. This may
      * alter the mode's internal state and may alter the block to be decrypted.
      */
-    virtual data_t prelude_decrypt(const data_t& input) override;
+    virtual mud::core::buffer prelude_decrypt(const mud::core::buffer& input) override;
 
     /**
      * @brief Postlude a block after decryption.
@@ -748,7 +748,7 @@ public:
      * insternal state and may alter the output block as well. Returns any
      * possible altered output block.
      */
-    virtual data_t postlude_decrypt(const data_t& output) override;
+    virtual mud::core::buffer postlude_decrypt(const mud::core::buffer& output) override;
 
     /**
      * @brief Return the authentication tag.
@@ -757,7 +757,7 @@ public:
      * otherwise return a zero length buffer. The tag should only be valid after
      * the final block have been processed.
      */
-    virtual data_t authentication_tag() const override;
+    virtual mud::core::buffer authentication_tag() const override;
 
 private:
     /**
@@ -778,7 +778,7 @@ private:
      * The hash function is calculated as the multiplication in GF(2^128) of
      * the hash-key and the XOR of the previous hash and cipher block.
      */
-    data_t ghash(const data_t& h, const data_t& a, const data_t& c);
+    mud::core::buffer ghash(const mud::core::buffer& h, const mud::core::buffer& a, const mud::core::buffer& c);
 
     /**
      * @brief Multiplication in GF(2^128).
@@ -790,19 +790,19 @@ private:
      *     x^128 + x^7 + x^ 2 + x + 1
      * as irreducible polynomial.
      */
-    data_t mult(const data_t& x, const data_t& y);
+    mud::core::buffer mult(const mud::core::buffer& x, const mud::core::buffer& y);
 
     /** The hash-key */
-    data_t _H;
+    mud::core::buffer _H;
 
     /** The counter */
     counter_t _Y;
 
     /** The previously calculated hash value */
-    data_t _X;
+    mud::core::buffer _X;
 
     /** The Encrypted Y0 used for the authentication tag */
-    data_t _E_Y0;
+    mud::core::buffer _E_Y0;
 
     /** The hash index */
     ssize_t _X_i = -1;
@@ -811,13 +811,13 @@ private:
     ssize_t _Y_i = -1;
 
     /** The text block */
-    data_t _text;
+    mud::core::buffer _text;
 
     /** The total size of cipher text in bytes */
     size_t _len_C = 0;
 
     /** The authentication tag */
-    data_t _tag;
+    mud::core::buffer _tag;
 };
 
 /**
@@ -926,7 +926,7 @@ public:
      * @param out The output block (ie cipher text).
      * @param key The algorithm key.
      */
-    virtual void encrypt(const data_t& plain, data_t& cipher) = 0;
+    virtual void encrypt(const mud::core::buffer& plain, mud::core::buffer& cipher) = 0;
 
     /**
      * @brief Decrypt cipher text into plain text.
@@ -934,7 +934,7 @@ public:
      * @param out The output block (ie plain text).
      * @param key The algorithm key.
      */
-    virtual void decrypt(const data_t& cipher, data_t& plain) = 0;
+    virtual void decrypt(const mud::core::buffer& cipher, mud::core::buffer& plain) = 0;
 
     /**
      * @brief Return the authentication tag.
@@ -943,7 +943,7 @@ public:
      * otherwise return a zero length buffer. The tag should only be valid after
      * the final block have been processed.
      */
-    virtual data_t authentication_tag() const = 0;
+    virtual mud::core::buffer authentication_tag() const = 0;
 
     /**
      * @brief Create and return a filtering stream buffer for block cipher
@@ -1027,7 +1027,7 @@ public:
      * @param out The output block (ie cipher text).
      * @param key The algorithm key.
      */
-    void encrypt(const data_t& plain, data_t& cipher) override;
+    void encrypt(const mud::core::buffer& plain, mud::core::buffer& cipher) override;
 
     /**
      * @brief Decrypt cipher text into plain text.
@@ -1035,7 +1035,7 @@ public:
      * @param out The output block (ie plain text).
      * @param key The algorithm key.
      */
-    void decrypt(const data_t& cipher, data_t& plain) override;
+    void decrypt(const mud::core::buffer& cipher, mud::core::buffer& plain) override;
 
     /**
      * @brief Return the authentication tag.
@@ -1044,7 +1044,7 @@ public:
      * otherwise return a zero length buffer. The tag should only be valid after
      * the final block have been processed.
      */
-    data_t authentication_tag() const override;
+    mud::core::buffer authentication_tag() const override;
 
     /**
      * @brief Create and return a filtering stream buffer for block cipher
@@ -1101,7 +1101,7 @@ block_cipher<Algorithm, Mode>::~block_cipher()
 
 template<typename Algorithm, typename Mode>
 void
-block_cipher<Algorithm, Mode>::encrypt(const data_t& plain, data_t& cipher)
+block_cipher<Algorithm, Mode>::encrypt(const mud::core::buffer& plain, mud::core::buffer& cipher)
 {
     cipher.clear();
     auto* bptr = plain.data();
@@ -1110,15 +1110,15 @@ block_cipher<Algorithm, Mode>::encrypt(const data_t& plain, data_t& cipher)
         /* Get the next block of data. */
         size_t sz = bend - bptr < _algorithm.block_size()
                   ? bend - bptr : _algorithm.block_size();
-        data_t input = data_t(bptr, sz);
+        mud::core::buffer input = mud::core::buffer(bptr, sz);
 
         /* Check if this is the final block */
         bool final = ((bend - bptr) <= _algorithm.block_size());
 
         /* Encrypt and append the output */
-        data_t output;
+        mud::core::buffer output;
         _mode.encrypt(input, output, final);
-        cipher.append(output);
+        cipher.insert(cipher.end(), output.begin(), output.end());
         if (output.size() == 0) {
             break;
         }
@@ -1130,7 +1130,7 @@ block_cipher<Algorithm, Mode>::encrypt(const data_t& plain, data_t& cipher)
 
 template<typename Algorithm, typename Mode>
 void
-block_cipher<Algorithm, Mode>::decrypt(const data_t& cipher, data_t& plain)
+block_cipher<Algorithm, Mode>::decrypt(const mud::core::buffer& cipher, mud::core::buffer& plain)
 {
     plain.clear();
     auto* bptr = cipher.data();
@@ -1139,15 +1139,15 @@ block_cipher<Algorithm, Mode>::decrypt(const data_t& cipher, data_t& plain)
         /* Get the next block of data. */
         size_t sz = bend - bptr < _algorithm.block_size()
                   ? bend - bptr : _algorithm.block_size();
-        data_t input = data_t(bptr, sz);
+        mud::core::buffer input = mud::core::buffer(bptr, sz);
 
         /* Check if this is the final block */
         bool final = ((bend - bptr) <= _algorithm.block_size());
 
         /* Decrypt and append the output */
-        data_t output;
+        mud::core::buffer output;
         _mode.decrypt(input, output, final);
-        plain.append(output);
+        plain.insert(plain.end(), output.begin(), output.end());
         if (output.size() == 0) {
             break;
         }
@@ -1169,7 +1169,7 @@ block_cipher<Algorithm, Mode>::specs() const
 }
 
 template<typename Algorithm, typename Mode>
-data_t
+mud::core::buffer
 block_cipher<Algorithm, Mode>::authentication_tag() const
 {
     return _mode.authentication_tag();

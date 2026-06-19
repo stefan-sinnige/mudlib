@@ -67,7 +67,7 @@ BEGIN_MUDLIB_CRYPTO_NS
  * ========================================================================== */
 
 void
-basic_mode::encrypt(const data_t& plain, data_t& cipher, bool final)
+basic_mode::encrypt(const mud::core::buffer& plain, mud::core::buffer& cipher, bool final)
 {
     _final = final;
 
@@ -83,7 +83,7 @@ basic_mode::encrypt(const data_t& plain, data_t& cipher, bool final)
     }
 
     /* Perform the encryption */
-    data_t output;
+    mud::core::buffer output;
     if (encryption_direction() == basic_mode::direction_t::forward) {
         _algorithm.forward(input, output, _keying.key());
     }
@@ -93,11 +93,11 @@ basic_mode::encrypt(const data_t& plain, data_t& cipher, bool final)
 
     /* Postprocess the result */
     output = postlude_encrypt(output);
-    cipher.append(output);
+    cipher.insert(cipher.end(), output.begin(), output.end());
 }
 
 void
-basic_mode::decrypt(const data_t& cipher, data_t& plain, bool final)
+basic_mode::decrypt(const mud::core::buffer& cipher, mud::core::buffer& plain, bool final)
 {
     _final = final;
 
@@ -113,7 +113,7 @@ basic_mode::decrypt(const data_t& cipher, data_t& plain, bool final)
     }
 
     /* Perform the decryption */
-    data_t output;
+    mud::core::buffer output;
     if (decryption_direction() == basic_mode::direction_t::forward) {
         _algorithm.forward(input, output, _keying.key());
     }
@@ -123,35 +123,35 @@ basic_mode::decrypt(const data_t& cipher, data_t& plain, bool final)
 
     /* Postprocess the result */
     output = postlude_decrypt(output);
-    plain.append(output);
+    plain.insert(plain.end(), output.begin(), output.end());
 }
 
-data_t
-basic_mode::next(const data_t& input)
+mud::core::buffer
+basic_mode::next(const mud::core::buffer& input)
 {
     return input;
 }
 
-data_t
-basic_mode::prelude_encrypt(const data_t& input)
+mud::core::buffer
+basic_mode::prelude_encrypt(const mud::core::buffer& input)
 {
     return input;
 }
 
-data_t
-basic_mode::postlude_encrypt(const data_t& output)
+mud::core::buffer
+basic_mode::postlude_encrypt(const mud::core::buffer& output)
 {
     return output;
 }
 
-data_t
-basic_mode::prelude_decrypt(const data_t& input)
+mud::core::buffer
+basic_mode::prelude_decrypt(const mud::core::buffer& input)
 {
     return input;
 }
 
-data_t
-basic_mode::postlude_decrypt(const data_t& output)
+mud::core::buffer
+basic_mode::postlude_decrypt(const mud::core::buffer& output)
 {
     return output;
 }
@@ -193,13 +193,13 @@ ecb::ecb(const cipher_material_t& keying, basic_algorithm& algorithm)
                << "         K| " << keying.key() << std::endl;
 }
 
-data_t
-ecb::prelude_encrypt(const data_t& input)
+mud::core::buffer
+ecb::prelude_encrypt(const mud::core::buffer& input)
 {
-    data_t plain = input;
+    mud::core::buffer plain = input;
     if (final() && (input.size() < block_size())) {
         if (_padded) {
-            return data_t(0);
+            return mud::core::buffer(0);
         }
         plain = padder().pad(plain);
         _padded = true;
@@ -213,8 +213,8 @@ ecb::prelude_encrypt(const data_t& input)
     return plain;
 }
 
-data_t
-ecb::postlude_encrypt(const data_t& output)
+mud::core::buffer
+ecb::postlude_encrypt(const mud::core::buffer& output)
 {
     if (output.size()) {
         LOG(log);
@@ -224,8 +224,8 @@ ecb::postlude_encrypt(const data_t& output)
     return output;
 }
 
-data_t
-ecb::prelude_decrypt(const data_t& input)
+mud::core::buffer
+ecb::prelude_decrypt(const mud::core::buffer& input)
 {
     if (input.size()) {
         LOG(log);
@@ -234,10 +234,10 @@ ecb::prelude_decrypt(const data_t& input)
     return input;
 }
 
-data_t
-ecb::postlude_decrypt(const data_t& output)
+mud::core::buffer
+ecb::postlude_decrypt(const mud::core::buffer& output)
 {
-    data_t plain = output;
+    mud::core::buffer plain = output;
     if (final()) {
         plain = padder().unpad(output);
     }
@@ -299,13 +299,13 @@ cbc::cbc(const cipher_material_t& keying, basic_algorithm& algorithm)
                << "        IV| " << keying.iv() << std::endl;
 }
 
-data_t
-cbc::prelude_encrypt(const data_t& input)
+mud::core::buffer
+cbc::prelude_encrypt(const mud::core::buffer& input)
 {
-    data_t plain = input;
+    mud::core::buffer plain = input;
     if (final() && (input.size() < block_size())) {
         if (_padded) {
-            return data_t(0);
+            return mud::core::buffer(0);
         }
         plain = padder().pad(plain);
         _padded = true;
@@ -319,8 +319,8 @@ cbc::prelude_encrypt(const data_t& input)
     return plain ^ _previous;
 }
 
-data_t
-cbc::postlude_encrypt(const data_t& output)
+mud::core::buffer
+cbc::postlude_encrypt(const mud::core::buffer& output)
 {
     _previous = output;
 
@@ -332,8 +332,8 @@ cbc::postlude_encrypt(const data_t& output)
     return output;
 }
 
-data_t
-cbc::prelude_decrypt(const data_t& input)
+mud::core::buffer
+cbc::prelude_decrypt(const mud::core::buffer& input)
 {
     _tmp = input;
 
@@ -345,8 +345,8 @@ cbc::prelude_decrypt(const data_t& input)
     return input;
 }
 
-data_t
-cbc::postlude_decrypt(const data_t& output)
+mud::core::buffer
+cbc::postlude_decrypt(const mud::core::buffer& output)
 {
     auto plain = output ^ _previous;
     if (final()) {
@@ -415,8 +415,8 @@ cfb::cfb(const cipher_material_t& keying, basic_algorithm& algorithm)
                << "        IV| " << keying.iv() << std::endl;
 }
 
-data_t
-cfb::prelude_encrypt(const data_t& input)
+mud::core::buffer
+cfb::prelude_encrypt(const mud::core::buffer& input)
 {
     if (input.size() == 0) {
         return input;
@@ -429,8 +429,8 @@ cfb::prelude_encrypt(const data_t& input)
     return _previous;
 }
 
-data_t
-cfb::postlude_encrypt(const data_t& output)
+mud::core::buffer
+cfb::postlude_encrypt(const mud::core::buffer& output)
 {
     _previous = _text ^ output;
 
@@ -440,8 +440,8 @@ cfb::postlude_encrypt(const data_t& output)
     return _previous;
 }
 
-data_t
-cfb::prelude_decrypt(const data_t& input)
+mud::core::buffer
+cfb::prelude_decrypt(const mud::core::buffer& input)
 {
     if (input.size() == 0) {
         return input;
@@ -454,11 +454,11 @@ cfb::prelude_decrypt(const data_t& input)
     return _previous;
 }
 
-data_t
-cfb::postlude_decrypt(const data_t& output)
+mud::core::buffer
+cfb::postlude_decrypt(const mud::core::buffer& output)
 {
     _previous = _text;
-    data_t plain = _text ^ output;
+    mud::core::buffer plain = _text ^ output;
 
     LOG(log);
     TRACE(log) << "         P| " << plain << std::endl;
@@ -515,8 +515,8 @@ ctr::ctr(const cipher_material_t& keying, basic_algorithm& algorithm)
                << "         K| " << keying.key() << std::endl;
 }
 
-data_t
-ctr::prelude_encrypt(const data_t& input)
+mud::core::buffer
+ctr::prelude_encrypt(const mud::core::buffer& input)
 {
     if (input.size() == 0) {
         return input;
@@ -530,11 +530,11 @@ ctr::prelude_encrypt(const data_t& input)
     return _counter;
 }
 
-data_t
-ctr::postlude_encrypt(const data_t& output)
+mud::core::buffer
+ctr::postlude_encrypt(const mud::core::buffer& output)
 {
     ++_counter;
-    data_t cipher = _text ^ output;
+    mud::core::buffer cipher = _text ^ output;
 
     LOG(log);
     TRACE(log) << "         C| " << cipher << std::endl;
@@ -542,8 +542,8 @@ ctr::postlude_encrypt(const data_t& output)
     return cipher;
 }
 
-data_t
-ctr::prelude_decrypt(const data_t& input)
+mud::core::buffer
+ctr::prelude_decrypt(const mud::core::buffer& input)
 {
     if (input.size() == 0) {
         return input;
@@ -557,11 +557,11 @@ ctr::prelude_decrypt(const data_t& input)
     return _counter;
 }
 
-data_t
-ctr::postlude_decrypt(const data_t& output)
+mud::core::buffer
+ctr::postlude_decrypt(const mud::core::buffer& output)
 {
     ++_counter;
-    data_t plain = _text ^ output;
+    mud::core::buffer plain = _text ^ output;
 
     LOG(log);
     TRACE(log) << "         P| " << plain << std::endl;
@@ -642,7 +642,7 @@ ctr::postlude_decrypt(const data_t& output)
 
 gcm::gcm(const cipher_material_t& keying, basic_algorithm& algorithm)
     : basic_mode(keying, algorithm)
-    , _X(data_t(block_size()))
+    , _X(block_size())
 {
     if (block_size()*8 != 128) {
         throw size_error("GCM mode only implemented for 128 bit blocks");
@@ -660,7 +660,7 @@ gcm::gcm(const cipher_material_t& keying, basic_algorithm& algorithm)
     /*
      * Hash key is a ciphered zero block.
      */
-    data_t zero(16);
+    mud::core::buffer zero(16);
     algorithm.forward(zero, _H, keying.key());
     TRACE(log) << "         H| " << _H << std::endl;
 
@@ -670,14 +670,14 @@ gcm::gcm(const cipher_material_t& keying, basic_algorithm& algorithm)
      *    - Else: GHASH(H, {}, IV)
      */
     if (keying.iv().size() == 12) {
-        _Y = data_t(16);
+        _Y = mud::core::buffer(16);
         memcpy(_Y.data(), keying.iv().data(), keying.iv().size());
         ++_Y, ++_Y_i;
     }
     else {
-        _Y = ghash(_H, data_t(0), keying.iv());
+        _Y = ghash(_H, mud::core::buffer(0), keying.iv());
         TRACE(log) << "        N1| " << _Y << std::endl;
-        data_t len(16);
+        mud::core::buffer len(16);
         *(uint64_t*)(len.data()+8) = endian::convert(
                 endian::native(), endian_t::big,
                 (uint64_t)keying.iv().size()*8);
@@ -698,11 +698,11 @@ gcm::gcm(const cipher_material_t& keying, basic_algorithm& algorithm)
     /*
      * The initial hash is over the AAD only and no cipher-text.
      */
-    _X = ghash(_H, keying.aad(), data_t(0));
+    _X = ghash(_H, keying.aad(), mud::core::buffer(0));
 }
 
-data_t
-gcm::prelude_encrypt(const data_t& input)
+mud::core::buffer
+gcm::prelude_encrypt(const mud::core::buffer& input)
 {
     if (input.size() == 0) {
         if (final() && _len_C == 0) {
@@ -720,14 +720,14 @@ gcm::prelude_encrypt(const data_t& input)
     return _Y;
 }
 
-data_t
-gcm::postlude_encrypt(const data_t& output)
+mud::core::buffer
+gcm::postlude_encrypt(const mud::core::buffer& output)
 {
     /* The cipher output of the final block can be less than the block-size,
      * but the authenticated tag requires a zero-padded cipher input data. */
-    data_t cipher = _text ^ output;
-    data_t padded = cipher;
-    padded.pad_end(16);
+    mud::core::buffer cipher = _text ^ output;
+    mud::core::buffer padded = cipher;
+    padded.insert(padded.end(), 16 - padded.size(), 0);
     _X = mult(padded ^ _X, _H), ++_X_i;
     _len_C += cipher.size();
 
@@ -745,8 +745,8 @@ gcm::postlude_encrypt(const data_t& output)
     return cipher;
 }
 
-data_t
-gcm::prelude_decrypt(const data_t& input)
+mud::core::buffer
+gcm::prelude_decrypt(const mud::core::buffer& input)
 {
     if (input.size() == 0) {
         if (final() && _len_C == 0) {
@@ -764,14 +764,14 @@ gcm::prelude_decrypt(const data_t& input)
     return _Y;
 }
 
-data_t
-gcm::postlude_decrypt(const data_t& output)
+mud::core::buffer
+gcm::postlude_decrypt(const mud::core::buffer& output)
 {
     /* The cipher output of the final block can be less than the block-size,
      * but the authenticated tag requires a zero-padded cipher input data. */
-    data_t plain = _text ^ output;
-    data_t padded = _text;
-    padded.pad_end(16);
+    mud::core::buffer plain = _text ^ output;
+    mud::core::buffer padded = _text;
+    padded.insert(padded.end(), 16 - padded.size(), 0);
     _X = mult(padded ^ _X, _H), ++_X_i;
     _len_C += _text.size();
 
@@ -789,7 +789,7 @@ gcm::postlude_decrypt(const data_t& output)
     return plain;
 }
 
-data_t
+mud::core::buffer
 gcm::authentication_tag() const
 {
     if (!final()) {
@@ -801,7 +801,7 @@ gcm::authentication_tag() const
 void
 gcm::authenticate()
 {
-    data_t len(16);
+    mud::core::buffer len(16);
     *(uint64_t*)(len.data()+0) = endian::convert(
             endian::native(), endian_t::big,
             (uint64_t)keying().aad().size()*8);
@@ -815,17 +815,17 @@ gcm::authenticate()
                << "         T| " << _tag << std::endl;
 }
 
-data_t
-gcm::ghash(const data_t& h, const data_t& a, const data_t& c)
+mud::core::buffer
+gcm::ghash(const mud::core::buffer& h, const mud::core::buffer& a, const mud::core::buffer& c)
 {
     LOG(log);
     bool iv_hash = (_X_i < 0);
 
     /* Hash over all blocks of A, final partial block may need zero-padding. */
-    data_t x = _X;
+    mud::core::buffer x = _X;
     size_t m;
     for (m = 0; m < a.size() / 16; ++m) {
-        data_t b(a.data() + m * 16, 16);
+        mud::core::buffer b(a.data() + m * 16, 16);
         x = mult(x ^ b, _H);
         if (!iv_hash) {
             ++_X_i;
@@ -834,8 +834,8 @@ gcm::ghash(const data_t& h, const data_t& a, const data_t& c)
     }
     size_t v = a.size() % 16;
     if (v != 0) {
-        data_t b(a.data() + m * 16, v);
-        b.append(data_t(16 - v));
+        mud::core::buffer b(a.data() + m * 16, v);
+        b.insert(b.end(), 16 - v, 0);
         x = mult(x ^ b, _H);
         if (!iv_hash) {
             ++_X_i;
@@ -846,7 +846,7 @@ gcm::ghash(const data_t& h, const data_t& a, const data_t& c)
     /* Hash over all blocks of C, final partial block may need zero-padding. */
     size_t n;
     for (n = 0; n < c.size() / 16; ++n) {
-        data_t b(c.data() + n * 16, 16);
+        mud::core::buffer b(c.data() + n * 16, 16);
         x = mult(x ^ b, _H);
         if (!iv_hash) {
             ++_X_i;
@@ -855,8 +855,8 @@ gcm::ghash(const data_t& h, const data_t& a, const data_t& c)
     }
     size_t u = c.size() % 16;
     if (u != 0) {
-        data_t b(c.data() + n * 16, u);
-        b.append(data_t(16 - u));
+        mud::core::buffer b(c.data() + n * 16, u);
+        b.insert(b.end(), 16 - u, 0);
         x = mult(x ^ b, _H);
         if (!iv_hash) {
             ++_X_i;
@@ -866,18 +866,18 @@ gcm::ghash(const data_t& h, const data_t& a, const data_t& c)
     return x;
 }
 
-data_t
-gcm::mult(const data_t& x, const data_t& y)
+mud::core::buffer
+gcm::mult(const mud::core::buffer& x, const mud::core::buffer& y)
 {
     /* The default implementation from the AES GCM specification without any
      * optimization. Possible optimization is the use of calculated H-tables. */
 
     /* Define the reduced polynomial */
-    data_t r(16);
+    mud::core::buffer r(16);
     r[0]= 0xe1;
 
-    data_t z(16);
-    data_t v = x;
+    mud::core::buffer z(16);
+    mud::core::buffer v = x;
     for (int i = 0; i < 16*8; ++i) {
         /* If the bit at the i-th position is set add (XOR) v. */
         if (y[i/8] & (0x01 << (7 - (i % 8)))) {
@@ -959,10 +959,10 @@ block_cipher_streambuf::underflow()
     _eof = _chain->sgetc() == traits_type::eof();
 
     /* Construct the input block */
-    data_t cipher = data_t((const uint8_t*)_buffer + _putbacksize, nread);
+    mud::core::buffer cipher = mud::core::buffer((const uint8_t*)_buffer + _putbacksize, nread);
 
     /* Decrypt the block */
-    data_t plain;
+    mud::core::buffer plain;
     _mode.decrypt(cipher, plain, _eof);
 
     /* Move the decrypted block to the stream buffer */
@@ -999,10 +999,10 @@ int
 block_cipher_streambuf::sync()
 {
     /* Construct the output block */
-    data_t plain = data_t((const uint8_t*)pbase(), pptr() - pbase());
+    mud::core::buffer plain = mud::core::buffer((const uint8_t*)pbase(), pptr() - pbase());
 
     /* Encrypt it */
-    data_t cipher;
+    mud::core::buffer cipher;
     _mode.encrypt(plain, cipher, _eof);
 
     /* Write the block */

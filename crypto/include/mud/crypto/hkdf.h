@@ -75,7 +75,7 @@ public:
      *
      * This method can be called repeatedly to generate multiple keys.
      */
-    virtual key_t key(size_t key_size = 0, const data_t& info = data_t())
+    virtual key_t key(size_t key_size = 0, const mud::core::buffer& info = mud::core::buffer())
             override;
 
 private:

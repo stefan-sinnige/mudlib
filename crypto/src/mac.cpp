@@ -131,7 +131,7 @@ mac_streambuf::underflow()
     }
 
     /* Update the MAC */
-    _mac.update(data_t((uint8_t*)_buffer + _putbacksize, nr));
+    _mac.update(mud::core::buffer((uint8_t*)_buffer + _putbacksize, nr));
 
     /* Check if there is more deta */
     _eof = _chain->sgetc() == traits_type::eof();
@@ -167,7 +167,7 @@ int
 mac_streambuf::sync()
 {
     /* Update the MAC */
-    _mac.update(data_t((uint8_t*)pbase(), pptr() - pbase()));
+    _mac.update(mud::core::buffer((uint8_t*)pbase(), pptr() - pbase()));
 
     /* Write the block of data to the chain */
     int nr = _chain->sputn(pbase(), pptr() - pbase());

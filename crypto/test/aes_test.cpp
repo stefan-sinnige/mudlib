@@ -42,15 +42,15 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_buffer(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& d) {
+    std::string to_string(const mud::core::buffer& d) {
         std::stringstream sstr;
         sstr << d;
         return sstr.str();
@@ -63,19 +63,19 @@ CONTEXT()
     mud::crypto::cipher_material_t material;
 
     /* The input block */
-    mud::crypto::data_t input;
+    mud::core::buffer input;
 
     /* The output block */
-    mud::crypto::data_t output;
+    mud::core::buffer output;
 
     /* The plaintext */
-    mud::crypto::data_t plaintext;
+    mud::core::buffer plaintext;
 
     /* The ciphertext */
-    mud::crypto::data_t ciphertext;
+    mud::core::buffer ciphertext;
 
     /* The authentication tag */
-    mud::crypto::data_t tag;
+    mud::core::buffer tag;
 
     /* A text stream */
     std::stringstream text_stream;
@@ -120,11 +120,11 @@ FEATURE("AES")
 
   SCENARIO("Basic AES block cipher can encrypt one block")
     GIVEN("An AES block cipher with a key and plaintext", [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
           ctx.aes = new mud::crypto::basic_aes(ctx.material.key().size()*8);
         })
     WHEN ("The plaintext is AES encrypted", [](context& ctx) {
-          ctx.input = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.input = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
           ctx.aes->forward(ctx.input, ctx.output, ctx.material.key());
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
@@ -149,11 +149,11 @@ FEATURE("AES")
 
   SCENARIO("Basic AES block cipher can decrypt one block")
     GIVEN("An AES block cipher with a key and plaintext", [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
           ctx.aes = new mud::crypto::basic_aes(ctx.material.key().size()*8);
         })
     WHEN ("The ciphertext is AES decrypted", [](context& ctx) {
-          ctx.input = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.input = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
           ctx.aes->inverse(ctx.input, ctx.output, ctx.material.key());
         })
     THEN ("The plaintext contains the decrypted data", [](context& ctx) {
@@ -179,8 +179,8 @@ FEATURE("AES")
   SCENARIO("AES-128 ECB can encrypt with an example vector")
     GIVEN("An AES-128 ECB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
@@ -206,8 +206,8 @@ FEATURE("AES")
   SCENARIO("AES-192 ECB can encrypt with an example vector")
     GIVEN("An AES-192 ECB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_192_ECB aes_192_ecb(ctx.material);
@@ -234,8 +234,8 @@ FEATURE("AES")
   SCENARIO("AES-256 ECB can encrypt with an example vector")
     GIVEN("An AES-256 ECB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_256_ECB aes_256_ecb(ctx.material);
@@ -262,9 +262,9 @@ FEATURE("AES")
   SCENARIO("AES-128 CBC can encrypt with an example vector")
     GIVEN("An AES-128 CBC with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
@@ -291,9 +291,9 @@ FEATURE("AES")
   SCENARIO("AES-192 CBC can encrypt with an example vector")
     GIVEN("An AES-192 CBC with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_192_CBC aes_192_cbc(ctx.material);
@@ -321,9 +321,9 @@ FEATURE("AES")
   SCENARIO("AES-256 CBC can encrypt with an example vector")
     GIVEN("An AES-256 CBC with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_256_CBC aes_256_cbc(ctx.material);
@@ -351,9 +351,9 @@ FEATURE("AES")
   SCENARIO("AES-128 CFB can encrypt with an example vector")
     GIVEN("An AES-128 CFB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
@@ -380,9 +380,9 @@ FEATURE("AES")
   SCENARIO("AES-192 CFB can encrypt with an example vector")
     GIVEN("An AES-192 CFB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_192_CFB aes_192_cfb(ctx.material);
@@ -410,9 +410,9 @@ FEATURE("AES")
   SCENARIO("AES-256 CFB can encrypt with an example vector")
     GIVEN("An AES-256 CFB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_256_CFB aes_256_cfb(ctx.material);
@@ -440,9 +440,9 @@ FEATURE("AES")
   SCENARIO("AES-128 CTR can encrypt with an example vector")
     GIVEN("An AES-128 CTR with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
@@ -469,9 +469,9 @@ FEATURE("AES")
   SCENARIO("AES-192 CTR can encrypt with an example vector")
     GIVEN("An AES-192 CTR with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_192_CTR aes_192_ctr(ctx.material);
@@ -499,9 +499,9 @@ FEATURE("AES")
   SCENARIO("AES-256 CTR can encrypt with an example vector")
     GIVEN("An AES-256 CTR with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_256_CTR aes_256_ctr(ctx.material);
@@ -529,10 +529,10 @@ FEATURE("AES")
   SCENARIO("AES-128 GCM can encrypt with an example vector")
     GIVEN("An AES-128 GCM with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_buffer(ctx.sample<std::string>("aad")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_GCM aes_128_gcm(ctx.material);
@@ -621,10 +621,10 @@ FEATURE("AES")
   SCENARIO("AES-192 GCM can encrypt with an example vector")
     GIVEN("An AES-192 GCM with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_buffer(ctx.sample<std::string>("aad")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_192_GCM aes_192_gcm(ctx.material);
@@ -719,10 +719,10 @@ FEATURE("AES")
   SCENARIO("AES-256 GCM can encrypt with an example vector")
     GIVEN("An AES-256 GCM with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_buffer(ctx.sample<std::string>("aad")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_256_GCM aes_256_gcm(ctx.material);
@@ -817,8 +817,8 @@ FEATURE("AES")
   SCENARIO("AES-128 ECB can decrypt with an example vector")
     GIVEN("An AES-128 ECB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
@@ -844,8 +844,8 @@ FEATURE("AES")
   SCENARIO("AES-192 ECB can decrypt with an example vector")
     GIVEN("An AES-192 ECB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The plaintext is decrypted", [](context& ctx) {
           mud::crypto::AES_192_ECB aes_192_ecb(ctx.material);
@@ -872,8 +872,8 @@ FEATURE("AES")
   SCENARIO("AES-256 ECB can decrypt with an example vector")
     GIVEN("An AES-256 ECB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The plaintext is decrypted", [](context& ctx) {
           mud::crypto::AES_256_ECB aes_256_ecb(ctx.material);
@@ -900,9 +900,9 @@ FEATURE("AES")
   SCENARIO("AES-128 CBC can decrypt with an example vector")
     GIVEN("An AES-128 CBC with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
@@ -929,9 +929,9 @@ FEATURE("AES")
   SCENARIO("AES-192 CBC can decrypt with an example vector")
     GIVEN("An AES-192 CBC with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_192_CBC aes_192_cbc(ctx.material);
@@ -959,9 +959,9 @@ FEATURE("AES")
   SCENARIO("AES-256 CBC can decrypt with an example vector")
     GIVEN("An AES-256 CBC with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_256_CBC aes_256_cbc(ctx.material);
@@ -989,9 +989,9 @@ FEATURE("AES")
   SCENARIO("AES-128 CFB can decrypt with an example vector")
     GIVEN("An AES-128 CFB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
@@ -1018,9 +1018,9 @@ FEATURE("AES")
   SCENARIO("AES-192 CFB can decrypt with an example vector")
     GIVEN("An AES-192 CFB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_192_CFB aes_192_cfb(ctx.material);
@@ -1048,9 +1048,9 @@ FEATURE("AES")
   SCENARIO("AES-256 CFB can decrypt with an example vector")
     GIVEN("An AES-256 CFB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_256_CFB aes_256_cfb(ctx.material);
@@ -1078,9 +1078,9 @@ FEATURE("AES")
   SCENARIO("AES-128 CTR can decrypt with an example vector")
     GIVEN("An AES-128 CTR with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
@@ -1107,9 +1107,9 @@ FEATURE("AES")
   SCENARIO("AES-192 CTR can decrypt with an example vector")
     GIVEN("An AES-192 CTR with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_192_CTR aes_192_ctr(ctx.material);
@@ -1137,9 +1137,9 @@ FEATURE("AES")
   SCENARIO("AES-256 CTR can decrypt with an example vector")
     GIVEN("An AES-256 CTR with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_256_CTR aes_256_ctr(ctx.material);
@@ -1167,10 +1167,10 @@ FEATURE("AES")
   SCENARIO("AES-128 GCM can decrypt with an example vector")
     GIVEN("An AES-128 GCM with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_buffer(ctx.sample<std::string>("aad")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_GCM aes_128_gcm(ctx.material);
@@ -1259,10 +1259,10 @@ FEATURE("AES")
   SCENARIO("AES-192 GCM can decrypt with an example vector")
     GIVEN("An AES-192 GCM with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_buffer(ctx.sample<std::string>("aad")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_192_GCM aes_192_gcm(ctx.material);
@@ -1357,10 +1357,10 @@ FEATURE("AES")
   SCENARIO("AES-256 GCM can decrypt with an example vector")
     GIVEN("An AES-256 GCM with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.material.aad(ctx.to_data(ctx.sample<std::string>("aad")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.material.aad(ctx.to_buffer(ctx.sample<std::string>("aad")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_256_GCM aes_256_gcm(ctx.material);
@@ -1455,9 +1455,9 @@ FEATURE("AES")
   SCENARIO("AES ECB can encrypt with padding")
     GIVEN("An AES-128 ECB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
@@ -1500,10 +1500,10 @@ FEATURE("AES")
   SCENARIO("AES CBC can encrypt with padding")
     GIVEN("An AES-128 CBC with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
@@ -1551,9 +1551,9 @@ FEATURE("AES")
   SCENARIO("AES CFB can encrypt without padding")
     GIVEN("An AES-128 CFB with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
@@ -1600,9 +1600,9 @@ FEATURE("AES")
   SCENARIO("AES CTR can encrypt without padding")
     GIVEN("An AES-128 CTR with keying material and plaintext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
@@ -1649,9 +1649,9 @@ FEATURE("AES")
   SCENARIO("AES ECB can decrypt with padding")
     GIVEN("An AES-128 ECB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_ECB aes_128_ecb(ctx.material);
@@ -1694,10 +1694,10 @@ FEATURE("AES")
   SCENARIO("AES CBC can decrypt with padding")
     GIVEN("An AES-128 CBC with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_CBC aes_128_cbc(ctx.material);
@@ -1745,9 +1745,9 @@ FEATURE("AES")
   SCENARIO("AES CFB can decrypt without padding")
     GIVEN("An AES-128 CFB with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.iv(ctx.to_data(ctx.sample<std::string>("iv")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.iv(ctx.to_buffer(ctx.sample<std::string>("iv")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_CFB aes_128_cfb(ctx.material);
@@ -1794,9 +1794,9 @@ FEATURE("AES")
   SCENARIO("AES CTR can decrypt without padding")
     GIVEN("An AES-128 CTR with keying material and ciphertext",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.material.counter(ctx.to_data(ctx.sample<std::string>("counter")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.material.counter(ctx.to_buffer(ctx.sample<std::string>("counter")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
         })
     WHEN ("The ciphertext is decrypted", [](context& ctx) {
           mud::crypto::AES_128_CTR aes_128_ctr(ctx.material);
@@ -1843,8 +1843,8 @@ FEATURE("AES")
   SCENARIO("AES without padding can encrypt with an ostream")
     GIVEN("An AES-128 ECB with keying material and plaintext stream",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_ECB aes(ctx.material);
@@ -1858,7 +1858,7 @@ FEATURE("AES")
           }
           aes.sbuf()->close();
           std::string str = ctx.text_stream.str();
-          ctx.ciphertext = mud::crypto::data_t((const uint8_t*)str.data(),
+          ctx.ciphertext = mud::core::buffer((const uint8_t*)str.data(),
                                                str.size());
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
@@ -1881,8 +1881,8 @@ FEATURE("AES")
   SCENARIO("AES without padding can decrypt with an istream")
     GIVEN("An AES-128 ECB with keying material and ciphertext stream",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
           ctx.text_stream.str(std::string((const char*)ctx.ciphertext.data(),
                                           ctx.ciphertext.size()));
         })
@@ -1891,7 +1891,7 @@ FEATURE("AES")
           std::istream istr(aes.sbuf(ctx.text_stream.rdbuf()));
           uint8_t ch;
           while (istr.get((char&)ch)) {
-              ctx.plaintext.append(mud::crypto::data_t(&ch, 1));
+              ctx.plaintext.insert(ctx.plaintext.end(), ch);
           }
           aes.sbuf()->close();
         })
@@ -1915,9 +1915,9 @@ FEATURE("AES")
   SCENARIO("AES with padding can encrypt with an ostream")
     GIVEN("An AES-128 ECB with keying material and plaintext stream",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
-          ctx.plaintext = ctx.to_data(ctx.sample<std::string>("plaintext"));
+          ctx.plaintext = ctx.to_buffer(ctx.sample<std::string>("plaintext"));
         })
     WHEN ("The plaintext is encrypted", [](context& ctx) {
           mud::crypto::AES_128_ECB aes(ctx.material);
@@ -1931,7 +1931,7 @@ FEATURE("AES")
           }
           aes.sbuf()->close();
           std::string str = ctx.text_stream.str();
-          ctx.ciphertext = mud::crypto::data_t((const uint8_t*)str.data(),
+          ctx.ciphertext = mud::core::buffer((const uint8_t*)str.data(),
                                                str.size());
         })
     THEN ("The ciphertext contains the encrypted data", [](context& ctx) {
@@ -1971,9 +1971,9 @@ FEATURE("AES")
   SCENARIO("AES with padding can decrypt with an istream")
     GIVEN("An AES-128 ECB with keying material and ciphertext stream",
         [](context& ctx) {
-          ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+          ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
           ctx.material.padding(mud::crypto::padding_t::pkcs7);
-          ctx.ciphertext = ctx.to_data(ctx.sample<std::string>("ciphertext"));
+          ctx.ciphertext = ctx.to_buffer(ctx.sample<std::string>("ciphertext"));
           ctx.text_stream.str(std::string((const char*)ctx.ciphertext.data(),
                                           ctx.ciphertext.size()));
         })
@@ -1982,7 +1982,7 @@ FEATURE("AES")
           std::istream istr(aes.sbuf(ctx.text_stream.rdbuf()));
           uint8_t ch;
           while (istr.get((char&)ch)) {
-              ctx.plaintext.append(mud::crypto::data_t(&ch, 1));
+              ctx.plaintext.insert(ctx.plaintext.end(), ch);
           }
           aes.sbuf()->close();
         })
