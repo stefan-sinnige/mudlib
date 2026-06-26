@@ -42,15 +42,15 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_buffer(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& d) {
+    std::string to_string(const mud::core::buffer& d) {
         std::stringstream sstr;
         sstr << d;
         return sstr.str();
@@ -60,10 +60,10 @@ CONTEXT()
     mud::crypto::basic_hash *algorithm = nullptr;
 
     /* Input binary data */
-    mud::crypto::data_t input;
+    mud::core::buffer input;
 
     /* Calculated hash */
-    mud::crypto::data_t hash;
+    mud::core::buffer hash;
 
 END_CONTEXT()
 
@@ -110,7 +110,7 @@ FEATURE("SHAKE")
     })
     AND  ("An input binary string", [](context& ctx) {
         auto data = ctx.sample<std::string>("input");
-        ctx.input = mud::crypto::data_t((const uint8_t*)data.data(),
+        ctx.input = mud::core::buffer((const uint8_t*)data.data(),
                                         data.size());
     })
     WHEN ("The hash is calculated", [](context& ctx) {
@@ -149,7 +149,7 @@ FEATURE("SHAKE")
     })
     AND  ("An input binary string", [](context& ctx) {
         auto data = ctx.sample<std::string>("input");
-        ctx.input = mud::crypto::data_t((const uint8_t*)data.data(),
+        ctx.input = mud::core::buffer((const uint8_t*)data.data(),
                                         data.size());
     })
     WHEN ("The hash is calculated", [](context& ctx) {
@@ -188,7 +188,7 @@ FEATURE("SHAKE")
     })
     AND  ("An input binary string", [](context& ctx) {
         auto data = ctx.sample<std::string>("input");
-        ctx.input = mud::crypto::data_t((const uint8_t*)data.data(),
+        ctx.input = mud::core::buffer((const uint8_t*)data.data(),
                                         data.size());
     })
     WHEN ("The hash is calculated", [](context& ctx) {
@@ -258,7 +258,7 @@ FEATURE("SHAKE")
     })
     AND  ("An input binary string", [](context& ctx) {
         auto data = ctx.sample<std::string>("input");
-        ctx.input = mud::crypto::data_t((const uint8_t*)data.data(),
+        ctx.input = mud::core::buffer((const uint8_t*)data.data(),
                                         data.size());
     })
     WHEN ("The hash is calculated", [](context& ctx) {

@@ -73,7 +73,7 @@ public:
      * @param output The output block (ie cipher text).
      * @param key The key buffer
      */
-    void forward(const data_t& input, data_t& output,
+    void forward(const mud::core::buffer& input, mud::core::buffer& output,
                  const key_t& key) override;
 
     /**
@@ -82,7 +82,7 @@ public:
      * @param output The output block (ie plain text).
      * @param key The key buffer
      */
-    void inverse(const data_t& input, data_t& output,
+    void inverse(const mud::core::buffer& input, mud::core::buffer& output,
                  const key_t& key) override;
 
 private:

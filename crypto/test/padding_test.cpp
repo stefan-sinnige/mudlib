@@ -42,25 +42,25 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_buffer(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& b) {
+    std::string to_string(const mud::core::buffer& b) {
         std::stringstream sstr;
         sstr << b;
         return sstr.str();
     }
 
     /* A data object */
-    mud::crypto::data_t padded;
+    mud::core::buffer padded;
 
     /* A data object */
-    mud::crypto::data_t unpadded;
+    mud::core::buffer unpadded;
 
     /* Flag to indicate ifan exception has been raised */
     bool exception_raised = false;
@@ -104,7 +104,7 @@ FEATURE("Padding")
 
   SCENARIO("Data can be padded using PKCS#7 padding algorithm")
     GIVEN("Cryptographic data of a certain size", [](context& ctx) {
-            ctx.unpadded = ctx.to_data(ctx.sample<std::string>("unpadded"));
+            ctx.unpadded = ctx.to_buffer(ctx.sample<std::string>("unpadded"));
         })
     WHEN ("The data is padded for an 8-byte block size", [](context& ctx) {
             mud::crypto::pkcs7_padding padder(8);
@@ -127,7 +127,7 @@ FEATURE("Padding")
 
   SCENARIO("Data can be unpadded using PKCS#7 padding algorithm")
     GIVEN("Cryptographic padded data of a certain size", [](context& ctx) {
-            ctx.padded = ctx.to_data(ctx.sample<std::string>("padded"));
+            ctx.padded = ctx.to_buffer(ctx.sample<std::string>("padded"));
         })
     WHEN ("The data is padded for an 8-byte block size", [](context& ctx) {
             mud::crypto::pkcs7_padding padder(8);
@@ -150,7 +150,7 @@ FEATURE("Padding")
 
   SCENARIO("An exception is thrown if PKCS#7 unpadding can not be performed")
     GIVEN("Cryptographic data larger than block-size", [](context& ctx) {
-            ctx.padded = ctx.to_data(ctx.sample<std::string>("padded"));
+            ctx.padded = ctx.to_buffer(ctx.sample<std::string>("padded"));
         })
     WHEN ("The data is padded for an 8-byte block size", [](context& ctx) {
             try {

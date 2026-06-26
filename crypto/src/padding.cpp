@@ -47,11 +47,11 @@ pkcs7_padding::pkcs7_padding(size_t block_size)
 {
 }
 
-data_t
-pkcs7_padding::pad(const data_t& data) const
+mud::core::buffer
+pkcs7_padding::pad(const mud::core::buffer& data) const
 {
     /* Determine the pad size */
-    data_t result = data;
+    mud::core::buffer result = data;
     uint8_t pad_size;
     if (data.size() % block_size() == 0) {
         pad_size = block_size();
@@ -61,7 +61,7 @@ pkcs7_padding::pad(const data_t& data) const
     }
     
     /* Add the padding */
-    result.append(data_t(pad_size));
+    result.insert(result.end(), pad_size, 0);
     uint8_t* dptr = result.data() + result.size() - pad_size;
     const uint8_t* eptr = result.data() + result.size() - 1;
     while (dptr <= eptr) {
@@ -70,8 +70,8 @@ pkcs7_padding::pad(const data_t& data) const
     return result;
 }
 
-data_t
-pkcs7_padding::unpad(const data_t& data) const
+mud::core::buffer
+pkcs7_padding::unpad(const mud::core::buffer& data) const
 {
     if (data.size() < block_size()) {
         throw padding_error("not a PKCS#7 padded block");
@@ -93,7 +93,7 @@ pkcs7_padding::unpad(const data_t& data) const
     }
 
     /* Remove the padding */
-    return data_t(data.data(), data.size() - pad_size);
+    return mud::core::buffer(data.data(), data.size() - pad_size);
 }
 
 padding_factory::registrar<padding_t::pkcs7,

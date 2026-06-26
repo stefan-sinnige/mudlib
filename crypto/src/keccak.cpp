@@ -119,7 +119,7 @@ keccak::keccak(size_t capacity, size_t digest_bit_size, delimited_suffix_t d)
 }
 
 void
-keccak::update(const data_t& chunk)
+keccak::update(const mud::core::buffer& chunk)
 {
     /*
      * Keep on adding the data from the chunk to the message block. When the
@@ -288,7 +288,7 @@ keccak::computate()
 void
 keccak::finalise()
 {
-    _hash = data_t(_digest_size);
+    _hash = mud::core::buffer(_digest_size);
 
     /* Squeeze up to the rate size. If more is needed, perform another state
      * permutation. */

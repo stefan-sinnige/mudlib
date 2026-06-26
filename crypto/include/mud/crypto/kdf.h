@@ -99,7 +99,7 @@ public:
      * Depending on the underlying implementation, this method can be called
      * repeatedly.
      */
-    virtual key_t key(size_t key_size = 0, const data_t& info = data_t()) = 0;
+    virtual key_t key(size_t key_size = 0, const mud::core::buffer& info = mud::core::buffer()) = 0;
 
     /**
      * @brief Return the keying material.

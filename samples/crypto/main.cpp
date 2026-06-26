@@ -24,6 +24,7 @@
  * ++ end-license-description ++
  */
 
+#include "mud/core.h"
 #include "mud/crypto.h"
 #include <algorithm>
 #include <cstring>
@@ -145,7 +146,7 @@ check_argument(const char* option, int argc)
 }
 
 int
-parse_hex(const char* option, int argc, char** argv, mud::crypto::data_t& data)
+parse_hex(const char* option, int argc, char** argv, mud::core::buffer& data)
 {
     if (check_argument(option, argc) != 0) {
         return 1;
@@ -206,7 +207,7 @@ parse_cmd(int argc, char** argv)
     while (--argc && *(++argv)[0] == '-') {
         const char* option = *argv;
         if (strcmp(*argv, "--key") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }
@@ -216,7 +217,7 @@ parse_cmd(int argc, char** argv)
         }
         else
         if (strcmp(*argv, "--iv") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }
@@ -224,7 +225,7 @@ parse_cmd(int argc, char** argv)
         }
         else
         if (strcmp(*argv, "--nonce") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }
@@ -232,7 +233,7 @@ parse_cmd(int argc, char** argv)
         }
         else
         if (strcmp(*argv, "--counter") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }
@@ -240,7 +241,7 @@ parse_cmd(int argc, char** argv)
         }
         else
         if (strcmp(*argv, "--aad") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }
@@ -248,7 +249,7 @@ parse_cmd(int argc, char** argv)
         }
         else
         if (strcmp(*argv, "--info") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }
@@ -256,7 +257,7 @@ parse_cmd(int argc, char** argv)
         }
         else
         if (strcmp(*argv, "--salt") == 0) {
-            mud::crypto::data_t data;
+            mud::core::buffer data;
             if (parse_hex(option, --argc, ++argv, data) != 0) {
                 return 1;
             }

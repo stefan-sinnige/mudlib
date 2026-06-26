@@ -43,15 +43,15 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_buffer(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& d) {
+    std::string to_string(const mud::core::buffer& d) {
         std::stringstream sstr;
         sstr << d;
         return sstr.str();
@@ -104,11 +104,11 @@ FEATURE("MAC")
   SCENARIO("HMAC-SHA-1 hash with an example vector")
     GIVEN("Input Keying material", [](context& ctx) {
         if (ctx.sample<size_t>("key-rpt") == 0) {
-            ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+            ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
         }
         else {
-            mud::crypto::data_t key(ctx.sample<size_t>("key-rpt"));
-            char ch = ctx.to_data(ctx.sample<std::string>("key"))[0];
+            mud::core::buffer key(ctx.sample<size_t>("key-rpt"));
+            char ch = ctx.to_buffer(ctx.sample<std::string>("key"))[0];
             memset(key.data(), ch, key.size());
             ctx.material.key(key);
         }
@@ -118,13 +118,13 @@ FEATURE("MAC")
         ctx.algorithm = new mud::crypto::hmac<mud::crypto::sha_1>(ctx.material);
     })
     WHEN ("A message is authenticated", [](context& ctx) {
-        mud::crypto::data_t text;
+        mud::core::buffer text;
         if (ctx.sample<size_t>("text-rpt") == 0) {
-            text = ctx.to_data(ctx.sample<std::string>("text"));
+            text = ctx.to_buffer(ctx.sample<std::string>("text"));
         }
         else {
-            text = mud::crypto::data_t(ctx.sample<size_t>("text-rpt"));
-            char ch = ctx.to_data(ctx.sample<std::string>("text"))[0];
+            text = mud::core::buffer(ctx.sample<size_t>("text-rpt"));
+            char ch = ctx.to_buffer(ctx.sample<std::string>("text"))[0];
             memset(text.data(), ch, text.size());
         }
         ctx.algorithm->update(text);
@@ -190,7 +190,7 @@ FEATURE("MAC")
 
   SCENARIO("HMAC-SHA-224 hash with an example vector")
     GIVEN("Input Keying material", [](context& ctx) {
-        ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+        ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
         ctx.material.tag_size(ctx.sample<size_t>("tag-size"));
     })
     AND  ("A HMAC algorithm", [](context& ctx) {
@@ -198,7 +198,7 @@ FEATURE("MAC")
                 ctx.material);
     })
     WHEN ("A message is authenticated", [](context& ctx) {
-        ctx.algorithm->update(ctx.to_data(ctx.sample<std::string>("text")));
+        ctx.algorithm->update(ctx.to_buffer(ctx.sample<std::string>("text")));
         ctx.algorithm->close();
     })
     THEN ("The key is derived correctly", [](context& ctx) {
@@ -273,7 +273,7 @@ FEATURE("MAC")
 
   SCENARIO("HMAC-SHA-256 hash with an example vector")
     GIVEN("Input Keying material", [](context& ctx) {
-        ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+        ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
         ctx.material.tag_size(ctx.sample<size_t>("tag-size"));
     })
     AND  ("A HMAC algorithm", [](context& ctx) {
@@ -281,7 +281,7 @@ FEATURE("MAC")
                 ctx.material);
     })
     WHEN ("A message is authenticated", [](context& ctx) {
-        ctx.algorithm->update(ctx.to_data(ctx.sample<std::string>("text")));
+        ctx.algorithm->update(ctx.to_buffer(ctx.sample<std::string>("text")));
         ctx.algorithm->close();
     })
     THEN ("The key is derived correctly", [](context& ctx) {
@@ -356,7 +356,7 @@ FEATURE("MAC")
 
   SCENARIO("HMAC-SHA-384 hash with an example vector")
     GIVEN("Input Keying material", [](context& ctx) {
-        ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+        ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
         ctx.material.tag_size(ctx.sample<size_t>("tag-size"));
     })
     AND  ("A HMAC algorithm", [](context& ctx) {
@@ -364,7 +364,7 @@ FEATURE("MAC")
                 ctx.material);
     })
     WHEN ("A message is authenticated", [](context& ctx) {
-        ctx.algorithm->update(ctx.to_data(ctx.sample<std::string>("text")));
+        ctx.algorithm->update(ctx.to_buffer(ctx.sample<std::string>("text")));
         ctx.algorithm->close();
     })
     THEN ("The key is derived correctly", [](context& ctx) {
@@ -443,7 +443,7 @@ FEATURE("MAC")
 
   SCENARIO("HMAC-SHA-512 hash with an example vector")
     GIVEN("Input Keying material", [](context& ctx) {
-        ctx.material.key(ctx.to_data(ctx.sample<std::string>("key")));
+        ctx.material.key(ctx.to_buffer(ctx.sample<std::string>("key")));
         ctx.material.tag_size(ctx.sample<size_t>("tag-size"));
     })
     AND  ("A HMAC algorithm", [](context& ctx) {
@@ -451,7 +451,7 @@ FEATURE("MAC")
                 ctx.material);
     })
     WHEN ("A message is authenticated", [](context& ctx) {
-        ctx.algorithm->update(ctx.to_data(ctx.sample<std::string>("text")));
+        ctx.algorithm->update(ctx.to_buffer(ctx.sample<std::string>("text")));
         ctx.algorithm->close();
     })
     THEN ("The key is derived correctly", [](context& ctx) {

@@ -43,8 +43,8 @@ CONTEXT()
     }
 
     /* Convert from string to data */
-    mud::crypto::data_t to_data(const std::string& s) {
-        mud::crypto::data_t d;
+    mud::core::buffer to_data(const std::string& s) {
+        mud::core::buffer d;
         std::stringstream sstr(s);
         sstr >> d;
         return d;
@@ -67,7 +67,7 @@ CONTEXT()
     }
 
     /* Convert from data to string */
-    std::string to_string(const mud::crypto::data_t& d) {
+    std::string to_string(const mud::core::buffer& d) {
         std::stringstream sstr;
         sstr << d;
         return sstr.str();
@@ -233,7 +233,7 @@ FEATURE("TLS Message")
             "fdfeff000613011302130401000031002b0003020304003300260024001d0020"
             "358072d6365880d1aeea329adf9121383851ed21a28e3b75e965d0d2cd166254";
         std::string str = ctx.ostr.str();
-        mud::crypto::data_t data((const uint8_t*)str.data(), str.size());
+        mud::core::buffer data((const uint8_t*)str.data(), str.size());
         ASSERT(expected, ctx.to_string(data));
       })
 

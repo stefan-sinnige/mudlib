@@ -65,14 +65,14 @@ public:
      * @param data The data to add the padding to.
      * @return The data with padding.
      */
-    virtual data_t pad(const data_t& data) const = 0;
+    virtual mud::core::buffer pad(const mud::core::buffer& data) const = 0;
 
     /**
      * @brief Remove padding from data.
      * @param data The data to remove the padding from.
      * @return The data without padding.
      */
-    virtual data_t unpad(const data_t& data) const = 0;
+    virtual mud::core::buffer unpad(const mud::core::buffer& data) const = 0;
 
     /**
      * @brief Return the block-size.
@@ -131,7 +131,7 @@ public:
      * @details
      * The data returned is the same as @c data.
      */
-    data_t pad(const data_t& data) const override { return data; }
+    mud::core::buffer pad(const mud::core::buffer& data) const override { return data; }
         
     /** 
      * @brief Remove padding from data.
@@ -140,7 +140,7 @@ public:
      * @details
      * The data returned is the same as @c data.
      */
-    data_t unpad(const data_t& data) const override { return data; }
+    mud::core::buffer unpad(const mud::core::buffer& data) const override { return data; }
 };
 
 /**
@@ -187,7 +187,7 @@ public:
      * @details
      * The data returned is the same as @c data.
      */
-    data_t pad(const data_t& data) const override;
+    mud::core::buffer pad(const mud::core::buffer& data) const override;
         
     /** 
      * @brief Remove padding from data.
@@ -196,7 +196,7 @@ public:
      * @details
      * The data returned is the same as @c data.
      */
-    data_t unpad(const data_t& data) const override;
+    mud::core::buffer unpad(const mud::core::buffer& data) const override;
 };
 
 /**

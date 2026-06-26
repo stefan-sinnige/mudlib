@@ -60,7 +60,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const data_t& chunk);
+    void update(const mud::core::buffer& chunk);
 
     /**
      * @brief Close or finalise the hash.
@@ -70,7 +70,7 @@ public:
     /**
      * @brief Return the calculated hash value.
      */
-    const data_t& hash() const { return _hash; }
+    const mud::core::buffer& hash() const { return _hash; }
 
     /**
      * @brief Return the calculated hash size.
@@ -94,7 +94,7 @@ private:
     void finalise();
 
     /* The calculated hash */
-    data_t _hash;
+    mud::core::buffer _hash;
 
     /* The digest size in bytes */
     size_t _digest_size;

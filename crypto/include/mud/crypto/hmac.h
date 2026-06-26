@@ -68,7 +68,7 @@ public:
  * @code
  *    mud::crypto::mac_material_t material;
  *    mud::crypto::hmac<mud::crypto::sha_256> hmac(material);
- *    mud::crypto::data_t chunk;
+ *    mud::crypto::mud::core::buffer chunk;
  *    do {
  *        chunk = mydata.next();
  *        hmac.update(chunk);
@@ -124,7 +124,7 @@ public:
      * @brief Update the MAC with a chunk of binary input data.
      * @param chunk The chunk of data to add to the MAC.
      */
-    void update(const data_t& chunk) override;
+    void update(const mud::core::buffer& chunk) override;
 
     /**
      * @brief Close or finalise the MAC.
@@ -140,7 +140,7 @@ public:
     /**
      * @brief Return the calculated message tag.
      */
-    const data_t& tag() const override;
+    const mud::core::buffer& tag() const override;
 
 private:
     /* The specificaton */
@@ -153,7 +153,7 @@ private:
     key_t _key;
 
     /* The message tag */
-    data_t _tag;
+    mud::core::buffer _tag;
 };
 
 template<typename HashAlgorithm>
@@ -179,7 +179,7 @@ hmac<HashAlgorithm>::hash_size() const
 
 template<typename HashAlgorithm>
 void
-hmac<HashAlgorithm>::update(const data_t& chunk)
+hmac<HashAlgorithm>::update(const mud::core::buffer& chunk)
 {
     _hash.update(chunk);
 }
@@ -190,11 +190,11 @@ hmac<HashAlgorithm>::close()
 {
     /* Finalise the inner digest */
     _hash.close();
-    data_t inner_digest = _hash.hash();
+    mud::core::buffer inner_digest = _hash.hash();
     _hash.reset(keying().hash_material());
 
     /* Outer digest is one block of permutated key and padding */
-    data_t buf(_hash.block_size());
+    mud::core::buffer buf(_hash.block_size());
     memset(buf.data(), 0x5c, buf.size());
     for (int i = 0; i < _key.size(); ++i) {
         buf[i] = _key[i] ^ 0x5c;
@@ -209,7 +209,7 @@ hmac<HashAlgorithm>::close()
     if ((keying().tag_size() > 0) &&
         (keying().tag_size() < _hash.hash_size()))
     {
-        _tag = data_t(keying().tag_size());
+        _tag = mud::core::buffer(keying().tag_size());
         memcpy(_tag.data(), _hash.hash().data(), keying().tag_size());
     }
     else {
@@ -240,7 +240,7 @@ hmac<HashAlgorithm>::reset(const mac_material_t& keying)
     }
 
     /* Inner digest is one block of permutated key and padding */
-    data_t buf(_hash.block_size());
+    mud::core::buffer buf(_hash.block_size());
     memset(buf.data(), 0x36, buf.size());
     for (int i = 0; i < _key.size(); ++i) {
         buf[i] = _key[i] ^ 0x36;
@@ -252,7 +252,7 @@ hmac<HashAlgorithm>::reset(const mac_material_t& keying)
 }
 
 template<typename HashAlgorithm>
-const data_t&
+const mud::core::buffer&
 hmac<HashAlgorithm>::tag() const
 {
     return _tag;
