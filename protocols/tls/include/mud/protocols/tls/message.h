@@ -58,7 +58,7 @@ BEGIN_MUDLIB_TLS_NS
  * operation.
  * @code
  * // Create an invalid record placeholder
- * std::shared_ptr<mud::tls::record> record;
+ * mud::tls::record::ptr record;
  * istr >> record;
  *
  * // The placeholder is replaced with an instance of the specialisation.
@@ -73,6 +73,11 @@ BEGIN_MUDLIB_TLS_NS
 class MUDLIB_TLS_API record
 {
 public:
+    /**
+     * @brief Definition of a pointer to a record.
+     */
+    typedef std::shared_ptr<record> ptr;
+
     /** 
      * @brief Create an invalid record.
      * @param encrypted Indication if the record content is encrypted.
@@ -148,8 +153,8 @@ private:
     bool _encrypted;
 
     /** Friends */
-    friend std::ostream& operator<<(std::ostream&, const record&);
-    friend std::istream& operator>>(std::istream&, record&);
+    friend std::ostream& operator<<(std::ostream&, const record::ptr&);
+    friend std::istream& operator>>(std::istream&, record::ptr&);
 };
 
 /**
@@ -158,17 +163,19 @@ private:
  * @param msg The message to write.
  */
 std::ostream&
-operator<<(std::ostream& ostr, const record& msg);
+operator<<(std::ostream& ostr, const record::ptr& msg);
 
 /**
- * @brief Read a TLS record (header only) from an input stream
+ * @brief Read a TLS message from an input stream.
  * @param istr The input stream to read from
- * @param rec The record header details.
+ * @param msg The placeholder to hold a new instance of the record received 
  * @details
- * Read only the TLS record header from the input stream.
+ * The @c msg will be re-seated with a new instance of the associated record
+ * specialisation. The @c msg can be an passed in as an uninitialised @c
+ * shared_ptr .
  */
 std::istream&
-operator>>(std::istream& istr, record& rec);
+operator>>(std::istream& istr, record::ptr& rec);
 
 /**
  * @brief The base definition of an TLS handshake message.
@@ -529,18 +536,6 @@ operator<<(std::ostream& ostr, const server_hello& msg);
  */
 std::istream&
 operator>>(std::istream& istr, server_hello& msg);
-
-/**
- * @brief Read a TLS message from an input stream.
- * @param istr The input stream to read from
- * @param msg The placeholder to hold a new instance of the record received 
- * @details
- * The @c msg will be re-seated with a new instance of the associated record
- * specialisation. The @c msg can be an passed in as an uninitialised @c
- * shared_ptr .
- */
-std::istream&
-operator>>(std::istream& istr, std::shared_ptr<record>& rec);
 
 END_MUDLIB_TLS_NS
 

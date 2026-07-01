@@ -139,7 +139,7 @@ FEATURE("TLS Message")
       })
     WHEN ("The record header is read", [](context& ctx){
         ctx.record = std::make_shared<mud::tls::record>();
-        ctx.istr >> *ctx.record;
+        ctx.istr >> ctx.record;
       })
     THEN ("The record header is defined accordingly", [](context& ctx){
         ASSERT(mud::tls::record_content_type_t::handshake,

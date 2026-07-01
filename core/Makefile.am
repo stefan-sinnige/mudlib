@@ -31,6 +31,7 @@ lib_LTLIBRARIES = libmudcore.la
 libmudcore_la_SOURCES = \
     src/bigint.cpp \
     src/buffer.cpp \
+    src/bufferstream.cpp \
     src/endian.cpp \
 	src/event.cpp \
     src/event_loop.cpp \
@@ -56,6 +57,7 @@ includemudcore_HEADERS = \
     include/mud/core/ns.h \
     include/mud/core/bigint.h \
     include/mud/core/buffer.h \
+    include/mud/core/bufferstream.h \
     include/mud/core/endian.h \
     include/mud/core/event.h \
     include/mud/core/event_loop.h \

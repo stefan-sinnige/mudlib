@@ -69,7 +69,7 @@ server::open(std::shared_ptr<channel> comms)
 {
     /* Create the layered communicators */
     _physical = std::make_unique<physical_communicator>();
-    _tls = std::make_unique<tls_server>(*_physical);
+    _tls = std::make_unique<tls_communicator_server>(*_physical);
     _protocol = std::make_unique<protocol_communicator>(*_tls);
 
     /* Setup the event notifications */
@@ -159,7 +159,7 @@ client::open(std::shared_ptr<channel> comms)
 {
     /* Create the layered communicators */
     _physical = std::make_unique<physical_communicator>();
-    _tls = std::make_unique<tls_client>(*_physical);
+    _tls = std::make_unique<tls_communicator_client>(*_physical);
     _protocol = std::make_unique<protocol_communicator>(*_tls);
 
     /* Setup the event notifications */

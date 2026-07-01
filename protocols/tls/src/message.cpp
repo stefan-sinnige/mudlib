@@ -25,6 +25,7 @@
  */
 
 #include "mud/core/endian.h"
+#include "mud/core/hexdump.h"
 #include "mud/protocols/tls/exception.h"
 #include "mud/protocols/tls/message.h"
 #include <stdexcept>
@@ -323,6 +324,53 @@ operator>>(std::istream& istr, server_hello& msg)
  * ====================================================================== */
 
 std::istream&
+operator>>(std::istream& istr, record::ptr& rec)
+{
+    /* Set up to throw exceptions */
+    istr.exceptions(std::istream::failbit);
+
+    /* Read te record header */
+    uint8_t header[5];
+    istr.read((char*)header, sizeof(header));
+
+    /* Read the record */
+    std::cout << mud::core::hexdump(header, 5) << std::endl;
+    uint16_t length = endian::convert(endian_t::big, endian::native(),
+            *((uint16_t*)(header+3)));
+    std::cout << "Record length = " << length << std::endl;
+    mud::core::buffer buffer(length+sizeof(header));
+    memcpy(buffer.data(), header, 5);
+    istr.read((char*)buffer.data() + sizeof(header), length);
+    std::cout << buffer << std::endl;
+    return istr;
+#if 0 
+    /* Get the content type byte */
+    int ch = istr.get();
+    switch (static_cast<record_content_type_t>(ch)) {
+        case record_content_type_t::change_cipher_spec:
+        case record_content_type_t::alert:
+        case record_content_type_t::handshake:
+        case record_content_type_t::application_data:
+            rec._content_type = static_cast<record_content_type_t>(ch);
+            break;
+        default:
+            throw invalid_message("Unrecognized record content-type");
+    }
+
+    /* Get the legacy version */
+    uint16_t ui16;
+    istr.read((char*)&ui16, 2);
+    rec._legacy_record_version = static_cast<protocol_version_t>(
+            endian::convert(endian_t::big, endian::native(), ui16));
+
+    /* Get the length */
+    istr.read((char*)&ui16, 2);
+    rec._length = endian::convert(endian_t::big, endian::native(), ui16);
+#endif
+}
+
+#if 0
+std::istream&
 operator>>(std::istream& istr, record& rec)
 {
     /* Set up to throw exceptions */
@@ -352,6 +400,7 @@ operator>>(std::istream& istr, record& rec)
     rec._length = endian::convert(endian_t::big, endian::native(), ui16);
     return istr;
 }
+#endif
 
 std::istream&
 operator>>(std::istream& istr, handshake& msg)
@@ -382,12 +431,6 @@ operator>>(std::istream& istr, handshake& msg)
     uint32_t ui32 = 0;
     istr.read(((char*)&ui32)+1, 3);
     msg._length = endian::convert(endian_t::big, endian::native(), ui32);
-    return istr;
-}
-
-std::istream&
-operator>>(std::istream& istr, std::shared_ptr<record>& msg)
-{
     return istr;
 }
 
