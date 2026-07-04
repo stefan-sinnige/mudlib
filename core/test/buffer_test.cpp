@@ -29,6 +29,8 @@
 #include <sstream>
 #include <type_traits>
 
+using endian_t = mud::core::endian::endian_t;
+
 /* clang-format off */
 
 /* Fake message (TLV structure):
@@ -73,7 +75,6 @@ CONTEXT()
     mud::core::buffer lhs;
     mud::core::buffer rhs;
     mud::core::buffer buffer;
-    mud::core::buffer::iterator iter;
 
     /* Buffer view objects */
     mud::core::buffer_view view;
@@ -81,6 +82,11 @@ CONTEXT()
 
     /* A position */
     size_t pos;
+    mud::core::buffer::iterator iter;
+    mud::core::buffer::const_iterator citer;
+
+    /* Integral values */
+    uint16_t ui16;
 END_CONTEXT()
 
 FEATURE("Binary Buffer")
@@ -592,6 +598,56 @@ FEATURE("Binary Buffer")
     THEN ("The result is the modified", [](context& ctx) {
             ASSERT(std::string("deef"), ctx.to_string(ctx.buffer));
             ASSERT(0xef, *ctx.iter);
+        })
+
+  SCENARIO("A buffer can get an integral value at a byte position")
+    GIVEN("A buffer object", [](context& ctx) {
+            ctx.buffer = ctx.to_buffer("0100081122334455667788");
+        })
+    WHEN ("An integral value is retrieved at a position", [](context& ctx) {
+            ctx.ui16 = ctx.buffer.get<uint16_t>(1, endian_t::big);
+        })
+    THEN ("The value is applied", [](context& ctx) {
+            ASSERT(8, ctx.ui16);
+        })
+
+  SCENARIO("A buffer can set an integral value at a byte position")
+    GIVEN("A buffer object", [](context& ctx) {
+            ctx.buffer = ctx.to_buffer("0100001122334455667788");
+        })
+    WHEN ("An integral value is set at a position", [](context& ctx) {
+            ctx.buffer.set<uint16_t>(1, 8, endian_t::big);
+        })
+    THEN ("The value is applied", [](context& ctx) {
+            ASSERT(std::string("0100081122334455667788"),
+                   ctx.to_string(ctx.buffer));
+        })
+
+  SCENARIO("A buffer can get an integral value at an iterator position")
+    GIVEN("A buffer object", [](context& ctx) {
+            ctx.buffer = ctx.to_buffer("0100081122334455667788");
+            ctx.citer = ctx.buffer.cbegin();
+            ++ctx.citer;
+        })
+    WHEN ("An integral value is retrieved at a position", [](context& ctx) {
+            ctx.ui16 = ctx.buffer.get<uint16_t>(ctx.citer, endian_t::big);
+        })
+    THEN ("The value is applied", [](context& ctx) {
+            ASSERT(8, ctx.ui16);
+        })
+
+  SCENARIO("A buffer can set an integral value at an iterator position")
+    GIVEN("A buffer object", [](context& ctx) {
+            ctx.buffer = ctx.to_buffer("0100001122334455667788");
+            ctx.iter = ctx.buffer.begin();
+            ++ctx.iter;
+        })
+    WHEN ("An integral value is set at a position", [](context& ctx) {
+            ctx.buffer.set<uint16_t>(ctx.iter, 8, endian_t::big);
+        })
+    THEN ("The value is applied", [](context& ctx) {
+            ASSERT(std::string("0100081122334455667788"),
+                   ctx.to_string(ctx.buffer));
         })
 
   SCENARIO("A buffer view can be created of a buffer")
