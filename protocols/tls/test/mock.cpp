@@ -37,7 +37,7 @@ operator>>(std::istream& istr, message& msg)
 {
     uint16_t length;
     istr.read((char*)&length, 2);
-    length = endian::convert(endian_t::big, endian::native(), length);
+    length = endian::convert(endian_t::big, endian_t::native, length);
     std::string str;
     str.resize(length);
     istr.read(str.data(), length);
@@ -48,7 +48,7 @@ operator>>(std::istream& istr, message& msg)
 std::ostream&
 operator<<(std::ostream& ostr, const message& msg)
 {
-    uint16_t length = endian::convert(endian::native(), endian_t::big,
+    uint16_t length = endian::convert(endian_t::native, endian_t::big,
             (uint16_t)msg.contents().size());
     ostr.write((const char*)&length, 2);
     ostr.write(msg.contents().data(), msg.contents().size());

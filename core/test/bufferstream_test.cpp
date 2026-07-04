@@ -326,6 +326,64 @@ FEATURE("Binary Buffer Streams")
             ASSERT('o', result[4]);
         })
 
+  SCENARIO("An output bufferstream can be written to in block")
+    GIVEN("An empty output bufferstream", [](context& ctx) { })
+    WHEN ("The data is written to the buffer", [](context& ctx) {
+            char buf[1024];
+            for (int i = 0; i < 1024; ++i) {
+                buf[i] = i & 0xFF;
+            }
+            ctx.ostream.write(buf, sizeof(buf));
+        })
+    THEN ("A buffer with the same data can be retrieved", [](context& ctx) {
+            auto result = ctx.ostream.buf();
+            ASSERT(1024, result.size());
+            for (int i = 0; i < 1024; ++i) {
+                ASSERT(i & 0xFF, result[i]);
+            }
+        })
+
+  SCENARIO("A bufferstream can be written to and read from")
+    GIVEN("An empty bufferstream", [](context& ctx) { })
+    WHEN ("The data is written to the stream", [](context& ctx) {
+            char buf[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+            ctx.stream.write(buf, sizeof(buf));
+        })
+     AND ("The data is read from the stream", [](context& ctx) {
+            ctx.buffer.resize(8);
+            ctx.stream.read((char*)ctx.buffer.data(), ctx.buffer.size());
+        })
+    THEN ("The data is exactly the same", [](context& ctx) {
+            ASSERT("0102030405060708", ctx.to_string(ctx.buffer));
+        })
+ 
+  SCENARIO("A bufferstream can be written to and read from while resizing")
+    GIVEN("An initial output bufferstream", [](context& ctx) {
+            char buf[8] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+            ctx.stream.write(buf, sizeof(buf));
+        })
+    WHEN ("Some data  is read from the stream", [](context& ctx) {
+            /* Read 4 bytes of the initial buffer */
+            ctx.buffer.resize(4);
+            ctx.stream.read((char*)ctx.buffer.data(), ctx.buffer.size());
+        })
+     AND ("More data is added to the stream, causing a resize",
+        [](context& ctx) {
+            for (int i = 0; i < 1024; ++i) {
+                ctx.stream.put(i & 0xFF);
+            }
+        })
+     AND ("The data is read from the stream", [](context& ctx) {
+            /* Read remaining 4 bytes of the initial buffer, plus eight of the
+             * additional data */
+            ctx.buffer.resize(8);
+            ctx.stream.read((char*)ctx.buffer.data(), ctx.buffer.size());
+        })
+    THEN ("The data contains the remaining initial plus additional data",
+        [](context& ctx) {
+            ASSERT("0506070800010203", ctx.to_string(ctx.buffer));
+        })
+ 
 END_FEATURE()
 
 /* clang-format on */

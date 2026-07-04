@@ -679,7 +679,7 @@ gcm::gcm(const cipher_material_t& keying, basic_algorithm& algorithm)
         TRACE(log) << "        N1| " << _Y << std::endl;
         mud::core::buffer len(16);
         *(uint64_t*)(len.data()+8) = endian::convert(
-                endian::native(), endian_t::big,
+                endian_t::native, endian_t::big,
                 (uint64_t)keying.iv().size()*8);
         TRACE(log) << "LEN({},IV)| " << len << std::endl;
         _Y = mult(_Y ^ len, _H), ++_Y_i;
@@ -803,10 +803,10 @@ gcm::authenticate()
 {
     mud::core::buffer len(16);
     *(uint64_t*)(len.data()+0) = endian::convert(
-            endian::native(), endian_t::big,
+            endian_t::native, endian_t::big,
             (uint64_t)keying().aad().size()*8);
     *(uint64_t*)(len.data()+8) = endian::convert(
-            endian::native(), endian_t::big,
+            endian_t::native, endian_t::big,
             (uint64_t)_len_C*8);
     _tag = mult(_X ^ len, _H) ^ _E_Y0;
 

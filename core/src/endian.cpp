@@ -31,33 +31,69 @@ BEGIN_MUDLIB_CORE_NS
 /* static */ endian::endian_t
 endian::native()
 {
-    // Runtime determination of system endian
-    static endian::endian_t g_native = endian::endian_t::unresolved;
-    if (g_native == endian::endian_t::unresolved) {
-        uint32_t value = 0x01234567;
-        uint8_t* s = (uint8_t*)&value;
-        if (s[0] == 0x67 && s[1] == 0x45 && s[2] == 0x23 && s[3] == 0x01) {
-            g_native = endian::endian_t::little;
-        } else {
-            g_native = endian::endian_t::big;
-        }
+    static endian::endian_t g_native = endian::endian_t::native;
+    switch (g_native) {
+        case endian::endian_t::native: {
+            /* Runtime determination of system endian */
+            uint32_t value = 0x01234567;
+            uint8_t* s = (uint8_t*)&value;
+            if (s[0] == 0x67 && s[1] == 0x45 && s[2] == 0x23 && s[3] == 0x01) {
+                g_native = endian::endian_t::little;
+            } else {
+                g_native = endian::endian_t::big;
+            }
+            break; }
+        default:
+            break;
     }
     return g_native;
 }
 
+bool
+operator==(endian::endian_t lhs, endian::endian_t rhs)
+{
+    auto nat_ut = std::underlying_type_t<endian::endian_t>(
+            endian::endian_t::native);
+    auto lhs_ut = std::underlying_type_t<endian::endian_t>(lhs);
+    auto rhs_ut = std::underlying_type_t<endian::endian_t>(rhs);
+    if (lhs_ut == nat_ut) {
+        lhs_ut = std::underlying_type_t<endian::endian_t>(endian::native());
+    }
+    if (rhs_ut == nat_ut) {
+        rhs_ut = std::underlying_type_t<endian::endian_t>(endian::native());
+    }
+    return lhs_ut == rhs_ut;
+}
+
+bool
+operator!=(endian::endian_t lhs, endian::endian_t rhs)
+{
+    auto nat_ut = std::underlying_type_t<endian::endian_t>(
+            endian::endian_t::native);
+    auto lhs_ut = std::underlying_type_t<endian::endian_t>(lhs);
+    auto rhs_ut = std::underlying_type_t<endian::endian_t>(rhs);
+    if (lhs_ut == nat_ut) {
+        lhs_ut = std::underlying_type_t<endian::endian_t>(endian::native());
+    }
+    if (rhs_ut == nat_ut) {
+        rhs_ut = std::underlying_type_t<endian::endian_t>(endian::native());
+    }
+    return lhs_ut != rhs_ut;
+}
+
 /* ======================================================================
- * Little to Big Endian (and reverse)
+ * Swap endian systems
  * ====================================================================== */
 
 uint16_t
-le_be(uint16_t value)
+swap(uint16_t value)
 {
     uint8_t* s = (uint8_t*)&value;
     return (uint16_t)(((uint16_t)s[0]) << 8 | ((uint16_t)s[1]));
 }
 
 uint32_t
-le_be(uint32_t value)
+swap(uint32_t value)
 {
     uint8_t* s = (uint8_t*)&value;
     return (uint32_t)(((uint32_t)s[0]) << 24 | ((uint32_t)s[1]) << 16 |
@@ -65,7 +101,7 @@ le_be(uint32_t value)
 }
 
 uint64_t
-le_be(uint64_t value)
+swap(uint64_t value)
 {
     uint8_t* s = (uint8_t*)&value;
     return (uint64_t)(((uint64_t)s[0]) << 56 | ((uint64_t)s[1]) << 48 |
@@ -79,30 +115,30 @@ le_be(uint64_t value)
  * ====================================================================== */
 
 /* static */ uint16_t
-endian::convert(endian::endian_t from, endian::endian_t to, uint16_t value)
+endian::_convert(endian::endian_t from, endian::endian_t to, uint16_t value)
 {
     if (from == to) {
         return value;
     }
-    return le_be(value);
+    return swap(value);
 }
 
 /* static */ uint32_t
-endian::convert(endian::endian_t from, endian::endian_t to, uint32_t value)
+endian::_convert(endian::endian_t from, endian::endian_t to, uint32_t value)
 {
     if (from == to) {
         return value;
     }
-    return le_be(value);
+    return swap(value);
 }
 
 /* static */ uint64_t
-endian::convert(endian::endian_t from, endian::endian_t to, uint64_t value)
+endian::_convert(endian::endian_t from, endian::endian_t to, uint64_t value)
 {
     if (from == to) {
         return value;
     }
-    return le_be(value);
+    return swap(value);
 }
 
 END_MUDLIB_CORE_NS

@@ -179,7 +179,7 @@ keccak::computate()
     /* Endian conversion to native */
     for (int x = 0; x < 5; ++x) {
         for (int y = 0; y < 5; ++y) {
-            _S[x][y] = endian::convert(endian_t::little, endian::native(),
+            _S[x][y] = endian::convert(endian_t::little, endian_t::native,
                                        _S[x][y]);
         }
     }
@@ -265,13 +265,13 @@ keccak::computate()
         // TRACE_STATE(_S);
 
         /* Display the round state */
-        TRACE_STATE(_S, endian::native() == endian_t::little);
+        TRACE_STATE(_S, endian_t::native == endian_t::little);
     }
 
     /* Endian conversion to little */
     for (int x = 0; x < 5; ++x) {
         for (int y = 0; y < 5; ++y) {
-            _S[x][y] = endian::convert(endian::native(), endian_t::little,
+            _S[x][y] = endian::convert(endian_t::native, endian_t::little,
                                        _S[x][y]);
         }
     }

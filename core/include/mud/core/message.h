@@ -28,6 +28,7 @@
 #define _MUDLIB_CORE_MESSAGE_H_
 
 #include <mud/core/uuid.h>
+#include <concepts>
 #include <functional>
 #include <mutex>
 #include <map>

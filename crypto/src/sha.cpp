@@ -339,7 +339,7 @@ sha_algorithm::sha_1_impl::pad()
         /* Add the 64-bit message length in big-endian at the end */
         _pad_state = pad_state_t::length;
         *(uint64_t*)(&_M[block_sz - 8]) = endian::convert(
-                endian::native(), endian_t::big, _l);
+                endian_t::native, endian_t::big, _l);
         _M_sz = block_sz;
         return true;
     }
@@ -351,7 +351,7 @@ sha_algorithm::sha_1_impl::finalise()
     /* Convert the hash values to big-endian */
     uint32_t H[5];
     for (int i = 0; i < 5; ++i) {
-        H[i] = endian::convert(endian::native(), endian_t::big, _H[i]);
+        H[i] = endian::convert(endian_t::native, endian_t::big, _H[i]);
     }
 
     /* As the H array is correctly byte-oriented, we can just do a byte copy */
@@ -382,7 +382,7 @@ sha_algorithm::sha_1_impl::computate()
     int t;
     uint32_t W[17];
     for (t = 0; t <= 15; ++t) {
-        W[t] = endian::convert(endian_t::big, endian::native(),
+        W[t] = endian::convert(endian_t::big, endian_t::native,
                                *(uint32_t*)(&_M[t*4]));
     }
 
@@ -876,10 +876,10 @@ sha_algorithm::sha_2_impl<WordType>::pad()
         _pad_state = pad_state_t::length;
         if (length_sz == 16) {
             *(uint64_t*)(&_M[block_sz - 16]) = endian::convert(
-                    endian::native(), endian_t::big, _l.high);
+                    endian_t::native, endian_t::big, _l.high);
         }
         *(uint64_t*)(&_M[block_sz - 8]) = endian::convert(
-                endian::native(), endian_t::big, _l.low);
+                endian_t::native, endian_t::big, _l.low);
         _M_sz = block_sz;
         return true;
     }
@@ -908,7 +908,7 @@ sha_algorithm::sha_2_impl<WordType>::computate()
     int t;
     word_type_t W[17];
     for (t = 0; t <= 15; ++t) {
-        W[t] = endian::convert(endian_t::big, endian::native(),
+        W[t] = endian::convert(endian_t::big, endian_t::native,
                                *(word_type_t*)(&_M[t*word_sz]));
     }
 
@@ -1031,7 +1031,7 @@ sha_algorithm::sha_2_impl<WordType>::finalise()
     /* Convert the hash values to big-endian */
     word_type_t H[8];
     for (int i = 0; i < 8; ++i) {
-        H[i] = endian::convert(endian::native(), endian_t::big, _H[i]);
+        H[i] = endian::convert(endian_t::native, endian_t::big, _H[i]);
     }
 
     /* As the H array is correctly byte-oriented, we can just do a byte copy */

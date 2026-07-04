@@ -105,7 +105,7 @@ operator<<(std::ostream& ostr, const client_hello& msg)
     ostr.exceptions(std::istream::failbit);
 
     /* Write the legacy version */
-    uint16_t ui16 = endian::convert(endian::native(), endian_t::big,
+    uint16_t ui16 = endian::convert(endian_t::native, endian_t::big,
             static_cast<uint16_t>(msg._legacy_version));
     ostr.write((const char*)&ui16, 2);
 
@@ -118,11 +118,11 @@ operator<<(std::ostream& ostr, const client_hello& msg)
                msg._legacy_session_id.size());
 
     /* Cipher suites */
-    ui16 = endian::convert(endian::native(), endian_t::big,
+    ui16 = endian::convert(endian_t::native, endian_t::big,
             static_cast<uint16_t>(msg._cipher_suites.size() * 2));
     ostr.write((const char*)&ui16, 2);
     for (auto suite: msg._cipher_suites) {
-        ui16 = endian::convert(endian::native(), endian_t::big,
+        ui16 = endian::convert(endian_t::native, endian_t::big,
                 static_cast<uint16_t>(suite));
         ostr.write((const char*)&ui16, 2);
     }
@@ -138,7 +138,7 @@ operator<<(std::ostream& ostr, const client_hello& msg)
     for (auto ext: msg._extensions) {
         ui16 += ext->size();
     }
-    ui16 = endian::convert(endian::native(), endian_t::big, ui16);
+    ui16 = endian::convert(endian_t::native, endian_t::big, ui16);
     ostr.write((const char*)&ui16, 2);
     for (auto ext: msg._extensions) {
         ext->write(ostr);
@@ -156,7 +156,7 @@ operator>>(std::istream& istr, client_hello& msg)
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
     msg._legacy_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), ui16));
+            endian::convert(endian_t::big, endian_t::native, ui16));
 
     /* The 32-byte random */
     mud::core::buffer random(32);
@@ -174,11 +174,11 @@ operator>>(std::istream& istr, client_hello& msg)
 
     /* Cipher suites */
     istr.read((char*)&ui16, 2);
-    uint16_t length = endian::convert(endian_t::big, endian::native(), ui16);
+    uint16_t length = endian::convert(endian_t::big, endian_t::native, ui16);
     msg._cipher_suites.clear();
     for (int i = 0; i < length / 2; ++i) {
         istr.read((char*)&ui16, 2);
-        uint16_t suite = endian::convert(endian_t::big, endian::native(), ui16);
+        uint16_t suite = endian::convert(endian_t::big, endian_t::native, ui16);
         msg._cipher_suites.push_back(static_cast<cipher_suite_t>(suite));
     }
 
@@ -194,7 +194,7 @@ operator>>(std::istream& istr, client_hello& msg)
 
     /* Extensions */
     istr.read((char*)&ui16, 2);
-    length = endian::convert(endian_t::big, endian::native(), ui16);
+    length = endian::convert(endian_t::big, endian_t::native, ui16);
     msg._extensions.clear();
     auto end = (uint16_t)istr.tellg() + length;
     while (istr.tellg() < end) {
@@ -219,7 +219,7 @@ operator>>(std::istream& istr, client_hello& msg)
             /* Unsupported extension type, skip it */
             istr.read((char*)&ui16, 2);
             istr.read((char*)&ui16, 2);
-            uint16_t length = endian::convert(endian_t::big, endian::native(),
+            uint16_t length = endian::convert(endian_t::big, endian_t::native,
                                               ui16);
             istr.ignore(length);
         }
@@ -257,7 +257,7 @@ operator>>(std::istream& istr, server_hello& msg)
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
     msg._legacy_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), ui16));
+            endian::convert(endian_t::big, endian_t::native, ui16));
 
     /* The 32-byte random */
     mud::core::buffer random(32);
@@ -275,7 +275,7 @@ operator>>(std::istream& istr, server_hello& msg)
 
     /* Cipher suite */
     istr.read((char*)&ui16, 2);
-    uint16_t suite = endian::convert(endian_t::big, endian::native(),
+    uint16_t suite = endian::convert(endian_t::big, endian_t::native,
                                      ui16);
     msg._cipher_suite = static_cast<cipher_suite_t>(suite);
 
@@ -286,7 +286,7 @@ operator>>(std::istream& istr, server_hello& msg)
     /* Extensions */
     uint16_t length;
     istr.read((char*)&ui16, 2);
-    length = endian::convert(endian_t::big, endian::native(), ui16);
+    length = endian::convert(endian_t::big, endian_t::native, ui16);
     msg._extensions.clear();
     auto end = (uint16_t)istr.tellg() + length;
     while (istr.tellg() < end) {
@@ -312,7 +312,7 @@ operator>>(std::istream& istr, server_hello& msg)
             istr.read((char*)&ui16, 2);
             istr.read((char*)&ui16, 2);
             uint16_t length = endian::convert(endian_t::big,
-                                endian::native(), ui16);
+                                endian_t::native, ui16);
             istr.ignore(length);
         }
     }
@@ -335,7 +335,7 @@ operator>>(std::istream& istr, record::ptr& rec)
 
     /* Read the record */
     std::cout << mud::core::hexdump(header, 5) << std::endl;
-    uint16_t length = endian::convert(endian_t::big, endian::native(),
+    uint16_t length = endian::convert(endian_t::big, endian_t::native,
             *((uint16_t*)(header+3)));
     std::cout << "Record length = " << length << std::endl;
     mud::core::buffer buffer(length+sizeof(header));
@@ -361,11 +361,11 @@ operator>>(std::istream& istr, record::ptr& rec)
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
     rec._legacy_record_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), ui16));
+            endian::convert(endian_t::big, endian_t::native, ui16));
 
     /* Get the length */
     istr.read((char*)&ui16, 2);
-    rec._length = endian::convert(endian_t::big, endian::native(), ui16);
+    rec._length = endian::convert(endian_t::big, endian_t::native, ui16);
 #endif
 }
 
@@ -393,11 +393,11 @@ operator>>(std::istream& istr, record& rec)
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
     rec._legacy_record_version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), ui16));
+            endian::convert(endian_t::big, endian_t::native, ui16));
 
     /* Get the length */
     istr.read((char*)&ui16, 2);
-    rec._length = endian::convert(endian_t::big, endian::native(), ui16);
+    rec._length = endian::convert(endian_t::big, endian_t::native, ui16);
     return istr;
 }
 #endif
@@ -430,7 +430,7 @@ operator>>(std::istream& istr, handshake& msg)
     /* Get the length */
     uint32_t ui32 = 0;
     istr.read(((char*)&ui32)+1, 3);
-    msg._length = endian::convert(endian_t::big, endian::native(), ui32);
+    msg._length = endian::convert(endian_t::big, endian_t::native, ui32);
     return istr;
 }
 

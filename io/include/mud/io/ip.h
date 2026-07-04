@@ -54,7 +54,7 @@ namespace ip {
     template<typename Integer>
     Integer to_network_order(Integer value)
     {
-        return mud::core::endian::convert(mud::core::endian::native(),
+        return mud::core::endian::convert(mud::core::endian::endian_t::native,
                                           mud::io::ip::network_order, value);
     }
 
@@ -65,7 +65,8 @@ namespace ip {
     Integer to_host_order(Integer value)
     {
         return mud::core::endian::convert(mud::io::ip::network_order,
-                                          mud::core::endian::native(), value);
+                                          mud::core::endian::endian_t::native,
+                                          value);
     }
 
     /**

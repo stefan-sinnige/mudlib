@@ -107,21 +107,21 @@ FEATURE("Endian")
         [](context& ctx){
           {
             uint16_t value = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::big,
                     ctx.u16);
             ctx.u16 = value;
           }
           {
             uint32_t value = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::big,
                     ctx.u32);
             ctx.u32 = value;
           }
           {
             uint64_t value = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::big,
                     ctx.u64);
             ctx.u64 = value;
@@ -135,21 +135,21 @@ FEATURE("Endian")
         [](context& ctx){
           {
             uint16_t value = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::little,
                     ctx.u16);
             ctx.u16 = value;
           }
           {
             uint32_t value = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::little,
                     ctx.u32);
             ctx.u32 = value;
           }
           {
             uint64_t value = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::little,
                     ctx.u64);
             ctx.u64 = value;

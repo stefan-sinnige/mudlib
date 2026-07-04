@@ -70,14 +70,14 @@ operator>>(std::istream& istr, server_name& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::server_name);
 
     /* The length of the list */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
         
     /* Get the server names */
@@ -89,7 +89,7 @@ operator>>(std::istream& istr, server_name& ext)
 
         /* The length of the name */
         istr.read((char*)&ui16, 2);
-        length = endian::convert(endian_t::big, endian::native(), ui16);
+        length = endian::convert(endian_t::big, endian_t::native, ui16);
         
         /* Read name into a string */
         std::string name;
@@ -108,15 +108,15 @@ operator<<(std::ostream& ostr, const server_name& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The length of the list */
-    ui16 = endian::convert(endian::native(), endian_t::big,
+    ui16 = endian::convert(endian_t::native, endian_t::big,
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
@@ -126,7 +126,7 @@ operator<<(std::ostream& ostr, const server_name& ext)
         ostr.put(0);
 
         /* The length of the name */
-        ui16 = endian::convert(endian::native(), endian_t::big,
+        ui16 = endian::convert(endian_t::native, endian_t::big,
                 static_cast<uint16_t>(name.size()));
         ostr.write((const char*)&ui16, 2);
 
@@ -173,9 +173,9 @@ operator>>(std::istream& istr, max_fragment_length& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::max_fragment_length);
     ext.assert(ext_length, 1);
 
@@ -206,10 +206,10 @@ operator<<(std::ostream& ostr, const max_fragment_length& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -269,9 +269,9 @@ operator>>(std::istream& istr, status_request& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::status_request);
 
     /* Unsupported extension type, skip it */
@@ -330,14 +330,14 @@ operator>>(std::istream& istr, supported_groups& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::supported_groups);
 
     /* Get the group list length  */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
 
     /* Get the groups */
@@ -346,7 +346,7 @@ operator>>(std::istream& istr, supported_groups& ext)
     while (istr.tellg() < end) {
         /* Get a group type */
         istr.read((char*)&ui16, 2);
-        uint16_t type = endian::convert(endian_t::big, endian::native(), ui16);
+        uint16_t type = endian::convert(endian_t::big, endian_t::native, ui16);
         ext._groups.push_back(static_cast<key_exchange_group_t>(type));
     }
     return istr;
@@ -360,21 +360,21 @@ operator<<(std::ostream& ostr, const supported_groups& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The group list length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
     /* The groups */
     for (auto group: ext._groups) {
-        ui16 = endian::convert(endian::native(), endian_t::big, 
+        ui16 = endian::convert(endian_t::native, endian_t::big, 
                 static_cast<uint16_t>(group));
         ostr.write((const char*)&ui16, 2);
     }
@@ -418,14 +418,14 @@ operator>>(std::istream& istr, signature_algorithms& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::signature_algorithms);
 
     /* Get the algorithms length  */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
 
     /* Get the algorithms */
@@ -434,7 +434,7 @@ operator>>(std::istream& istr, signature_algorithms& ext)
     while (istr.tellg() < end) {
         /* Get a algorithm type */
         istr.read((char*)&ui16, 2);
-        uint16_t type = endian::convert(endian_t::big, endian::native(), ui16);
+        uint16_t type = endian::convert(endian_t::big, endian_t::native, ui16);
         ext._algos.push_back(static_cast<signature_algorithm_t>(type));
     }
     return istr;
@@ -448,21 +448,21 @@ operator<<(std::ostream& ostr, const signature_algorithms& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The algorithm list length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
     /* The algorithms */
     for (auto algorithm: ext._algos) {
-        ui16 = endian::convert(endian::native(), endian_t::big, 
+        ui16 = endian::convert(endian_t::native, endian_t::big, 
                 static_cast<uint16_t>(algorithm));
         ostr.write((const char*)&ui16, 2);
     }
@@ -506,9 +506,9 @@ operator>>(std::istream& istr, heartbeat& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::heartbeat);
     ext.assert(ext_length, 1);
 
@@ -527,10 +527,10 @@ operator<<(std::ostream& ostr, const heartbeat& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -580,15 +580,15 @@ operator>>(std::istream& istr, application_layer_protocol_negotiation& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type,
                extension_type_t::application_layer_protocol_negotiation);
 
     /* Get the protocols length  */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
 
     /* Get the protocols */
@@ -616,15 +616,15 @@ operator<<(std::ostream& ostr,
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The protocol list length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
@@ -675,9 +675,9 @@ operator>>(std::istream& istr, client_certificate_type& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::client_certificate_type);
 
     /* Get the types length  */
@@ -703,10 +703,10 @@ operator<<(std::ostream& ostr, const client_certificate_type& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -756,9 +756,9 @@ operator>>(std::istream& istr, server_certificate_type& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::client_certificate_type);
 
     /* Get the types length  */
@@ -784,10 +784,10 @@ operator<<(std::ostream& ostr, const server_certificate_type& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -839,9 +839,9 @@ operator>>(std::istream& istr, padding& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::padding);
     ext._length = ext_length;
 
@@ -859,10 +859,10 @@ operator<<(std::ostream& ostr, const padding& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -909,14 +909,14 @@ operator>>(std::istream& istr, pre_shared_key& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::pre_shared_key);
 
     /* Get the list length  */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
 
     /* Get the PSK offerings */
@@ -925,7 +925,7 @@ operator>>(std::istream& istr, pre_shared_key& ext)
     while (istr.tellg() < end) {
         /* The length of the identity */
         istr.read((char*)&ui16, 2);
-        length = endian::convert(endian_t::big, endian::native(), ui16);
+        length = endian::convert(endian_t::big, endian_t::native, ui16);
 
         /* Read the identity  */
         mud::core::buffer identity(length);
@@ -934,12 +934,12 @@ operator>>(std::istream& istr, pre_shared_key& ext)
         /* Get the age (zero for external PSKs) */
         uint32_t value_uint32;
         istr.read((char*)&value_uint32, 4);
-        uint32_t age = endian::convert(endian_t::big, endian::native(),
+        uint32_t age = endian::convert(endian_t::big, endian_t::native,
                 value_uint32);
 
         /* The length of the binder */
         istr.read((char*)&ui16, 2);
-        length = endian::convert(endian_t::big, endian::native(), ui16);
+        length = endian::convert(endian_t::big, endian_t::native, ui16);
 
         /* Read the binder  */
         mud::core::buffer binder(length);
@@ -963,22 +963,22 @@ operator<<(std::ostream& ostr, const pre_shared_key& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The list length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
     /* The list of offerings */
     for (auto& offering: ext._offerings) {
         /* Identity size */
-        ui16 = endian::convert(endian::native(), endian_t::big, 
+        ui16 = endian::convert(endian_t::native, endian_t::big, 
                 static_cast<uint16_t>(offering.identity().size()));
         ostr.write((const char*)&ui16, 2);
 
@@ -987,12 +987,12 @@ operator<<(std::ostream& ostr, const pre_shared_key& ext)
                    offering.identity().size());
 
         /* The age */
-        uint32_t ui32 = endian::convert(endian::native(), endian_t::big,
+        uint32_t ui32 = endian::convert(endian_t::native, endian_t::big,
                 offering.obfuscated_ticket_age());
         ostr.write((const char*)&ui32, 4);
 
         /* Binder size */
-        ui16 = endian::convert(endian::native(), endian_t::big, 
+        ui16 = endian::convert(endian_t::native, endian_t::big, 
                 static_cast<uint16_t>(offering.binder().size()));
         ostr.write((const char*)&ui16, 2);
 
@@ -1039,9 +1039,9 @@ operator>>(std::istream& istr, early_data& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::early_data);
 
     /* Read the data  */
@@ -1060,10 +1060,10 @@ operator<<(std::ostream& ostr, const early_data& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -1115,9 +1115,9 @@ operator>>(std::istream& istr, client_supported_versions& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::supported_versions);
 
     /* Get the list length  */
@@ -1131,7 +1131,7 @@ operator>>(std::istream& istr, client_supported_versions& ext)
         /* Read and save the version */
         istr.read((char*)&ui16, 2);
         ext._versions.push_back(static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), ui16)));
+            endian::convert(endian_t::big, endian_t::native, ui16)));
     }
     return istr;
 }
@@ -1144,10 +1144,10 @@ operator<<(std::ostream& ostr, const client_supported_versions& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -1156,7 +1156,7 @@ operator<<(std::ostream& ostr, const client_supported_versions& ext)
 
     /* The versions */
     for (auto version: ext._versions) {
-        ui16 = endian::convert(endian::native(), endian_t::big,
+        ui16 = endian::convert(endian_t::native, endian_t::big,
                 static_cast<uint16_t>(version));
         ostr.write((const char*)&ui16, 2);
     }
@@ -1194,15 +1194,15 @@ operator>>(std::istream& istr, server_supported_versions& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::supported_versions);
 
     /* Read and save the version */
     istr.read((char*)&ui16, 2);
     ext._version = static_cast<protocol_version_t>(
-            endian::convert(endian_t::big, endian::native(), ui16));
+            endian::convert(endian_t::big, endian_t::native, ui16));
     return istr;
 }
 
@@ -1214,15 +1214,15 @@ operator<<(std::ostream& ostr, const server_supported_versions& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The version */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext._version));
     ostr.write((const char*)&ui16, 2);
 
@@ -1259,9 +1259,9 @@ operator>>(std::istream& istr, cookie& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::cookie);
 
     /* Get the cookie data length  */
@@ -1284,15 +1284,15 @@ operator<<(std::ostream& ostr, const cookie& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The cookie length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
@@ -1332,9 +1332,9 @@ operator>>(std::istream& istr, psk_key_exchange_modes& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::psk_key_exchange_modes);
 
     /* Get the list length  */
@@ -1360,10 +1360,10 @@ operator<<(std::ostream& ostr, const psk_key_exchange_modes& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -1408,9 +1408,9 @@ operator>>(std::istream& istr, certificate_authorities& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::certificate_authorities);
 
     /* Unsupported extension type, skip it */
@@ -1463,9 +1463,9 @@ operator>>(std::istream& istr, oid_filters& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::oid_filters);
 
     /* Unsupported extension type, skip it */
@@ -1511,9 +1511,9 @@ operator>>(std::istream& istr, post_handshake_auth& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::post_handshake_auth);
     ext.assert(ext_length, 0);
 
@@ -1528,10 +1528,10 @@ operator<<(std::ostream& ostr, const post_handshake_auth& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
@@ -1569,14 +1569,14 @@ operator>>(std::istream& istr, signature_algorithms_cert& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::signature_algorithms_cert);
 
     /* Get the algorithms length  */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
 
     /* Get the algorithms */
@@ -1585,7 +1585,7 @@ operator>>(std::istream& istr, signature_algorithms_cert& ext)
     while (istr.tellg() < end) {
         /* Get a algorithm type */
         istr.read((char*)&ui16, 2);
-        uint16_t type = endian::convert(endian_t::big, endian::native(),
+        uint16_t type = endian::convert(endian_t::big, endian_t::native,
                                         ui16);
         ext._algos.push_back(static_cast<signature_algorithm_t>(type));
     }
@@ -1600,21 +1600,21 @@ operator<<(std::ostream& ostr, const signature_algorithms_cert& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The list length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
     /* The algorithms */
     for (auto algorithm: ext._algos) {
-        ui16 = endian::convert(endian::native(), endian_t::big, 
+        ui16 = endian::convert(endian_t::native, endian_t::big, 
                 static_cast<uint16_t>(algorithm));
         ostr.write((const char*)&ui16, 2);
     }
@@ -1661,14 +1661,14 @@ operator>>(std::istream& istr, client_key_share& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::key_share);
 
     /* Get the key data length  */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(length, ext_length - 2);
 
     /* Get the key data */
@@ -1678,11 +1678,11 @@ operator>>(std::istream& istr, client_key_share& ext)
         /* The key exchange group */
         istr.read((char*)&ui16, 2);
         auto group = static_cast<key_exchange_group_t>(
-            endian::convert(endian_t::big, endian::native(), ui16));
+            endian::convert(endian_t::big, endian_t::native, ui16));
 
         /* The length of the key */
         istr.read((char*)&ui16, 2);
-        length = endian::convert(endian_t::big, endian::native(), ui16);
+        length = endian::convert(endian_t::big, endian_t::native, ui16);
 
         /* Read the key */
         mud::crypto::key_t key(length);
@@ -1702,27 +1702,27 @@ operator<<(std::ostream& ostr, const client_key_share& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* The list size in bytes */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 6));
     ostr.write((const char*)&ui16, 2);
 
     /* The key shares */
     for (auto share: ext._shares) {
         /* The key exhcnage group */
-        ui16 = endian::convert(endian::native(), endian_t::big,
+        ui16 = endian::convert(endian_t::native, endian_t::big,
                 static_cast<uint16_t>(share.first));
         ostr.write((const char*)&ui16, 2);
 
         /* The length of the key */
-        ui16 = endian::convert(endian::native(), endian_t::big,
+        ui16 = endian::convert(endian_t::native, endian_t::big,
                 static_cast<uint16_t>(share.second.size()));
         ostr.write((const char*)&ui16, 2);
 
@@ -1762,19 +1762,19 @@ operator>>(std::istream& istr, server_key_share& ext)
     /* Get the extension type and total extension length */
     uint16_t ui16;
     istr.read((char*)&ui16, 2);
-    auto ext_type = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_type = endian::convert(endian_t::big, endian_t::native, ui16);
     istr.read((char*)&ui16, 2);
-    auto ext_length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto ext_length = endian::convert(endian_t::big, endian_t::native, ui16);
     ext.assert(ext_type, extension_type_t::key_share);
 
     /* The key exchange group */
     istr.read((char*)&ui16, 2);
     auto group = static_cast<key_exchange_group_t>(
-        endian::convert(endian_t::big, endian::native(), ui16));
+        endian::convert(endian_t::big, endian_t::native, ui16));
 
     /* The length of the key */
     istr.read((char*)&ui16, 2);
-    auto length = endian::convert(endian_t::big, endian::native(), ui16);
+    auto length = endian::convert(endian_t::big, endian_t::native, ui16);
 
     /* Read the key */
     mud::crypto::key_t key(length);
@@ -1793,20 +1793,20 @@ operator<<(std::ostream& ostr, const server_key_share& ext)
 
     /* The extension type and length */
     uint16_t ui16;
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.extension_type()));
     ostr.write((const char*)&ui16, 2);
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext.size() - 4));
     ostr.write((const char*)&ui16, 2);
 
     /* Key exchange group */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext._share.first));
     ostr.write((const char*)&ui16, 2);
 
     /* Key length */
-    ui16 = endian::convert(endian::native(), endian_t::big, 
+    ui16 = endian::convert(endian_t::native, endian_t::big, 
             static_cast<uint16_t>(ext._share.second.size()));
     ostr.write((const char*)&ui16, 2);
 

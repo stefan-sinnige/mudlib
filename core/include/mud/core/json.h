@@ -28,6 +28,7 @@
 #define _MUDLIB_CORE_JSON_H_
 
 #include <mud/core/ns.h>
+#include <concepts>
 #include <map>
 #include <string>
 #include <variant>
