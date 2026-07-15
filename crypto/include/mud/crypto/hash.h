@@ -120,6 +120,12 @@ public:
     virtual void update(const mud::core::buffer& chunk) = 0;
 
     /**
+     * @brief Update the hash with a chunk of binary view input data.
+     * @param chunk The chunk of data to add to the hash.
+     */
+    virtual void update(const mud::core::buffer_view& chunk) = 0;
+
+    /**
      * @brief Close or finalise the hash.
      */
     virtual void close() = 0;

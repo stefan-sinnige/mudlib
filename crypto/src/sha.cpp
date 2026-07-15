@@ -88,7 +88,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    virtual void update(const mud::core::buffer& chunk) = 0;
+    virtual void update(const mud::core::buffer_view& chunk) = 0;
 
     /**
      * @brief Close or finalise the hash.
@@ -175,7 +175,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const mud::core::buffer& chunk) override;
+    void update(const mud::core::buffer_view& chunk) override;
 
     /**
      * @brief Close or finalise the hash.
@@ -270,7 +270,7 @@ sha_algorithm::sha_1_impl::specs() const
 }
 
 void
-sha_algorithm::sha_1_impl::update(const mud::core::buffer& chunk)
+sha_algorithm::sha_1_impl::update(const mud::core::buffer_view& chunk)
 {
     /*
      * Keep on adding the data from the chunk to the message block. When the
@@ -640,7 +640,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const mud::core::buffer& chunk) override;
+    void update(const mud::core::buffer_view& chunk) override;
 
     /**
      * @brief Close or finalise the hash.
@@ -800,7 +800,7 @@ sha_algorithm::sha_2_impl<WordType>::specs() const
 
 template<typename WordType>
 void
-sha_algorithm::sha_2_impl<WordType>::update(const mud::core::buffer& chunk)
+sha_algorithm::sha_2_impl<WordType>::update(const mud::core::buffer_view& chunk)
 {
     /*
      * Keep on adding the data from the chunk to the message block. When the
@@ -1130,7 +1130,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const mud::core::buffer& chunk) override;
+    void update(const mud::core::buffer_view& chunk) override;
 
     /**
      * @brief Close or finalise the hash.
@@ -1192,7 +1192,7 @@ sha_algorithm::sha_3_impl::specs() const
 }
 
 void
-sha_algorithm::sha_3_impl::update(const mud::core::buffer& chunk)
+sha_algorithm::sha_3_impl::update(const mud::core::buffer_view& chunk)
 {
     _keccak.update(chunk);
 }
@@ -1255,6 +1255,12 @@ sha_algorithm::block_size() const
 
 void
 sha_algorithm::update(const mud::core::buffer& chunk)
+{
+    _impl->update(chunk.view(chunk.cbegin(), chunk.cend()));
+}
+
+void
+sha_algorithm::update(const mud::core::buffer_view& chunk)
 {
     _impl->update(chunk);
 }

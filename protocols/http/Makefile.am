@@ -40,11 +40,11 @@ libmudhttp_la_SOURCES = \
     src/server.cpp \
     src/tokenise.cpp
 
-includemuddir = $(includedir)/mud
+includemuddir = $(includedir)/mud/protocols
 includemud_HEADERS = \
     include/mud/protocols/http.h
 
-includemudhttpdir = $(includedir)/mud/http
+includemudhttpdir = $(includedir)/mud/protocols/http
 includemudhttp_HEADERS = \
     include/mud/protocols/http/chunk.h \
     include/mud/protocols/http/client.h \

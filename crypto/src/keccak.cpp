@@ -121,6 +121,12 @@ keccak::keccak(size_t capacity, size_t digest_bit_size, delimited_suffix_t d)
 void
 keccak::update(const mud::core::buffer& chunk)
 {
+    update(chunk.view(chunk.cbegin(), chunk.cend()));
+}
+
+void
+keccak::update(const mud::core::buffer_view& chunk)
+{
     /*
      * Keep on adding the data from the chunk to the message block. When the
      * block is full, computate it to make space for any more data.

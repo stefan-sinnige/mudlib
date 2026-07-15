@@ -98,10 +98,16 @@ public:
     const mac_material_t& keying() const { return _keying; }
 
     /**
-     * @brief Update the MAC with a chunk of binary input data.
+     * @brief Update the MAC with a chunk of buffer input data.
      * @param chunk The chunk of data to add to the MAC.
      */
     virtual void update(const mud::core::buffer& chunk) = 0;
+
+    /**
+     * @brief Update the MAC with a chunk of buffer view input data.
+     * @param chunk The chunk of data to add to the MAC.
+     */
+    virtual void update(const mud::core::buffer_view& chunk) = 0;
 
     /**
      * @brief Close or finalise the MAC.

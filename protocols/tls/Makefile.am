@@ -30,17 +30,19 @@ lib_LTLIBRARIES = libmudtls.la
 
 libmudtls_la_SOURCES = \
     src/communicator.cpp \
+    src/dissect.cpp \
     src/extension.cpp \
     src/message.cpp
 
-includemuddir = $(includedir)/mud
+includemuddir = $(includedir)/mud/protocols
 includemud_HEADERS = \
     include/mud/protocols/tls.h
 
-includemudtlsdir = $(includedir)/mud/tls
+includemudtlsdir = $(includedir)/mud/tls/protocols/tls
 includemudtls_HEADERS = \
     include/mud/protocols/tls/common.h \
     include/mud/protocols/tls/communicator.h \
+    include/mud/protocols/tls/dissect.h \
     include/mud/protocols/tls/exception.h \
     include/mud/protocols/tls/extension.h \
     include/mud/protocols/tls/message.h \

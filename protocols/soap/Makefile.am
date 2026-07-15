@@ -31,11 +31,11 @@ lib_LTLIBRARIES = libmudsoap.la
 libmudsoap_la_SOURCES = \
     src/message.cpp
 
-includemuddir = $(includedir)/mud
+includemuddir = $(includedir)/mud/protocols
 includemud_HEADERS = \
     include/mud/protocols/soap.h
 
-includemudsoapdir = $(includedir)/mud/soap
+includemudsoapdir = $(includedir)/mud/protocols/soap
 includemudsoap_HEADERS = \
     include/mud/protocols/soap/message.h \
     include/mud/protocols/soap/ns.h

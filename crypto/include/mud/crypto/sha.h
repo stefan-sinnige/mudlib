@@ -72,10 +72,16 @@ public:
     virtual size_t block_size() const override;
 
     /**
-     * @brief Update the hash with a chunk of binary input data.
+     * @brief Update the hash with a chunk of buffer input data.
      * @param chunk The chunk of data to add to the hash.
      */
     virtual void update(const mud::core::buffer& chunk) override;
+
+    /**
+     * @brief Update the hash with a chunk of buffer view input data.
+     * @param chunk The chunk of data to add to the hash.
+     */
+    virtual void update(const mud::core::buffer_view& chunk) override;
 
     /**
      * @brief Close or finalise the hash.

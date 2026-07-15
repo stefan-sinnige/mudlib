@@ -126,22 +126,11 @@ public:
     }
 
     /**
-     * Return true if the two iterators reference the same element.
+     * Comparison between iterators.
      * @param lhs The first iterator.
      * @param lhs The second iterator.
      */
-    friend bool operator==(const iterator& lhs, const iterator& rhs) {
-        return lhs._ptr == rhs._ptr;
-    }
-
-    /**
-     * Return true if the two iterators do no reference the same element.
-     * @param[in] lhs The first iterator.
-     * @param[in] lhs The second iterator.
-     */
-    friend bool operator!=(const iterator& lhs, const iterator& rhs) {
-        return lhs._ptr != rhs._ptr;
-    }
+    friend auto operator<=>(const iterator& lhs, const iterator& rhs) = default;
 
     /**
      * @brief Increase the iterator a number of element.
@@ -315,26 +304,12 @@ public:
     }
 
     /**
-     * Return true if the two iterators reference the same element.
+     * Comparison between iterators.
      * @param lhs The first iterator.
      * @param lhs The second iterator.
      */
-    friend bool operator==(const const_iterator& lhs,
-                           const const_iterator& rhs)
-    {
-        return lhs._ptr == rhs._ptr;
-    }
-
-    /**
-     * Return true if the two iterators do no reference the same element.
-     * @param[in] lhs The first iterator.
-     * @param[in] lhs The second iterator.
-     */
-    friend bool operator!=(const const_iterator& lhs,
-                           const const_iterator& rhs)
-    {
-        return lhs._ptr != rhs._ptr;
-    }
+    friend auto operator<=>(const const_iterator& lhs,
+                            const const_iterator& rhs) = default;
 
     /**
      * @brief Increase the iterator a number of element.
@@ -502,25 +477,12 @@ public:
     }
 
     /**
-     * Return true if the two reverse iterators reference the same element.
-     * @param lhs The first reverse iterator.
-     * @param lhs The second reverse iterator.
+     * Comparison between iterators.
+     * @param lhs The first iterator.
+     * @param lhs The second iterator.
      */
-    friend bool operator==(const reverse_iterator& lhs,
-                           const reverse_iterator& rhs) {
-        return lhs._ptr == rhs._ptr;
-    }
-
-    /**
-     * Return true if the two reverse iterators do no reference the same
-     * element.
-     * @param[in] lhs The first reverse_iterator.
-     * @param[in] lhs The second reverse_iterator.
-     */
-    friend bool operator!=(const reverse_iterator& lhs,
-                           const reverse_iterator& rhs) {
-        return lhs._ptr != rhs._ptr;
-    }
+    friend auto operator<=>(const reverse_iterator& lhs,
+                            const reverse_iterator& rhs) = default;
 
     /**
      * @brief Increase the iterator a number of element.
@@ -695,27 +657,12 @@ public:
     }
 
     /**
-     * Return true if the two reverse_iterators reference the same element.
-     * @param lhs The first reverse_iterator.
-     * @param lhs The second reverse_iterator.
+     * Comparison between iterators.
+     * @param lhs The first iterator.
+     * @param lhs The second iterator.
      */
-    friend bool operator==(const const_reverse_iterator& lhs,
-                           const const_reverse_iterator& rhs)
-    {
-        return lhs._ptr == rhs._ptr;
-    }
-
-    /**
-     * Return true if the two reverse iterators do no reference the same
-     * element.
-     * @param[in] lhs The first reverse_iterator.
-     * @param[in] lhs The second reverse_iterator.
-     */
-    friend bool operator!=(const const_reverse_iterator& lhs,
-                           const const_reverse_iterator& rhs)
-    {
-        return lhs._ptr != rhs._ptr;
-    }
+    friend auto operator<=>(const const_reverse_iterator& lhs,
+                            const const_reverse_iterator& rhs) = default;
 
     /**
      * @brief Increase the iterator a number of element.

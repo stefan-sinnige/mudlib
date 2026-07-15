@@ -74,6 +74,15 @@ AX_COMPARE_VERSION([$BISON_VERSION], [ge], [3.8],[],[
     AC_MSG_ERROR([$BISON_VERSION found, should be at least 3.8])])
 AC_MSG_RESULT($BISON_VERSION)
 
+# Add an experimental flag to indicate that features that are not officially
+# released are to be build. These features may be incomplete, incorrect or may
+# not be buildable. Use at your own risk.
+AC_ARG_ENABLE([experimental],
+    [AS_HELP_STRING([--enable-experimental],[enable experimental features])],
+    [enable_experimental=$enableval],
+    [enable_experimental=no])
+AM_CONDITIONAL([EXPERIMENTAL], [test "x$enable_experimental" = "xyes"])
+
 # Documentation programs
 #    * Add a '--enable-html' option to build the HTML packages. Only enable it
 #      if required binaries are found.
@@ -104,7 +113,7 @@ AS_IF([test "x$enable_html" = "xyes"],[
     AS_IF([test "x$MUDDOC" = "x" -o "x$XSLTPROC" = "x" ],[
         AC_MSG_WARN([Building of HTML documentation is disabled])
         enable_html="no"])])
-    # MUDDOC_CXX_FLAGS=
+    # MUDDOC_CXX_FLAGS=C_
     AC_SUBST([MUDDOC_CXX_FLAGS])
 AM_CONDITIONAL([HTML], [test "x$enable_html" = "xyes"])
 

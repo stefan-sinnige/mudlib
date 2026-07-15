@@ -33,6 +33,10 @@
 
 BEGIN_MUDLIB_CORE_NS
 
+/* Forward declarations */
+class buffer;
+class buffer_view;
+
 /**
  * @brief Binary buffer output.
  * @details
@@ -76,6 +80,18 @@ public:
      * @param size The size of the character array
      */
     hexdump(const uint8_t* data, size_t len);
+            
+    /**
+     * @brief Constructor to dump a buffer.
+     * @param buf The buffer.
+     */
+    explicit hexdump(const mud::core::buffer& buf);
+
+    /**
+     * @brief Constructor to dump a buffer.
+     * @param buf The buffer.
+     */
+    explicit hexdump(const mud::core::buffer_view& buf);
 
 private:
     /* The pointer to the data */

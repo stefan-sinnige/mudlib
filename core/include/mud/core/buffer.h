@@ -172,7 +172,7 @@ public:
     Type get(size_t n, endian::endian_t from,
              endian::endian_t to = endian::endian_t::native) const
     {
-        if (n + sizeof(Type) >= size()) {
+        if (n + sizeof(Type) > size()) {
             throw std::range_error("index out of bounds");
         }
         return endian::convert(from, to,
@@ -210,7 +210,7 @@ public:
     void set(size_t n, Type value, endian::endian_t to,
              endian::endian_t from = endian::endian_t::native)
     {
-        if (n + sizeof(Type) >= size()) {
+        if (n + sizeof(Type) > size()) {
             throw std::range_error("index out of bounds");
         }
         *(reinterpret_cast<Type*>(data() + n)) =
@@ -240,8 +240,8 @@ public:
      * @param last The last position (not inclusive).
      * @return The view from the first to the last position (not inclusive).
      */
-    buffer_view view(iterator first, iterator last);
-    buffer_view view(const_iterator first, const_iterator last);
+    buffer_view view(iterator first, iterator last) const;
+    buffer_view view(const_iterator first, const_iterator last) const;
 
 private:
     /* The starting position of the view. */
@@ -313,6 +313,14 @@ public:
     buffer(buffer&& rhs) = default;
 
     /**
+     * @brief Constructor fro ma view.
+     * @param view The item to copy from.
+     * @details
+     * The @c rhs buffer's contents will be copied.
+     */
+    buffer(const buffer_view& view);
+
+    /**
      * @brief Copy assignment.
      * @param rhs The item to copy from.
      * @return Reference to this object.
@@ -327,6 +335,15 @@ public:
      * @return Reference to this object.
      */
     buffer& operator=(buffer&& rhs) = default;
+
+    /**
+     * @brief Copy a buffer view.
+     * @param rhs The item to copy from.
+     * @return Reference to this object.
+     * @details
+     * The @c rhs buffer's contents will be copied.
+     */
+    buffer& operator=(const buffer_view& rhs);
 
     /**
      * @brief Clear the data
@@ -488,7 +505,7 @@ public:
     Type get(size_t n, endian::endian_t from,
              endian::endian_t to = endian::endian_t::native) const
     {
-        if (n + sizeof(Type) >= size()) {
+        if (n + sizeof(Type) > size()) {
             throw std::range_error("index out of bounds");
         }
         return endian::convert(from, to,
@@ -526,7 +543,7 @@ public:
     void set(size_t n, Type value, endian::endian_t to,
              endian::endian_t from = endian::endian_t::native)
     {
-        if (n + sizeof(Type) >= size()) {
+        if (n + sizeof(Type) > size()) {
             throw std::range_error("index out of bounds");
         }
         *(reinterpret_cast<Type*>(data() + n)) =
@@ -551,13 +568,19 @@ public:
     }
 
     /**
+     * @brief Create a view of the entire buffer.
+     * @return The view of the entire buffer.
+     */
+    buffer_view view() const;
+
+    /**
      * @brief Create a view of any part of the buffer.
      * @param first The first position
      * @param last The last position (not inclusive).
      * @return The view from the first to the last position (not inclusive).
      */
-    buffer_view view(iterator first, iterator last);
-    buffer_view view(const_iterator first, const_iterator last);
+    buffer_view view(iterator first, iterator last) const;
+    buffer_view view(const_iterator first, const_iterator last) const;
 
     /**
      * @brief Bit-wise OR assignment on equal sized blocks.

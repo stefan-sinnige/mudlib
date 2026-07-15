@@ -29,12 +29,31 @@
 
 #include <future>
 #include <mud/protocols/tls/ns.h>
+#include <mud/crypto/sha.h>
 #include <mud/io/tcp.h>
 #include <mud/protocols/communicator.h>
 
 BEGIN_MUDLIB_TLS_NS
 
 namespace communicator {
+
+/**
+ * @brief Base communicator for the TLS communication protocol.
+ * @details
+ * TLS (Transport Layer Security) protocol is a commonly used cryptographic
+ * protocol to add a security layer between two communicating entities. The
+ * protocol is designed that is can act as an envelope for another higher
+ * level protocol as it is agnostic of the binary data it secures. 
+ *
+ * This conforms with RFC 8446
+ */
+class MUDLIB_TLS_API basic_tls
+{
+public:
+private:
+    /* The hand-shake hash that is used for key calculation */
+    crypto::sha_384 handshake_hash;
+};
 
 /**
  * @brief The server-side TLS communication protocol.
@@ -49,7 +68,8 @@ namespace communicator {
  */
 template<typename Device>
 class MUDLIB_TLS_API server:
-    public mud::protocols::layered_communicator<Device>
+    public mud::protocols::layered_communicator<Device>,
+    public basic_tls
 {
 public:
     /**
@@ -81,7 +101,8 @@ public:
  */
 template<typename Device>
 class MUDLIB_TLS_API client:
-    public mud::protocols::layered_communicator<Device>
+    public mud::protocols::layered_communicator<Device>,
+    public basic_tls
 {
 public:
     /**
