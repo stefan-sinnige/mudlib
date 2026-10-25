@@ -29,6 +29,8 @@
 
 #include <mud/core/ns.h>
 #include <stdint.h>
+#include <concepts>
+#include <stdexcept>
 
 BEGIN_MUDLIB_CORE_NS
 
@@ -45,45 +47,84 @@ public:
      * */
     enum class endian_t
     {
-        unresolved, /**< Unresolved native endian */
-        little,     /**< Little-endian */
-        big         /**< Big-endian */
+        native, /**< Native endian, effectively either little or big */
+        little, /**< Little-endian */
+        big     /**< Big-endian */
     };
 
     /**
      * @brief Return the native endian system of the host system.
+     * @details
+     * Return either @c endian_t::big or @c endian_t::little depending on the
+     * resolved system endian system. It shall never return @c endian_t::native.
      */
     static endian_t native();
 
     /**
-     * @brief Templated endian conversion for integers.
+     * @brief Convert an integral value between two endian systems.
+     * @param from The endian system to convert from. The @c value is expected
+     * to be represented in this system.
+     * @param to The endian system to convert to.
+     * @param value The value represented in the @c From endian system to
+     * convert.
+     * @return The @c value represented in the @c To endian system.
      */
-    template<endian_t From, endian_t To, typename Integer>
-    Integer convert(Integer);
+    template<std::integral Integer>
+    static Integer convert(endian_t from, endian_t to, Integer value)
+    {
+        switch (sizeof(Integer))
+        {
+            case 1:
+                return value;
+            case 2:
+                return static_cast<Integer>(
+                    _convert(from, to, static_cast<uint16_t>(value)));
+            case 4:
+                return static_cast<Integer>(
+                    _convert(from, to, static_cast<uint32_t>(value)));
+            case 8:
+                return static_cast<Integer>(
+                    _convert(from, to, static_cast<uint64_t>(value)));
+            default:
+                throw std::length_error(
+                        "unsupported integral length endian conversion");
+        }
+    }
 
+private:
     /**
      * @brief Endian conversion for 16-bit integers.
      */
-    static uint16_t convert(endian_t From, endian_t To, uint16_t value);
+    static uint16_t _convert(endian_t From, endian_t To, uint16_t value);
 
     /**
      * @brief Endian conversion for 32-bit integers.
      */
-    static uint32_t convert(endian_t From, endian_t To, uint32_t value);
+    static uint32_t _convert(endian_t From, endian_t To, uint32_t value);
 
     /**
      * @brief Endian conversion for 64-bit integers.
      */
-    static uint64_t convert(endian_t From, endian_t To, uint64_t value);
+    static uint64_t _convert(endian_t From, endian_t To, uint64_t value);
 };
 
-template<endian::endian_t From, endian::endian_t To, typename Integer>
-Integer
-endian::convert(Integer value)
-{
-    return endian::convert(From, To, value);
-}
+/**
+ * @brief Compare the relationship between two endian systems.
+ * @param lhs The first endian system to compare.
+ * @param rhs The second endian system to compare.
+ * @return True if the relation-ship has met.
+ */
+bool operator==(endian::endian_t lhs, endian::endian_t rhs);
 
+/**
+ * @brief Compare if two endian systems are not equal.
+ * @param lhs The first endian system to compare.
+ * @param rhs The second endian system to compare.
+ * @return True if the two endian systems are not equal.
+ */
+bool operator!=(endian::endian_t lhs, endian::endian_t rhs);
+
+//
 END_MUDLIB_CORE_NS
 
 /* vi: set ai ts=4 expandtab: */

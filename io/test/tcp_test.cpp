@@ -92,7 +92,7 @@ CONTEXT(public mud::core::object)
         communicator.istr().read((char*)&two_bytes, 2);
         recv_length = mud::core::endian::convert(
                     mud::core::endian::endian_t::big,
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     two_bytes);
 
         // Allocate the placeholder for the data to be received
@@ -113,7 +113,7 @@ CONTEXT(public mud::core::object)
     void send(uint16_t mtu = 1460, uint16_t ms = 0) {
         // Write the 2 bytes indicating the length
         uint16_t length = mud::core::endian::convert(
-                    mud::core::endian::native(),
+                    mud::core::endian::endian_t::native,
                     mud::core::endian::endian_t::big,
                     (uint16_t)send_length);
         server.ostr().write((const char*)&length, 2);

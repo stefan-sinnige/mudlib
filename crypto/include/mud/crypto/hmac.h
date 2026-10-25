@@ -121,10 +121,16 @@ public:
     size_t hash_size() const override;
 
     /**
-     * @brief Update the MAC with a chunk of binary input data.
+     * @brief Update the MAC with a chunk of buffer input data.
      * @param chunk The chunk of data to add to the MAC.
      */
     void update(const mud::core::buffer& chunk) override;
+
+    /**
+     * @brief Update the MAC with a chunk of buffer view input data.
+     * @param chunk The chunk of data to add to the MAC.
+     */
+    void update(const mud::core::buffer_view& chunk) override;
 
     /**
      * @brief Close or finalise the MAC.
@@ -180,6 +186,13 @@ hmac<HashAlgorithm>::hash_size() const
 template<typename HashAlgorithm>
 void
 hmac<HashAlgorithm>::update(const mud::core::buffer& chunk)
+{
+    _hash.update(chunk.view(chunk.cbegin(), chunk.cend()));
+}
+
+template<typename HashAlgorithm>
+void
+hmac<HashAlgorithm>::update(const mud::core::buffer_view& chunk)
 {
     _hash.update(chunk);
 }

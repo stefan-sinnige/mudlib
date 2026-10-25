@@ -58,7 +58,7 @@ BEGIN_MUDLIB_TLS_NS
  * operation.
  * @code
  * // Create an invalid record placeholder
- * std::shared_ptr<mud::tls::record> record;
+ * mud::tls::record::ptr record;
  * istr >> record;
  *
  * // The placeholder is replaced with an instance of the specialisation.
@@ -73,6 +73,11 @@ BEGIN_MUDLIB_TLS_NS
 class MUDLIB_TLS_API record
 {
 public:
+    /**
+     * @brief Definition of a pointer to a record.
+     */
+    typedef std::shared_ptr<record> ptr;
+
     /** 
      * @brief Create an invalid record.
      * @param encrypted Indication if the record content is encrypted.
@@ -111,20 +116,9 @@ public:
     }
 
     /**
-     * @brief Return the record length
+     * @brief Return the size of the message.
      */
-    uint16_t length() const { return _length; }
-
-    /**
-     * @brief Get the encrypted status of the content.
-     */
-    bool encrypted() const { return _encrypted; }
-
-    /**
-     * @brief Set the encrypted status of the content.
-     * @param value The statue to set.
-     */
-    void encrypted(bool value) { _encrypted = value; }
+    virtual size_t size() const;
 
 protected:
     /**
@@ -134,6 +128,19 @@ protected:
      */
     record(record_content_type_t content_type, protocol_version_t version);
 
+    /**
+     * Read a TLS record from an input stream.
+     * @param istr The input stream.
+     * @return The @c istr.
+     */
+    virtual std::istream& read(std::istream& istr);
+
+    /**
+     * Write a TLS record to an output stream.
+     * @param istr The output stream.
+     */
+    virtual std::ostream& write(std::ostream& istr) const;
+
 private:
     /** The content type */
     record_content_type_t _content_type;
@@ -141,34 +148,42 @@ private:
     /** The legacy record version */
     protocol_version_t _legacy_record_version;
 
-    /** The record length */
-    uint16_t _length;
-
     /** Indication if the content is encrypted. */
     bool _encrypted;
 
     /** Friends */
     friend std::ostream& operator<<(std::ostream&, const record&);
     friend std::istream& operator>>(std::istream&, record&);
+    friend std::istream& operator>>(std::istream&, record::ptr&);
 };
 
 /**
- * @brief Write an TLS reord message to an output stream.
+ * @brief Write an TLS record header to an output stream.
  * @param ostr The output stream
- * @param msg The message to write.
+ * @param msg The header to write.
  */
 std::ostream&
 operator<<(std::ostream& ostr, const record& msg);
 
 /**
- * @brief Read a TLS record (header only) from an input stream
- * @param istr The input stream to read from
- * @param rec The record header details.
- * @details
- * Read only the TLS record header from the input stream.
+ * @brief Read an TLS record header from an input stream.
+ * @param istr The input stream
+ * @param msg The header to read to.
  */
 std::istream&
-operator>>(std::istream& istr, record& rec);
+operator>>(std::istream& istr, record& msg);
+
+/**
+ * @brief Read a full TLS message from an input stream.
+ * @param istr The input stream to read from
+ * @param msg The placeholder to hold a new instance of the record received 
+ * @details
+ * The @c msg will be re-seated with a new instance of the associated record
+ * specialisation. The @c msg can be an passed in as an uninitialised @c
+ * shared_ptr .
+ */
+std::istream&
+operator>>(std::istream& istr, record::ptr& rec);
 
 /**
  * @brief The base definition of an TLS handshake message.
@@ -211,9 +226,9 @@ public:
     void msg_type(handshake_type_t value) { _msg_type = value; }
 
     /**
-     * @brief Return the handshake length
+     * @brief Return the size of the message.
      */
-    uint32_t length() const { return _length; }
+    virtual size_t size() const override;
 
 protected:
     /**
@@ -222,33 +237,22 @@ protected:
      */
     handshake(handshake_type_t type);
 
+    /**
+     * Read a TLS handshake from an input stream.
+     * @param istr The input stream.
+     */
+    virtual std::istream& read(std::istream& istr) override;
+
+    /**
+     * Write a TLS handshake to an output stream.
+     * @param istr The output stream.
+     */
+    virtual std::ostream& write(std::ostream& istr) const override;
+
 private:
     /** The message type */
     handshake_type_t _msg_type;
-
-    /** The message length (24-bits) */
-    uint32_t _length;
-
-    /** Friends */
-    friend std::ostream& operator>>(std::ostream&, const handshake&);
-    friend std::istream& operator>>(std::istream&, handshake&);
 };
-
-/**
- * @brief Write a TLS handshake (header only) to an output stream
- * @param ostr The output stream to write to
- * @param msg The handshake header details.
- */
-std::ostream&
-operator<<(std::ostream& ostr, handshake& msg);
-
-/**
- * @brief Read a TLS handshake (header only) from an input stream
- * @param istr The input stream to read from
- * @param msg The handshake header details.
- */
-std::istream&
-operator>>(std::istream& istr, handshake& msg);
 
 /**
  * @brief TLS Client Hello message
@@ -261,6 +265,12 @@ public:
      * @brief Construct a Client Hello message.
      */
     client_hello();
+
+    /**
+     * @brief Construct a client-hello message from a binary buffer.
+     * @param rec The client-hello message
+     */
+    client_hello(const mud::core::buffer_view& msg);
 
     /**
      * @brief Get legacy version
@@ -352,6 +362,24 @@ public:
         _extensions = value;
     }
 
+    /**
+     * @brief Return the size of the message.
+     */
+    virtual size_t size() const override;
+
+protected:
+    /**
+     * Read a TLS client-hello from an input stream.
+     * @param istr The input stream.
+     */
+    virtual std::istream& read(std::istream& istr) override;
+
+    /**
+     * Write a TLS client-hello to an output stream.
+     * @param istr The output stream.
+     */
+    virtual std::ostream& write(std::ostream& istr) const override;
+
 private:
     /** The legacy protocol version */
     protocol_version_t _legacy_version;
@@ -370,27 +398,7 @@ private:
 
     /* The extensions */
     std::vector<std::shared_ptr<extension>> _extensions;
-
-    /** Friends */
-    friend std::ostream& operator<<(std::ostream&, const client_hello&);
-    friend std::istream& operator>>(std::istream&, client_hello& rec);
 };
-
-/**
- * @brief Write an TLS client-hello to an output stream.
- * @param ostr The output stream
- * @param msg The message to write.
- */
-std::ostream&
-operator<<(std::ostream& ostr, const client_hello& msg);
-
-/**
- * @brief Read a TLS client-hello from an input stream
- * @param istr The input stream to read from
- * @param msg The message details.
- */
-std::istream&
-operator>>(std::istream& istr, client_hello& msg);
 
 /**
  * @brief TLS Server Hello message
@@ -490,6 +498,24 @@ public:
         _extensions = value;
     }
 
+    /**
+     * @brief Return the size of the message.
+     */
+    virtual size_t size() const override;
+
+protected:
+    /**
+     * Read a TLS server-hello from an input stream.
+     * @param istr The input stream.
+     */
+    virtual std::istream& read(std::istream& istr) override;
+
+    /**
+     * Write a TLS server-hello to an output stream.
+     * @param istr The output stream.
+     */
+    virtual std::ostream& write(std::ostream& istr) const override;
+
 private:
     /** The legacy protocol version */
     protocol_version_t _legacy_version;
@@ -508,39 +534,7 @@ private:
 
     /* The extensions */
     std::vector<std::shared_ptr<extension>> _extensions;
-
-    /** Friends */
-    friend std::ostream& operator<<(std::ostream&, const server_hello&);
-    friend std::istream& operator>>(std::istream&, server_hello&);
 };
-
-/**
- * @brief Write an TLS server-hello to an output stream.
- * @param ostr The output stream
- * @param msg The message to write.
- */
-std::ostream&
-operator<<(std::ostream& ostr, const server_hello& msg);
-
-/**
- * @brief Read a TLS server-hello from an input stream
- * @param istr The input stream to read from
- * @param msg The message details.
- */
-std::istream&
-operator>>(std::istream& istr, server_hello& msg);
-
-/**
- * @brief Read a TLS message from an input stream.
- * @param istr The input stream to read from
- * @param msg The placeholder to hold a new instance of the record received 
- * @details
- * The @c msg will be re-seated with a new instance of the associated record
- * specialisation. The @c msg can be an passed in as an uninitialised @c
- * shared_ptr .
- */
-std::istream&
-operator>>(std::istream& istr, std::shared_ptr<record>& rec);
 
 END_MUDLIB_TLS_NS
 

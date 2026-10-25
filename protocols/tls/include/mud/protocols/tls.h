@@ -28,6 +28,7 @@
 #define _MUDLIB_TLS_H_
 
 #include <mud/protocols/tls/client.h>
+#include <mud/protocols/tls/dissect.h>
 #include <mud/protocols/tls/communicator.h>
 #include <mud/protocols/tls/exception.h>
 #include <mud/protocols/tls/message.h>

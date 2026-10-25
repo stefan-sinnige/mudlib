@@ -79,7 +79,7 @@ x25519::field_element::field_element(const mud::core::buffer& data)
      * the value is in the range of [0 - 2^255-1]. */
     for (int i = 0; i < 16; ++i) {
         _value[i] = endian::convert(
-                endian_t::little, endian::native(),
+                endian_t::little, endian_t::native,
                 *(uint16_t*)(data.data() + 2*i));
     }
     _value[15] &= 0x7FFF;
@@ -115,7 +115,7 @@ x25519::field_element::operator mud::core::buffer() const
     mud::core::buffer result(32);
     for (int i = 0; i < 16; ++i) {
         *((uint16_t*)(result.data() + 2*i)) = endian::convert(
-                endian::native(),
+                endian_t::native,
                 endian_t::little,
                 (uint16_t)(t[i] & 0xFFFF));
     }

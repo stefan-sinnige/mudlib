@@ -114,14 +114,14 @@ buffer_view::operator[](size_t n)
 }
 
 buffer_view
-buffer_view::view(buffer_view::iterator first, buffer_view::iterator last)
+buffer_view::view(buffer_view::iterator first, buffer_view::iterator last) const
 {
     return buffer_view(first._ptr, last._ptr - first._ptr);
 }
 
 buffer_view
 buffer_view::view(buffer_view::const_iterator first,
-                  buffer_view::const_iterator last)
+                  buffer_view::const_iterator last) const
 {
     return buffer_view(const_cast<uint8_t*>(first._ptr),
                        last._ptr - first._ptr);
@@ -399,12 +399,24 @@ buffer::buffer(const buffer& rhs)
 {
 }
 
+buffer::buffer(const buffer_view& view)
+    : _holder(std::make_shared<buffer::holder>(view.data(), view.size()))
+{
+}
+
 buffer&
 buffer::operator=(const buffer& rhs)
 {
     if (&rhs == this) {
         return *this;
     }
+    _holder = std::make_shared<buffer::holder>(rhs.data(), rhs.size());
+    return *this;
+}
+
+buffer&
+buffer::operator=(const buffer_view& rhs)
+{
     _holder = std::make_shared<buffer::holder>(rhs.data(), rhs.size());
     return *this;
 }
@@ -608,13 +620,19 @@ buffer::operator[](size_t n)
 }
 
 buffer_view
-buffer::view(buffer::iterator first, buffer::iterator last)
+buffer::view() const
+{
+    return view(cbegin(), cend());
+}
+
+buffer_view
+buffer::view(buffer::iterator first, buffer::iterator last) const
 {
     return buffer_view(first._ptr, last._ptr - first._ptr);
 }
 
 buffer_view
-buffer::view(buffer::const_iterator first, buffer::const_iterator last)
+buffer::view(buffer::const_iterator first, buffer::const_iterator last) const
 {
     return buffer_view(const_cast<uint8_t*>(first._ptr),
                        last._ptr - first._ptr);

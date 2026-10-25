@@ -25,6 +25,7 @@
  */
 
 #include "mud/core/hexdump.h"
+#include "mud/core/buffer.h"
 #include <cctype>
 #include <iomanip>
 
@@ -42,15 +43,28 @@ hexdump::hexdump(const uint8_t* data, size_t size)
 {
 }
 
+hexdump::hexdump(const buffer& buf)
+    : _data(buf.data())
+    , _size(buf.size())
+{
+}
+
+hexdump::hexdump(const buffer_view& buf)
+    : _data(buf.data())
+    , _size(buf.size())
+{
+}
+
 std::ostream&
 operator<<(std::ostream& ostr, const hexdump& value)
 {
+    static const char* hex = "0123456789abcdef";
     const uint8_t* ptr = value._data;
     size_t size = value._size;
     size_t off = 0;
     size_t off_width = (size > 0xFFFF ? 8 : 4);
     auto saved_flags = ostr.flags();
-    ostr << std::hex << std::nouppercase << std::setfill('0');
+    ostr << std::right << std::hex << std::nouppercase << std::setfill('0');
     do {
         /* Insert a new line, unless we're at the first offset */
         if (off != 0) {
@@ -63,7 +77,9 @@ operator<<(std::ostream& ostr, const hexdump& value)
         /* Output the hexadecimal values */
         for (int i = 0; i < 16; ++i) {
             if ((off + i) < size) {
-                ostr << " " << std::setw(2) << (int)(*(ptr + off + i));
+                ostr << " "
+                     << hex[(*(ptr + off + i) >> 4) & 0x0F]
+                     << hex[*(ptr + off + i) & 0x0F];
             }
             else {
                 ostr << "   ";

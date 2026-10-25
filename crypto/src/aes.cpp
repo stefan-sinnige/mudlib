@@ -262,16 +262,16 @@ operator<<(std::ostream& ostr, const basic_aes::state& s)
  * @brief AES Round Constants
  */
 const uint32_t rcon[10] = {
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x01000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x02000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x04000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x08000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x10000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x20000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x40000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x80000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x1b000000),
-    endian::convert(endian::native(), endian_t::big, (uint32_t)0x36000000)
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x01000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x02000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x04000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x08000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x10000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x20000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x40000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x80000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x1b000000),
+    endian::convert(endian_t::native, endian_t::big, (uint32_t)0x36000000)
 };
 
 /**

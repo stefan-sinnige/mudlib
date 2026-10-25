@@ -40,8 +40,8 @@
 namespace mock {
 
 /** Type definition for a TLS communicator on a mock device */
-typedef mud::tls::communicator::client<mock::device> tls_client;
-typedef mud::tls::communicator::server<mock::device> tls_server;
+typedef mud::tls::communicator::client<mock::device> tls_communicator_client;
+typedef mud::tls::communicator::server<mock::device> tls_communicator_server;
 
 /**
  * @brief A mock message.
@@ -163,7 +163,7 @@ private:
     std::unique_ptr<physical_communicator> _physical;
 
     /** The server-side TLS communicator */
-    std::unique_ptr<tls_server> _tls;
+    std::unique_ptr<tls_communicator_server> _tls;
 
     /** The server-side protocol communicator */
     std::unique_ptr<protocol_communicator> _protocol;
@@ -250,7 +250,7 @@ private:
     std::unique_ptr<physical_communicator> _physical;
 
     /** The client-side TLS communicator */
-    std::unique_ptr<tls_client> _tls;
+    std::unique_ptr<tls_communicator_client> _tls;
 
     /** The client-side protocol communicator */
     std::unique_ptr<protocol_communicator> _protocol;

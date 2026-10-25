@@ -58,9 +58,14 @@ public:
     keccak() = default;
 
     /**
-     * @brief Update the hash with a chunk of binary input data.
+     * @brief Update the hash with a chunk of buffer input data.
      */
     void update(const mud::core::buffer& chunk);
+
+    /**
+     * @brief Update the hash with a chunk of buffer view input data.
+     */
+    void update(const mud::core::buffer_view& chunk);
 
     /**
      * @brief Close or finalise the hash.

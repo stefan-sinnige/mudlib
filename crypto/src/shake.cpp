@@ -85,7 +85,7 @@ public:
     /**
      * @brief Update the hash with a chunk of binary input data.
      */
-    void update(const mud::core::buffer& chunk);
+    void update(const mud::core::buffer_view& chunk);
 
     /**
      * @brief Close or finalise the hash.
@@ -146,7 +146,7 @@ shake_algorithm::impl::specs() const
 }
 
 void
-shake_algorithm::impl::update(const mud::core::buffer& chunk)
+shake_algorithm::impl::update(const mud::core::buffer_view& chunk)
 {
     _keccak.update(chunk);
 }
@@ -207,6 +207,12 @@ shake_algorithm::block_size() const
 
 void
 shake_algorithm::update(const mud::core::buffer& chunk)
+{
+    _impl->update(chunk.view(chunk.cbegin(), chunk.cend()));
+}
+
+void
+shake_algorithm::update(const mud::core::buffer_view& chunk)
 {
     _impl->update(chunk);
 }
